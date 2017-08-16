@@ -1,0 +1,235 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.4">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="06/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="09/Nov/15">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <TITLE>Supplement Delete</TITLE>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure. 
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+/**********************************************************************************
+ *
+ *  SUPPdelU.html   -   Version 1.1
+ *
+ *  This program is designed to provide basic maintenance for the Supplements that could
+ *  be recommended on a testkit (MPA or BioMed).  It is not intended to update which tests
+ *  have those supplements as recommendations on them, only that they exist to be chosen 
+ *  from.  Updates the suppl_list table in the HHI database.
+ *
+ *  ----------------------------------------------------------------------------
+ *
+ *  Revision History:
+ *  -----------------
+ *  1.0 - written by Doug Luttrell on 06/Oct/14.  Original Version.
+ *  1.1 - written by DOUG LUTTRELL on 19/Nov/14.  Updated to sort by name instead of ID
+ *          now that I've loaded the data from the RS database.  This change exists in 
+ *          the included form.  Thus, the actual change was there and this just needed 
+ *          to be recompiled.  Marked by 1dot1.
+ *  1.2 - written by Trae Luttrell on 29/Sep/15/  Putting the grid html commands. 
+ *  1.3 - written by Jacob Luttrell on 06/Oct/15 changed 2col to col. Marked by 1dot3.
+ *  1.4 - written by Jacob Luttrell on 09/Nov/15.  Added delete function.  Marked by 1dot4.
+ *  1.5 - written by Jacob Luttrell on 18/Mar/16. Added this-procedure:file-name. Marked by 1dot5.
+ ***********************************************************************************/
+ 
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/  
+
+/***************************  Variable Definition Section  *************************/
+ DEFINE VARIABLE supplid    LIKE suppl_list.suppl_id        NO-UNDO.
+ DEFINE VARIABLE supplname  LIKE suppl_list.suppl_name      NO-UNDO.
+ DEFINE VARIABLE suppldesc  LIKE suppl_list.suppl_desc      NO-UNDO.
+ DEFINE VARIABLE sku        LIKE suppl_list.suppl_sku       NO-UNDO.
+ DEFINE VARIABLE defqty     LIKE suppl_list.suppl_def_qty   NO-UNDO.
+ DEFINE VARIABLE defuom     LIKE suppl_list.suppl_def_uom   NO-UNDO.
+ DEFINE VARIABLE defnotes   LIKE suppl_list.suppl_def_notes NO-UNDO. 
+  
+ DEFINE VARIABLE act        AS CHARACTER                    NO-UNDO.        /** controls program flow **/
+ DEFINE VARIABLE ITshowmsg  AS LOG INITIAL NO               NO-UNDO.        /** YES to see messages, NO to hide messages **/
+ 
+ DEFINE VARIABLE thismarker AS CHARACTER                    NO-UNDO.        /** used for HTML selection **/
+
+ DEFINE VARIABLE x          AS int                          NO-UNDO.        /** junk counter for uom **/
+ DEFINE VARIABLE thisuom    AS CHARACTER                    NO-UNDO.        /** used for HTML selection **/
+ DEFINE VARIABLE uomlist    AS CHARACTER
+    INITIAL "TSP,TBSP,TABLET,SPRAY" 
+    NO-UNDO.
+
+ DEFINE VARIABLE deletable AS LOGICAL INITIAL YES NO-UNDO.                             /* 1dot5 */
+ 
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre get-value</P>" skip.
+        
+ ASSIGN 
+    act         = get-value('h-act')
+    supplid     = integer(get-value('h-supplid'))
+    supplname   = get-value('h-supplname')
+    suppldesc   = get-value('h-suppldesc')
+    sku         = get-value('h-sku')
+    defqty      = DECIMAL(get-value('h-defqty'))
+    defuom      = get-value('h-defuom')
+    defnotes    = get-value('h-defnotes').
+    
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Post get-value</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>supplid = " supplid "</P>" skip    
+																				       "<P>supplname = " supplname "</P>" skip
+																				       "<P>suppldesc = " suppldesc "</P>" skip																				       
+                                                                                       "<P>defuom = " defuom "</P>" skip
+																				       "<hr width=90%>" skip.
+        
+ IF act = "" THEN 
+    act = "INITIAL".
+    
+     
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre Case</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>supplid = " supplid "</P>" skip   
+																				       "<P>supplname = " supplname "</P>" skip
+																				       "<P>suppldesc = " suppldesc "</P>" skip
+																				       "<hr width=90%>" skip.
+ /* 1dot5 - Validation act --> */
+ IF act = "DELETE" THEN DO: 
+    
+/*    deletable = YES.*/
+    
+    FOR EACH  trr_det WHERE trr_det.trr_suppl_ID = supplid AND 
+                       trr_det.trr_deleted = ? NO-LOCK: 
+    
+    ASSIGN deletable = NO. 
+    
+    END. /* 4ea. trr_det */
+    
+    IF deletable = NO THEN DO: 
+    
+	    {&OUT} 
+	        "<center><H3>Error: This suppliment is being used in a recommendation.  Delete the recommendation using the Recommendation Maintenance before continuing.</H3></center>" SKIP.
+	    
+	    ASSIGN 
+	        act = "INITIAL".
+    END. /* if avail trr_det */                
+    ELSE 
+        ASSIGN 
+            act = "REALLY-DELETE".                          
+ 
+  
+ END. /* if act = delete */
+ /* <-- 1dot5 */       
+/********************************  Main Program  ***********************************/
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:
+        
+        {SUPPmaintU-form.i "FIND" "NOTHING" "DISABLED" "DELETE"}. 
+        
+    END.  /** of act = "INITIAL" **/
+     
+    WHEN "FIND" THEN DO: 
+        
+        FIND suppl_list WHERE suppl_list.suppl_id = supplid AND 
+            suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.
+        IF AVAILABLE suppl_list THEN 
+            ASSIGN 
+                supplname   = suppl_list.suppl_name
+                suppldesc   = suppl_list.suppl_desc
+                sku         = suppl_list.suppl_sku
+                defqty      = suppl_list.suppl_def_qty
+                defuom      = suppl_list.suppl_def_uom
+                defnotes    = suppl_list.suppl_def_notes.
+ 
+        {SUPPmaintU-form.i "DELETE" "DISABLED" "DISABLED" "DELETE"}.    
+                
+																				IF ITshowmsg = YES THEN 
+																				    {&OUT}
+																				        "<P>Post FIND</P>" skip  
+																				        "<P>Act = " act "</P>" skip
+																				        "<P>supplid = " supplid "</P>" skip   
+																				        "<P>supplname = " supplname "</P>" skip
+																				        "<P>suppldesc = " suppldesc "</P>" skip
+																				        "<hr width=90%>" skip.
+         
+    END.  /** of act = "INITIAL" **/
+    
+    WHEN "REALLY-DELETE" THEN DO:
+        
+																		        IF ITshowmsg = YES THEN 
+																		            {&OUT}
+																		                "<P>Inside Update</P>" skip
+																		                "<P>Act = " act "</P>" skip
+																		                "<P>supplid = " supplid "</P>" skip   
+																		                "<P>supplname = " supplname "</P>" skip
+																		                "<P>suppldesc = " suppldesc "</P>" skip
+																		                "<hr width=90%>" skip.
+        
+        FIND suppl_list WHERE suppl_list.suppl_id = supplid AND 
+            suppl_list.suppl_deleted = ? 
+                EXCLUSIVE-LOCK NO-ERROR.
+        IF AVAILABLE suppl_list THEN DO: 
+            ASSIGN 
+                suppl_list.suppl_deleted        = TODAY 
+                suppl_list.suppl_modified_date  = TODAY 
+                suppl_list.suppl_modified_by    = USERID("HHI")
+                supplid                         = 0
+                supplname                       = ""
+                suppldesc                       = ""
+                sku                             = ""
+                defqty                          = 0
+                defuom                          = ""
+                defnotes                        = ""
+                suppl_list.suppl_prog_name      = THIS-PROCEDURE:FILE-NAME.             /* 1dot5 */
+                
+            DELETE suppl_list.                              /* 1dot4 */
+        
+        END. /* if avail suppl_list */    
+        ELSE 
+            {&OUT} "<P>ERROR - suppl_list not found for suppl_id = " supplid ".</P>" skip.
+ 
+        {SUPPmaintU-form.i "INITIAL" "DISABLED" "DISABLED" "DELETE"}.                
+        
+    END.  /** of act = "INITIAL" **/
+    
+    OTHERWISE DO: 
+                      
+																		        IF ITshowmsg = YES THEN 
+																		            {&OUT}
+																		                "<P>Inside Otherwise Do</P>" skip
+																		                "<P>Act = " act "</P>" skip
+																		                "<P>supplid = " supplid "</P>" skip   
+																		                "<P>supplname = " supplname "</P>" skip
+																		                "<P>suppldesc = " suppldesc "</P>" skip
+																		                "<hr width=90%>" skip.
+                                           
+        {&OUT} 
+            "<P class='errmsg'>Unexpected Condition!  Please contact <a href='mailto:hhi.techsupport@mysolsource.com?subject=Error with SUPPdelU.html -- " act "'>Solsource</a> immediately.</P>" SKIP             
+            "<FORM method='post'>" skip
+            "<center><INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP 
+            "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP 
+            "</FORM>" skip.     
+        
+    END.  /** of otherwise **/
+    
+END CASE.  /*** case of act ***/
+ 
+																				IF ITshowmsg = YES THEN 
+																				    {&OUT} "<P>End OF LINE.</P>".
+
+/*******************************  End of Program  **********************************/
+</SCRIPT>
+</BODY>
+</HTML>

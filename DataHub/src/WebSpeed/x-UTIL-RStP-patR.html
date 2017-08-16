@@ -1,0 +1,514 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>RStP Researcher Utility</TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.11">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="02/Feb/16">
+    <META NAME="LAST_UPDATED" CONTENT="28/Jun/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+        
+        1.1 - By Jacob Luttrell on 04/Jun/16. Added detail report option. Marked by 1dot1.
+        1.11 - By Jacob Luttrell on 28/Jun/16.  Added a search again button at the bottom of the Search act. Unmarked.
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.                         /*** menu name assignment ***/
+
+/*****************************  Variable Definitions  ********************************/
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.                             /* flow control */
+
+DEFINE VARIABLE v-fromln LIKE PATIENT_RCD.PatLastName NO-UNDO.
+DEFINE VARIABLE v-toln LIKE PATIENT_RCD.PatLastName NO-UNDO.
+DEFINE VARIABLE v-fromfn LIKE PATIENT_RCD.PatFirstName NO-UNDO.
+DEFINE VARIABLE v-tofn LIKE PATIENT_RCD.PatFirstName NO-UNDO.
+DEFINE VARIABLE v-fromdob LIKE PATIENT_RCD.PatDOB NO-UNDO.
+DEFINE VARIABLE v-todob LIKE PATIENT_RCD.PatDOB NO-UNDO.
+
+DEFINE VARIABLE v-fromtkid LIKE TESTS_RESULT_RCD.Test_Kit_Nbr NO-UNDO.
+DEFINE VARIABLE v-totkid LIKE TESTS_RESULT_RCD.Test_Kit_Nbr NO-UNDO.
+DEFINE VARIABLE v-fromlabsample LIKE TESTS_RESULT_RCD.Lab_Sampleid NO-UNDO.
+DEFINE VARIABLE v-tolabsample LIKE TESTS_RESULT_RCD.Lab_Sampleid NO-UNDO.
+
+DEFINE VARIABLE v-details AS LOGICAL NO-UNDO.                                /* 1dot1 */
+
+DEFINE VARIABLE reccount AS INTEGER NO-UNDO.
+
+/************************   Initial Inputs  ***************************/
+ASSIGN 
+    v-act           = get-value("h-act")
+    v-fromln        = get-value("h-fromln")
+    v-toln          = get-value("h-toln")
+    v-fromfn        = get-value("h-fromfn")
+    v-tofn          = get-value("h-tofn")
+    v-fromtkid      = get-value("h-fromtkid")
+    v-totkid        = get-value("h-totkid")
+    v-fromlabsample = get-value("h-fromlabsample")
+    v-tolabsample   = get-value("h-tolabsample")
+    v-details       = IF get-value("h-details") = "YES" THEN YES ELSE NO.   /* 1dot1 */
+    
+/***    
+RUN VALUE (SEARCH ("subr_CCYY_to-YY.r"))
+    (get-value("h-fromdob"),
+     OUTPUT v-fromdob).
+     
+RUN VALUE (SEARCH ("subr_CCYY_to-YY.r"))
+    (get-value("h-todob"),
+     OUTPUT v-todob).
+***/
+
+IF v-act = "" THEN 
+    v-act = "INITIAL".
+
+
+/*****************************   Main Program   ******************************/
+CASE v-act:
+    
+    WHEN "INITIAL" THEN DO:
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP            
+            
+            "<FORM>" SKIP
+            "<DIV class='table_2col'>" SKIP
+            "<TABLE>" SKIP
+            "   <TR>" SKIP
+            "       <TH colspan=4>Search Critiria</TH>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TD>From Lastname</TD>" SKIP
+            "       <TD><input type='text' name='h-fromln' value='" v-fromln "' /></TD>" SKIP
+            "       <TD>To</TD>" SKIP
+            "       <TD><input type='text' name='h-toln' value='" v-toln "' /></TD>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TD>From Firstname</TD>" SKIP
+            "       <TD><input type='text' name='h-fromfn' value='" v-fromfn "' /></TD>" SKIP
+            "       <TD>To</TD>" SKIP
+            "       <TD><input type='text' name='h-tofn' value='" v-tofn "' /></TD>" SKIP
+            "   </TR>" SKIP            
+            "   <TR>" SKIP
+            "       <TD>From Date of Birth (DOB)</TD>" SKIP
+            "       <TD><input type='date' name='h-fromdob' value='" get-value("h-fromdob") "' /></TD>" SKIP
+            "       <TD>To</TD>" SKIP
+            "       <TD><input type='date' name='h-todob' value='" get-value("h-todob") "' /></TD>" SKIP
+            "   </TR>" SKIP
+            
+            "   <TR>" SKIP
+            "       <TH colspan=4> </TH>" SKIP
+            "   </TR>" SKIP
+            
+            "   <TR>" SKIP
+            "       <TD>From Testkit</TD>" SKIP
+            "       <TD><input type='text' name='h-fromtkid' value='" v-fromtkid "' /></TD>" SKIP
+            "       <TD>To</TD>" SKIP
+            "       <TD><input type='text' name='h-totkid' value='" v-totkid "' /></TD>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TD>From Lab Sample ID</TD>" SKIP
+            "       <TD><input type='text' name='h-fromlabsample' value='" v-fromlabsample "' /></TD>" SKIP
+            "       <TD>To</TD>" SKIP
+            "       <TD><input type='text' name='h-tolabsample' value='" v-tolabsample "' /></TD>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP                                                                                                  /* 1dot1 */
+            "       <TD>Show Details</TD>" SKIP                                                                             /* 1dot1 */
+            "       <TD colspan='3'><input type='checkbox' name='h-details' value='YES' /></TD>" SKIP                       /* 1dot1 */
+            "   </TR>" SKIP                                                                                                 /* 1dot1 */
+            "</TABLE>" SKIP
+            "</DIV> <!-- end of table_2col -->" SKIP
+            
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            
+            "<BR>" SKIP
+            "<div class='row'>" SKIP                                                                           /* begin 1dot22 */
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP                                    /* 1dot1 */            
+            "   <div class='grid_2'><button type='submit' name='h-act' value='SEARCH' class='btn'>SEARCH</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "<BR>" SKIP                                                                                        /* end 1dot22 */
+            "</FORM>" SKIP
+            .        
+        
+    END.  /** of INITIAL **/
+    
+    WHEN "SEARCH" THEN DO: 
+        
+        {&OUT}
+			"<DIV class='row'>" SKIP
+			"<DIV class='grid_1'> </DIV>" SKIP
+			"<DIV class='grid_10'>" SKIP            
+			
+			"<DIV class='table_report'>" SKIP
+			"<TABLE>" SKIP
+			"    <THEAD>" SKIP
+			"        <TR>" SKIP
+			"            <TH colspan=5>RS PATIENT_RCD</TH>" SKIP
+			"        </TR>" SKIP
+			"        <TR>" SKIP
+			"            <TD>Patient ID</TD>" SKIP
+			"            <TD>Lastname</TD>" SKIP
+			"            <TD>Firstname</TD>" SKIP
+			"            <TD>DOB</TD>" SKIP
+			"            <TD>Progress Flag</TD>" SKIP
+			"        </TR>" SKIP
+			"    </THEAD>" SKIP.
+	   
+        FOR EACH PATIENT_RCD WHERE 
+	       (PATIENT_RCD.PatLastName >= v-fromln OR 
+	        v-fromln = "") AND 
+	       (PATIENT_RCD.PatLastName <= v-toln OR 
+	        v-toln = "") AND 
+	       (PATIENT_RCD.PatFirstName >= v-fromfn OR 
+	        v-fromfn = "") AND 
+	       (PATIENT_RCD.PatFirstName <= v-tofn OR 
+	        v-tofn = "") AND 
+	       (PATIENT_RCD.PatDOB >= v-fromdob OR 
+	        v-fromdob = ?) AND 
+	       (PATIENT_RCD.PatDOB <= v-todob OR 
+	        v-todob = ?) NO-LOCK
+	           BREAK BY PATIENT_RCD.PatLastName BY PATIENT_RCD.PatFirstName:
+	       
+	       reccount = reccount + 1.
+	               
+	       {&OUT}
+	           "<TR>" SKIP
+	           "   <TD>" PATIENT_RCD.PatientID "</TD>" SKIP
+	           "   <TD>" PATIENT_RCD.PatLastName "</TD>" SKIP 
+	           "   <TD>" PATIENT_RCD.PatFirstName "</TD>" SKIP
+	           "   <TD>" PATIENT_RCD.PatDOB "</TD>" SKIP 
+               "   <TD>" PATIENT_RCD.Progress_Flag FORMAT "XX" "</TD>" SKIP
+               "</TR>" SKIP.
+               
+        END.  /** of 4ea. patient_rcd **/
+        
+        {&OUT}
+            "<TFOOT>" SKIP
+            "   <TR>" SKIP
+            "       <TD colspan=5>PATIENT_RCD records found = " reccount "</TD>" SKIP
+            "   </TR>" SKIP
+            "</TFOOT>" SKIP
+            
+            "</TABLE>" SKIP
+            "</DIV>  <!-- end of table_report -->" SKIP
+            "<BR><BR>" SKIP.
+            
+        reccount = 0.        
+        
+        {&OUT}
+            "<DIV class='table_report'>" SKIP
+            "<TABLE>" SKIP
+            "    <THEAD>" SKIP
+            "        <TR>" SKIP
+            "            <TH colspan=5>RS MPA_RCD</TH>" SKIP
+            "        </TR>" SKIP
+            "        <TR>" SKIP
+            "            <TD>Patient ID</TD>" SKIP
+            "            <TD>Testkit / Seq</TD>" SKIP
+            "            <TD>Lab Sample ID / Seq</TD>" SKIP
+            "            <TD>Test Type</TD>" SKIP
+            "            <TD>Progress Flag</TD>" SKIP
+            "        </TR>" SKIP
+            "    </THEAD>" SKIP.        
+                   
+        FOR EACH MPA_RCD WHERE 
+           (MPA_RCD.MPA_Test_Kit_Nbr >= v-fromtkid OR 
+            v-fromtkid = "") AND 
+           (MPA_RCD.MPA_test_kit_nbr <= v-totkid OR 
+            v-totkid = "") AND 
+           (MPA_RCD.MPA_Sample_ID_Number >= v-fromlabsample OR 
+            v-fromlabsample = "") AND 
+           (MPA_RCD.MPA_Sample_ID_Number <= v-tolabsample OR 
+            v-tolabsample = "") NO-LOCK
+                BREAK BY MPA_RCD.PatientID 
+                    BY MPA_RCD.MPA_Sample_ID_Number
+                    BY MPA_RCD.MPA_Sample_ID_SeqNbr:
+                        
+           reccount = reccount + 1.
+                   
+           {&OUT}
+               "<TR>" SKIP
+               "   <TD>" MPA_RCD.PatientID  "</TD>" SKIP
+               "   <TD>" MPA_RCD.MPA_Test_Kit_Nbr " / " MPA_RCD.MPA_Test_Kit_Nbr_SeqNbr "</TD>" SKIP 
+               "   <TD>" MPA_RCD.MPA_Sample_ID_Number " / " MPA_RCD.MPA_Sample_ID_SeqNbr "</TD>" SKIP
+               "   <TD>" MPA_RCD.MPA_Test_Type "</TD>" SKIP 
+               "   <TD>" MPA_RCD.Progress_Flag FORMAT "XX" "</TD>" SKIP
+               "</TR>" SKIP.
+                
+        END.  /** of 4ea. mpa_rcd **/
+        
+        {&OUT}
+            "<TFOOT>" SKIP
+            "   <TR>" SKIP
+            "       <TD colspan=5>MPA_RCD records found = " reccount "</TD>" SKIP
+            "   </TR>" SKIP
+            "</TFOOT>" SKIP
+            
+            "</TABLE>" SKIP
+            "</DIV>  <!-- end of table_report -->" SKIP
+            "<BR><BR>" SKIP.
+            
+        reccount = 0.
+
+
+/* ************************** 1dot1 ***************************** */
+        IF v-details = YES THEN DO: 
+	        {&OUT}
+	            "<DIV class='table_report'>" SKIP
+	            "<TABLE>" SKIP
+	            "    <THEAD>" SKIP
+	            "        <TR>" SKIP
+	            "            <TH colspan=5>RS MPA_TEST_DETAILS_RCD</TH>" SKIP
+	            "        </TR>" SKIP
+	            "        <TR>" SKIP
+	            "            <TD>Patient ID</TD>" SKIP
+	            "            <TD>Lab Sample ID / Seq</TD>" SKIP
+	            "            <TD>SNP ID / Seq</TD>" SKIP
+	            "            <TD>Progress Flag</TD>" SKIP
+	            "        </TR>" SKIP
+	            "    </THEAD>" SKIP.        
+	                   
+	        FOR EACH MPA_RCD WHERE 
+		           (MPA_RCD.MPA_Test_Kit_Nbr >= v-fromtkid OR 
+		            v-fromtkid = "") AND 
+		           (MPA_RCD.MPA_test_kit_nbr <= v-totkid OR 
+		            v-totkid = "") AND 
+		           (MPA_RCD.MPA_Sample_ID_Number >= v-fromlabsample OR 
+		            v-fromlabsample = "") AND 
+		           (MPA_RCD.MPA_Sample_ID_Number <= v-tolabsample OR 
+		            v-tolabsample = "") NO-LOCK,
+	            EACH MPA_TEST_DETAILS_RCD WHERE MPA_TEST_DETAILS_RCD.PatientID = MPA_RCD.PatientID AND 
+		            MPA_TEST_DETAILS_RCD.MPA_Sample_ID_Number = MPA_RCD.MPA_Sample_ID_Number AND 
+		            MPA_TEST_DETAILS_RCD.MPA_Sample_ID_SeqNbr = MPA_RCD.MPA_Sample_ID_SeqNbr NO-LOCK 	           
+	                   BREAK BY MPA_RCD.PatientID 
+	                    BY MPA_TEST_DETAILS_RCD.MPA_Sample_ID_Number
+	                    BY MPA_TEST_DETAILS_RCD.MPA_Sample_ID_SeqNbr
+	                    BY MPA_TEST_DETAILS_RCD.MPA_SNP_ID
+	                    BY MPA_TEST_DETAILS_RCD.MPA_SNP_ID_Seq_Nbr:
+	                        
+	           reccount = reccount + 1.
+	                   
+	           {&OUT}
+	               "<TR>" SKIP
+	               "   <TD>" MPA_TEST_DETAILS_RCD.PatientID  "</TD>" SKIP
+	               "   <TD>" MPA_TEST_DETAILS_RCD.MPA_Sample_ID_Number " / " MPA_TEST_DETAILS_RCD.MPA_Sample_ID_SeqNbr "</TD>" SKIP
+	               "   <TD>" MPA_TEST_DETAILS_RCD.MPA_SNP_ID " / " MPA_TEST_DETAILS_RCD.MPA_SNP_ID_Seq_Nbr "</TD>" SKIP 
+	               "   <TD>" MPA_RCD.Progress_Flag FORMAT "XX" "</TD>" SKIP
+	               "</TR>" SKIP.
+
+                IF LAST-OF (MPA_TEST_DETAILS_RCD.MPA_Sample_ID_Number) THEN 
+                
+                {&OUT}
+	                "   <TR>" SKIP
+		            "       <TH colspan=4> </TH>" SKIP
+		            "   </TR>" SKIP.
+	               
+	        END.  /** of 4ea. mpa_rcd **/
+	        
+	        {&OUT}
+	            "<TFOOT>" SKIP
+	            "   <TR>" SKIP
+	            "       <TD colspan=4>MPA_TEST_DETAIL_RCD records found = " reccount "</TD>" SKIP
+	            "   </TR>" SKIP
+	            "</TFOOT>" SKIP
+	            
+	            "</TABLE>" SKIP
+	            "</DIV>  <!-- end of table_report -->" SKIP
+	            "<BR><BR>" SKIP.
+	            
+	        reccount = 0.
+        END. /* if v-details = yes */
+/* ************************** END of 1dot1 ***************************** */
+
+        {&OUT}
+            "<DIV class='table_report'>" SKIP
+            "<TABLE>" SKIP
+            "    <THEAD>" SKIP
+            "        <TR>" SKIP
+            "            <TH colspan=5>RS TESTS_RESULT_RCD</TH>" SKIP
+            "        </TR>" SKIP
+            "        <TR>" SKIP
+            "            <TD>Patient ID</TD>" SKIP
+            "            <TD>Testkit</TD>" SKIP
+            "            <TD>Lab Sample ID / Seq</TD>" SKIP
+            "            <TD>Test Type</TD>" SKIP
+            "            <TD>Progress Flag</TD>" SKIP
+            "        </TR>" SKIP
+            "    </THEAD>" SKIP.        
+                   
+        FOR EACH TESTS_RESULT_RCD WHERE 
+           (TESTS_RESULT_RCD.Test_Kit_Nbr >= v-fromtkid OR 
+            v-fromtkid = "") AND 
+           (TESTS_RESULT_RCD.test_kit_nbr <= v-totkid OR 
+            v-totkid = "") AND 
+           (TESTS_RESULT_RCD.lab_SampleID >= v-fromlabsample OR 
+            v-fromlabsample = "") AND 
+           (TESTS_RESULT_RCD.lab_SampleID <= v-tolabsample OR 
+            v-tolabsample = "") NO-LOCK
+                BREAK BY TESTS_RESULT_RCD.PatientID 
+                    BY TESTS_RESULT_RCD.Lab_SampleID 
+                    BY TESTS_RESULT_RCD.Lab_SampleID_SeqNbr:
+                        
+           reccount = reccount + 1.
+                   
+           {&OUT}
+               "<TR>" SKIP
+               "   <TD>" TESTS_RESULT_RCD.PatientID  "</TD>" SKIP
+               "   <TD>" TESTS_RESULT_RCD.test_kit_nbr "</TD>" SKIP 
+               "   <TD>" TESTS_RESULT_RCD.Lab_SampleID " / " TESTS_RESULT_RCD.Lab_SampleID_SeqNbr "</TD>" SKIP
+               "   <TD>" TESTS_RESULT_RCD.Test_abbv "</TD>" SKIP 
+               "   <TD>" TESTS_RESULT_RCD.Progress_Flag FORMAT "XX" "</TD>" SKIP
+               "</TR>" SKIP.     
+               
+        END.  /** of 4ea. mpa_rcd **/
+        
+        {&OUT}
+            "<TFOOT>" SKIP
+            "   <TR>" SKIP
+            "       <TD colspan=5>TESTS_RESULT_RCD records found = " reccount "</TD>" SKIP
+            "   </TR>" SKIP
+            "</TFOOT>" SKIP
+            
+            "</TABLE>" SKIP
+            "</DIV>  <!-- end of table_report -->" SKIP
+            "<BR><BR>" SKIP.
+            
+        reccount = 0.
+
+/* ************************** 1dot1 ***************************** */
+        IF v-details = YES THEN DO: 
+            {&OUT}
+                "<DIV class='table_report'>" SKIP
+                "<TABLE>" SKIP
+                "    <THEAD>" SKIP
+                "        <TR>" SKIP
+	            "            <TH colspan=5>RS TESTS_DETAIL_RCD</TH>" SKIP
+	            "        </TR>" SKIP
+	            "        <TR>" SKIP
+	            "            <TD>Patient ID</TD>" SKIP
+	            "            <TD>Lab Sample ID / Seq</TD>" SKIP
+	            "            <TD>Test Type</TD>" SKIP
+	            "            <TD>Test Element</TD>" SKIP
+	            "            <TD>Progress Flag</TD>" SKIP
+	            "        </TR>" SKIP
+	            "    </THEAD>" SKIP.        
+	                   
+	        FOR EACH TESTS_RESULT_RCD WHERE 
+		           (TESTS_RESULT_RCD.Test_Kit_Nbr >= v-fromtkid OR 
+		            v-fromtkid = "") AND 
+		           (TESTS_RESULT_RCD.test_kit_nbr <= v-totkid OR 
+		            v-totkid = "") AND 
+		           (TESTS_RESULT_RCD.lab_SampleID >= v-fromlabsample OR 
+		            v-fromlabsample = "") AND 
+		           (TESTS_RESULT_RCD.lab_SampleID <= v-tolabsample OR 
+		            v-tolabsample = "") NO-LOCK,
+		        EACH TESTS_DETAIL_RCD WHERE 
+		            TESTS_DETAIL_RCD.PatientID = TESTS_RESULT_RCD.PatientID AND 
+		            TESTS_DETAIL_RCD.Lab_Sampleid = TESTS_RESULT_RCD.Lab_Sampleid AND 
+		            TESTS_DETAIL_RCD.Lab_Sampleid_SeqNbr = TESTS_RESULT_RCD.Lab_Sampleid_SeqNbr AND 
+		            TESTS_DETAIL_RCD.Test_Abbv = TESTS_RESULT_RCD.Test_Abbv NO-LOCK          
+	                BREAK BY TESTS_RESULT_RCD.PatientID 
+	                    BY TESTS_RESULT_RCD.Lab_SampleID 
+	                    BY TESTS_RESULT_RCD.Lab_SampleID_SeqNbr
+	                    BY TESTS_DETAIL_RCD.Test_Abbv
+	                    BY TESTS_DETAIL_RCD.Test_Element_Item:
+	                        
+	           reccount = reccount + 1.
+	                   
+	           {&OUT}
+	               "<TR>" SKIP
+	               "   <TD>" TESTS_DETAIL_RCD.PatientID  "</TD>" SKIP
+	               "   <TD>" TESTS_DETAIL_RCD.Lab_SampleID " / " TESTS_DETAIL_RCD.Lab_SampleID_SeqNbr "</TD>" SKIP
+	               "   <TD>" TESTS_DETAIL_RCD.Test_abbv "</TD>" SKIP 
+	               "   <TD>" TESTS_DETAIL_RCD.Test_Element_Item "</TD>" SKIP
+	               "   <TD>" TESTS_DETAIL_RCD.Progress_Flag FORMAT "XX" "</TD>" SKIP
+	               "</TR>" SKIP.
+
+           IF LAST-OF (TESTS_RESULT_RCD.Lab_SampleID) THEN 
+                
+                {&OUT}
+                    "   <TR>" SKIP
+                    "       <TH colspan=5> </TH>" SKIP
+                    "   </TR>" SKIP.
+	               
+	        END.  /** of 4ea. mpa_rcd **/
+	        
+	        {&OUT}
+	            "<TFOOT>" SKIP
+	            "   <TR>" SKIP
+	            "       <TD colspan=5>TESTS_RESULT_RCD records found = " reccount "</TD>" SKIP
+	            "   </TR>" SKIP
+	            "</TFOOT>" SKIP
+	            
+	            "</TABLE>" SKIP
+	            "</DIV>  <!-- end of table_report -->" SKIP
+	            "<BR><BR>" SKIP.
+	            
+	        reccount = 0.
+        END. /* if v-details = yes */
+        
+        {&OUT}
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "<BR>" SKIP.    
+/* ************************** END of 1dot1 ***************************** */        
+    END.  /** of SEARCH **/
+    
+    OTHERWISE DO: 
+        
+        {&OUT}
+			"<DIV class='row'>" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP
+			"<DIV class='grid_8'>" SKIP            
+			"    <H2>WARNING!  Unexpected Condition!  Contact Solsource.</H2>" SKIP
+			"</DIV>         <!-- end of grid_8 -->" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP  
+			"</DIV>     <!-- end of row -->" SKIP
+			
+			"<BR><BR>" SKIP
+			"<div class='row'>" SKIP
+			"   <div class='grid_5'> </DIV>" SKIP
+			"   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+			"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+			"   <div class='grid_5'> </DIV>" SKIP
+			"</div>" SKIP
+			"<BR>" SKIP.			
+
+/* ************************** END of 1dot1 ***************************** */
+        
+    END.  /** of OTHERWISE **/
+    
+END CASE.  /** of case v-act **/
+
+
+</SCRIPT>
+</BODY>
+</HTML>

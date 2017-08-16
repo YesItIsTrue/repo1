@@ -1,0 +1,1147 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Doctor Maintenance</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">  
+    <META NAME="VERSION" CONTENT="2.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="12/Oct/15"> 
+    <META NAME="UPDATE_DATE" CONTENT="12/Oct/15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<BODY class='inside'>
+
+<SCRIPT language='SpeedScript'>
+
+{../depot/src/WebSpeed/menuname.i}.  /*** menu name assignment  - be sure to pass the "whattoget' html variable between acts ***/     
+  /*------------------------------------------------------------------
+    File:           DOCmaintU.html
+    Description:    Revamped Doctor-maintenance.html
+    Created:        12/Oct/15
+    Notes:          This is verson 2.0 of the Doctor-maintenance created 
+                    to fix the Frankin-code issues of the 1.'s.
+  -------------------------------------------------------------------*/
+/************************** Variable Definitions *************************/
+DEFINE VARIABLE v-prefix        LIKE people_mstr.people_prefix          NO-UNDO.   
+DEFINE VARIABLE v-firstname     LIKE people_mstr.people_firstname       NO-UNDO. 
+DEFINE VARIABLE v-midname       LIKE people_mstr.people_midname         NO-UNDO.
+DEFINE VARIABLE v-lastname      LIKE people_mstr.people_lastname        NO-UNDO.   
+DEFINE VARIABLE v-suffix        LIKE people_mstr.people_suffix          NO-UNDO.
+DEFINE VARIABLE v-company       LIKE people_mstr.people_company         NO-UNDO.
+DEFINE VARIABLE v-gender        LIKE people_mstr.people_gender          NO-UNDO.
+DEFINE VARIABLE v-homephone     LIKE people_mstr.people_homephone       NO-UNDO.
+DEFINE VARIABLE v-workphone     LIKE people_mstr.people_workphone       NO-UNDO.
+DEFINE VARIABLE v-cellphone     LIKE people_mstr.people_cellphone       NO-UNDO.
+DEFINE VARIABLE v-fax           LIKE people_mstr.people_fax             NO-UNDO.
+DEFINE VARIABLE v-email         LIKE people_mstr.people_email           NO-UNDO.    
+DEFINE VARIABLE v-rdemail       LIKE people_mstr.people_email           NO-UNDO.  /* Reenter Email */
+DEFINE VARIABLE v-email2        LIKE people_mstr.people_email2          NO-UNDO.  /*---- 2nd email  -----*/
+DEFINE VARIABLE v-rdemail2      LIKE people_mstr.people_email2          NO-UNDO.  /* ReEnter Second Email */  
+DEFINE VARIABLE v-contact       LIKE people_mstr.people_contact         NO-UNDO.
+DEFINE VARIABLE v-prog-DOB      LIKE people_mstr.people_DOB             NO-UNDO.
+DEFINE VARIABLE v-id            LIKE people_mstr.people_id              NO-UNDO.
+DEFINE VARIABLE v-peo-addr-id   LIKE people_mstr.people_addr_id         NO-UNDO.
+
+DEFINE VARIABLE v-addr-id-2     LIKE people_mstr.people_second_addr_ID  NO-UNDO.
+
+DEFINE VARIABLE disp-DOB        AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE out-DOB         AS CHARACTER                            NO-UNDO.  
+DEFINE VARIABLE v-DOB           AS DATE                                 NO-UNDO.                  
+
+DEFINE VARIABLE v-addr1         LIKE addr_mstr.addr_addr1               NO-UNDO.
+DEFINE VARIABLE v-addr2         LIKE addr_mstr.addr_addr2               NO-UNDO. 
+DEFINE VARIABLE v-addr3         LIKE addr_mstr.addr_addr3               NO-UNDO.
+DEFINE VARIABLE v-city          LIKE addr_mstr.addr_city                NO-UNDO.
+DEFINE VARIABLE v-stateprov     LIKE addr_mstr.addr_stateprov           NO-UNDO.
+DEFINE VARIABLE v-zip           LIKE addr_mstr.addr_zip                 NO-UNDO.
+DEFINE VARIABLE v-country       LIKE addr_mstr.addr_country             NO-UNDO.
+
+DEFINE VARIABLE v-addr-type     LIKE addr_mstr.addr_type                NO-UNDO.
+
+DEFINE VARIABLE v-coname        LIKE country_mstr.Country_Display_Name          NO-UNDO.
+DEFINE VARIABLE v-coabbv        LIKE country_mstr.Country_ISO          NO-UNDO.
+
+DEFINE VARIABLE v-stname        LIKE state_mstr.State_Display_Name              NO-UNDO. 
+DEFINE VARIABLE v-stabbv        LIKE state_mstr.State_ISO              NO-UNDO. 
+   
+DEFINE VARIABLE v-doc-tcp       LIKE doctor_mstr.doctor_TCP_code        NO-UNDO.
+DEFINE VARIABLE v-doc-ID        LIKE doctor_mstr.doctor_ID              NO-UNDO.
+
+DEFINE VARIABLE act             AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE ischecked       AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE isdisabled      AS CHARACTER                            NO-UNDO. 
+DEFINE VARIABLE inputreq        AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE isreq           AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL      INITIAL NO              NO-UNDO.
+DEFINE VARIABLE v-searchfirst   AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE v-searchlast    AS CHARACTER                            NO-UNDO.
+
+DEFINE VARIABLE error-catcher   AS LOGICAL                              NO-UNDO.
+DEFINE VARIABLE addr-id-catcher AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE ran-catcher     AS LOGICAL                              NO-UNDO.
+
+DEFINE VARIABLE log-created     AS LOGICAL                              NO-UNDO.       
+DEFINE VARIABLE log-updated     AS LOGICAL                              NO-UNDO.      
+DEFINE VARIABLE log-avail       AS LOGICAL                              NO-UNDO.       
+DEFINE VARIABLE log-success     AS LOGICAL                              NO-UNDO.
+DEFINE VARIABLE log-error       AS LOGICAL                              NO-UNDO.
+/************************** Internal Procedures **************************/
+
+ASSIGN 
+    act              = get-value("h-act")
+    v-id             = INTEGER(get-value("h-id"))
+    v-prefix         = get-value("h-prefix")             
+	v-firstname      = get-value("h-firstname")        
+    v-midname        = get-value("h-midname")         
+	v-lastname       = get-value("h-lastname")           
+	v-suffix         = get-value("h-suffix")          
+	v-company        = get-value("h-company")         
+	v-gender         = IF get-value("h-gender") = "YES"
+	                       THEN 
+	                           YES
+	                   ELSE IF get-value("h-gender") = "NO"
+	                       THEN 
+	                           NO
+	                       ELSE 
+	                           ?          
+	v-homephone      = get-value("h-homephone")       
+	v-workphone      = get-value("h-workphone")       
+	v-cellphone      = get-value("h-cellphone")       
+	v-fax            = get-value("h-fax")             
+	v-email          = get-value("h-email")               
+	v-rdemail        = get-value("h-rdemail")                      
+	v-email2         = get-value("h-email2")          
+	v-rdemail2       = get-value("h-rdemail2")             
+	v-contact        = get-value("h-contact")         
+	disp-DOB         = get-value("html5-DOB")
+	v-doc-tcp        = get-value("h-doc-tcp")
+	v-addr1          = get-value("h-addr1")               
+	v-addr2          = get-value("h-addr2")                
+	v-addr3          = get-value("h-addr3")               
+	v-city           = get-value("h-city")                
+	v-stateprov      = get-value("h-stateprov")            
+	v-zip            = get-value("h-zip")                 
+	v-country        = get-value("h-country")
+	v-searchfirst    = get-value("h-searchfirst")
+	v-searchlast     = get-value("h-searchlast")
+	v-doc-ID         = INTEGER(get-value("h-doc-ID"))
+	v-peo-addr-id    = INTEGER(get-value("h-peo-addr-id")).
+	
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    disp-DOB,                                                                 
+    OUTPUT v-DOB                                                                 
+    ).          
+
+IF act = "" THEN 
+    act = "INITIAL".
+	
+/******************************* Main Body *******************************/
+CASE act: 
+
+/******************************** INITIAL ********************************/
+
+    WHEN "INITIAL" THEN DO:
+    
+    {&OUT}
+        "<DIV class='row'>" SKIP
+		"<DIV class='grid_3'> </DIV>" SKIP
+		"<DIV class='grid_6'>" SKIP
+            "<div class='table_col'>" SKIP
+			"<form>" SKIP
+			"   <table>" SKIP(1)
+			"       <tr>" SKIP
+			"           <th colspan=2>Search Criteria</th>" SKIP
+			"       </tr>" SKIP(1)
+			"       <tr>" SKIP
+			"           <td>First Name Begins</td>" SKIP
+			"           <td><input type='text' name='h-searchfirst' value='" v-searchfirst "'/></td>" SKIP
+			"       </tr>" SKIP(1)
+            "       <tr>" SKIP
+			"           <td>Last Name Begins</td>" SKIP
+            "           <td><input type='text' name='h-searchlast' value='" v-searchlast "'/></td>" SKIP
+			"       </tr>" SKIP(1)
+            "   </table>" SKIP
+            "</div> <!-- table -->" SKIP 
+        "</DIV>     <!-- end of grid_6 -->" SKIP
+		"<DIV class='grid_3'> </DIV>" SKIP
+		"</DIV>     <!-- end of row -->" SKIP
+		"<BR>" SKIP
+		"<div class='row'>" SKIP
+		"   <div class='grid_3'> </DIV>" SKIP
+		"   <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+		"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+		"   <div class='grid_2'> </DIV>" SKIP
+		"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+		"   <div class='grid_3'> </DIV>" SKIP
+		"</div>" SKIP.
+
+    
+    END. /* INITIAL */
+
+/******************************** SEARCH ********************************/
+
+    WHEN "SEARCH" THEN DO: 
+    
+        {&OUT}
+            "<DIV class='row'>" SKIP
+			"<DIV class='grid_1'> </DIV>" SKIP
+			"<DIV class='grid_10'>" SKIP
+            "<DIV class='table_report fixed-table'>" SKIP
+			"   <TABLE>" SKIP
+			"       <THEAD>" SKIP
+			"          <TR>" SKIP
+			"              <TH colspan=5>People List</TH>" SKIP    /* thead, tr, th makes the silver bar */
+			"          </TR>" SKIP
+			"          <TR>" SKIP
+			"              <TD>Name</TD>" SKIP          /* thead, tr, td makes the blue bar */
+			"              <TD>Email</TD>" SKIP
+			"              <TD>Telephone</td>" SKIP
+			"              <td>Address</td>" SKIP
+			"              <TD>TCP Code</TD>" SKIP
+			"          </TR>" SKIP
+			"      </THEAD>" SKIP(1).    
+       
+        FOR EACH people_mstr WHERE ((people_mstr.people_firstname BEGINS v-searchfirst) OR 
+                                    (v-searchfirst = "")) AND 
+                                    ((people_mstr.people_lastname BEGINS v-searchlast) OR 
+                                    (v-searchlast = "")) AND 
+                                    people_mstr.people_deleted = ?
+                                    NO-LOCK BREAK BY people_mstr.people_lastname:
+            
+            IF AVAILABLE people_mstr THEN
+            DO:
+                
+                {&OUT}
+                    "<TR>" SKIP
+                        "<td><a href='DOCmaintU.r?h-id=" people_mstr.people_id "&h-act=INPUT&h-searchfirst=" v-searchfirst "&h-searchlast=" v-searchlast "&whattorun=2.12'>" 
+                                people_mstr.people_lastname ", " people_mstr.people_firstname "</a></td>" SKIP
+                        "<td>" people_mstr.people_email "</td>" SKIP
+                        "<td>" people_mstr.people_workphone "</td>" SKIP.    
+            
+                FIND addr_mstr WHERE addr_mstr.addr_id = people_mstr.people_addr_id AND 
+                                        addr_mstr.addr_deleted = ?
+                                        NO-LOCK NO-ERROR.
+                   
+                   IF AVAILABLE addr_mstr THEN DO: 
+                        
+                        ASSIGN 
+                            v-addr1          = addr_mstr.addr_addr1               
+						    v-addr2          = addr_mstr.addr_addr2                
+						    v-addr3          = addr_mstr.addr_addr3              
+						    v-city           = addr_mstr.addr_city                
+						    v-stateprov      = addr_mstr.addr_stateprov            
+						    v-zip            = addr_mstr.addr_zip                
+						    v-country        = addr_mstr.addr_country.
+						
+						{&OUT}                  
+                        "<td>" v-addr1 "<br>" v-city " "  v-stateprov ", " v-zip "<br>" v-country "</td>" SKIP.
+                   
+                   END.
+                   ELSE 
+                        {&OUT}
+                            "<td></td>" SKIP.              
+						 
+                
+                FIND doctor_mstr WHERE doctor_mstr.doctor_ID = people_mstr.people_id AND 
+                                        doctor_mstr.doctor_deleted = ?
+                                        NO-LOCK NO-ERROR.
+                    
+                    IF AVAILABLE doctor_mstr THEN 
+                        
+                        ASSIGN 
+                            v-doc-tcp = doctor_mstr.doctor_TCP_code.
+                            
+                    {&OUT}
+                        "<td>" v-doc-tcp "</td>" SKIP
+                    "</TR>" SKIP.
+              
+                
+            END. /* if avail people_mstr */
+           
+            ASSIGN
+                v-addr1     = ""
+                v-addr2     = ""
+                v-addr3     = ""
+                v-city      = ""
+                v-stateprov = ""
+                v-zip       = ""
+                v-country   = ""
+                v-doc-tcp   = "".
+        END. /* for each people_mstr */    
+        
+        {&OUT}
+        "   <TFOOT>" SKIP
+		"       <TR>" SKIP
+		"           <TD COLSPAN=5>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+		"       </TR>" SKIP
+		"   </TFOOT>" SKIP
+		"   </TABLE>" SKIP
+		"</DIV>                 <!-- end of table_report -->" SKIP(1)
+        "</DIV>         <!-- end of grid_10 -->" SKIP
+		"<DIV class='grid_1'> </DIV>" SKIP  
+		"</DIV>     <!-- end of row -->" SKIP
+        "<BR>" SKIP
+        "<form>" SKIP
+        "<div class='row'>" SKIP
+		"   <div class='grid_3'> </DIV>" SKIP
+        "   <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+        "   <INPUT type='hidden' name='h-searchfirst' value='" v-searchfirst "' />" SKIP
+        "   <INPUT type='hidden' name='h-searchlast' value='" v-searchlast "' />" SKIP		
+		"   <div class='grid_2'><button type='submit' name='h-act' value='INPUT' class='btn'>Create New Doctor</BUTTON></div>" SKIP
+		"   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Reset</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+		"</div>" SKIP
+		"</form>" SKIP.
+		
+    END. /* SEARCH */    
+
+/******************************** INPUT ********************************/
+
+    
+    WHEN "INPUT" THEN DO:
+                                                                                                                                        IF itmessage = YES THEN 
+                                                                                                                                            {&OUT}
+                                                                                                                                                "ACT = INPUT MESSAGE 1<BR>" SKIP
+                                                                                                                                                "act = " act "<BR>" SKIP
+                                                                                                                                                "v-id = " v-id "<BR>" SKIP.
+        ASSIGN 
+            isreq       = "class='req'"
+            isdisabled  = ""
+            inputreq    = "REQUIRED".
+    
+	    IF v-id <> 0 THEN DO:
+	        
+	        FIND people_mstr WHERE people_mstr.people_id = v-id NO-LOCK NO-ERROR.
+	        
+                IF AVAILABLE (people_mstr) THEN 
+                    ASSIGN
+						v-prefix         = people_mstr.people_prefix             
+						v-firstname      = people_mstr.people_firstname        
+						v-midname        = people_mstr.people_midname         
+						v-lastname       = people_mstr.people_lastname           
+						v-suffix         = people_mstr.people_suffix          
+						v-company        = people_mstr.people_company         
+						v-gender         = people_mstr.people_gender 
+						v-homephone      = people_mstr.people_homephone       
+						v-workphone      = people_mstr.people_workphone       
+						v-cellphone      = people_mstr.people_cellphone       
+						v-fax            = people_mstr.people_fax             
+						v-email          = people_mstr.people_email               
+						v-rdemail        = people_mstr.people_email                      
+						v-email2         = people_mstr.people_email2          
+						v-rdemail2       = people_mstr.people_email2             
+						v-contact        = people_mstr.people_contact         
+						v-DOB            = people_mstr.people_DOB
+						v-peo-addr-id    = people_mstr.people_addr_id.
+			                                                                                                                                 IF itmessage = YES THEN 
+                                                                                                                                            {&OUT}
+                                                                                                                                                "ACT = INPUT MESSAGE 2<BR>" SKIP                                                                                                                                                 
+                                                                                                                                                "v-id = " v-id "<BR>" SKIP
+																															                    "v-prefix = " v-prefix "<BR>" SKIP                   
+																															                    "v-firstname = " v-firstname "<BR>" SKIP        
+																															                    "v-midname = " v-midname "<BR>" SKIP          
+																															                    "v-lastname = " v-lastname "<BR>" SKIP          
+																															                    "v-suffix = " v-suffix "<BR>" SKIP               
+																															                    "v-company = " v-company "<BR>" SKIP               
+																															                    "v-gender = " v-gender "<BR>" SKIP         
+																															                    "v-homephone = " v-homephone "<BR>" SKIP            
+																															                    "v-workphone = " v-workphone "<BR>" SKIP         
+																															                    "v-cellphone = " v-cellphone "<BR>" SKIP            
+																															                    "v-fax = " v-fax "<BR>" SKIP                       
+																															                    "v-email = " v-email "<BR>" SKIP                        
+																															                    "v-rdemail = " v-rdemail "<BR>" SKIP                            
+																															                    "v-email2 = " v-email "<BR>" SKIP                  
+																															                    "v-rdemail2 = " v-rdemail2 "<BR>" SKIP                  
+																															                    "v-contact = " v-contact "<BR>" SKIP               
+																															                    "v-DOB = " v-DOB "<BR>" SKIP.
+			    RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                
+                    v-DOB,                                                                            
+                    OUTPUT out-DOB                                                           
+                    ).                                                                          
+            
+                ASSIGN                                                                            
+                    disp-DOB = out-DOB.                                                           
+			 
+			FIND addr_mstr WHERE addr_mstr.addr_id = people_mstr.people_addr_id NO-LOCK NO-ERROR.  
+			   
+			   IF AVAILABLE (addr_mstr) THEN     
+		           ASSIGN    
+						v-addr1          = addr_mstr.addr_addr1               
+						v-addr2          = addr_mstr.addr_addr2                
+						v-addr3          = addr_mstr.addr_addr3               
+						v-city           = addr_mstr.addr_city                
+						v-stateprov      = addr_mstr.addr_stateprov            
+						v-zip            = addr_mstr.addr_zip                   
+						v-country        = addr_mstr.addr_country.
+                                                                                                                                            IF itmessage = YES THEN  
+                                                                                                                                            {&OUT}
+                                                                                                                                                "ACT = INPUT MESSAGE 3<BR>" SKIP
+                                                                                                                                                "v-id = " v-id "<BR>" SKIP                                                                                                                                                
+                                                                                                                                                "v-addr1 = " v-addr1 "<BR>" SKIP                   
+                                                                                                                                                "v-addr2 = " v-addr2 "<BR>" SKIP        
+                                                                                                                                                "v-addr3 = " v-addr3 "<BR>" SKIP          
+                                                                                                                                                "v-city = " v-city "<BR>" SKIP          
+                                                                                                                                                "v-stateprov = " v-stateprov "<BR>" SKIP               
+                                                                                                                                                "v-zip = " v-zip "<BR>" SKIP               
+                                                                                                                                                "v-country = " v-country "<BR>" SKIP.				
+			FIND doctor_mstr WHERE doctor_mstr.doctor_ID = v-id NO-LOCK NO-ERROR.	
+	            
+	            IF AVAILABLE (doctor_mstr) THEN
+		            ASSIGN 
+		                v-doc-tcp        = doctor_mstr.doctor_TCP_code
+		                v-doc-ID         = doctor_mstr.doctor_ID.
+                                                                                                                                             IF itmessage = YES THEN 
+                                                                                                                                            {&OUT}
+                                                                                                                                                "ACT = INPUT MESSAGE 4<BR>" SKIP
+                                                                                                                                                "v-id = " v-id "<BR>" SKIP                                                                                                                                                
+                                                                                                                                                "v-doc-tcp = " v-doc-tcp "<BR>" SKIP
+                                                                                                                                                "v-doc-ID  = " v-doc-ID "<BR>" SKIP. 			    
+        END. /* if v-id <> 0 */
+		
+		{&OUT}
+		    "<form>" SKIP
+            "<DIV class='row'>" SKIP
+			"<DIV class='grid_12'>" SKIP 
+			"<div class='table_3col'>" SKIP
+			"   <table>" SKIP(1)
+			"       <tr>" SKIP
+			"           <th colspan=2>Personal Information</th>" SKIP
+            "           <th colspan=2>Address</th>" SKIP
+            "           <th colspan=2>Contact Information</th>" SKIP			
+			"       </tr>" SKIP(1)
+			"       <tr>" SKIP
+			"           <td>Prefix</td>" SKIP
+			"           <td><input type='text' name='h-prefix' value='" v-prefix "' " isdisabled " tabindex='10' /></td>" SKIP
+			"           <td>Address Line 1</td>" SKIP
+			"           <td " isreq "><input type='text' name='h-addr1' value='" v-addr1 "' " isdisabled " " inputreq " tabindex='90' /></td>" SKIP
+			"           <td>Home Number</td>" SKIP
+			"           <td><input type='text' name='h-homephone' value='" v-homephone "' " isdisabled " tabindex='160' /></td>" SKIP
+			"       </tr>" SKIP(1)
+			"       <tr>" SKIP
+            "           <td>First Name</td>" SKIP
+            "           <td " isreq "><input type='text' name='h-firstname' value='" v-firstname "' " isdisabled " " inputreq " tabindex='20' /></td>" SKIP
+            "           <td>Address Line 2</td>" SKIP
+            "           <td><input type='text' name='h-addr2' value='" v-addr2 "' " isdisabled " tabindex='100' /></td>" SKIP
+            "           <td>Work Number</td>" SKIP
+            "           <td><input type='text' name='h-workphone' value='" v-workphone "' " isdisabled " tabindex='170' /></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Middle Name</td>" SKIP
+            "           <td><input type='text' name='h-midname' value='" v-midname "' " isdisabled " tabindex='30' /></td>" SKIP
+            "           <td>Address Line 3</td>" SKIP
+            "           <td><input type='text' name='h-addr3' value='" v-addr3 "' " isdisabled " tabindex='110' /></td>" SKIP
+            "           <td>Cell Number</td>" SKIP
+            "           <td><input type='text' name='h-cellphone' value='" v-cellphone "' " isdisabled " tabindex='180' /></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Last Name</td>" SKIP
+            "           <td " isreq "><input type='text' name='h-lastname' value='" v-lastname "' " isdisabled " " inputreq " tabindex='40' /></td>" SKIP
+            "           <td>City</td>" SKIP
+            "           <td " isreq "><input type='text' name='h-city' value='" v-city "' " isdisabled " " inputreq " tabindex='120' /></td>" SKIP
+            "           <td>Fax Number</td>" SKIP
+            "           <td><input type='text' name='h-fax' value='" v-fax "' " isdisabled " tabindex='190' /></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Suffix</td>" SKIP
+            "           <td><input type='text' name='h-suffix' value='" v-suffix "' " isdisabled " tabindex='50' /></td>" SKIP
+            "           <td>State</td>" SKIP
+            "           <td " isreq ">" SKIP
+            "               <SELECT name='h-stateprov' " isdisabled " " inputreq " tabindex='130' >" SKIP
+            "                   <OPTION selected>" v-stateprov "</OPTION>" SKIP
+            "                   <OPTION value=''></OPTION>" SKIP.
+
+		    FOR EACH state_mstr NO-LOCK:
+		        
+		       ASSIGN
+		            v-stname = state_mstr.State_Display_Name
+		            v-stabbv = state_mstr.State_ISO.
+		    
+		        {&OUT}
+		            "<option value=" v-stabbv ">" v-stname "</option>" SKIP.
+		               		    
+		   END.  /* FOR EACH states_mstr */ 
+       
+        {&OUT} 
+            "               </select>" SKIP
+            "           </td>" SKIP
+            "           <td>Doctor TCP Code</td>" SKIP
+            "           <td><input type='text' name='h-doc-tcp' value='" v-doc-tcp "' " isdisabled " tabindex='200' /></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Company</td>" SKIP
+            "           <td><input type='text' name='h-company' value='" v-company "' " isdisabled " tabindex='60' /></td>" SKIP
+            "           <td>Zip Code</td>" SKIP
+            "           <td " isreq "><input type='text' name='h-zip' value='" v-zip "' " isdisabled " " inputreq " tabindex='140' /></td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Gender</td>" SKIP
+            "           <td>" SKIP.
+            
+            IF v-gender = YES THEN 
+                ischecked = "CHECKED".
+                
+            ELSE 
+                ischecked = "". 
+        
+        {&OUT}              
+            "               <input type='radio' name='h-gender' value='YES' " isdisabled " " ischecked " tabindex='70' />Male " SKIP.
+            
+            IF v-gender = NO THEN 
+                ischecked = "CHECKED".
+                
+            ELSE 
+                ischecked = "". 
+        
+        {&OUT}              
+            "               <input type='radio' name='h-gender' value='NO' " isdisabled " " ischecked " tabindex='71' />Female<BR>" SKIP
+            "           </td>" SKIP
+            "           <td>Country</td>" SKIP
+            "           <td " isreq ">" SKIP
+	        "            <select name='h-country' " isdisabled " tabindex='150' >" SKIP
+	        "                <option selected>" v-country "</option>" SKIP 
+	        "                <option value=''></option>" SKIP.
+          
+		    FOR EACH country_mstr NO-LOCK:
+		        ASSIGN
+		            v-coname = country_mstr.Country_Display_Name
+		            v-coabbv = country_mstr.Country_ISO.
+		             
+		            {&OUT}
+		                "<option value='" v-coabbv "'>" v-coname "</option>" SKIP.
+		    
+		    END.  /* FOR EACH county_mstr */
+    
+	    {&OUT}
+	        "              </SELECT>" SKIP
+	        "          </TD>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP            
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Date of Birth</td>" SKIP
+            "           <td><input type='date' name='html5-DOB' value='" disp-DOB "' " isdisabled " tabindex='80' /></td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=6>Email Address</th>" SKIP          
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Primary Email Address</td>" SKIP
+            "           <td colspan=2 " isreq "><input size='50' type='text' name='h-email' value='" v-email "' " isdisabled " " inputreq " tabindex='210' /></td>" SKIP
+            "           <td>Reenter Primary Email Address</td>" SKIP
+            "           <td colspan=2 " isreq "><input size='50' type='text' name='h-rdemail' value='" v-rdemail "' " isdisabled " " inputreq " tabindex='230'/></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Secondary Email Address</td>" SKIP
+            "           <td colspan=2><input size='50' type='text' name='h-email2' value='" v-email2 "' " isdisabled " tabindex='220' /></td>" SKIP
+            "           <td>Reenter Secondary Email Address</td>" SKIP
+            "           <td colspan=2><input size='50' type='text' name='h-rdemail2' value='" v-rdemail2 "' " isdisabled " tabindex='240' /></td>" SKIP
+            "       </tr>" SKIP(1)
+            "   </table>" SKIP
+			"</div> <!-- table -->" SKIP
+			"</DIV>         <!-- end of grid_12 -->" SKIP
+			"</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP 
+            "   <INPUT type='hidden' name='h-searchfirst' value='" v-searchfirst "' />" SKIP
+            "   <INPUT type='hidden' name='h-searchlast' value='" v-searchlast "' />" SKIP
+            "   <INPUT type='hidden' name='h-peo-addr-id' value='" v-peo-addr-id "' />" SKIP  
+            "   <INPUT type='hidden' name='h-id' value='" v-id "' />" SKIP            			
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn' tabindex='250' >Submit</BUTTON></div>" SKIP
+			"   <div class='grid_1'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' class='btn tabindex='260'>Reset Fields</BUTTON></div>" SKIP
+			"   <div class='grid_1'> </DIV>" SKIP
+			"</form>" SKIP
+			"   <div class='grid_2'>"
+			"<form>" SKIP
+			"   <INPUT type='hidden' name='h-searchfirst' value='" v-searchfirst "' />" SKIP
+			"   <INPUT type='hidden' name='h-searchlast' value='" v-searchlast "' />" SKIP
+			"   <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+			"   <BUTTON type='submit' name='h-act' value='SEARCH' class='btn' tabindex='270' >Return to People List</BUTTON>"
+			"</form>" SKIP
+			"   </div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+			"</div>" SKIP
+			.
+        
+    END. /* INPUT */    
+
+/********************************* UPDATE *********************************/
+
+    WHEN "UPDATE" THEN DO: 
+        
+        IF v-email <> v-rdemail OR v-email2 <> v-rdemail2 THEN DO: 
+        
+                
+                     {&OUT}
+                "<form>" SKIP
+"                   <input type='hidden' name='h-prefix'        value='" v-prefix "' />"        SKIP
+"                   <input type='hidden' name='h-firstname'     value='" v-firstname "' />"     SKIP
+"                   <input type='hidden' name='h-midname'       value='" v-midname "' />"       SKIP
+"                   <input type='hidden' name='h-lastname'      value='" v-lastname "' />"      SKIP
+"                   <input type='hidden' name='h-suffix'        value='" v-suffix "' />"        SKIP
+"                   <input type='hidden' name='h-company'       value='" v-company "' />"       SKIP
+"                   <input type='hidden' name='h-gender'        value='" v-gender "' />"        SKIP
+"                   <input type='hidden' name='h-workphone'     value='" v-workphone "' />"     SKIP
+"                   <input type='hidden' name='html5-DOB'       value='" disp-DOB "' />"        SKIP
+"                   <input type='hidden' name='h-cellphone'     value='" v-cellphone "' />"     SKIP
+"                   <input type='hidden' name='h-fax'           value='" v-fax "' />"           SKIP
+"                   <input type='hidden' name='h-homephone'     value='" v-homephone "' />"     SKIP
+"                   <input type='hidden' name='h-email'         value='" v-email "' />"         SKIP
+"                   <input type='hidden' name='h-email2'        value='" v-email2 "' />"        SKIP
+"                   <input type='hidden' name='h-rdemail'       value='" v-rdemail "' />"       SKIP
+"                   <input type='hidden' name='h-rdemail2'      value='" v-rdemail2 "' />"      SKIP
+"                   <input type='hidden' name='h-addr1'         value='" v-addr1 "' />"         SKIP
+"                   <input type='hidden' name='h-addr2'         value='" v-addr2 "' />"         SKIP
+"                   <input type='hidden' name='h-addr3'         value='" v-addr3 "' />"         SKIP
+"                   <input type='hidden' name='h-city'          value='" v-city "' />"          SKIP
+"                   <input type='hidden' name='h-stateprov'     value='" v-stateprov "' />"     SKIP
+"                   <input type='hidden' name='h-country'       value='" v-country "' />"       SKIP
+"                   <input type='hidden' name='h-zip'           value='" v-zip "' />"           SKIP
+"                   <input type='hidden' name='h-doc-tcp'       value='" v-doc-tcp "' />"       SKIP
+"                   <input type='hidden' name='h-doc-id'        value='" v-doc-id "' />"        SKIP
+"                   <input type='hidden' name='h-peo-addr-id'   value='" v-peo-addr-id "' />"   SKIP
+"                   <input type='hidden' name='whattorun'       value='" whatshouldrun "'/>"    SKIP
+	            "<DIV class='row'>" SKIP
+				"<DIV class='grid_4'> </DIV>" SKIP
+				"<DIV class='grid_4'>" SKIP
+				"<h2 align='center'>Email fields do not match. Please reenter email address.</h2>" SKIP
+				"</DIV>     <!-- end of grid_4 -->" SKIP
+				"<DIV class='grid_4'> </DIV>" SKIP
+				"</DIV>     <!-- end of row -->" SKIP
+				"<div class='row'>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "   <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                       
+	            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INPUT' class='btn'>Back</BUTTON></div>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP           
+	            "</div>" SKIP
+				"</from>" SKIP.
+				
+				
+        END.
+        ELSE DO:
+                                                                                                                                             IF itmessage = YES THEN 
+                                                                                                                                            {&OUT}
+                                                                                                                                                "ACT = UDATE MESSAGE 1<BR>" SKIP
+                                                                                                                                                "v-id = " v-id "<BR>" SKIP                                                                                                                                                
+                                                                                                                                                "v-firstname = " v-firstname "<BR>" SKIP
+                                                                                                                                                "v-lastname  = " v-lastname "<BR>" SKIP
+                                                                                                                                                "v-addr1 = " v-addr1 "<BR>" SKIP                                        
+																																		        "v-city = " v-city "<BR>" SKIP                
+																																		        "v-stateprov = " v-stateprov "<BR>" SKIP           
+																																		        "v-zip = " v-zip "<BR>" SKIP               
+																																		        "v-country = " v-country "<BR>" SKIP.        
+        ASSIGN 
+            isreq           = ""
+            isdisabled      = "DISABLED".
+      
+	    RUN VALUE(SEARCH("SUBaddr-findR.r")) (
+		    v-addr1,                         
+		    v-addr2,              
+		    v-addr3,               
+		    v-city,                
+		    v-stateprov,            
+		    v-zip,                
+		    v-country,
+		    
+		    OUTPUT addr-id-catcher,
+		    OUTPUT error-catcher,
+		    OUTPUT ran-catcher
+		    ).   
+                                                                                                                                            IF itmessage = YES THEN 
+                                                                                                                                            {&OUT}
+                                                                                                                                                "ACT = UDATE MESSAGE 2<BR>" SKIP
+                                                                                                                                                "v-id = " v-id "<BR>" SKIP                                                                                                                                                
+                                                                                                                                                "v-firstname = " v-firstname "<BR>" SKIP
+                                                                                                                                                "v-lastname  = " v-lastname "<BR>" SKIP
+                                                                                                                                                "v-peo-addr-id = " v-peo-addr-id "<BR>" SKIP
+                                                                                                                                                "addr-id-catcher = " addr-id-catcher "<BR>" SKIP.  	                                                                	    
+	    {&OUT}	           
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP 
+            "<div class='table_3col'>" SKIP
+            "<form>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Personal Information</th>" SKIP
+            "           <th colspan=2>Address</th>" SKIP
+            "           <th colspan=2>Contact Information</th>" SKIP            
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Prefix</td>" SKIP
+            "           <td><input type='text' name='h-prefix' value='" v-prefix "' " isdisabled " tabindex='10' /></td>" SKIP
+            "           <td>Address Line 1</td>" SKIP
+            "           <td " isreq "><input type='text' name='h-addr1' value='" v-addr1 "' " isdisabled " tabindex='90' /></td>" SKIP
+            "           <td>Home Number</td>" SKIP
+            "           <td><input type='text' name='h-homephone' value='" v-homephone "' " isdisabled " tabindex='160' /></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>First Name</td>" SKIP
+            "           <td " isreq "><input type='text' name='h-firstname' value='" v-firstname "' " isdisabled " tabindex='20' /></td>" SKIP
+            "           <td>Address Line 2</td>" SKIP
+            "           <td><input type='text' name='h-addr2' value='" v-addr2 "' " isdisabled " tabindex='100' /></td>" SKIP
+            "           <td>Work Number</td>" SKIP
+            "           <td><input type='text' name='h-workphone' value='" v-workphone "' " isdisabled " tabindex='170' /></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Middle Name</td>" SKIP
+            "           <td><input type='text' name='h-midname' value='" v-midname "' " isdisabled " tabindex='30' /></td>" SKIP
+            "           <td>Address Line 3</td>" SKIP
+            "           <td><input type='text' name='h-addr3' value='" v-addr3 "' " isdisabled " tabindex='110' /></td>" SKIP
+            "           <td>Cell Number</td>" SKIP
+            "           <td><input type='text' name='h-cellphone' value='" v-cellphone "' " isdisabled " tabindex='180' /></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Last Name</td>" SKIP
+            "           <td " isreq "><input type='text' name='h-lastname' value='" v-lastname "' " isdisabled " tabindex='40' /></td>" SKIP
+            "           <td>City</td>" SKIP
+            "           <td " isreq "><input type='text' name='h-city' value='" v-city "' " isdisabled " tabindex='120' /></td>" SKIP
+            "           <td>Fax Number</td>" SKIP
+            "           <td><input type='text' name='h-fax' value='" v-fax "' " isdisabled " tabindex='190' /></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Suffix</td>" SKIP
+            "           <td><input type='text' name='h-suffix' value='" v-suffix "' " isdisabled " tabindex='50' /></td>" SKIP
+            "           <td>State</td>" SKIP
+            "           <td " isreq ">" SKIP
+            "               <SELECT name='h-state-prov' " isdisabled " tabindex='130' >" SKIP
+            "                   <OPTION selected>" v-stateprov "</OPTION>" SKIP
+            "                   <OPTION value=''></OPTION>" SKIP.
+
+            FOR EACH state_mstr NO-LOCK:
+                
+               ASSIGN
+                    v-stname = state_mstr.State_Display_Name
+                    v-stabbv = state_mstr.State_ISO.
+            
+                {&OUT}
+                    "<option value=" v-stabbv ">" v-stname "</option>" SKIP.
+                                
+           END.  /* FOR EACH states_mstr */ 
+       
+        {&OUT} 
+            "               </select>" SKIP
+            "           </td>" SKIP
+            "           <td>Doctor TCP Code</td>" SKIP
+            "           <td><input type='text' name='h-doc-tcp' value='" v-doc-tcp "' " isdisabled " tabindex='200' /></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Company</td>" SKIP
+            "           <td><input type='text' name='h-company' value='" v-company "' " isdisabled " tabindex='60' /></td>" SKIP
+            "           <td>Zip Code</td>" SKIP
+            "           <td " isreq "><input type='text' name='h-zip' value='" v-zip "' " isdisabled " tabindex='140' /></td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Gender</td>" SKIP
+            "           <td>" SKIP.
+            
+            IF v-gender = YES THEN 
+                ischecked = "CHECKED".
+                
+            ELSE 
+                ischecked = "". 
+        
+        {&OUT}              
+            "               <input type='radio' name='h-gender' value='YES' " isdisabled " " ischecked " tabindex='70' />Male " SKIP.
+            
+            IF v-gender = NO THEN 
+                ischecked = "CHECKED".
+                
+            ELSE 
+                ischecked = "". 
+        
+        {&OUT}              
+            "               <input type='radio' name='h-gender' value='NO' " isdisabled " " ischecked " tabindex='71' />Female<BR>" SKIP
+            "           </td>" SKIP
+            "           <td>Country</td>" SKIP
+            "           <td " isreq ">" SKIP
+            "            <select name='h-country' " isdisabled " tabindex='150' >" SKIP
+            "                <option selected>" v-country "</option>" SKIP 
+            "                <option value=''></option>" SKIP.
+          
+            FOR EACH country_mstr NO-LOCK:
+                ASSIGN
+                    v-coname = country_mstr.Country_Display_Name
+                    v-coabbv = country_mstr.Country_ISO.
+                     
+                    {&OUT}
+                        "<option value='" v-coabbv "'>" v-coname "</option>" SKIP.
+            
+            END.  /* FOR EACH county_mstr */
+    
+        {&OUT}
+            "              </SELECT>" SKIP
+            "          </TD>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP            
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Date of Birth</td>" SKIP
+            "           <td><input type='date' name='html5-DOB' value='" disp-DOB "' " isdisabled " tabindex='80' /></td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=6>Email Address</th>" SKIP          
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Primary Email Address</td>" SKIP
+            "           <td colspan=2 " isreq "><input size='50' type='text' name='h-email' value='" v-email "' " isdisabled " tabindex='210' /></td>" SKIP
+            "           <td>Reenter Primary Email Address</td>" SKIP
+            "           <td colspan=2 " isreq "><input size='50' type='text' name='h-rdemail' value='" v-rdemail "' " isdisabled " tabindex='230'/></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Secondary Email Address</td>" SKIP
+            "           <td colspan=2><input size='50' type='text' name='h-email2' value='" v-email2 "' " isdisabled " tabindex='220' /></td>" SKIP 
+            "           <td>Reenter Secondary Email Address</td>" SKIP
+            "           <td colspan=2><input size='50' type='text' name='h-rdemail2' value='" v-rdemail2 "' " isdisabled " tabindex='240' /></td>" SKIP
+            "       </tr>" SKIP(1)
+            "   </table>" SKIP
+            "</div> <!-- table -->" SKIP
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+	        "<BR>" SKIP.
+                                                                                                                                             IF itmessage = YES THEN 
+                                                                                                                                            {&OUT}
+                                                                                                                                                "ACT = UPDATE MESSAGE 2<BR>" SKIP
+                                                                                                                                                "v-id = " v-id "<BR>" SKIP                                                                                                                                                
+                                                                                                                                                "v-peo-addr-id = " v-peo-addr-id "<BR>" SKIP
+                                                                                                                                                "addr-id-catcher = " addr-id-catcher "<BR>" SKIP.	                                                                                                                                                           
+	    IF v-peo-addr-id <> INTEGER(addr-id-catcher) THEN DO: 
+	                                                                                    
+	        {&OUT}
+	            "<DIV class='row'>" SKIP
+				"<DIV class='grid_4'> </DIV>" SKIP
+				"<DIV class='grid_4'>" SKIP
+	            "<P align='center'>Notice - This address matches a preexisting address in the database.</P>"
+	            "</DIV>     <!-- end of grid_4 -->" SKIP
+				"<DIV class='grid_4'> </DIV>" SKIP
+				"</DIV>     <!-- end of row -->" SKIP.
+        
+            ASSIGN 
+                v-peo-addr-id = INTEGER(addr-id-catcher).
+        END.
+        
+        {&OUT}
+                "<form>" SKIP
+"                   <input type='hidden' name='h-prefix'        value='" v-prefix "' />"        SKIP
+"                   <input type='hidden' name='h-firstname'     value='" v-firstname "' />"     SKIP
+"                   <input type='hidden' name='h-midname'       value='" v-midname "' />"       SKIP
+"                   <input type='hidden' name='h-lastname'      value='" v-lastname "' />"      SKIP
+"                   <input type='hidden' name='h-suffix'        value='" v-suffix "' />"        SKIP
+"                   <input type='hidden' name='h-company'       value='" v-company "' />"       SKIP
+"                   <input type='hidden' name='h-gender'        value='" v-gender "' />"        SKIP
+"                   <input type='hidden' name='h-workphone'     value='" v-workphone "' />"     SKIP
+"                   <input type='hidden' name='html5-DOB'       value='" disp-DOB "' />"        SKIP
+"                   <input type='hidden' name='h-cellphone'     value='" v-cellphone "' />"     SKIP
+"                   <input type='hidden' name='h-fax'           value='" v-fax "' />"           SKIP
+"                   <input type='hidden' name='h-homephone'     value='" v-homephone "' />"     SKIP
+"                   <input type='hidden' name='h-email'         value='" v-email "' />"         SKIP
+"                   <input type='hidden' name='h-email2'        value='" v-email2 "' />"        SKIP
+"                   <input type='hidden' name='h-addr1'         value='" v-addr1 "' />"         SKIP
+"                   <input type='hidden' name='h-addr2'         value='" v-addr2 "' />"         SKIP
+"                   <input type='hidden' name='h-addr3'         value='" v-addr3 "' />"         SKIP
+"                   <input type='hidden' name='h-city'          value='" v-city "' />"          SKIP
+"                   <input type='hidden' name='h-stateprov'     value='" v-stateprov "' />"     SKIP
+"                   <input type='hidden' name='h-country'       value='" v-country "' />"       SKIP
+"                   <input type='hidden' name='h-zip'           value='" v-zip "' />"           SKIP
+"                   <input type='hidden' name='h-doc-tcp'       value='" v-doc-tcp "' />"       SKIP
+"                   <input type='hidden' name='h-doc-id'        value='" v-doc-id "' />"        SKIP
+"                   <input type='hidden' name='h-peo-addr-id'   value='" v-peo-addr-id "' />"   SKIP
+"                   <input type='hidden' name='whattorun'       value='" whatshouldrun "'/>"    SKIP.
+        
+        {&OUT}
+            "<div class='row'>" SKIP           
+	        "   <div class='grid_3'> </DIV>" SKIP
+	        "   <INPUT type='hidden' name='h-searchfirst'      value='" v-searchfirst "' />" SKIP
+	        "   <INPUT type='hidden' name='h-searchlast'       value='" v-searchlast "' />" SKIP
+	        "   <INPUT type='hidden' name='h-id' value='" v-id "' />" SKIP       
+	        "   <div class='grid_2'><button type='submit' name='h-act' value='CREATE' class='btn'>Update</BUTTON></div>" SKIP
+	        "   <div class='grid_2'> </DIV>" SKIP
+	        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INPUT' class='btn'>Reset</BUTTON>" SKIP	        
+	        "</div>" SKIP
+	        "   <div class='grid_3'> </DIV>" SKIP
+	        "</div>" SKIP
+	        "</form>" SKIP.
+	   
+	   END. /* else do */          
+        
+    END. /* UPDATE */   
+
+/********************************* CREATE *********************************/
+
+    WHEN "CREATE" THEN DO: 
+        
+        ASSIGN 
+            isdisabled  = "DISABLED".
+
+	   DO TRANSACTION. 
+	        RUN VALUE(SEARCH("SUBaddr-ucU.r"))     /*subr parameter order    */
+		       (v-peo-addr-id,                     /*addr_mstr.addr_id       */
+		       v-addr1,                            /*addr_mstr.addr_addr1    */
+		       v-addr2,                            /*addr_mstr.addr_addr2    */
+		       v-addr3,                            /*addr_mstr.addr_addr3    */
+		       v-city,                             /*addr_mstr.addr_city     */
+		       v-stateprov,                        /*addr_mstr.addr_stateprov*/
+		       v-zip,                              /*addr_mstr.addr_zip      */
+		       v-country,                          /*addr_mstr.addr_country  */
+		       v-addr-type,                        /*addr_mstr.addr_type     */
+		       
+		       OUTPUT v-peo-addr-id,               /*o-ucaddr-id             */
+	           OUTPUT log-created,                 /*o-ucaddr-create         */
+		       OUTPUT log-updated,                 /*o-ucaddr-update         */
+		       OUTPUT log-avail,                   /*o-ucaddr-avail          */
+		       OUTPUT log-success                  /*o-ucaddr-successful     */
+	           ).
+                                                                                                                                        IF itmessage = YES THEN 
+                                                                                                                                            {&OUT}
+                                                                                                                                                "ACT = CREATE MESSAGE 1<BR>" SKIP
+                                                                                                                                                "v-id = " v-id "<BR>" SKIP                                                                                                                                                
+                                                                                                                                                "v-peo-addr-id = " v-peo-addr-id "<BR>" SKIP
+                                                                                                                                                "v-doc-id = " v-doc-id "<BR>" SKIP
+                                                                                                                                                "addr-log-created = " log-created "<BR>" SKIP
+                                                                                                                                                "addr-log-updated = " log-updated "<BR>" SKIP
+                                                                                                                                                "addr-log-avail = " log-avail "<BR>" SKIP
+                                                                                                                                                "addr-log-success = " log-success "<BR>" SKIP.	           
+		    RUN VALUE(SEARCH("SUBpeop-ucU.r"))     /*subr parameter order             */
+		       (v-id,                              /*people_mstr.people_id            */
+		       v-firstname,                        /*people_mstr.people_firstname     */
+		       v-midname,                          /*people_mstr.people_midname       */	       
+		       v-lastname,                         /*people_mstr.people_lastname      */
+		       v-prefix,                           /*people_mstr.people_prefix        */
+		       v-suffix,                           /*people_mstr.people_suffix        */
+		       v-company,                          /*people_mstr.people_company       */
+		       v-gender,                           /*people_mstr.people_gender        */
+		       v-homephone,                        /*people_mstr.people_homephone     */
+		       v-workphone,                        /*people_mstr.people_workphone     */
+		       v-cellphone,                        /*people_mstr.people_cellphone     */
+		       v-fax,                              /*people_mstr.people_fax           */
+		       v-email,                            /*people_mstr.people_email         */
+		       v-email2,                           /*people_mstr.people_email2        */
+		       v-peo-addr-id,                      /*people_mstr.people_addr_id       */
+		       v-contact,                          /*people_mstr.people_contact       */
+		       v-DOB,                              /*people_mstr.people_DOB           */
+		       v-addr-id-2,                        /*people_mstr.people_second_addr_ID*/
+		       "",                                /*people_mstr.people_prefname*/
+		       "",                                /*people_mstr.people_title*/
+		       
+		       OUTPUT v-doc-id,                    /*o-ucpeople-id                    */
+		       OUTPUT log-created,                 /*o-ucpeople-create                */
+		       OUTPUT log-updated,                 /*o-ucpeople-update                */
+	           OUTPUT log-avail,                   /*o-ucpeople-avail                 */    
+		       OUTPUT log-success                  /*o-ucpeople-successful            */
+		       ).    
+                                                                                                                                        IF itmessage = YES THEN 
+                                                                                                                                            {&OUT}
+                                                                                                                                                "ACT = CREATE MESSAGE 2<BR>" SKIP
+                                                                                                                                                "v-id = " v-id "<BR>" SKIP                                                                                                                                                
+                                                                                                                                                "v-peo-addr-id = " v-peo-addr-id "<BR>" SKIP
+                                                                                                                                                "v-doc-id = " v-doc-id "<BR>" SKIP
+                                                                                                                                                "peo-log-created = " log-created "<BR>" SKIP
+                                                                                                                                                "peo-log-updated = " log-updated "<BR>" SKIP
+                                                                                                                                                "peo-log-avail = " log-avail "<BR>" SKIP
+                                                                                                                                                "peo-log-success = " log-success "<BR>" SKIP.	    
+		   RUN VALUE(SEARCH("SUBdoc-ucC.r"))   /*subr parameter order       */
+		       (v-doc-id,                      /*people_mstr.people_id      */
+		       v-doc-tcp,                      /*doctor_mstr.doctor_TCP_code*/
+		       
+		       OUTPUT v-doc-id,                /*o-ucdoctor-id              */
+		       OUTPUT log-created,             /*o-ucdoctor-create          */
+		       OUTPUT log-updated,             /*o-ucdoctor-update          */
+		       OUTPUT log-error,               /*o-ucdoctor-error           */
+		       OUTPUT log-success              /*o-ucdoctor-successful      */
+		       ).   
+                                                                                                                                        IF itmessage = YES THEN 
+                                                                                                                                            {&OUT}
+                                                                                                                                                "ACT = CREATE MESSAGE 3<BR>" SKIP
+                                                                                                                                                "v-id = " v-id "<BR>" SKIP                                                                                                                                                
+                                                                                                                                                "v-peo-addr-id = " v-peo-addr-id "<BR>" SKIP
+                                                                                                                                                "v-doc-id = " v-doc-id "<BR>" SKIP
+                                                                                                                                                "doc-log-created = " log-created "<BR>" SKIP
+                                                                                                                                                "doc-log-updated = " log-updated "<BR>" SKIP
+                                                                                                                                                "doc-log-avail = " log-avail "<BR>" SKIP
+                                                                                                                                                "doc-log-success = " log-success "<BR>" SKIP.        
+        END. /* transaction */
+        
+	    FIND doctor_mstr WHERE 
+	        doctor_mstr.doctor_ID = v-doc-id AND
+	        doctor_mstr.doctor_deleted = ?
+	        NO-LOCK NO-ERROR.
+	                
+	    FIND people_mstr WHERE
+	        people_mstr.people_id = v-doc-id AND       
+	        people_mstr.people_deleted = ?
+	        NO-LOCK NO-ERROR.
+	    
+	    FIND addr_mstr WHERE
+	        addr_mstr.addr_id = v-peo-addr-id AND   
+	        addr_mstr.addr_deleted = ?
+	        NO-LOCK NO-ERROR.
+	    
+	    IF NOT AVAILABLE doctor_mstr THEN
+	        {&OUT}                
+	            "<center><H2>Sorry, the Doctor Master Table in the HHI Database is Unavailable, 
+	            <br> something went wrong, please call SolSource at (207) 787-4108.</H2></center>".
+	         
+	    IF NOT AVAILABLE people_mstr THEN 
+	        {&OUT}
+	            "<center><H2>Sorry, the People Master Table in the General Database is Unavailable, 
+	            <br> something went wrong, please call SolSource at (207) 787-4108.</H2></center>".
+	            
+	    IF NOT AVAILABLE addr_mstr THEN
+	        {&OUT}
+	            "<center><H2>Sorry, the Address Master Table in the General Database is Unavailable, 
+	            <br> something went wrong, please call SolSource at (207) 787-4108.</H2></center>".
+	    
+	    IF AVAILABLE doctor_mstr AND AVAILABLE people_mstr AND AVAILABLE addr_mstr THEN 
+        
+        {&OUT}
+            "<form>" SKIP
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP 
+            "<div class='table_3col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Personal Information</th>" SKIP
+            "           <th colspan=2>Address</th>" SKIP
+            "           <th colspan=2>Contact Information</th>" SKIP            
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Prefix</td>" SKIP
+            "           <td>" people_mstr.people_prefix "</td>" SKIP
+            "           <td>Address Line 1</td>" SKIP
+            "           <td>" addr_mstr.addr_addr1 "</td>" SKIP
+            "           <td>Home Number</td>" SKIP
+            "           <td>" people_mstr.people_homephone "</td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>First Name</td>" SKIP
+            "           <td>" people_mstr.people_firstname "</td>" SKIP
+            "           <td>Address Line 2</td>" SKIP
+            "           <td>" addr_mstr.addr_addr2 "</td>" SKIP
+            "           <td>Work Number</td>" SKIP
+            "           <td>" people_mstr.people_workphone "</td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Middle Name</td>" SKIP
+            "           <td>" people_mstr.people_midname "</td>" SKIP
+            "           <td>Address Line 3</td>" SKIP
+            "           <td>" addr_mstr.addr_addr3 "</td>" SKIP
+            "           <td>Cell Number</td>" SKIP
+            "           <td>" people_mstr.people_cellphone "</td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Last Name</td>" SKIP
+            "           <td>" people_mstr.people_lastname "</td>" SKIP
+            "           <td>City</td>" SKIP
+            "           <td>" addr_mstr.addr_city "</td>" SKIP
+            "           <td>Fax Number</td>" SKIP
+            "           <td>" people_mstr.people_fax "</td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Suffix</td>" SKIP
+            "           <td>" people_mstr.people_suffix "</td>" SKIP
+            "           <td>State</td>" SKIP
+            "           <td>" addr_mstr.addr_stateprov "</td>" SKIP
+            "           <td>Doctor TCP Code</td>" SKIP
+            "           <td>" doctor_mstr.doctor_TCP_code "</td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Company</td>" SKIP
+            "           <td>" people_mstr.people_company "</td>" SKIP
+            "           <td>Zip Code</td>" SKIP
+            "           <td>" addr_mstr.addr_zip "</td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Gender</td>" SKIP
+            "           <td>" SKIP.
+            
+            IF people_mstr.people_gender = YES THEN 
+                ischecked = "CHECKED".
+                
+            ELSE 
+                ischecked = "". 
+        
+        {&OUT}              
+            "               <input type='radio' value='YES' " isdisabled " " ischecked " />Male " SKIP.
+            
+            IF people_mstr.people_gender = NO THEN 
+                ischecked = "CHECKED".
+                
+            ELSE 
+                ischecked = "". 
+        
+        {&OUT}              
+            "               <input type='radio' value='NO' " isdisabled " " ischecked " />Female<BR>" SKIP
+            "           </td>" SKIP
+            "           <td>Country</td>" SKIP
+            "           <td>" addr_mstr.addr_country "</TD>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP            
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Date of Birth</td>" SKIP.
+            
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                
+	        people_mstr.people_DOB,                                                                            
+	        OUTPUT out-DOB                                                           
+	        ).                                                                          
+
+	    ASSIGN                                                                            
+	        disp-DOB = out-DOB.
+        
+        {&OUT} 
+            "           <td>" disp-DOB "</td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=6>Email Address</th>" SKIP          
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Primary Email Address</td>" SKIP
+            "           <td colspan=5>" people_mstr.people_email "</td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Secondary Email Address</td>" SKIP
+            "           <td colspan=5>" people_mstr.people_email2 "</td>" SKIP
+            "       </tr>" SKIP(1)
+            "   </table>" SKIP
+            "</div> <!-- table -->" SKIP
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<form>"
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                       
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Update Another Doctor</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP           
+            "</div>" SKIP
+            "</form>" SKIP
+            . 
+    END. /* CREATE */    
+
+END CASE.
+/****************************** End of Line ******************************/
+</SCRIPT>
+</BODY>
+</HTML>

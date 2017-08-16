@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Andrew Garver">
+<TITLE>WebSpeed Script</TITLE>
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<style>
+    .centered-btn {
+        margin: auto;
+    }
+    
+    .full-input {
+        width: 100%
+    }
+    
+    .title-font {
+        text-align: center;
+        font-size: 160%;
+    }
+</style>
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY style='background-color: #F2F2F2'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File: menu-login.html
+    Description: Logs a user into the Solsource application menu.
+    Created: Aug 2, 2017
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-username AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-password AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-user-id AS CHARACTER NO-UNDO.
+
+ASSIGN 
+    v-act = get-value('act')
+    v-username = get-value('username')
+    v-password = get-value('password').
+    
+IF v-act = "LOGIN" THEN DO:
+    /* Check the user's credentials */
+
+    /* If the credentials are good, set the user id and navigate to the menu */
+    ASSIGN v-user-id = STRING(107906).
+    {&OUT} "<meta http-equiv='refresh' content='0; url=menuDEV.html?c-usr=" v-user-id "'>".
+    
+    /* If the credentials are not good, display an error message and wait for new credentials */
+    
+    
+END.
+
+{&OUT}
+    "<div class='title-font' style='margin-top: 10%'>" skip
+        "<img src='https://avatars0.githubusercontent.com/u/20520537?v=4&s=460' alt='Company Logo' height='75' width='75'>" skip
+        "<h1 class='title-font'>Solsource</h1>" skip
+    "</div>" skip
+    
+	"<form class='login-form'>" SKIP
+	"<div class='row'>" skip
+	"   <div class='grid_3'></div>" skip
+	"       <div class='grid_6'>" skip                    
+	"               <div class='table_2col'>" skip
+	"                   <table>" skip
+	"                       <tr>" skip
+	"                           <th colspan='4'>Login</th>" skip
+	"                       </tr>" skip                          
+	"                       <tr>" skip
+	"                           <td>Username</td>" skip
+	"                           <td><input type='text' name='username' class='full-input'/></td>" skip         
+	"                       </tr>" skip
+	"                       <tr>" skip   
+	"                           <td>Password</td>" skip
+    "                           <td><input type='text' name='password' class='full-input'/></td>" skip
+    "                       </tr>" skip     
+	"                   </table>" skip
+	"               </div>" skip                 
+	"       </div>" skip
+	"   </div class='grid_3'></div>" skip
+	"</div>" skip 
+	"<BR>" SKIP
+	"<div class='row'>" SKIP
+	"   <div class='centered-btn'><BUTTON type='submit' name='act' value='LOGIN' class='btn'>Log in</BUTTON></div>" SKIP
+	"</div>" SKIP
+	"</form>" SKIP. 
+
+</SCRIPT>
+</BODY>
+</HTML>

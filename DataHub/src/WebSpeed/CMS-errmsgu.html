@@ -1,0 +1,372 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META name='AUTHOR' content='Doug Luttrell'>
+ 
+    <link rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <link rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+
+    <TITLE>Error Message Maintenance</TITLE> 
+ 
+
+<SCRIPT language="SpeedScript"> 
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+   
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+	<SCRIPT language="SpeedScript">
+    
+    /**********************************************************************************************
+	 * 
+	 *  CMS-menumaintu.html - Version 1.0 - 17/Jun/14 - Doug Luttrell
+	 *
+	 *  This program is designed to allow you to maintain records in the err_message table.
+	 *
+	 *  ---------------------------------------------------------------------------------------
+	 *
+	 *  Revision History:
+	 *  -----------------
+	 *  1.0 - written by DOUG LUTTRELL on 17/Jun/14.  Original Version.
+	 *
+	 **********************************************************************************************/
+	
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/    
+	
+    DEFINE VARIABLE errnum LIKE err_message.err_num NO-UNDO. 
+	DEFINE VARIABLE errmsg LIKE err_message.err_msg NO-UNDO.
+	DEFINE VARIABLE errtype LIKE err_message.err_type NO-UNDO.
+	DEFINE VARIABLE whichselected AS CHARACTER EXTENT 5 NO-UNDO.
+	DEFINE VARIABLE x AS INTEGER NO-UNDO.      /** junk counter **/
+	 
+	DEFINE VARIABLE act AS INTEGER NO-UNDO.
+	DEFINE VARIABLE progstatus AS CHARACTER NO-UNDO.
+	 
+	DEFINE VARIABLE showmsg AS LOGICAL INITIAL NO NO-UNDO.           /** set to YES to get messages throughout **/
+	 
+    ASSIGN 
+        errnum      = int(get-value('h-Error-Number'))
+        errtype     = get-value('h-Error-Type')
+        errmsg      = get-value('h-Error-Message')
+	    act         = int(get-value('h-Menu-action'))
+	    progstatus  = "<center><h2>Please enter the Error Message Number you wish to update or enter 0 to create a NEW error message.</h2></center><br>".
+	
+	IF showmsg = YES THEN     
+        {&OUT} "Error Number = " errnum "<BR>" skip 
+            "Error Type = " errtype "<BR>" skip 
+            "Error Message = " errmsg "<BR>" skip
+            "Action = <B>" act "</B><BR>" skip. 
+	    
+    CASE act: 
+        
+        WHEN 0 THEN DO:                                     /*** initial entry ***/
+            
+            {&OUT} progstatus skip
+                "<FORM method='post'>" skip 
+                "<DIV class='table_2col'>" skip
+                "<TABLE>" skip 
+                "   <TR>" skip
+                "       <TH colspan=4>Error Message Maintenance</TH>" skip
+                "   <TR>" skip
+                "       <TD>Error Number</TD>" skip 
+                "       <TD><INPUT type='number' name='h-Error-Number' value='0' min='0' /></TD>" skip
+                "       <TD>Message Type</TD>" skip
+                "       <TD>" skip
+                "           <SELECT name='h-Error-Type'>" skip
+                "               <option value='FATAL'>FATAL</option>" skip
+                "               <option value='MINOR'>MINOR</option>" skip
+                "               <option value='WARNING'>WARNING</option>" skip
+                "               <option value='INFORMATION'>INFORMATION</option>" skip
+                "               <option value='QUESTION'>QUESTION</option>" skip
+                "           </SELECT>" skip
+                "       </TD>" skip
+                "   </TR>" skip
+                "   <TR>" skip 
+                "       <TD>Error Message</TD>" skip
+                "       <TD colspan=3><INPUT type='text' name='h-Error-Message' maxlength='78' size='90' disabled /></TD>" skip
+                "   </TR>" skip
+                "</TABLE>" skip
+                "<INPUT type='hidden' name='h-Menu-action' value=1 />" skip
+                "<center><input type='reset' name='Reset' value='Clear Form' />" skip
+                "<INPUT type='submit' name='Submit' value='Find Record' /></center>" skip
+                "</DIV>" skip
+                "</FORM>" skip.            
+            
+	    
+	    END.  /** of act = 0 **/
+	    
+        WHEN 1 THEN DO:                     /** find record? **/
+            
+            find err_message where err_message.err_num = errnum AND 
+                err_message.err_deleted = ?
+                    no-lock no-error.
+                
+            IF AVAILABLE (err_message) THEN DO:
+                
+                progstatus = "<center><h2>Update existing record.</h2></center><br>". 
+                
+                DO x = 1 TO 5:
+                    whichselected[x]    = "".
+                END.  /** of do x = 1 to 5 **/
+                
+                CASE err_message.err_type:
+                    
+                    WHEN "FATAL" THEN 
+                        whichselected[1] = "SELECTED".
+                    WHEN "MINOR" THEN 
+                        whichselected[2] = "SELECTED".
+                    WHEN "WARNING" THEN 
+                        whichselected[3] = "SELECTED".
+                    WHEN "INFORMATION" THEN 
+                        whichselected[4] = "SELECTED".
+                    WHEN "QUESTION" THEN 
+                        whichselected[5] = "SELECTED".
+                    OTHERWISE 
+                        whichselected[1] = "".
+                
+                END.  /*** of case err_type ***/
+                                    
+                {&OUT} progstatus skip
+	                "<FORM method='post'>" skip 
+	                "<DIV class='table_2col'>" skip
+	                "<TABLE>" skip 
+	                "   <TR>" skip
+	                "       <TH colspan=4>Error Message Maintenance</TH>" skip
+	                "   <TR>" skip
+	                "       <TD>Error Number</TD>" skip 
+	                "       <TD><INPUT type='hidden' name='h-Error-Number' value='" err_message.err_num "' />" err_message.err_num "</TD>" skip
+	                "       <TD>Message Type</TD>" skip
+	                "       <TD>" skip
+	                "           <SELECT name='h-Error-Type'>" skip
+	                "               <option value='FATAL' " whichselected[1] ">FATAL</option>" skip
+	                "               <option value='MINOR' " whichselected[2] ">MINOR</option>" skip
+	                "               <option value='WARNING' " whichselected[3] ">WARNING</option>" skip
+	                "               <option value='INFORMATION' " whichselected[4] ">INFORMATION</option>" skip
+	                "               <option value='QUESTION' " whichselected[5] ">QUESTION</option>" skip
+	                "           </SELECT>" skip
+	                "       </TD>" skip	                
+	                "   </TR>" skip
+	                "   <TR>" skip 
+	                "       <TD>Error Message</TD>" skip
+	                "       <TD colspan=3><INPUT type='text' name='h-Error-Message' maxlength='78' size='90' value='" err_message.err_msg "' /></TD>" skip
+	                "   </TR>" skip
+	                "</TABLE>" skip
+                    "      <center><INPUT type='hidden' name='h-Menu-action' value=2 />" SKIP 
+                    "      <INPUT type='submit' name='Submit' value='Update Record' />" SKIP 
+                    "      <input type='reset' name='Reset' value='Clear Form' /></center>" SKIP 
+                    "</FORM>" skip 
+                    "<FORM method='post'>" SKIP 
+                    "   <center><INPUT type='hidden' name='h-Error-Number' value='" err_message.err_num "'  />" SKIP 
+                    "   <INPUT type='hidden' name='h-Error-Type' value='" err_message.err_type "' />" SKIP 
+                    "   <INPUT type='hidden' name='h-Error-Message' value='" err_message.err_msg "' />" SKIP 
+                    "   <INPUT type='hidden' name='h-Menu-action' value=4 />" SKIP 
+                    "   <input type='submit' name='Submit' value='Delete Record' />" SKIP 
+                    "</FORM>" SKIP                      
+	                "</DIV>" skip.
+                
+            END.  /** of if avail menu_mstr **/
+            
+            ELSE DO:
+
+                progstatus = "<center><h2>Record Not Found. Do you want to create one?</h2></center><br />".
+                            
+                {&OUT} progstatus skip
+                    "<center><TABLE>" skip
+                    "<TR><TD colspan='2' align='center'>" skip
+                    "<FORM method='post'>" skip
+                    "<INPUT type='hidden' name='h-Error-Number' value='" errnum "' />" skip 
+                    "<INPUT type='hidden' name='h-Error-Type' value='" errtype "' />" skip 
+                    "<INPUT type='hidden' name='h-Menu-action' value=3 />" skip
+                    "<input type='submit' name='Submit' value='Create Record' />" skip
+                    "</FORM>" skip
+                    "</TD><TD colspan='2' align='center'>" skip
+                    "<FORM>" skip
+                    "<INPUT type='hidden' name='h-Menu-action' value=0 />" skip
+                    "<INPUT type='submit' name='Submit' value='Cancel' />" skip
+                    "</FORM>" skip                   
+                    "</TD></TR>" skip 
+                    "</TABLE></center>" skip.                             
+                
+            END.  /*** of else do --- not avail menu_mstr ***/        
+        
+        END.  /** of act = 1 **/	        
+	    
+        WHEN 2 THEN DO:                         /** update other fields **/
+        
+            find err_message where err_message.err_num = errnum and
+                err_message.err_deleted = ?
+                    exclusive-lock no-error.
+                
+            IF AVAILABLE (err_message) THEN DO:        
+            
+                ASSIGN 
+                    err_message.err_msg             = errmsg
+                    err_message.err_type            = errtype
+                    err_message.err_modified_by     = userid("General")
+                    err_message.err_modified_date   = today 
+                    progstatus                      = "<center><h2>Record Modified</h2></center><br />".   
+                        
+                {&OUT} progstatus skip 
+                    "<DIV class='table_2col'>" skip 
+                    "<TABLE>" skip 
+                    "   <TR>" skip
+                    "       <TH colspan=4>Error Message Maintenance</TH>" skip
+                    "   <TR>" skip
+                    "       <TD>Error Number</TD>" skip 
+                    "       <TD>" err_message.err_num "</TD>" skip
+                    "       <TD>Error Type</TD>" SKIP 
+                    "       <TD>" err_message.err_type "</TD>" SKIP 
+                    "   </TR>" skip
+                    "   <TR>" skip 
+                    "       <TD>Error Message</TD>" skip
+                    "       <TD colspan=3>" err_message.err_msg "</TD>" skip
+                    "   </TR>" skip
+                    "</TABLE>" skip
+                    "<FORM method='post'>" SKIP 
+                    "<center><INPUT type='hidden' name='h-Menu-action' value=0 />" SKIP 
+                    "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP 
+                    "</FORM>"                     
+                    "</DIV>" skip.
+                                            
+            END.  /** of if avail menu_mstr **/             
+        
+        END.  /** of act = 2 **/	          
+	    
+        WHEN 3 THEN DO:                                 /*** Create record ***/
+            
+            progstatus = "<center><h2>Creating Record</h2></center><br />".
+
+            CREATE err_message.
+            
+            ASSIGN 
+                err_message.err_num             = IF errnum = 0 THEN 
+                                                    NEXT-VALUE(seq-err)
+                                                  ELSE  
+                                                    errnum  
+                err_message.err_created_by      = userid("General")
+                err_message.err_create_date     = TODAY
+                err_message.err_modified_by     = userid("General")
+                err_message.err_modified_date   = TODAY.
+
+			{&OUT} progstatus skip 
+			    "<DIV class='table_2col'>" skip 
+			    "<TABLE>" skip 
+			    "   <TR>" skip
+			    "       <TH colspan=4>Error Message Maintenance</TH>" skip
+			    "   <TR>" skip
+			    "       <TD>Error Number</TD>" skip 
+			    "       <TD>" err_message.err_num "</TD>" skip
+			    "        <TD>Error Type</TD>" SKIP 
+			    "        <TD>" err_message.err_type "</TD>" skip
+			    "   </TR>" skip
+			    "   <TR>" skip 
+			    "       <TD>Error Message</TD>" SKIP 
+			    "       <TD colspan=3>" err_message.err_msg "</TD>" skip
+			    "   </TR>" skip
+			    "</TABLE>" SKIP    
+                "<FORM method='post'>" SKIP 
+                "<center><INPUT type='hidden' name='h-Menu-action' value=1 />" SKIP 
+                "<INPUT type='hidden' name='h-Error-Number' value='" err_message.err_num "' />" SKIP 
+                "<INPUT type='hidden' name='h-Error-Type' value='" err_message.err_type "' />" SKIP 
+                "<INPUT type='submit' name='Submit' value='Update Fields' /></center>" SKIP 
+                "</FORM>"			                      
+			    "</DIV>" skip.                
+                        
+        END.  /** of act = 3 **/	    
+        
+        WHEN 4 THEN DO:                                             /*** delete record ***/
+        
+            FIND err_message WHERE err_message.err_num = errnum AND 
+                err_message.err_deleted = ?
+                    EXCLUSIVE-LOCK NO-ERROR.
+                    
+                DO x = 1 TO 5:
+                    whichselected[x]    = "".
+                END.  /** of do x = 1 to 5 **/
+                
+                CASE err_message.err_type:
+                    
+                    WHEN "FATAL" THEN 
+                        whichselected[1] = "SELECTED".
+                    WHEN "MINOR" THEN 
+                        whichselected[2] = "SELECTED".
+                    WHEN "WARNING" THEN 
+                        whichselected[3] = "SELECTED".
+                    WHEN "INFORMATION" THEN 
+                        whichselected[4] = "SELECTED".
+                    WHEN "QUESTION" THEN 
+                        whichselected[5] = "SELECTED".
+                    OTHERWISE 
+                        whichselected[1] = "".
+                
+                END.  /*** of case err_type ***/
+                    
+                    
+            IF showmsg = YES THEN     
+                {&OUT} "Error Number = " errnum "<BR>" skip 
+                    "Error Type = " errtype "<BR>" skip
+                    "Error Message = " errmsg "<BR>" skip
+                    "Action = <B>" act "</B><BR>" skip
+                    "Found err_message? " avail(err_message) skip.
+
+            DELETE err_message.
+                    
+            progstatus = "<center><h2>Record Deleted.</h2></center><br />".
+                        
+            {&OUT} progstatus skip 
+                "<FORM method='post'>" SKIP 
+                "<DIV class='table_2col'>" skip 
+                "<TABLE>" skip 
+                "   <TR>" skip
+                "       <TH colspan=4>Error Message Maintenance</TH>" skip
+                "   <TR>" skip
+                "       <TD>Error Number</TD>" skip 
+                "       <TD><input type='number' name='Error-Number' value='" errnum "' disabled /></TD>" skip
+                "       <TD>Error Type</TD>" skip
+                "       <TD>" skip
+                "           <SELECT name='h-Error-Type' disabled>" skip
+                "               <option value='FATAL' " whichselected[1] ">FATAL</option>" skip
+                "               <option value='MINOR' " whichselected[2] ">MINOR</option>" skip
+                "               <option value='WARNING' " whichselected[3] ">WARNING</option>" skip
+                "               <option value='INFORMATION' " whichselected[4] ">INFORMATION</option>" skip
+                "               <option value='QUESTION' " whichselected[5] ">QUESTION</option>" skip
+                "           </SELECT>" skip
+                "       </TD>" skip  
+                "   </TR>" skip
+                "   <TR>" skip 
+                "       <TD>Error Message</TD>" SKIP 
+                "       <TD colspan=3><input type='text' name='Error-Message' value='" errmsg "' disabled /></TD>" skip
+                "   </TR>" skip
+                "</TABLE>" SKIP    
+                "<center><INPUT type='hidden' name='Menu-action' value=0 />" skip
+                "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" skip                                 
+                "</DIV>" skip
+                "</FORM>" SKIP.  
+            
+        END.  /*** of act = 4 **/
+                        
+        OTHERWISE DO:
+            
+            progstatus = "<center><h2>Unexpected Condition -- Contact Solsource Techsupport.</h2></center><br />".
+            
+            {&OUT} progstatus skip 
+                "<FORM method='post'>" skip
+                "<center><INPUT type='hidden' name='h-Menu-action' value=0 />" SKIP 
+                "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP 
+                "</FORM>" skip.               
+        
+        END.  /** of act = something else **/  
+        
+    END CASE.   /** of act = ? **/
+	
+    </SCRIPT>
+
+
+</BODY>
+</HTML>

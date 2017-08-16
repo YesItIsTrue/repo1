@@ -1,0 +1,728 @@
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DDIV HTML//EN">
+<HTML>
+<HEAD>  
+    <TITLE>Inventory Receipt (version 2)</TITLE>
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="28/Nov/2016">
+    <META NAME='LAST_UPDATED' CONTENT="28/Nov/2016">  
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> 
+
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.   
+</SCRIPT>
+
+<style type="text/CSS">
+.w3-theme-l5 {color:#000 !important; background-color:#eff8fe !important}
+.w3-theme-l4 {color:#000 !important; background-color:#cae8fd !important}
+.w3-theme-l3 {color:#000 !important; background-color:#95d0fb !important}
+.w3-theme-l2 {color:#000 !important; background-color:#60b9f8 !important}
+.w3-theme-l1 {color:#fff !important; background-color:#2ba2f6 !important}
+.w3-theme-d1 {color:#fff !important; background-color:#087acb !important}
+.w3-theme-d2 {color:#fff !important; background-color:#086cb4 !important}
+.w3-theme-d3 {color:#fff !important; background-color:#075f9e !important}
+.w3-theme-d4 {color:#fff !important; background-color:#065187 !important}
+.w3-theme-d5 {color:#fff !important; background-color:#054471 !important}
+
+.w3-theme-light {color:#000 !important; background-color:#eff8fe !important}
+.w3-theme-dark {color:#fff !important; background-color:#054471 !important}
+.w3-theme-action {color:#fff !important; background-color:#054471 !important}
+
+.w3-theme {color:#fff !important; background-color:#0987e0 !important}
+.w3-text-theme {color:#0987e0 !important}
+.w3-border-theme {border-color:#0987e0 !important}
+
+.w3-hover-theme:hover {color:#fff !important; background-color:#0987e0 !important}
+.w3-hover-text-theme {color:#0987e0 !important}
+.w3-hover-border-theme:hover {border-color:#0987e0 !important}
+</style>
+
+<style>
+.w3-yellow,.w3-hover-yellow:hover{color:#000!important;background-color:#FFEF6C!important}
+</style>
+
+<script language="javascript">
+
+function w3_open() {
+    document.getElementById("mySidenav").style.display = "block";
+    document.getElementById("mySidenav").style.width = "500px";
+    // document.getElementById("myOverlay").style.display = "block";
+}
+
+</script>
+
+<script language="javascript">
+
+function w3_close() {
+    document.getElementById("mySidenav").style.display = "none";
+    // document.getElementById("myOverlay").style.display = "none";
+}
+</script>
+
+<script language="javascript">
+
+function myAccFunc(id) {
+    var x = document.getElementById(id);
+    if (x.className.indexOf("w3-show") == -1) {
+        x.className += " w3-show";
+        x.previousElementSibling.className += " w3-theme-dark";
+    } else { 
+        x.className = x.className.replace(" w3-show", "");
+        x.previousElementSibling.className = 
+        x.previousElementSibling.className.replace(" w3-theme-dark", "");
+    }
+}
+
+</script>
+
+</HEAD>
+
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File: ICinv-receiptU.html
+    Description: This is the inventory receipt program. You use it to document
+        receipts into the various quantities on hand at the different locations.
+  -------------------------------------------------------------------*/
+
+/**********************  Variable Definitions  **************************/
+DEFINE VARIABLE x           AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE y           AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE act         AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE itmessage   AS LOGICAL INITIAL NO       NO-UNDO.
+DEFINE VARIABLE whichloc    AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE whichqoh    AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE v-site      LIKE qoh_det.qoh_site       NO-UNDO.
+DEFINE VARIABLE v-warehouse LIKE qoh_det.qoh_warehouse  NO-UNDO.
+DEFINE VARIABLE v-loc       LIKE qoh_det.qoh_loc        NO-UNDO.
+DEFINE VARIABLE v-from-loc  LIKE qoh_det.qoh_loc        NO-UNDO.
+DEFINE VARIABLE v-to-loc    LIKE qoh_det.qoh_loc        NO-UNDO.
+DEFINE VARIABLE v-item_nbr  LIKE qoh_det.qoh_item_nbr   NO-UNDO.
+DEFINE VARIABLE v-lot           LIKE qoh_det.qoh_lot        NO-UNDO.
+DEFINE VARIABLE v-serial            LIKE qoh_det.qoh_serial     NO-UNDO.
+DEFINE VARIABLE v-quantity          LIKE qoh_det.qoh_quantity   NO-UNDO.
+DEFINE VARIABLE v-merge-quantity    LIKE qoh_det.qoh_quantity   NO-UNDO.
+DEFINE VARIABLE v-status            LIKE qoh_det.qoh_status     NO-UNDO.
+DEFINE VARIABLE v-avail             LIKE qoh_det.qoh_avail      NO-UNDO.
+DEFINE VARIABLE v-expire_date       LIKE qoh_det.qoh_expire_date NO-UNDO.
+DEFINE VARIABLE v-html-expire_date  AS CHARACTER NO-UNDO.
+DEFINE VARIABLE c-loc-list          AS INTEGER                  NO-UNDO.
+
+DEFINE VARIABLE o-create    AS LOGICAL                  NO-UNDO.
+DEFINE VARIABLE o-update    AS LOGICAL                  NO-UNDO.
+DEFINE VARIABLE o-success   AS LOGICAL                  NO-UNDO.
+
+DEFINE VARIABLE o-ctrh-id       LIKE trh_hist.trh_id        NO-UNDO.
+DEFINE VARIABLE o-ctrh-error    AS LOGICAL INITIAL YES      NO-UNDO.  
+DEFINE VARIABLE v-po_nbr        AS CHARACTER            NO-UNDO. 
+DEFINE VARIABLE v-notes         AS CHARACTER NO-UNDO.
+            
+/**********************  HTML Variable Get-Val's  ***********************/
+ASSIGN 
+    act         = html-encode(get-value("h-act"))  
+    whichloc    = INTEGER(html-encode(get-value("h-whichloc")))
+    v-site      = html-encode(get-value("h-site"))
+    v-warehouse = html-encode(get-value("h-warehouse"))
+    v-loc       = html-encode(get-value("h-loc"))
+    v-item_nbr  = html-encode(get-value("h-item_nbr"))
+    v-lot       = html-encode(get-value("h-lot"))
+    v-serial    = html-encode(get-value("h-serial"))
+    v-quantity  = DECIMAL(html-encode(get-value("h-quantity")))
+    v-avail     = IF html-encode(get-value("h-avail")) = "NO" THEN NO ELSE YES
+    v-status    = html-encode(get-value("h-status"))
+    v-po_nbr    = html-encode(get-value("h-po_nbr"))
+    v-html-expire_date = html-encode(get-value("h-expire_date"))
+    v-notes     = html-encode(get-value("h-notes")).
+
+                                                                          IF itmessage = YES THEN {&OUT} "whichloc = " whichloc "<br>".
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-expire_date, OUTPUT v-expire_date).
+
+/**************************  Other Nonsense  ***************************/    
+IF act= "" THEN 
+    act = "Site".
+
+IF v-loc = "" THEN DO:
+
+    FIND loc_mstr WHERE RECID(loc_mstr) = whichloc AND
+        loc_mstr.loc_deleted = ? NO-LOCK NO-ERROR.
+    
+    IF AVAILABLE(loc_mstr) THEN ASSIGN v-loc = loc_mstr.loc_name.
+    
+END. /*** blank loc fill in ***/
+
+/**************************  Main Program  ******************************/
+
+{&OUT}
+    "<BODY  class='w3-light-grey'>" SKIP.
+
+/******************************************** Start of "Include" **********************************************/
+    
+DEFINE VARIABLE insidetheinclude-ITshowmsg AS LOG INITIAL NO NO-UNDO.
+DEFINE VARIABLE insidetheinclude-localpathing AS LOG INITIAL YES NO-UNDO.    /* change to NO before putting on server */
+DEFINE VARIABLE insidetheinclude-v-title-name AS CHARACTER NO-UNDO.
+                                                                                                        IF insidetheinclude-ITshowmsg = YES THEN 
+                                                                                                            {&OUT} "<P>Begin</P>".
+                 
+PROCEDURE menuwalk:
+ 
+    DEFINE INPUT PARAMETER insidetheinclude-total-menu LIKE menu_mstr.menu_exprog NO-UNDO.
+    
+    DEFINE VARIABLE insidetheinclude-menexhold LIKE menu_mstr.menu_exprog NO-UNDO.
+    DEFINE VARIABLE insidetheinclude-menunumber LIKE menu_mstr.menu_exprog NO-UNDO.                
+    DEFINE VARIABLE insidetheinclude-modulepath AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE insidetheinclude-entryfill AS CHARACTER FORMAT "x(16)" NO-UNDO.
+    DEFINE VARIABLE insidetheinclude-x AS INTEGER NO-UNDO.                         /** junk counter for menu filling **/
+    DEFINE VARIABLE insidetheinclude-j-menu-namer AS CHARACTER NO-UNDO.
+                                                                                                                  
+    FOR EACH menu_mstr WHERE menu_mstr.menu_num = insidetheinclude-total-menu AND 
+            menu_mstr.menu_deleted = ? AND                                                                    /* 3dot3 */
+            menu_mstr.menu__log01 = NO NO-LOCK              /* is menu item hidden? */                        /* 3dot3 */
+        BY menu_mstr.menu_num BY menu_mstr.menu_sel: 
+
+        ASSIGN 
+             insidetheinclude-menexhold   = IF INDEX(menu_mstr.menu_exprog,"?") = 0 THEN 
+                              menu_mstr.menu_exprog + "?whattorun=" + menu_mstr.menu_num + "." + string(menu_mstr.menu_sel) 
+                           ELSE 
+                              menu_mstr.menu_exprog + "&whattorun=" + menu_mstr.menu_num + "." + string(menu_mstr.menu_sel) 
+             insidetheinclude-modulepath  = IF menu_mstr.menu_module <> "" AND insidetheinclude-localpathing = YES then
+                              "../../" + menu_mstr.menu_module + "/rcode/"
+                           ELSE 
+                              "".
+
+IF insidetheinclude-ITshowmsg  = YES THEN {&OUT} "insidetheinclude-modulepath =" insidetheinclude-modulepath " <br> insidetheinclude-menxhold =" insidetheinclude-menexhold "<br>".
+
+        IF menu_mstr.menu_exprog < "a" THEN DO:
+         
+            IF menu_mstr.menu_exprog BEGINS "0." THEN 
+                insidetheinclude-menunumber  = SUBSTRING(menu_mstr.menu_exprog,3).
+            ELSE 
+                insidetheinclude-menunumber  = menu_mstr.menu_exprog.
+
+            ASSIGN insidetheinclude-j-menu-namer = "m-" + menu_mstr.menu_num + STRING(menu_mstr.menu_select).
+    
+            {&OUT}
+                "       <div class='w3-accordion'>" SKIP
+                "           <a onclick=~"myAccFunc('" insidetheinclude-j-menu-namer "')~" href='#' class='w3-hover-black'>" menu_mstr.menu_select " - " menu_mstr.menu_title " <i class='fa fa-caret-down'></i></a>" SKIP
+                "           <div id='" insidetheinclude-j-menu-namer "' class='w3-accordion-content w3-light-grey w3-card-4'>" SKIP
+                .
+            
+            RUN menuwalk(insidetheinclude-menunumber).
+            
+            {&OUT}
+               "           </div>" SKIP
+               "       </div>" SKIP.
+                              
+        END. /** of if menu_exprog < a ***/
+
+        ELSE DO: 
+    
+            insidetheinclude-entryfill = menu_mstr.menu_num + "." + STRING(menu_mstr.menu_sel) + " -".
+            
+                                                                IF insidetheinclude-ITshowmsg = YES THEN 
+                                                                    {&OUT} "<P>Pre-fill = " length(insidetheinclude-entryfill) " " insidetheinclude-entryfill "</P>".
+            
+            DO x = 7 TO LENGTH(menu_mstr.menu_num + "." + STRING(menu_mstr.menu_sel) + " -") BY -1:
+                insidetheinclude-entryfill = insidetheinclude-entryfill + "-".
+            END.    /* of do x = 8 down to length of menunumber */
+            
+                                                                IF insidetheinclude-ITshowmsg = YES THEN 
+                                                                    {&OUT} "<P>Post-fill = " length(insidetheinclude-entryfill) " " insidetheinclude-entryfill "</P>".
+
+            {&OUT}
+                "   <a href='" insidetheinclude-modulepath insidetheinclude-menexhold "'>" menu_mstr.menu_num "." menu_mstr.menu_select " " menu_mstr.menu_title "</a>" SKIP.
+                 
+        END.  /** of else do **/
+                       
+    END. /** of 4ea. menu_mstr ***/
+                              
+END. /** of PROCEDURE menuwalk ***/
+
+FIND FIRST menu_mstr WHERE menu_mstr.menu_exprog = THIS-PROCEDURE:FILE-NAME and
+    menu_mstr.menu_deleted <> ? AND 
+    menu_mstr.menu__log01 = no
+    NO-LOCK NO-ERROR.
+
+IF AVAILABLE (menu_mstr) THEN ASSIGN insidetheinclude-v-title-name = menu_mstr.menu_title.
+ELSE ASSIGN insidetheinclude-v-title-name = "InforMatrix".
+
+{&OUT}
+    "<header class='w3-container w3-theme-dark' onclick='w3_open()'>" SKIP
+    "   <span class='w3-opennav w3-xlarge' onclick='w3_open()' style='overflow:visible;'> &#9776; </span>" SKIP
+    "    <h1>Inventory Receipt</h2>" SKIP
+    "</header>" SKIP
+    "   <nav class='w3-sidenav w3-theme w3-card-2' style='display:none;' id='mySidenav'>" SKIP(1)
+    "       <a href='javascript:void(0)' onclick='w3_close()' class='w3-closenav w3-large w3-hover-black' >Close Menu &times;</a>" SKIP.
+
+FIND FIRST menu_mstr NO-LOCK NO-ERROR.
+
+RUN menuwalk(MENU_num). 
+
+{&OUT}
+    "   </nav>" SKIP
+/*    "<div class='w3-overlay w3-animate-opacity' onclick='w3_close()' style='cursor:pointer' id='myOverlay'></div>" SKIP*/
+    .
+/****************************************************** End of "Include" **********************************/
+
+CASE act:
+
+    WHEN "Site" THEN DO:
+    
+        {&OUT}
+            "<div class='w3-card-4 w3-content w3-white' style='max-width:1700px;'>" SKIP  
+            
+            "<form>" SKIP
+            "   <input type='hidden' name='h-warehouse' value='" v-warehouse "'/>" SKIP
+            "   <input type='hidden' name='h-item_nbr' value='" v-item_nbr "'/>" SKIP
+            "   <input type='hidden' name='h-quantity' value='" v-quantity "'/>" SKIP
+            "   <input type='hidden' name='h-lot' value='" v-lot "'/>" SKIP
+            "   <input type='hidden' name='h-serial' value='" v-serial "'/>" SKIP
+/*            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP*/
+            "<div class='w3-row-padding '>" SKIP
+            "   <DIV class='w3-col s12'>" SKIP
+            "       <DIV class='w3-text-theme'><b>Site</b></DIV>" SKIP
+            "       <select name='h-site' class='w3-border w3-round w3-select w3-yellow w3-margin-bottom' required>" SKIP.
+            
+        FOR EACH site_mstr WHERE 
+            site_mstr.site_deleted = ? NO-LOCK:
+        
+            {&OUT} "                <option value'" site_mstr.site_name "'".
+        
+            IF site_mstr.site_name = v-site THEN {&OUT} " SELECTED ".
+        
+            {&OUT} ">" site_mstr.site_name "</option>" SKIP.
+            
+        END. /** 4ea site_mstr **/
+            
+        {&OUT}
+            "            </select>" SKIP
+            "   </div>" SKIP
+            "</div> " SKIP   
+            "</DIV>" SKIP
+
+            "<br>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Warehouse' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='site' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>".
+        
+    END. /** Site **/
+    
+    WHEN "Warehouse" THEN DO:
+        
+        {&OUT}
+/*            "<DIV class='w3-row-padding w3-container w3-theme-dark w3-margin-bottom'><h2 class=''>Mobile Inventory Receipt</h2></TH></div>" SKIP*/
+
+            "<div class='w3-card-4 w3-content w3-white' style='max-width:1700px;'>" SKIP  
+            
+            "<form>" SKIP
+            "   <input type='hidden' name='h-site' value='" v-site "'/>" SKIP
+            "   <input type='hidden' name='h-item_nbr' value='" v-item_nbr "'/>" SKIP
+            "   <input type='hidden' name='h-quantity' value='" v-quantity "'/>" SKIP
+            "   <input type='hidden' name='h-lot' value='" v-lot "'/>" SKIP
+            "   <input type='hidden' name='h-serial' value='" v-serial "'/>" SKIP
+/*            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP*/
+            "<div class='w3-row-padding '>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Site</b></label>" SKIP
+            "       <INPUT class='w3-input w3-border w3-round' type='TEXT' name='h-site' value='" v-site "' disabled />" SKIP
+            "   </DIV>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <DIV class='w3-text-theme'><b>Warehouse</b></DIV>" SKIP
+            "       <select name='h-warehouse' class='w3-border w3-round w3-select w3-yellow  w3-margin-bottom' required>" SKIP.
+            
+        FOR EACH site_mstr WHERE 
+            site_mstr.site_name = v-site AND 
+            site_mstr.site_deleted = ? NO-LOCK,
+          EACH warehouse_mstr WHERE 
+            warehouse_mstr.warehouse_site = site_mstr.site_name AND 
+            warehouse_mstr.warehouse_deleted = ? NO-LOCK:
+        
+            {&OUT} "                <option value'" warehouse_mstr.warehouse_name "'>" warehouse_mstr.warehouse_name "</option>" SKIP.
+            
+        END. /** 4ea site_mstr **/
+            
+        {&OUT}
+            "            </select>" SKIP
+            "   </div>" SKIP
+            "</div> " SKIP   
+            "</DIV>" SKIP
+
+            "<br>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Item' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='site' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>".
+        
+    END. /** Warehouse **/
+
+    WHEN "Item" THEN DO:
+        
+ IF itmessage = YES THEN {&OUT} "act = " act "<br>" SKIP.
+ 
+        {&OUT} 
+            "<form>"
+            
+            "<input type='hidden' name='h-site' value='" v-site "'/>" SKIP
+            "<input type='hidden' name='h-warehouse' value='" v-warehouse "'/>" SKIP
+            "<INPUT type='hidden' name='whattorun' value='"  "' />" SKIP             
+            
+/*            "<DIV class='w3-row-padding w3-container w3-theme-dark w3-margin-bottom'><h2 class=''>Mobile Inventory Receipt</h2></TH></div>" SKIP*/
+
+            "<div class='w3-card-4 w3-content w3-white' style='max-width:1700px;'>" SKIP
+                
+            "<div class='w3-row-padding'> " SKIP 
+            "   <DIV class='w3-col l6 w3-margin-top'>" SKIP
+            "       <label class='w3-text-theme'><b>Site</b></label>" SKIP
+            "       <input class='w3-input w3-border w3-round' type='text' placeholder='" v-site "' disabled></input>" SKIP
+            "   </DIV>" SKIP
+            "   <DIV class='w3-col l6 w3-margin-top'>" SKIP
+            "       <label class='w3-text-theme'><b>Warehouse</b></label>" SKIP
+            "       <input class='w3-input w3-border w3-round' type='text' placeholder='" v-warehouse "' disabled></input>" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+                
+            "<div class='w3-row-padding'>      " SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Location</b></label>" SKIP
+            "       <select name='h-loc' class='ss-scanfield w3-border w3-round w3-select w3-yellow' required>" SKIP.
+            
+        FOR EACH site_mstr WHERE 
+            site_mstr.site_name = v-site AND 
+            site_mstr.site_deleted = ? NO-LOCK,
+          EACH warehouse_mstr WHERE 
+            warehouse_mstr.warehouse_site = site_mstr.site_name AND 
+            warehouse_mstr.warehouse_name = v-warehouse AND
+            warehouse_mstr.warehouse_deleted = ? NO-LOCK,
+          EACH loc_mstr WHERE 
+            loc_mstr.loc_site = site_mstr.site_name AND 
+            loc_mstr.loc_warehouse = warehouse_mstr.warehouse_name AND 
+            loc_mstr.loc_deleted = ? NO-LOCK:
+        
+            {&OUT} "                <option value'" loc_mstr.loc_name "'>" loc_mstr.loc_name "</option>" SKIP.
+            
+        END. /** 4ea site_mstr **/
+        
+        {&OUT}
+            "       </select>" SKIP
+            "   </div>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Item Number</b></label>" SKIP
+            "       <INPUT class='ss-scanfield w3-input w3-yellow w3-border w3-round' type='TEXT' name='h-item_nbr' value='" v-item_nbr "' required ></input>" SKIP
+            "   </div>" SKIP
+            "</DIV>" SKIP
+            
+            "<div class='w3-row-padding'>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Quantity</b></label>" SKIP
+            "       <INPUT class='w3-input w3-yellow w3-border w3-round' type='NUMBER' name='h-quantity' value='" v-quantity "' required min='1'/>" SKIP
+            "   </div>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme w3-col l6'><b>Lot Number</b></label>" SKIP
+            "       <INPUT class='ss-scanfield w3-input w3-border w3-round' id='' type='TEXT' name='h-lot' value='" v-lot "' />" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+            
+            "<div class='w3-row-padding'>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Expiration Date</b></label>" SKIP
+            "       <INPUT class='w3-input w3-border w3-round' type='DATE' name='h-expire_date' value='" v-expire_date "' />" SKIP
+            "   </DIV>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Serial</b></label>" SKIP
+            "       <INPUT class='w3-input w3-border w3-round' type='TEXT' name='h-serial' value='" v-serial "' />" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+                
+            "<div class='w3-row-padding '>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Purchase Order Number</b></label>" SKIP
+            "       <INPUT class='w3-input w3-border w3-round' type='TEXT' name='h-po_nbr' value='" v-po_nbr "' />" SKIP
+            "   </DIV>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <DIV class='w3-text-theme'><b>Notes</b></DIV>" SKIP
+            "       <textarea class='w3-input w3-border w3-round w3-margin-bottom' name='h-notes' value='" v-notes "'></textarea>" SKIP
+            "   </div>" SKIP
+            "</div> " SKIP   
+            "</DIV>" SKIP
+
+            "<br>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Validation' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='site' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>".
+        
+            
+    END. /** Item Selection **/
+    
+    WHEN "Validation" THEN DO:
+    
+                                                                    IF itmessage = YES THEN {&OUT} "validation act = " act "<br>" SKIP.
+        
+        FIND FIRST loc_mstr WHERE 
+            loc_mstr.loc_site = v-site AND 
+            loc_mstr.loc_warehouse = v-warehouse AND 
+            loc_mstr.loc_name = v-loc AND 
+            loc_mstr.loc_deleted = ? NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (loc_mstr) THEN DO:
+                                                                    
+            IF CAN-FIND (FIRST item_mstr WHERE 
+                item_mstr.item_nbr = v-item_nbr AND 
+                item_mstr.item_deleted = ?) THEN DO: 
+
+                FIND FIRST qoh_det WHERE 
+                    qoh_det.qoh_site = v-site AND 
+                    qoh_det.qoh_warehouse = v-warehouse AND 
+                    qoh_det.qoh_loc = v-loc AND 
+                    qoh_det.qoh_item_nbr = v-item_nbr AND 
+                    qoh_det.qoh_lot = v-lot AND
+                    qoh_det.qoh_serial = v-serial AND 
+                    qoh_det.qoh_deleted = ? NO-LOCK NO-ERROR.
+                                        
+                /*** some of same lot already there. ***/
+                IF AVAILABLE (qoh_det) THEN ASSIGN v-merge-quantity = qoh_det.qoh_quantity + v-quantity.                 
+                
+                ELSE ASSIGN v-merge-quantity = v-quantity.
+
+                RUN VALUE(SEARCH("SUBqoh-ucU.r"))
+                    (v-site,
+                    v-warehouse,
+                    v-item_nbr,
+                    v-loc,
+                    v-lot,
+                    v-serial,
+                    v-merge-quantity,
+                    v-avail,
+                    v-status,
+                    v-expire_date,
+                    TODAY, /*** last count ***/
+                    OUTPUT o-create,
+                    OUTPUT o-update,
+                    OUTPUT o-success).    
+                
+                IF o-success = YES THEN DO:
+        
+                    RUN VALUE(SEARCH("SUBtrh-ucU.r"))
+                        (0, /*** trh_id ***/
+                        v-item_nbr, /*** trh_item ***/
+                        "PO-RCPT", /*** trh_action ***/
+                        v-quantity, /*** trh_qty ***/
+                        v-loc, /*** trh_loc ***/
+                        v-lot, /*** trh_lot ***/
+                        v-serial, /*** trh_serial ***/
+                        v-site, /*** trh_site ***/
+                        0, /*** trh_sequence ***/
+                        v-notes, /*** trh_comments ***/
+                        "", /*** trh_other ***/
+                        0, /*** trh_people ***/
+                        v-po_nbr, /*** trh_order ***/
+                        TODAY, /*** trh_date ***/
+                        NOW, /*** trh_time ***/
+                        "", /*** trh_ref ***/
+                        OUTPUT o-ctrh-id,
+                        OUTPUT o-ctrh-error).
+                   
+                    IF o-ctrh-error = YES THEN DO:
+                    
+                        {&OUT}
+                            "<div class='w3-container'>" SKIP
+                            "<form>" SKIP
+                            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+                            "    <header class='w3-container w3-red'>" SKIP
+                            "       <h1>Error</h1>" SKIP
+                            "    </header>" SKIP
+                            
+                            "    <div class='w3-container'>" SKIP
+                            "       <p>An error happened, and a transaction history record failed. Contact Solsource.</p>" SKIP
+                            "    </div>" SKIP
+                            
+                            "   <!-- Variable notes for debugging --->" SKIP
+                            "   <!-- v-site = " v-site " --->" SKIP
+                            "   <!-- v-warehouse = " v-warehouse " --->" SKIP
+                            "   <!-- v-loc = " v-loc " --->" SKIP
+                            "   <!-- v-item_nbr = " v-item_nbr " --->" SKIP
+                            "   <!-- v-lot = " v-lot " --->" SKIP
+                            "   <!-- v-serial = " v-serial " --->" SKIP
+                            "   <!-- v-quantity = " v-quantity " --->" SKIP
+                            
+                            "    <button type='submit' name='h-act' value='SITE' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+                            "</div>" SKIP
+                            "</form>" SKIP
+                            "</div>" SKIP.
+
+                    END. /*** trh hist error ***/
+                   
+                    ELSE DO:
+                   
+                        {&OUT}
+                            "<div class='w3-container'>" SKIP
+                            "<form>" SKIP
+                            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+                            "    <header class='w3-container w3-green'>" SKIP
+                            "       <h1>Success</h1>" SKIP
+                            "    </header>" SKIP
+                            
+                            "    <div class='w3-container'>" SKIP
+                            "       <p>You've successfully received (" v-quantity ") <b>" v-item_nbr "</b> to [" v-loc "] at " v-site ", " v-warehouse " warehouse!</p>" SKIP
+                            "    </div>" SKIP
+                            
+                            "    <button type='submit' name='h-act' value='SITE' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-green'>Return to Start</BUTTON>" SKIP
+                            "</div>" SKIP
+                            "</form>" SKIP
+                            "</div>" SKIP.
+                   
+                    END. /*** of trh hist success = yes ***/
+                    
+                    /*** already has open ELSE ***/
+                                      
+                END. /*** of qoh success = yes ***/
+
+                ELSE {&OUT}
+                    "<div class='w3-container'>" SKIP
+                    "<form>" SKIP
+                    "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+                    "    <header class='w3-container w3-red'>" SKIP
+                    "       <h1>Error</h1>" SKIP
+                    "    </header>" SKIP
+                    
+                    "    <div class='w3-container'>" SKIP
+                    "       <p>Something Unexpected Happened.</p>" SKIP
+                    "    </div>" SKIP
+                    
+                    "   <!-- Variable notes for debugging --->" SKIP
+                    "   <!-- v-site = " v-site " --->" SKIP
+                    "   <!-- v-warehouse = " v-warehouse " --->" SKIP
+                    "   <!-- v-loc = " v-loc " --->" SKIP
+                    "   <!-- v-item_nbr = " v-item_nbr " --->" SKIP
+                    "   <!-- v-lot = " v-lot " --->" SKIP
+                    "   <!-- v-serial = " v-serial " --->" SKIP
+                    "   <!-- v-quantity = " v-quantity " --->" SKIP
+                    
+                    "    <button type='submit' name='h-act' value='SITE' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+                    "</div>" SKIP
+                    "</form>" SKIP
+                    "</div>" SKIP.
+            
+            END. /*** Can-FInd Item Number ***/
+                
+            ELSE DO:
+
+                {&OUT}
+                    "<div class='w3-container'>" SKIP
+                    "<form>" SKIP
+                    "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+                    "    <header class='w3-container w3-red'>" SKIP
+                    "       <h1>Error</h1>" SKIP
+                    "    </header>" SKIP
+                    
+                    "    <div class='w3-container'>" SKIP
+                    "       <p>The Item Number '" v-item_nbr "' is not in the database.</p>" SKIP
+                    "       <p>Feel free to click the back button in your browser and try again.</p>" SKIP
+                    "    </div>" SKIP
+                    
+                    "   <!-- Variable notes for debugging --->" SKIP
+                    "   <!-- v-site = " v-site " --->" SKIP
+                    "   <!-- v-warehouse = " v-warehouse " --->" SKIP
+                    "   <!-- v-loc = " v-loc " --->" SKIP
+                    "   <!-- v-item_nbr = " v-item_nbr " --->" SKIP
+                    "   <!-- v-lot = " v-lot " --->" SKIP
+                    "   <!-- v-serial = " v-serial " --->" SKIP
+                    "   <!-- v-quantity = " v-quantity " --->" SKIP
+                    
+                    "    <button type='submit' name='h-act' value='SITE' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+                    "</div>" SKIP
+                    "</form>" SKIP
+                    "</div>" SKIP.
+
+            END. /*** Improper Item Number ***/
+        
+        END. /*** Can-Find Location ****/
+        
+        ELSE DO:
+
+            {&OUT}
+                "<div class='w3-container'>" SKIP
+                "<form>" SKIP
+                "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+                "    <header class='w3-container w3-red'>" SKIP
+                "       <h1>Error</h1>" SKIP
+                "    </header>" SKIP
+                
+                "    <div class='w3-container'>" SKIP
+                "       <p>The Location '" v-loc "' is not in the database at " v-warehouse " in " v-site ".</p>" SKIP
+                "       <p>Feel free to click the back button in your browser and try again.</p>" SKIP
+                "    </div>" SKIP
+                
+                "   <!-- Variable notes for debugging --->" SKIP
+                "   <!-- v-site = " v-site " --->" SKIP
+                "   <!-- v-warehouse = " v-warehouse " --->" SKIP
+                "   <!-- v-loc = " v-loc " --->" SKIP
+                "   <!-- v-item_nbr = " v-item_nbr " --->" SKIP
+                "   <!-- v-lot = " v-lot " --->" SKIP
+                "   <!-- v-serial = " v-serial " --->" SKIP
+                "   <!-- v-quantity = " v-quantity " --->" SKIP
+                
+                "    <button type='submit' name='h-act' value='SITE' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP
+                "</div>" SKIP.
+
+        END. /*** Improper Location ***/
+        
+    END. /** Validation **/
+    
+    OTHERWISE DO:
+        
+        {&OUT}
+            "<div class='w3-container'>" SKIP
+            "<form>" SKIP
+            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-red'>" SKIP
+            "       <h1>Error</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>Could not find act '" act "'.</p>" SKIP
+            "    </div>" SKIP
+
+            "    <button type='submit' name='h-act' value='SITE' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+            
+    END. /*** otherwise ***/
+    
+END CASE.
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

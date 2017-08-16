@@ -1,0 +1,606 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <TITLE>User Maintenance</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="6/May/16">
+    <META NAME='LAST_UPDATED' CONTENT="6/May/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+<script src='/depot/src/HTMLContent/buttons.js'></script>
+
+<script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Template Notes: 
+        This template is designed to be used with a maintenance screen.
+        Quoted areas are either instuctions or place holders for your 
+        variables and fields.
+    
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+        
+  -----------------------------------------------------------------
+  Revision History:
+  -----------------
+  1.0 - written by R.J. LUTTRELL on 06/May/16.  Original Version.
+  1.1 - written by DOUG LUTTRELL on 11/Aug/17.  Just changed to work with the CMC structure (Version 12).
+            Not checking the logic at all.  Marked by 1dot1.      
+        
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO               NO-UNDO.
+DEFINE VARIABLE v-new           AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE whichrec        LIKE usr_mstr.usr_people_ID         NO-UNDO.
+DEFINE VARIABLE o-successful    AS LOGICAL                          NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-fname         LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE v-lname         LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-email         LIKE people_mstr.people_email       NO-UNDO.
+DEFINE VARIABLE v-uname         LIKE usr_mstr.usr_name              NO-UNDO.
+DEFINE VARIABLE v-password      LIKE usr_mstr.usr_password          NO-UNDO.
+DEFINE VARIABLE v-password-exp  LIKE usr_mstr.usr_password_reset      NO-UNDO.                          /* 1dot1 */
+DEFINE VARIABLE char-pass-exp   AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-password-rst  LIKE usr_mstr.usr_password_reset    NO-UNDO.
+DEFINE VARIABLE char-pass-rst   AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-grouplist     AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE isselected      AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE o-create        AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE o-update        AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE o-avail         AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE x               AS INTEGER                          NO-UNDO.
+/* ************************* Assignments *************************** */
+
+
+ASSIGN 
+    act             = get-value("h-act")
+    whichrec        = INTEGER(get-value("h-whichrec"))
+    v-new           = IF get-value("h-new") = "YES" THEN YES ELSE IF get-value("h-new") = "NO" THEN NO ELSE ?
+    /* additional variables here */
+    v-fname         = get-value("h-fname")
+    v-lname         = get-value("h-lname")
+    v-email         = get-value("h-email")
+    v-uname         = get-value("h-uname")
+    v-password      = get-value("h-password")
+    v-grouplist     = get-value("h-grouplist")
+    char-pass-exp   = get-value("h-password-exp")
+    char-pass-rst   = get-value("h-password-rst")
+    .
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    char-pass-exp,                                                               
+    OUTPUT v-password-exp                                                             
+    ). 
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    char-pass-rst,                                                               
+    OUTPUT v-password-rst                                                             
+    ).
+
+IF act= "" THEN 
+    act = "INITIAL".
+
+
+/* ************************ Validation Acts ************************ */
+IF act = "VALIDATION" THEN DO: 
+    
+    IF v-new = YES THEN DO: 
+            
+        FIND usr_mstr WHERE usr_mstr.usr_people_ID = whichrec NO-LOCK NO-ERROR.
+            
+        IF NOT AVAILABLE (usr_mstr) THEN 
+                
+	       ASSIGN    
+	           act = "UPDATE".
+            
+	   ELSE DO: 
+	       ASSIGN v-new = NO.
+  
+          {&OUT}
+			"<form>" SKIP
+			"<INPUT type='hidden' name='h-new' value='" v-new "' />" SKIP
+			"<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP 
+			      "<INPUT type='hidden' name='h-whichrec' value='" whichrec "' />" SKIP
+			"<DIV class='row'>" SKIP
+			"<DIV class='grid_3'> </DIV>" SKIP
+			"<DIV class='grid_6'>" SKIP   
+			"<center><h2>The record you are trying to create already exists. Would you like to Update it?</h2></center>" SKIP
+			"</DIV>         <!-- end of grid_6 -->" SKIP
+			"<DIV class='grid_3'> </DIV>" SKIP  
+			"</DIV>     <!-- end of row -->" SKIP
+			"<BR>" SKIP
+			"<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Yes</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>No</BUTTON></div>" SKIP        
+			"   <div class='grid_3'> </DIV>" SKIP
+			"</div>" SKIP.
+                
+            
+        END. /* else ID <> 0 */
+    END. /* v-new = yes */    
+    ELSE IF v-new = NO THEN DO:  
+            
+        FIND usr_mstr WHERE usr_mstr.usr_people_ID = whichrec NO-LOCK NO-ERROR.
+            
+        IF NOT AVAILABLE (usr_mstr) THEN DO: 
+                
+            ASSIGN v-new = YES.
+                
+           {&OUT}
+               "<form>" SKIP
+               "<INPUT type='hidden' name='h-new' value='" v-new "' />" SKIP
+               "<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+               "<INPUT type='hidden' name='h-whichrec' value='" whichrec "' />" SKIP
+               "<DIV class='row'>" SKIP
+               "<DIV class='grid_3'> </DIV>" SKIP
+               "<DIV class='grid_6'>" SKIP   
+               "<center><h2>The record you are trying to update does not exist. Would you like to create it?</h2></center>" SKIP
+               "</DIV>         <!-- end of grid_6 -->" SKIP
+               "<DIV class='grid_3'> </DIV>" SKIP  
+               "</DIV>     <!-- end of row -->" SKIP
+               "<BR>" SKIP
+               "<div class='row'>" SKIP
+               "   <div class='grid_3'> </DIV>" SKIP
+               "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Yes</BUTTON></div>" SKIP
+               "   <div class='grid_2'> </DIV>" SKIP
+               "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>No</BUTTON></div>" SKIP        
+               "   <div class='grid_3'> </DIV>" SKIP
+               "</div>" SKIP
+               "</form>" SKIP.
+        END. /* if /* ID */ = 0 */       
+            
+        ELSE         
+           ASSIGN    
+               act = "UPDATE".
+        
+	END. /* v-new = no */
+	ELSE DO:
+	    {&OUT} 
+	        "<DIV class='row'>" SKIP
+	        "<DIV class='grid_3'> </DIV>" SKIP
+	        "<DIV class='grid_6'>" SKIP 
+	            "<center><h2>An error has occured in the validation process. v-new = " v-new ". Please contact Solsource.</h2></center>" SKIP
+	        "</DIV>         <!-- end of grid_6 -->" SKIP
+	        "<DIV class='grid_3'> </DIV>" SKIP
+	        "</DIV>     <!-- end of row -->" SKIP.
+	
+	END. /* else do v-new = ? */
+END. /* validation */    
+IF act = "VALIDATE_DELETE" THEN DO: 
+    
+    /* use a multi table find first here to find if there are any records dependent on the one you are 
+    trying to delete.  */
+    
+    FIND usr_mstr WHERE usr_mstr.usr_people_ID = whichrec NO-LOCK NO-ERROR.
+    
+    IF AVAILABLE (usr_mstr) THEN
+    DO: 
+        
+        FIND FIRST Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = usr_mstr.usr_people_ID AND
+                                    Hours_Mstr.Hours_deleted = ?
+                                               NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (Hours_Mstr) THEN
+    
+            {&OUT}
+				"<form>" SKIP
+				"<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP       
+				"<DIV class='row'>" SKIP
+				"<DIV class='grid_3'> </DIV>" SKIP
+				"<DIV class='grid_6'>" SKIP   
+				"<center><h2>The record you are trying to delete has dependent records in Hours_mstr.  Delete dependent records before continuing.</h2></center>" SKIP
+				"</DIV>         <!-- end of grid_6 -->" SKIP
+				"<DIV class='grid_3'> </DIV>" SKIP  
+				"</DIV>     <!-- end of row -->" SKIP
+				"<BR>" SKIP 
+				"<div class='row'>" SKIP
+				"   <div class='grid_5'> </DIV>" SKIP
+				"   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+				"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+				"   <div class='grid_5'> </DIV>" SKIP
+				"</div>" SKIP
+				"</form>" SKIP. 
+         
+         ELSE
+         
+            ASSIGN act = "DELETE".
+         
+    END. /* if avail table_mstr */
+    ELSE
+
+	    {&OUT}
+	        "<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP       
+	        "<DIV class='row'>" SKIP
+	        "<DIV class='grid_3'> </DIV>" SKIP
+	        "<DIV class='grid_6'>" SKIP   
+	        "<center><H2>An Error has occured while trying to find the record you want to delete. Please contact Solsource.</H2></center>" SKIP
+	        "</DIV>         <!-- end of grid_6 -->" SKIP
+	        "<DIV class='grid_3'> </DIV>" SKIP  
+	        "</DIV>     <!-- end of row -->" SKIP.     
+
+END. /* validate delete */         
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" skip
+            "           <td>Last Name</td>" skip
+            "           <td><input type='text' name=' h-lname'  value='" v-lname "' /></td>" SKIP 
+           
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>First Name</td>" skip
+            "           <td><input type='text' name='h-fname'  value='" v-fname "' /></td>" SKIP            
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Email</td>" skip
+            "           <td><input type='text' name='h-email'  value='" v-email "' /></td>" SKIP            
+            "       </tr>" SKIP(1)
+        /* copy and paste above <tr>...</tr> for more fields */
+        
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP        
+			"   <div class='grid_3'> </DIV>" SKIP
+			"</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+    
+    /* the .i file below is a holding pin for the javascript only.  You will need to go to the file and copy 
+    and paste the javascript from there and into your code here. */ 
+        
+/********** * * * JAVASCRIPT * * * *************/
+</script> 
+
+<script TYPE='text/javascript'>
+
+$(document).ready(function() {
+
+                // Get an array of all element heights
+
+                var elementHeights = $('.btn').map(function() {
+                    return $(this).height();
+                }).get();
+
+                // Math.max takes a variable number of arguments
+
+                var maxHeight = Math.max.apply(null, elementHeights);
+
+                // Set each height to the max height
+
+                $('.btn').height(maxHeight);
+            });
+
+$(document).ready(function() {
+   //change .table to the table class being used.
+    $('.table_report tbody tr').click(function(event) {
+        if (event.target.type !== 'radio') {
+            $(':radio', this).trigger('click');
+        }
+    });
+});
+
+</script>
+
+<SCRIPT language='SpeedScript'>
+/********** * * * END OF JAVA * * * *************/      
+        
+        {&OUT}
+            "<form>" SKIP        
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='5'>Users</TH>" SKIP    
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <td>Select</td>" SKIP
+            "                <TD>Last Name</TD>" SKIP
+            "                <TD>First Name</TD>" SKIP
+            "                <TD>Email</TD>" SKIP
+            "                <TD>User Name</TD>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1)
+            "        <tbody class='clickable'>" SKIP.
+            
+        FOR EACH usr_mstr NO-LOCK,      
+            EACH people_mstr WHERE people_mstr.people_id = usr_mstr.usr_people_ID AND 
+                                   people_mstr.people_lastname BEGINS v-lname AND
+                                   people_mstr.people_firstname BEGINS v-fname AND 
+                                   ((people_mstr.people_email BEGINS v-email) OR (v-email = ""))                                       
+                                   NO-LOCK BY people_mstr.people_lastname BY people_mstr.people_firstname BY people_mstr.people_email: 
+            {&OUT}
+            "           <tr>" SKIP
+            "               <TD><center><input type='radio' name='h-whichrec' value='" usr_mstr.usr_people_ID "' /></center></TD>" SKIP
+            "               <td>" people_mstr.people_lastname "</td>" SKIP
+            "               <td>" people_mstr.people_firstname "</td>" SKIP
+            "               <td>" people_mstr.people_email "</td>" SKIP
+            "               <td>" usr_mstr.usr_name "</td>" SKIP
+            "           </tr>" SKIP.
+
+        END. /* 4ea. */
+        
+        {&OUT}
+            "        </tbody>" SKIP          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='5'>END OF REPORT</TD>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP 
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP   
+            "<BR>" SKIP 
+            "<div class='row'>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='MAINTENANCE' class='btn'>Edit</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='NEW' class='btn'>New</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP            
+            "   <div class='grid_1'><button type='submit' name='h-act' value='VALIDATE_DELETE' class='btn'>Delete</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+    WHEN "NEW" THEN DO:
+        
+        ASSIGN v-new = YES.
+         
+        {USRmaintU-form.i "VALIDATION" "NOTHING" "REQ" "NOTHING"}.
+             
+    END. /* new */
+    WHEN "MAINTENANCE" THEN DO:
+    
+        ASSIGN v-new = NO.
+        
+        FIND FIRST sec_ctrl NO-LOCK NO-ERROR.                                                   /* 1dot1 */ 
+        
+        /*  Need some decisions about what to do if there is no sec_ctrl record available */
+                
+        FOR FIRST people_mstr WHERE people_mstr.people_id = whichrec NO-LOCK,
+            FIRST usr_mstr WHERE usr_mstr.usr_people_ID = people_mstr.people_id NO-LOCK:      
+        
+            ASSIGN
+               v-fname          = people_mstr.people_firstname
+               v-lname          = people_mstr.people_lastname
+               v-email          = people_mstr.people_email
+               v-uname          = usr_mstr.usr_name
+               v-password       = usr_mstr.usr_password    
+               v-password-exp   = (usr_mstr.usr_password_reset + sec_ctrl.sec_password_exp)     /* 1dot1 */
+               v-password-rst   = (usr_mstr.usr_password_reset + sec_ctrl.sec_password_warn)    /* 1dot1 */     /* this is wrong */
+               .
+         
+       RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                           
+		    v-password-rst,                                                               
+		    OUTPUT char-pass-rst                                                           
+		    ).  
+       
+       RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                           
+            v-password-exp,                                                               
+            OUTPUT char-pass-exp                                                           
+            ).
+                
+            {USRmaintU-form.i "VALIDATION" "REQUIRED" "REQ" "NOTHING"}.
+        
+        END. /* if avial table_mstr */
+          
+        
+    END. /* maintenance */
+    WHEN "UPDATE" THEN DO:
+      
+      FIND people_mstr WHERE people_mstr.people_id = whichrec OR 
+                             (people_mstr.people_firstname = v-fname AND 
+                             people_mstr.people_lastname = v-lname AND 
+                             people_mstr.people_email = v-email)
+                                NO-LOCK NO-ERROR.
+      
+      IF AVAILABLE (people_mstr) THEN DO:
+            ASSIGN 
+                whichrec = people_mstr.people_id.
+           
+
+        FIND usr_mstr WHERE usr_mstr.usr_people_ID = whichrec EXCLUSIVE-LOCK NO-ERROR.
+        
+        IF NOT AVAILABLE (usr_mstr) THEN
+        
+            CREATE usr_mstr.
+            
+        ASSIGN 
+            usr_mstr.usr_people_ID      = whichrec
+            usr_mstr.usr_name           = IF v-uname        = "" THEN usr_mstr.usr_name             ELSE v-uname
+            usr_mstr.usr_password       = IF v-password     = "" THEN usr_mstr.usr_password         ELSE v-password   
+/*            usr_mstr.usr_password_exp   = IF v-password-exp = ?  THEN usr_mstr.usr_password_exp     ELSE v-password-exp     /* 1dot1 */*/
+            usr_mstr.usr_password_reset = IF v-password     <> usr_mstr.usr_password  THEN TODAY    ELSE usr_mstr.usr_password_reset
+            . 
+
+        DO x = 1 TO NUM-ENTRIES(v-grouplist):                                       
+           
+           FIND FIRST gud_det WHERE gud_det.gud_people_ID = whichrec AND 
+                                    gud_det.gud_grp_id = ENTRY(x,v-grouplist)
+                   EXCLUSIVE-LOCK NO-ERROR.
+                   
+           IF NOT AVAILABLE (gud_det) THEN DO:                                  /** create new gud_det records **/                         
+               
+               CREATE gud_det.
+               ASSIGN 
+                   gud_det.gud_people_ID   = whichrec
+                   gud_det.gud_grp_id      = ENTRY(x,v-grouplist)
+/*                   gud_det.gud_created_by  = USERID("GENERAL")   */
+/*                   gud_det.gud_create_date = TODAY               */
+                   .
+                   
+           END.  /** of if not avail pcl_det ---- create **/
+           
+           ASSIGN                                                               /** modify existing pcl_det records - including prev. deleted **/
+/*               gud_det.gud_deleted         = ?*/
+/*               gud_det.gud_modified_by     = USERID("GENERAL")                                                            */
+/*               gud_det.gud_modified_date   = TODAY                                                                        */
+/*               gud_det.gud_prog_name       = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1)*/
+               .      
+           
+       END.  /** of x = 1 to num-entries(v-grouplist) **/   
+       
+       FOR EACH gud_det WHERE gud_det.gud_people_ID = whichrec AND              /** delete unwanted pcl_det records **/
+           LOOKUP(STRING(gud_det.gud_grp_id),v-grouplist) = 0:                    /** share lock upgrads to exclusive and back again per record **/ 
+               
+               
+           ASSIGN 
+/*               gud_det.gud_modified_by     = USERID("GENERAL")                                                            */
+/*               gud_det.gud_modified_date   = TODAY                                                                        */
+/*               gud_det.gud_deleted         = TODAY                                                                        */
+/*               gud_det.gud_prog_name       = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1)*/
+               .
+               
+       END.  /** of 4ea. pcl_det **/ 
+                
+
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center>" SKIP
+                    "<h2>Record updated.</h2>" SKIP
+                    "</center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</div>" SKIP.
+        
+            {USRmaintU-form.i "INITIAL" "DISABLED" "NOTHING" "DISABLED"}.
+            
+        END. /* if avail people_mstr */ 
+        ELSE
+        
+            {&OUT}
+                "<DIV class='row'>" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "<DIV class='grid_6'>" SKIP 
+	                "<center><h2>" v-fname " " v-lname " not yet created in the people_mstr. Please create " v-fname " " v-lname " using the People Maintenance program before continuing.</h2></center>" SKIP
+	            "</DIV>         <!-- end of grid_6 -->" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "</DIV>     <!-- end of row -->" SKIP
+	            "<BR>" SKIP 
+	            "<form>" SKIP
+	            "<div class='row'>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+	            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "</DIV>     <!-- end of row -->" SKIP
+	            "</form>" SKIP.     
+        
+    END. /* update */
+    WHEN "DELETE" THEN DO: 
+    
+        FIND usr_mstr WHERE usr_mstr.usr_people_ID = whichrec EXCLUSIVE-LOCK NO-ERROR.
+
+        IF AVAILABLE (usr_mstr) THEN
+        DO: 
+            DELETE usr_mstr. 
+            /* delete record here either with the delete command or by flaging the table's delete field. */
+            
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>Record " /* v-id */ " has been deleted.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP.
+            
+            {USRmaintU-form.i "INITIAL" "DISABLED" "NOTHING" "DISABLED"}.
+        
+        END. /* if avail table_mstr */
+        ELSE
+         
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>Could not find record " v-uname " to delete. Please contact Solsource.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP.                                  
+        
+    END. /* delete */                
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<center><h2>Could not find act " act ".</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

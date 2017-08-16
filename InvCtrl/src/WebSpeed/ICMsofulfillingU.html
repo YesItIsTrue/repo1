@@ -1,0 +1,633 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <TITLE>Sales Order Fulfillment</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="10/Jan/2017">
+    <META NAME='LAST_UPDATED' CONTENT="10/Jan/2016">   
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> 
+
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.   
+</SCRIPT>
+
+<style type="text/CSS">
+.w3-theme-l5 {color:#000 !important; background-color:#eff8fe !important}
+.w3-theme-l4 {color:#000 !important; background-color:#cae8fd !important}
+.w3-theme-l3 {color:#000 !important; background-color:#95d0fb !important}
+.w3-theme-l2 {color:#000 !important; background-color:#60b9f8 !important}
+.w3-theme-l1 {color:#fff !important; background-color:#2ba2f6 !important}
+.w3-theme-d1 {color:#fff !important; background-color:#087acb !important}
+.w3-theme-d2 {color:#fff !important; background-color:#086cb4 !important}
+.w3-theme-d3 {color:#fff !important; background-color:#075f9e !important}
+.w3-theme-d4 {color:#fff !important; background-color:#065187 !important}
+.w3-theme-d5 {color:#fff !important; background-color:#054471 !important}
+
+.w3-theme-light {color:#000 !important; background-color:#eff8fe !important}
+.w3-theme-dark {color:#fff !important; background-color:#054471 !important}
+.w3-theme-action {color:#fff !important; background-color:#054471 !important}
+
+.w3-theme {color:#fff !important; background-color:#0987e0 !important}
+.w3-text-theme {color:#0987e0 !important}
+.w3-border-theme {border-color:#0987e0 !important}
+
+.w3-hover-theme:hover {color:#fff !important; background-color:#0987e0 !important}
+.w3-hover-text-theme {color:#0987e0 !important}
+.w3-hover-border-theme:hover {border-color:#0987e0 !important}
+</style>
+
+<style>
+.w3-yellow,.w3-hover-yellow:hover{color:#000!important;background-color:#FFEF6C!important}
+</style>
+
+<script language="javascript">
+
+function w3_open() {
+    document.getElementById("mySidenav").style.display = "block";
+    document.getElementById("mySidenav").style.width = "1000px";
+    document.getElementById("myOverlay").style.display = "block";
+}
+
+</script>
+
+<script language="javascript">
+
+function w3_close() {
+    document.getElementById("mySidenav").style.display = "none";
+    document.getElementById("myOverlay").style.display = "none";
+}
+</script>
+
+<script language="javascript">
+
+function myAccFunc(id) {
+    var x = document.getElementById(id);
+    if (x.className.indexOf("w3-show") == -1) {
+        x.className += " w3-show";
+        x.previousElementSibling.className += " w3-theme-dark";
+    } else { 
+        x.className = x.className.replace(" w3-show", "");
+        x.previousElementSibling.className = 
+        x.previousElementSibling.className.replace(" w3-theme-dark", "");
+    }
+}
+
+</script>
+
+</HEAD>
+
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File: ICMsofulfullingU.html
+        The InvCtrl Magento Sale Order Fullfullment program.
+  -------------------------------------------------------------------*/
+
+/**********************  Variable Definitions  **************************/
+DEFINE VARIABLE x           AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE y           AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE act         AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE itmessage   AS LOGICAL INITIAL NO       NO-UNDO.
+
+DEFINE VARIABLE v-ship_via      LIKE sol_det.sol_ship_via   NO-UNDO.
+DEFINE VARIABLE v-shipto_addr_ID LIKE sol_det.sol_shipto_addr_ID NO-UNDO.
+DEFINE VARIABLE v-item_nbr      LIKE item_mstr.item_nbr     NO-UNDO.
+DEFINE VARIABLE v-item_type     LIKE item_mstr.item_type    NO-UNDO.
+DEFINE VARIABLE v-so_ID         LIKE so_mstr.so_id     NO-UNDO.
+DEFINE VARIABLE v-cust          LIKE people_mstr.people_id  NO-UNDO.
+DEFINE VARIABLE v-cust-firstname LIKE people_mstr.people_firstname NO-UNDO.
+DEFINE VARIABLE v-cust-lastname LIKE people_mstr.people_lastname NO-UNDO.
+
+DEFINE VARIABLE c-packing   AS INTEGER                  NO-UNDO.
+
+DEFINE VARIABLE v-site LIKE site_mstr.site_name NO-UNDO.
+DEFINE VARIABLE v-warehouse LIKE warehouse_mstr.warehouse_name NO-UNDO.
+DEFINE VARIABLE v-loc LIKE loc_mstr.loc_name NO-UNDO.
+DEFINE VARIABLE v-quantity LIKE qoh_det.qoh_quantity NO-UNDO.
+DEFINE VARIABLE v-lot LIKE qoh_det.qoh_lot NO-UNDO.
+DEFINE VARIABLE v-html-expire_date AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-expire_date LIKE qoh_det.qoh_expire_date NO-UNDO.
+DEFINE VARIABLE v-serial LIKE qoh_det.qoh_serial NO-UNDO.
+DEFINE VARIABLE v-notes LIKE sol_det.sol_notes NO-UNDO.
+            
+/**********************  HTML Variable Get-Val's  ***********************/
+ASSIGN 
+    act                 = html-encode(get-value("h-act"))  
+    v-ship_via          = html-encode(get-value("h-ship_via"))
+    v-item_nbr          = html-encode(get-value("h-item_nbr"))
+    v-item_type         = html-encode(get-value("h-item_type"))
+    v-so_ID             = html-encode(get-value("h-so_ID"))
+    v-cust              = INTEGER (html-encode(get-value("h-cust")))
+    v-cust-firstname    = html-encode(get-value("h-cust-firstname"))
+    v-cust-lastname     = html-encode(get-value("h-cust-lastname"))
+    v-shipto_addr_ID    = INTEGER (html-encode(get-value("h-shipto_addr_ID")))
+    v-site              = html-encode(get-value("h-site"))
+    v-warehouse         = html-encode(get-value("h-warehouse"))
+    v-loc               = html-encode(get-value("h-loc"))
+    v-lot               = html-encode(get-value("h-lot"))
+    v-serial            = html-encode(get-value("h-serial"))
+    v-quantity          = DECIMAL(html-encode(get-value("h-quantity")))
+    v-html-expire_date  = html-encode(get-value("h-expire_date"))
+    v-notes             = html-encode(get-value("h-notes")).
+    .
+
+
+/**************************  Other Nonsense  ***************************/    
+IF act= "" THEN 
+    act = "Filter".
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-expire_date, OUTPUT v-expire_date).
+
+/*** name populator ***/
+IF (v-cust <> 0 AND (v-cust-firstname = "" OR v-cust-lastname = "")) THEN DO:
+    
+    FIND people_mstr WHERE 
+        people_mstr.people_id = v-cust AND 
+        people_mstr.people_deleted = ?
+        NO-LOCK NO-ERROR.
+        
+    IF AVAILABLE (people_mstr) THEN 
+        ASSIGN 
+            v-cust-firstname = people_mstr.people_firstname
+            v-cust-lastname  = people_mstr.people_lastname.
+    
+    RELEASE people_mstr.
+            
+END. /*** of name populator ***/
+
+/**************************  Main Program  ******************************/
+
+{&OUT}
+/*    "<BODY  class='w3-light-grey' style='max-width:400px;' >" SKIP*/
+    "<BODY  class='w3-light-grey' >" SKIP
+/*    "<div class='w3-container w3-opennav w3-xlarge w3-theme-dark w3-padding-large' onclick='w3_open()'>Inventory Receipt &#9776;</div>" SKIP*/
+/*    "   <nav class='w3-xxlarge w3-sidenav w3-theme w3-animate-left w3-border-bottom' style='display:none;z-index:5' id='mySidenav'>" SKIP(1)*/
+/*    "       <a href='javascript:void(0)' onclick='w3_close()' class='w3-closenav w3-hover-black' >Close Menu &times;</a>" SKIP              */
+/*    "       <a href=~" ../../InvCtrl/rcode/ICforcedwee-rcptU.r ~" class='w3-hover-black'>Inventory Receipt</a>" SKIP                        */
+/*    "       <a href=~" ../../InvCtrl/rcode/ICforcedwee-xferU.r ~" class='w3-hover-black'>Inventory Transfer</a>" SKIP                       */
+/*    "       <a href=~" ../../InvCtrl/rcode/ICforcedwee-issU.r ~" class='w3-hover-black'>Inventory Issue</a>" SKIP                           */
+/*    "   </nav>" SKIP                                                                                                                        */
+    .
+
+CASE act:
+
+    WHEN "Filter" THEN DO:
+    
+        {&OUT}
+            "<div class='w3-card-4 w3-content w3-white' style='max-width:1400px;'>" SKIP  
+            "<form>" SKIP
+            "<div class='w3-row-padding '>" SKIP
+            "   <DIV class='w3-col s12'>" SKIP
+            "       <DIV class='w3-text-theme'><b>Carrier</b></DIV>" SKIP
+            "       <select name='h-ship_via' class='w3-border w3-round w3-select' >" SKIP
+            
+            "           <option value=''></option>" SKIP
+            "           <option value='FedEx'>FedEx</option>" SKIP
+            "           <option value='UPS'>UPS</option>" SKIP
+            "           <option value='USPS'>USPS</option>" SKIP
+     
+            
+/*            .                                                               */
+/*        FOR EACH site_mstr WHERE                                            */
+/*            site_mstr.site_deleted = ? NO-LOCK:                             */
+/*                                                                            */
+/*            {&OUT} "                <option value='" site_mstr.site_name "'".*/
+/*                                                                            */
+/*            IF site_mstr.site_name = v-site THEN {&OUT} " SELECTED ".       */
+/*                                                                            */
+/*            {&OUT} ">" site_mstr.site_name "</option>" SKIP.                */
+/*                                                                            */
+/*        END. /** 4ea site_mstr **/                                          */
+/*        {&OUT}                                                              */
+        
+            "       </select>" SKIP
+            "   </div>" SKIP
+            "</div> " SKIP 
+           
+            "<div class='w3-row-padding'>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme w3-col l6'><b>Item Type</b></label>" SKIP
+            "       <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='h-item_type' value='" v-item_type "' />" SKIP
+            "   </DIV>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme w3-col l6'><b>Item Number</b></label>" SKIP
+            "       <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='h-item_nbr' value='" v-item_nbr "' />" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+            
+            "<div class='w3-row-padding'>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Sales Order Number</b></label>" SKIP
+            "       <INPUT class='w3-input w3-border w3-round' type='TEXT' name='h-so_nbr' value='" v-so_ID "'/>" SKIP
+            "   </div>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme w3-col l6'><b>Customer</b></label>" SKIP
+            "       <INPUT class='ss-scanfield w3-input w3-border w3-round w3-margin-bottom' type='TEXT' name='h-cust' value='" v-cust "' />" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+              
+            "</DIV>" SKIP
+
+            "<br>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='OrderList' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='Reset' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Reset</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+        
+    END. /** Filter **/
+    
+    WHEN "OrderList" THEN DO:
+    
+        {&OUT} 
+            "<div class='w3-card-4 w3-content w3-white' style='max-width:1000px;'>" SKIP
+            "   <header class='w3-container w3-theme-dark'>" SKIP
+            "       <h1>Outbound Orders</h1>" SKIP
+            "   </header>" SKIP
+            "   <ul class='w3-ul'>" SKIP.
+        
+        FOR EACH so_mstr WHERE 
+            so_mstr.so_status = "" 
+/*            AND                   */
+/*            so_mstr.so_deleted = ?*/
+            NO-LOCK, FIRST people_mstr WHERE 
+                people_mstr.people_id = so_mstr.so_cust_ID AND 
+                people_mstr.people_deleted = ?
+                NO-LOCK:
+        
+            {&OUT}
+                "       <a href='../../InvCtrl/rcode/ICMsofulfillingU.r?&h-so_ID=" so_mstr.so_ID "&h-cust=" so_mstr.so_cust_ID "&h-act=packing' style='text-decoration:none;' >" SKIP
+                "           <li class='w3-padding-16 w3-white w3-hover-theme'>" SKIP
+                "               <span class='w3-closebtn w3-padding w3-margin-right w3-medium w3-xlarge'><i class='fa fa-angle-double-right \'></i></span>" SKIP
+                "               <span class='w3-xlarge'>" so_mstr.so_id " - " people_mstr.people_firstname "  " people_mstr.people_lastname "</span>"   
+                "           </li>" SKIP  
+                "       </a>" SKIP.
+       
+        END. /*** for each so_mstr ***/
+             
+        {&OUT}
+            "   </div> <!-- container -->" SKIP
+            "</div> <!-- w3-card-4 -->" SKIP
+            
+            "<br>" SKIP
+            "<form>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Filter' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.    
+        
+    END. /*** order list ***/                                                                                                                                                  
+    
+    WHEN "packing" THEN DO:
+
+/*        ASSIGN c-packing = 0.*/
+        ASSIGN c-packing = 1. /*** for testing the packing list display ***/
+            
+        IF c-packing <> 0 THEN DO:
+        
+        {&OUT}
+            "<div class=' w3-content w3-responsive' style='max-width:1700px;'>" SKIP
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>Pick List for " v-so_id "</h1>" SKIP
+            "       <h1>" v-cust-firstname " " v-cust-lastname "</h1>" SKIP
+            "   </header>" SKIP
+/*            "   <table class='w3-table-all w3-large'>" SKIP      */
+/*            "       <tr class='w3-theme'>" SKIP                  */
+/*            "           <th>Item Number</th>" SKIP               */
+/*            "           <th class='w3-center'>Quantity</th>" SKIP*/
+/*            "           <th class='w3-center'>Location</th>" SKIP*/
+/*            "       </tr>" SKIP                                  */
+/*            "   <ul class='w3-ul w3-card-4 w3-boarder'>" SKIP*/
+            .
+            
+        FOR EACH sol_det WHERE
+            sol_det.sol_ID = v-so_ID,
+          FIRST qoh_det WHERE
+                qoh_det.qoh_deleted = ? AND
+                qoh_det.qoh_item_nbr = sol_det.sol_item,
+              FIRST item_mstr WHERE
+                item_mstr.item_desc1 = sol_det.sol_item AND                                     /*** fix this crap. ***/
+                item_mstr.item_deleted = ?
+                NO-LOCK
+                BREAK BY qoh_det.qoh_expire_date :
+        
+            {&OUT}
+                
+                "<a href='../../InvCtrl/rcode/ICMsofulfillingU.r?&h-so_ID=" sol_det.sol_ID 
+                "&h-sol_line_nbr=" sol_det.sol_line_nbr 
+                "&h-ship_via=" sol_det.sol_ship_via
+                "&h-shipto_addr_ID=" sol_det.sol_shipto_addr_ID
+                "&h-site=" qoh_det.qoh_site 
+                "&h-warehouse=" qoh_det.qoh_warehouse
+                "&h-loc=" qoh_det.qoh_loc
+                "&h-lot=" qoh_det.qoh_lot
+                "&h-serial=" qoh_det.qoh_serial
+                "&h-item_nbr=" item_mstr.item_nbr
+                "&h-quantity=" sol_det.sol_qty_ord
+                "&h-cust=" v-cust
+                "&h-cust-firstname=" v-cust-firstname
+                "&h-cust-lastname=" v-cust-lastname
+                "&h-act=detail' style='text-decoration:none;'>" SKIP
+                "<div class='w3-container w3-white w3-card-2 w3-theme-l4'>" SKIP
+                "   <p><b>" item_mstr.item_nbr " </b><span class='w3-closebtn w3-margin-right w3-medium'>" sol_det.sol_qty_ord " - " qoh_det.qoh_loc "</span></p>" SKIP
+                "   <p class='w3-small'><b><i>" item_mstr.item_desc1 "</i></b></p>" SKIP
+                "</div>" SKIP
+/*                "<li>" item_mstr.item_nbr " - <i>" item_mstr.item_desc1 "</i>"  SKIP                                           */
+/*                "<span class='w3-closebtn w3-margin-right w3-medium'>" sol_det.sol_qty_ord " - " qoh_det.qoh_loc "</span>" SKIP*/
+/*                "       <tr>" SKIP                                                                   */
+/*                "           <td>" item_mstr.item_nbr "</td>" SKIP                                    */
+/*                "           <td class='w3-center'>" sol_det.sol_qty_ord "</td>" SKIP                 */
+/*                "           <td class='w3-center'>" qoh_det.qoh_loc "</td>" SKIP                     */
+/*                "       </tr>" SKIP                                                                  */
+/*                "       <tr>" SKIP                                                                   */
+/*                "           <td colspan=3 class='w3-small'><i>" item_mstr.item_desc1 "</i></td>" SKIP*/
+/*                "       </tr>" SKIP                                                                  */
+/*                "   </li>"*/
+                "     </a>   " SKIP 
+                "<br>" SKIP
+                .
+        
+        END. /*** of for each **/
+        
+/*        ASSIGN c-packing = c-packing + 1.*/
+       
+        /*** pretty sure I just want some sort of javascript "onclick" thing at the table row level. ****/
+            
+/*            /*** end of "each" section *(****/*/
+/*                                              */
+/*            FOR LAST (sol_det) DO:            */
+        {&OUT}
+            "   </table>" SKIP
+            
+            "</div> <!-- w3-card-4 -->" SKIP
+            "<br>" SKIP
+            "<form>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Filter' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    
+        END. /*** c-packing <> 0 for TESTING ***/
+    
+/*            END. /*** last of ***/*/
+/*                                  */
+/*        END. /*** for each ***/   */
+    
+        IF c-packing = 0 THEN DO:
+        
+            {&OUT}
+                "<div class='w3-container'>" SKIP
+                "<form>" SKIP
+                "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+                
+                "    <header class='w3-container w3-green'>" SKIP
+                "       <h1>Order Filled!</h1>" SKIP
+                "    </header>" SKIP
+                
+                "    <div class='w3-container'>" SKIP
+                "       <p>The order has been fulfilled as specified and the inventory has been apporpriately update locally.</p>" SKIP
+                "    </div>" SKIP
+
+                "    <button type='submit' name='h-act' value='Magento' class='w3-btn-block w3-left-align w3-padding-16 w3-green w3-hover-black w3-large'>Send Report to Magento</BUTTON>" SKIP
+                
+                "    <div class='w3-container'>" SKIP
+                "       <p>Or...</p>" SKIP
+                "    </div>" SKIP
+                
+                "    <button type='submit' name='h-act' value='Oops' class='w3-btn-block w3-left-align w3-padding-16 w3-Red w3-hover-black w3-large'>Cancel and Release Inventory</BUTTON>" SKIP
+                
+                "</div>" SKIP
+                "</form>" SKIP
+                "</div>" SKIP.    
+            
+        END. /*** of "Nothing left to pack" sub-act of "Packing" act ***/
+        
+    END. /*** of packing act ***/
+    
+    WHEN "Detail" THEN DO:
+
+/*        {&OUT} "<p> You are in the Detail act! </P>" SKIP.*/
+       
+        {&OUT} 
+            "<form>"
+            "<INPUT type='hidden' name='whattorun' value='"  "' />" SKIP             
+            
+/*            "<DIV class='w3-row-padding w3-container w3-theme-dark w3-margin-bottom'><h2 class=''>Mobile Inventory Receipt</h2></TH></div>" SKIP*/
+
+            "<div class='w3-card-4 w3-content w3-white' style='max-width:1700px;'>" SKIP
+                
+            "<div class='w3-row-padding'> " SKIP 
+            "   <DIV class='w3-col l6 w3-margin-top'>" SKIP
+            "       <label class='w3-text-theme'><b>Site</b></label>" SKIP
+            "       <input class='w3-input w3-yellow w3-border w3-round' type='text' name='h-site' value='" v-site "'></input>" SKIP
+            "   </DIV>" SKIP
+            "   <DIV class='w3-col l6 w3-margin-top'>" SKIP
+            "       <label class='w3-text-theme'><b>Warehouse</b></label>" SKIP
+            "       <input class='w3-input w3-yellow w3-border w3-round' type='text' name='h-warehouse' value='" v-warehouse "'></input>" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+                
+            "<div class='w3-row-padding'>      " SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Location</b></label>" SKIP
+            "       <input class='w3-input w3-yellow w3-border w3-round' type='text' name='h-loc' value='" v-loc "'></input>" SKIP
+            "   </div>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Item Number</b></label>" SKIP
+            "       <INPUT class='ss-scanfield w3-input w3-yellow w3-border w3-round' type='TEXT' name='h-item_nbr' value='" v-item_nbr "' required ></input>" SKIP
+            "   </div>" SKIP
+            "</DIV>" SKIP
+            
+            "<div class='w3-row-padding'>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Quantity</b></label>" SKIP
+            "       <INPUT class='w3-input w3-yellow w3-border w3-round' type='NUMBER' name='h-quantity' value='" v-quantity "' required min='1'/>" SKIP
+            "   </div>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme w3-col l6'><b>Lot Number</b></label>" SKIP
+            "       <INPUT class='ss-scanfield w3-input w3-border w3-round' id='' type='TEXT' name='h-lot' value='" v-lot "' />" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+            
+            "<div class='w3-row-padding'>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Expiration Date</b></label>" SKIP
+            "       <INPUT class='w3-input w3-border w3-round' type='DATE' name='h-expire_date' value='" v-expire_date "' />" SKIP
+            "   </DIV>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Serial</b></label>" SKIP
+            "       <INPUT class='w3-input w3-border w3-round' type='TEXT' name='h-serial' value='" v-serial "' />" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+                
+            "<div class='w3-row-padding '>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Sales Order Number</b></label>" SKIP
+            "       <INPUT class='w3-input w3-border w3-round' type='TEXT' name='h-so_ID' value='" v-so_ID "' />" SKIP
+            "   </DIV>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <DIV class='w3-text-theme'><b>Notes</b></DIV>" SKIP
+            "       <textarea class='w3-input w3-border w3-round w3-margin-bottom' name='h-notes' value='" v-notes "'></textarea>" SKIP
+            "   </div>" SKIP
+            "</div> " SKIP   
+            "</DIV>" SKIP
+
+            "<br>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Validation' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='site' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>".
+       
+    END. /*** of fulfilling act ***/    
+    
+    WHEN "Magento" THEN DO:
+   
+        {&OUT} "<p> You are in the Magento act! </P>" SKIP.
+        
+    END. /*** of the report to magento act ***/
+    
+    WHEN "Oops" THEN DO:
+        
+        {&OUT} "<p> You are in the Oops act! </P>" SKIP.
+        
+    END. /*** of undo like a boss act. ***/
+    
+    OTHERWISE DO:
+        
+        {&OUT}
+            "<div class='w3-container'>" SKIP
+            "<form>" SKIP
+            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-red'>" SKIP
+            "       <h1>Error</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>Could not find act '" act "'.</p>" SKIP
+            "    </div>" SKIP
+
+            "    <button type='submit' name='h-act' value='Filter' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+            
+    END. /*** otherwise ***/
+    
+END CASE.
+
+/* *********************** End of Script ************************* */
+/*            "       <a href='../../InvCtrl/rcode/ICMsofulfillingU.r?h-ship_via=" v-ship_via                                                                 */
+/*                                                                    "&h-item_type=" v-item_type                                                             */
+/*                                                                    "&h-item_nbr=" v-item_nbr                                                               */
+/*                                                                    "&h-so_nbr=" v-so_ID                                                                   */
+/*                                                                    "&h-cust=" v-cust                                                                       */
+/*                                                                    "&h-act=packing' style='text-decoration:none;' >" SKIP                                  */
+/*            "           <li class='w3-padding-16 w3-theme'>" SKIP                                                                                           */
+/*            "               <span class='w3-closebtn w3-padding w3-margin-right w3-medium w3-xlarge'><i class='fa fa-angle-double-right \'></i></span>" SKIP*/
+/*            "               <span class='w3-xlarge'>" v-so_ID " " v-cust-lastname "  " v-cust-firstname "</span>"                                          */
+/*            "           </li>" SKIP                                                                                                                         */
+/*            "       </a>" SKIP                                                                                                                              */
+/*            "       <a href='../../InvCtrl/rcode/ICMsofulfillingU.r?h-ship_via=" v-ship_via                                                                 */
+/*                                                                    "&h-item_type=" v-item_type                                                             */
+/*                                                                    "&h-item_nbr=" v-item_nbr                                                               */
+/*                                                                    "&h-so_nbr=" v-so_ID                                                                   */
+/*                                                                    "&h-cust=" v-cust                                                                       */
+/*                                                                    "&h-act=packing' style='text-decoration:none;' >" SKIP                                  */
+/*            "           <li class='w3-padding-16 w3-green'>" SKIP                                                                                           */
+/*            "               <span class='w3-closebtn w3-padding w3-margin-right w3-medium'>&check;</span>" SKIP                                             */
+/*            "               <span class='w3-xlarge'>123456</span>"                                                                                          */
+/*            "           </li>" SKIP                                                                                                                         */
+/*            "       </a>" SKIP                                                                                                                              */
+/*            "       <a href='../../InvCtrl/rcode/ICMsofulfillingU.r?h-ship_via=" v-ship_via                                                                 */
+/*                                                                    "&h-item_type=" v-item_type                                                             */
+/*                                                                    "&h-item_nbr=" v-item_nbr                                                               */
+/*                                                                    "&h-so_nbr=" v-so_ID                                                                   */
+/*                                                                    "&h-cust=" v-cust                                                                       */
+/*                                                                    "&h-act=packing' style='text-decoration:none;' >" SKIP                                  */
+/*            "           <li class='w3-padding-16 '>" SKIP                                                                                                   */
+/*            "               <span class='w3-closebtn w3-padding w3-margin-right w3-medium'>&check;</span>" SKIP                                             */
+/*            "               <span class='w3-xlarge'>123456</span>"                                                                                          */
+/*            "           </li>" SKIP                                                                                                                         */
+/*            "       </a>" SKIP                                                                                                                              */
+
+/*        {&OUT}                                                                                                        */
+/*            "       <tr>" SKIP                                                                                        */
+/*            "           <td>A834HD</td>" SKIP                                                                         */
+/*            "           <td class='w3-center'>6</td>" SKIP                                                            */
+/*            "           <td class='w3-center'>A.1</td>" SKIP                                                          */
+/*            "       </tr>" SKIP                                                                                       */
+/*            "       <tr>" SKIP                                                                                        */
+/*            "           <td colspan=3 class='w3-small'><i>Cat's Claw</i></td>" SKIP                                   */
+/*            "       </tr>" SKIP                                                                                       */
+/*            "       <tr>" SKIP                                                                                        */
+/*            "           <td>OWIEUR</td>" SKIP                                                                         */
+/*            "           <td class='w3-center'>1</td>" SKIP                                                            */
+/*            "           <td class='w3-center'>B.1</td>" SKIP                                                          */
+/*            "       </tr>" SKIP                                                                                       */
+/*            "       <tr>" SKIP                                                                                        */
+/*            "           <td colspan=3 class='w3-small'><i>Pickeled Eye of Newt</i></td>" SKIP                         */
+/*            "       </tr>" SKIP                                                                                       */
+/*            "       <tr>" SKIP                                                                                        */
+/*            "           <td>FJ0743F</td>" SKIP                                                                        */
+/*            "           <td class='w3-center'>4</td>" SKIP                                                            */
+/*            "           <td class='w3-center'>H.1</td>" SKIP                                                          */
+/*            "       </tr>" SKIP                                                                                       */
+/*            "       <tr>" SKIP                                                                                        */
+/*            "           <td colspan=3 class='w3-small'><i>Really long description that totally happens.</i></td>" SKIP*/
+/*            "       </tr>" SKIP                                                                                       */
+/*            "       <tr>" SKIP                                                                                        */
+/*            "           <td>8UER432</td>" SKIP                                                                        */
+/*            "           <td class='w3-center'>107</td>" SKIP                                                          */
+/*            "           <td class='w3-center'>X.1</td>" SKIP                                                          */
+/*            "       </tr>" SKIP                                                                                       */
+/*            "       <tr>" SKIP                                                                                        */
+/*            "           <td colspan=3 class='w3-small'><i>Juniper Berrys</i></td>" SKIP                               */
+/*            "       </tr>" SKIP.                                                                                      */
+
+/*            "       <select name='h-loc' class='ss-scanfield w3-border w3-round w3-select w3-yellow' required>" SKIP.*/
+            
+/*        FOR EACH site_mstr WHERE                                                                              */
+/*            site_mstr.site_name = v-site AND                                                                  */
+/*            site_mstr.site_deleted = ? NO-LOCK,                                                               */
+/*          EACH warehouse_mstr WHERE                                                                           */
+/*            warehouse_mstr.warehouse_site = site_mstr.site_name AND                                           */
+/*            warehouse_mstr.warehouse_name = v-warehouse AND                                                   */
+/*            warehouse_mstr.warehouse_deleted = ? NO-LOCK,                                                     */
+/*          EACH loc_mstr WHERE                                                                                 */
+/*            loc_mstr.loc_site = site_mstr.site_name AND                                                       */
+/*            loc_mstr.loc_warehouse = warehouse_mstr.warehouse_name AND                                        */
+/*            loc_mstr.loc_deleted = ? NO-LOCK:                                                                 */
+/*                                                                                                              */
+/*            {&OUT} "                <option value'" loc_mstr.loc_name "'>" loc_mstr.loc_name "</option>" SKIP.*/
+/*                                                                                                              */
+/*        END. /** 4ea site_mstr **/                                                                            */
+/*                                                                                                              */
+/*        {&OUT}                                                                                                */
+/*            "       </select>" SKIP                                                                           */
+
+
+</SCRIPT>
+</BODY>
+</HTML>

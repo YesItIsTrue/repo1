@@ -1,0 +1,1025 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"><tr><div></div> <!-- end of <div align=center> -->  
+  <center></center>
+ 
+<tr></tr></tr><HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.41">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="09/Oct/15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<TITLE>Delete Customer Record</TITLE>
+
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File: custdelete.html
+    Description: Deletes customer records. Calls an external procedure that actually does the deleting; ext-custs-scust-delete.p
+    Created: 
+ *-------------------------------------------------------------------
+ * Revision History:    
+ * ---------------------
+ * 1.1 - Made it possible to retrieve records without an address associated to it.
+ *     - Added additional user feedback for deleting a record without an address record.  
+ *     - Added a ton of skips.
+ *     - Combined first name and last name in result field in Customer look up.
+ *     - Added BREAK BY people_lastname BY people_firstname.
+ *     - Added <thead> tag in Customer look up results.
+ * 1.11 - written by DOUG LUTTRELL on 21/Aug/15.  Changed the RUN command to use theCustomer Delete custdelete.html
+ *          SEARCH command also.  Marked by 1.11.
+ * 1.4 - Edited run statements to conform with the latest pathing (changed the .p to .r) 9/30/15. Marked with 1dot4.
+ *       written by Mark Jacobs on 03/Oct/15. Added in the code snippets for grid_* div, code snippets for Buttons, 
+ *       TFOOT and META tags updated, hyperlinks to buttons. Marked with 1dot4 
+ * 1.41 - written by DOUG LUTTRELL on 09/Oct/15.  Fixed pathing problem in hyperlink.  Fixed typos.
+ *
+ *
+ *-------------------------------------------------------------------- */
+
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<!-- 
+    <H1 style="text-align: center">
+        <BR>TestKit Tracker <SPAN style="COLOR: #0000FF;">Customer Records Delete </SPAN><BR>
+    </H1>
+    <HR style="width: 70%">
+ -->   
+ <SCRIPT LANGUAGE="SpeedScript"> 
+ {../depot/src/WebSpeed/menuname.i}. 
+ 
+        DEFINE VARIABLE prefix LIKE people_prefix NO-UNDO.
+        DEFINE VARIABLE suffix LIKE people_suffix NO-UNDO.
+        DEFINE VARIABLE fname LIKE people_firstname NO-UNDO. 
+        DEFINE VARIABLE mname LIKE people_midname NO-UNDO.
+        DEFINE VARIABLE lname LIKE people_lastname NO-UNDO.
+        DEFINE VARIABLE addr1 LIKE addr_addr1 NO-UNDO.
+        DEFINE VARIABLE addr2 LIKE addr_addr2 NO-UNDO.
+        DEFINE VARIABLE addr3 LIKE addr_addr3 NO-UNDO.
+        DEFINE VARIABLE city LIKE addr_city NO-UNDO.
+        DEFINE VARIABLE state LIKE addr_stateprov NO-UNDO.
+        DEFINE VARIABLE zip LIKE addr_zip FORMAT "99999"  NO-UNDO.
+        DEFINE VARIABLE county LIKE addr_country NO-UNDO.      
+  /*------------------------------------------------------------------------------*/     
+        DEFINE VARIABLE w-phone LIKE people_workphone  NO-UNDO.
+        DEFINE VARIABLE c-phone LIKE people_cellphone  NO-UNDO. 
+        DEFINE VARIABLE fax-phone LIKE people_fax  NO-UNDO.
+  /*------------------------------------------------------------------------------*/           
+        DEFINE VARIABLE H-phone LIKE people_homephone  NO-UNDO.
+        
+        DEFINE VARIABLE email LIKE people_email NO-UNDO.
+        DEFINE VARIABLE email2 LIKE people_email LABEL "Reenter E-mail" NO-UNDO.
+        
+        DEFINE VARIABLE email-2 LIKE people_email2 NO-UNDO.  /*-------------------- 2nd email  ---------------------------------*/
+        DEFINE VARIABLE rdemail-2 LIKE people_email2 NO-UNDO. 
+    
+        DEFINE VARIABLE cust-id LIKE cust_ID NO-UNDO.
+        
+        DEFINE VARIABLE magrnto-id LIKE scust_magento_id NO-UNDO. 
+        DEFINE VARIABLE seq LIKE cust_id NO-UNDO.           /* @@ I question using this veritable name now @@ */
+        DEFINE VARIABLE ddate LIKE cust_create_date NO-UNDO.
+        DEFINE VARIABLE moddate LIKE cust_modified_date NO-UNDO.
+ /*--------------------------------------------------------------------------------*/
+        DEFINE VARIABLE mod-by LIKE cust_modified_by NO-UNDO.     /* @@ need to add @@ */           
+        DEFINE VARIABLE prof LIKE scust_prof NO-UNDO.
+        
+        DEFINE VARIABLE magrn LIKE scust_magento_ID NO-UNDO.       
+        
+        DEFINE VARIABLE mail2 LIKE seq NO-UNDO. /* Using it to clear email2 value when changing customer */
+        DEFINE VARIABLE sentnum LIKE seq NO-UNDO.
+        
+        DEFINE VARIABLE is-checked AS CHARACTER NO-UNDO.
+        
+        DEFINE VARIABLE act      AS INTEGER NO-UNDO.
+        DEFINE VARIABLE act2     AS LOGICAL INITIAL NO NO-UNDO.  /* user feedback */
+        DEFINE VARIABLE act3     AS INTEGER NO-UNDO.
+        DEFINE VARIABLE cust-86  AS LOGICAL INITIAL NO NO-UNDO.
+        DEFINE VARIABLE peop-86  AS LOGICAL INITIAL NO NO-UNDO.
+        DEFINE VARIABLE addr-86  AS LOGICAL INITIAL NO NO-UNDO.
+        DEFINE VARIABLE scust-86 AS LOGICAL NO-UNDO.
+        
+        DEFINE VARIABLE creat-num AS INTEGER NO-UNDO.
+        DEFINE VARIABLE origin AS INTEGER NO-UNDO.  /* If call came from customer search results */
+        
+        DEFINE VARIABLE coname LIKE country_mstr.Country_Display_Name NO-UNDO.
+        DEFINE VARIABLE coabbv LIKE addr_country NO-UNDO.
+        DEFINE VARIABLE stname LIKE state_mstr.State_Display_Name NO-UNDO.
+        DEFINE VARIABLE staddv LIKE addr_stateprov NO-UNDO.
+        DEFINE VARIABLE addr-id AS INTEGER NO-UNDO.
+    /*---------------------------------------------------------------*/    
+        DEFINE VARIABLE scust-id LIKE scust_id NO-UNDO.
+		DEFINE VARIABLE peop-ID LIKE people_mstr.people_id NO-UNDO.
+		DEFINE VARIABLE peop-addr-ID LIKE people_mstr.people_addr_id NO-UNDO.
+		DEFINE VARIABLE cust-exist AS LOGICAL  NO-UNDO.
+		/*-----------------------------------------------------*/
+		DEFINE VARIABLE o-cust-ID LIKE people_mstr.people_id NO-UNDO.
+		DEFINE VARIABLE o-cust-addr-ID LIKE people_mstr.people_addr_id  NO-UNDO.
+		DEFINE VARIABLE o-cust-exist  AS LOGICAL  NO-UNDO. /* this is if the CUSTOMER record exists */
+		DEFINE VARIABLE o-cust-ran    AS LOGICAL INITIAL NO  NO-UNDO.
+		DEFINE VARIABLE o-cust-error  AS LOGICAL INITIAL NO  NO-UNDO. 
+    /*---------------------------------------------------------------*/		
+		DEFINE VARIABLE patient-id LIKE patient_id NO-UNDO.
+		DEFINE VARIABLE doctor-id LIKE doctor_mstr.doctor_id NO-UNDO.
+		DEFINE VARIABLE cust-delete AS INTEGER NO-UNDO.
+        DEFINE VARIABLE patient-RP-id LIKE patient_RP_ID NO-UNDO.
+        
+   /*---------------------------------------------------------------*/     
+        DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.    /*---< ITfeedback (YES or NO)  */
+   /*---------------------------------------------------------------*/  
+      
+        DEFINE VARIABLE cout AS INTEGER NO-UNDO.
+        DEFINE VARIABLE addr-cout AS LOGICAL INITIAL NO  NO-UNDO.
+        DEFINE VARIABLE cust-pat AS LOGICAL INITIAL YES  NO-UNDO.
+        DEFINE VARIABLE cust-doc AS LOGICAL INITIAL YES NO-UNDO.
+        
+        DEFINE VARIABLE card          LIKE cust_mstr.cust_card_nbr      NO-UNDO.  /*Credit card variables */
+        DEFINE VARIABLE card-expmouth LIKE cust_mstr.cust_card_expmonth NO-UNDO. 
+        DEFINE VARIABLE card-expyear  LIKE cust_mstr.cust_card_expyear  NO-UNDO. 
+        DEFINE VARIABLE card-sec      LIKE cust_mstr.cust_card_seccode  NO-UNDO.
+        DEFINE VARIABLE card-typ      LIKE cust_mstr.cust_card_type     NO-UNDO.
+        
+        DEFINE VARIABLE keep-going    AS LOGICAL INITIAL NO NO-UNDO.
+        DEFINE VARIABLE first-stop    AS INTEGER            NO-UNDO.
+        DEFINE VARIABLE whattorun     AS CHARACTER          NO-UNDO.
+        
+        ASSIGN 
+          whattorun       =   get-value ("whattorun") 
+          keep-going      =   LOGICAL (get-value ("h-keep-going"))
+          First-stop      =   INTEGER (get-value ("h-first-stop"))
+         
+          peop-ID         =   INTEGER (get-value ("pep-id"))
+          peop-addr-ID    =   INTEGER (get-value ("pep-addr"))
+          cust-exist      =   LOGICAL (get-value ("pep-exist")) 
+          cust-id         =   INTEGER (get-value ("h-cust-id"))
+           
+          prefix          =   get-value ("pref") 
+          suffix          =   get-value ("suff") 
+          fname           =   get-value ("f-name")
+          mname           =   get-value ("m-name")
+          lname           =   get-value ("l-name")
+          addr1           =   get-value ("adress1")
+          addr2           =   get-value ("adress2")
+          addr3           =   get-value ("adress3")  
+          city            =   get-value ("ci")
+          state           =   get-value ("st")
+          county          =   get-value ("co")
+          zip             =   get-value ("zp")  /*INTEGER (get-value ("zp")).*/       
+          H-phone         =   get-value ("pho")
+          w-phone         =   get-value ("w-pho")
+          c-phone         =   get-value ("c-pho")
+          fax-phone       =   get-value ("fax")
+         
+          email           =   get-value ("e-mail")
+          email2          =   get-value ("e-mail2") 
+                   
+          email-2         =   get-value ("2e-mail")
+          rdemail-2       =   get-value ("2-rdemail")
+          
+          prof            =   LOGICAL (get-value ("prof_al"))       
+          sentnum         =   INTEGER (get-value("mailnum"))            
+          magrn           =   get-value ("magrnto")   /*  INTEGER (get-value("magrnto")) */      
+          creat-num       =   INTEGER (get-value("creat"))
+          origin          =   INTEGER (get-value("came")) 
+          seq             =   INTEGER (get-value ("cust_id"))   
+          ddate           =   DATE (get-value("crea_date"))
+          moddate         =   DATE (get-value("mod"))    
+          cust-delete     =   INTEGER (get-value("delete-form"))  
+          act             =   0.  
+ 
+       /*     IF email = "" AND 
+               cust-exist = NO THEN DO:  
+       */            
+                   
+/*---------------------------------------------------------------------------------------------------------------------------------*/
+
+
+ /* IF fname = "" THEN DO: */
+     
+   IF first-stop < 1 THEN DO:   
+       
+{&OUT}                                              /* 1dot4 */
+    "<DIV class='row'>" SKIP
+    "<DIV class='grid_4'> </DIV>" SKIP
+    "<DIV class='grid_4'>" SKIP.
+				      
+</SCRIPT> 
+
+                                    <!--  <h3 align="center">Email Address is Requires to retrieve a Customer Record </h3> -->
+                        
+                        <div class='table_2col' >   <!--style="width:30%"align="center"-->      
+                            <FORM  method="post"> <!--This is the form to retrieve the record  -->             
+                                   <table>
+                                        <th colspan="2">Customer Record Search</th>
+                                        <tr>
+                                            <td>First Name</td><td><input type="text" name="f-name" autofocus value=`fname` ></td></tr>  
+                                     <!--    <tr>           
+                                            <td>Middle Name</td><td><input type="text" name="m-name" value=""></td></tr>
+                                        <tr>  -->         
+                                            <td>Last Name</td><td><input type="text" name="l-name" value=`lname`></td></tr>
+                                     <!--     <tr>           
+                                            <td>Address Line1</td><td><input type="text" name="adress1" value=""></td></tr>
+                                        <tr>
+                                            <td>Address Line2</td><td><input type="text" name="adress2" value=""></td></tr>
+                                        <tr>
+                                            <td>Address Line3</td><td><input type="text" name="adress3" value=""></td></tr>     
+                                        <tr>           
+                                            <td>City</td><td><input type="text" name="ci" value=""></td></tr>
+                                        <tr>           
+                                            <td>State</td><td><input type="text" name="st" value=""></td></tr>   
+                                        <tr>
+                                            <td>E-mail Address</td><td><input   type="text" name="e-mail" value="`email`"></td></tr>
+                                      -->       
+                                            <input type="hidden" name="h-keep-going" value="NO"> 
+                                            <input type="hidden" name="h-first-stop" value=1>
+                                   </table>
+                        </div>
+                        
+<SCRIPT LANGUAGE="SpeedScript">                       
+{&OUT}                                                                                  /* 1dot4 */
+	"</DIV>     <!-- end of grid_4 -->" SKIP
+	"<DIV class='grid_4'> </DIV>" SKIP
+	"</DIV>     <!-- end of row -->" SKIP
+
+
+	"<div class='row'>" SKIP
+	"   <div class='grid_4'> </DIV>" SKIP
+	"   <div class='grid_2'><BUTTON type='submit' name='submit' value='submit' class='btn'>Submit for Customer Record DELETE</BUTTON></div>" SKIP
+	"   <div class='grid_1'> </DIV>" SKIP
+	"   <div class='grid_1'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+	"   <div class='grid_4'> </DIV>" SKIP
+	"</div>" SKIP
+	"<BR>" SKIP. 
+
+</script>
+                     <!-- 
+                                        <div align="center">                    
+                                          <br><button type="submit" name="submit" value="submit">Submit for Customer Record DELETE</button>
+                                        &nbsp;&nbsp;<button type="reset" name="reset" value="reset">Reset</button><br><br> 
+                                        </div>   
+                      -->                  
+                            </form>  
+                
+<SCRIPT LANGUAGE="SpeedScript">
+
+ 
+            END.  /* IF first-stop < 1 THEN DO: */    
+    
+            ELSE 
+ 
+            IF  keep-going = NO THEN DO:        
+           
+            {&OUT}            
+            
+            "<DIV class='row'>" SKIP                                     /* 1dot4 */
+            "<DIV class='grid_12'>" SKIP                                 /* 1dot4 */       
+            
+            "       <div class='table_report fixed_table'>" skip                     
+            "            <table>" skip
+            "              <thead>" skip 
+            "               <tr>" skip
+            "                 <th colspan='5'>Select the Customers ID that you would like to Delete</th>" skip 
+            "               </tr>" skip
+            "               <tr>" skip
+            "                 <td>Customer ID </td>" skip
+            "                 <td>Customer Name</td>" skip
+/*          "                 <td>Last Name</td>" skip*/
+            "                 <td>Email address</td>" skip
+            "                 <td>Address</td>" skip
+            "                 <td>State</td>" skip
+            "               </tr>" skip
+            "              </thead>" skip .
+            
+              FOR EACH cust_mstr WHERE cust_mstr.cust_deleted = ? NO-LOCK,
+             
+                  EACH people_mstr WHERE people_id = cust_id AND
+                                          people_firstname BEGINS fname   AND
+                                          people_lastname  BEGINS lname   AND
+                                          people_mstr.people_deleted = ?  NO-LOCK BREAK BY people_lastname BY people_firstname : 
+                                              
+                     ASSIGN
+                     addr1 = ""
+                     state = "". 
+                                              
+	                 FOR EACH addr_mstr WHERE addr_id = people_addr_id AND
+	                                         addr_mstr.addr_deleted = ?  NO-LOCK:  /* BREAK  BY people_lastname : */
+	                                         
+	                                         ASSIGN
+	                                         addr1 = addr_mstr.addr_addr1
+	                                         state = addr_mstr.addr_stateprov.
+                     END. /* FOR EACH addr_mstr  */                    
+                                            
+                                             
+                  IF avail (cust_mstr) THEN              
+                                                      
+              {&OUT} 
+            "               <tr>" skip
+            "                 <td> <a href='../../TK/rcode/custdelete.r?h-cust-id=" cust_id "&e-mail=" people_email 
+                                        "&f-name=" people_firstname "&l-name=" people_lastname "&whattorun=" whattorun 
+                                        "&h-keep-going=YES&h-first-stop=1'>" people_id "</a></td>" SKIP
+/*          "                 <td>" people_firstname "</td>" SKIP*/
+            "                 <td>" people_lastname ", " people_firstname "</td>" SKIP
+            "                 <td>" people_email "</td>" SKIP
+            "                 <td>" addr1 "</td>" SKIP  /* addr_addr1 */
+            "                 <td>" state "</td>" SKIP  /* addr_stateprov */
+            "                 </tr>". 
+            
+                                     
+         
+              END. /* FOR EACH cust_mstrr, people_mstr, addr_mstr */
+              
+                
+       {&OUT}    
+               
+            "   <TFOOT>" SKIP                                                   /* 1dot4 */
+            "       <TR>" SKIP
+            "           <TD COLSPAN=5>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "       </TR>" SKIP
+            "   </TFOOT>" SKIP
+            "   </TABLE>" SKIP
+            "</DIV>                 <!-- end of table_report -->" SKIP(1)
+            
+            "</DIV>         <!-- end of grid_12 -->" SKIP        /* 1dot4 */
+            "</DIV>     <!-- end of row -->" SKIP.
+            
+       {&OUT}       
+            "<br>" skip
+            "<div class='row'>" SKIP                                                /* 1dot4 */
+			"   <div class='grid_4'> </DIV>" SKIP
+			"   <div class='grid_4'>" skip
+			"<form>"  skip
+			"   <input type='hidden' name='whattorun' value=" whattorun ">" skip
+			"   <button type='submit' name='submit value='submit' class='btn'>Click here for New Customer Delete</BUTTON></div>" SKIP
+			"</form>" skip
+			"   <div class='grid_4'> </DIV>" SKIP
+			"</div>" SKIP
+			"<BR>" SKIP.
+       
+/*            "    <div align='center'>" skip                                                                              */
+/*            "      <br></br><a href=custdelete.r?whattorun=" whattorun ">Click here for New Customer Delete</a><br>" skip*/
+/*            "    </div>" skip.                                                                                           */
+                                                                                         IF ITfeedback = YES THEN
+	                                                                                       {&OUT} "<p>I'm at the end of cust look-up<br>" SKIP.                                                                        
+            END. /* IF  keep-going = NO THEN DO: */
+            
+ 
+       
+ IF keep-going = YES THEN DO:
+
+                                                                                        IF ITfeedback = YES THEN
+                                                                                           {&OUT} "<p>I'm at the start of keep-going = YES -- " keep-going  SKIP 
+                                                                                                  "<br> my cust-id is -- "  cust-id "</p>".
+		          
+	
+					FIND  people_mstr WHERE	people_id = cust-id  AND /* peop-id  */
+					       people_mstr.people_deleted = ?  NO-LOCK NO-ERROR. /* peop-ID o-cust-id */
+			
+			        IF AVAILABLE (people_mstr) THEN DO:
+			            
+																			            IF ITfeedback = YES THEN
+																			            {&OUT} "<p>Found a person with people_id of"  people_id  "</p>" SKIP.
+	          	                     		     
+			        ASSIGN
+			            fname        = people_mstr.people_firstname
+			            mname        = people_mstr.people_midname
+			            lname        = people_mstr.people_lastname
+			            H-phone      = people_mstr.people_homephone 
+			            cust-id      = people_mstr.people_id
+			            email        = people_mstr.people_email
+			            email-2      = people_mstr.people_email2     
+			            addr-id      = people_mstr.people_addr_id
+			            suffix       = people_mstr.people_suffix
+			            prefix       = people_mstr.people_prefix
+			            c-phone      = people_mstr.people_cellphone
+			            w-phone      = people_mstr.people_workphone
+			            fax-phone    = people_mstr.people_fax  
+			            moddate      = people_mstr.people_modified_date
+			            peop-addr-ID = people_mstr.people_addr_id.
+			   		             
+			        FIND FIRST addr_mstr WHERE addr_id = peop-addr-ID AND 
+                                addr_mstr.addr_deleted = ? NO-LOCK NO-ERROR. /* peop-addr-ID -- o-cust-addr-id*/
+			             
+			         IF AVAILABLE (addr_mstr) THEN DO:
+			          
+																			             IF ITfeedback = YES THEN
+																			             {&OUT} "<p>Found a addr with an addr_id of" addr_id  "</p>" SKIP.   
+			                  
+			         ASSIGN   
+			            addr1   = addr_addr1
+			            addr2   = addr_addr2
+			            addr3   = addr_addr3 
+			            city    = addr_city
+			            state   = addr_stateprov
+			            county  = addr_country			       
+			            zip     = addr_zip
+			            addr-id = addr_id.
+			            	    
+																		                 IF ITfeedback = YES THEN
+																		                  {&OUT} "<p>I'm after the assign with an addrID of"  addr_id  "</p>" SKIP. 
+										                  		            
+			          END.	/* IF AVAILABLE (addr_mstr) THEN DO: */		
+			          
+			                     
+			        FIND  cust_mstr WHERE cust_id = people_id AND
+			               cust_mstr.cust_deleted = ? NO-LOCK NO-ERROR. /* people_id -- o-cust-id */   
+			             
+			         IF AVAILABLE (cust_mstr) THEN DO:
+			           
+																			             IF ITfeedback = YES THEN 
+																			              {&OUT} "<p>Found a customer rec. is " cust-id  "</p>" SKIP.   
+			               
+			         ASSIGN
+			            ddate         = cust_create_date
+                        moddate       = cust_modified_date
+                        seq           = cust_id
+                        card          = cust_mstr.cust_card_nbr
+                        card-expmouth = cust_mstr.cust_card_expmonth
+                        card-expyear  = cust_mstr.cust_card_expyear
+                        card-sec      = cust_mstr.cust_card_seccode
+                        card-typ      = cust_mstr.cust_card_type.
+                        
+																                         IF ITfeedback = YES THEN
+																			             {&OUT} "<p>assigned a customer rec-ID. is" seq "</p>" SKIP. 
+			            
+			        FIND scust_shadow WHERE scust_id = cust_id AND
+			              scust_shadow.scust_deleted = ? NO-LOCK NO-ERROR. /* cust_id */
+			             
+			         IF AVAILABLE (scust_shadow) THEN
+			          
+																			             IF ITfeedback = YES THEN DO:
+																			             {&OUT} "<p>Found a shadow cust-rec</p>" SKIP
+																			                 "<P>Cust-delete = " cust-delete "</P>" SKIP.  
+			              
+				          ASSIGN
+				            prof  = scust_prof
+				            magrn = scust_magento  
+				            ddate = scust_create_date
+				            scust-id = scust_id.
+			            
+			            END. /* IF AVAILABLE (scust_shadow) THEN */
+			      
+			         END. /* IF AVAILABLE (cust_mstr) THEN do: */  
+			         
+			        is-checked  = IF prof = TRUE THEN
+			                            "checked"
+			                          ELSE
+			                            "".
+			                         
+			        /*                    
+			        IF mail2 <> sentnum THEN  /* Using (sentnum) to clear email2 value when changing customer */
+			            ASSIGN
+			              email2  = "" 
+			              sentnum = 0 .                     
+			       */ 
+			      
+				     IF email2 = email THEN 
+				      ASSIGN
+				      email2 = "".
+	 /* This is replacing the IF statement above. Without this when creating an email address the reentered email remains in the update field and causes an error to occur.
+	 This allows the ability to send back the reentered email address in the event of a mistake in updating the email address. */	
+	 
+	 
+	
+	 
+	 IF cust-delete <> 1 THEN DO: 
+{&OUT}	     
+    "<DIV class='row'>" SKIP
+    "<DIV class='grid_12'>" SKIP.     
+	 	 	                                 
+</SCRIPT>           
+					<div style='text-align:center;'>
+			 
+			             <h2>Customer Record Review Before Deleting</h2>
+			
+			         </div>
+			
+         <div class='table_3col'>   <!--  style="width:65%"align="center"> -->            
+           <table>    
+                        <tr> 
+                        <th colspan="2"style='text-align:center;'>Personal </th><th colspan="2"style='text-align:center;'>Address </th><th colspan="2"style='text-align:center;'>Contact </th></th>
+                        </tr>
+                        <tr> 
+                            <td>Prefix</td><td> `prefix`  </td>                        
+                            <td>Address Line1</td><td>`addr1`  </td>
+                            <td>Home Number</td><td>`H-phone`  </td>
+                        </tr>                         
+                        <tr>
+                            <td>First Name</td><td>`fname`  </td>
+                            <td>Address Line2</td><td>`addr2`  </td>
+                            <td>Work Number</td><td>`w-phone`  </td>
+                        </tr>   
+                        <tr>
+                             <td>Middle Name</td><td>`mname`  </td>  
+                             <td>Address Line3</td><td>`addr3`  </td>
+                             <td>Cell Number</td><td>`c-phone`  </td>                             
+                        </tr>
+                        <tr>
+                             <td>Last Name</td><td> `lname`  </td>                                
+                             <td>City</td><td>`city`  </td>  
+                             <td>Fax Number</td><td>`fax-phone`  </td>                      
+                        </tr>
+                        <tr>
+                              <td>suffix</td><td>`suffix`  </td>
+                              <td>State</td><td>`state`  </td>
+                              <td>Magento Customer Number</td><td>`magrn`  </td>
+                        </tr>
+                        <tr>
+                              <td>&nbsp;</td><td>&nbsp;</td>
+                              <td>Zip Code</td><td>`zip`  </td>                       
+                              <td>Professional Customer</td>
+ <script LANGUAGE="SpeedScript">
+                              IF prof = ? THEN
+                              {&OUT} "<td></td>".
+                              ELSE
+                              {&OUT} "<td>" prof "</td>".
+ 
+ </script>                               
+                           
+                        </tr>
+                        <tr>
+                            <td>&nbsp;</td><td>&nbsp;</td>    
+                            <td>Country</td><td>`coabbv`  </td>                 
+                             <td>&nbsp;</td><td>&nbsp;</td>
+                        </tr>
+                            
+                              <th colspan="6">Email info</th> 
+                        <tr>        
+                              <td>E-mail Address</td><td>`email`  </td>     <!-- align="leftt"colspan="2" -->              
+                              <td>Second E-mail Address</td><td align="leftt"colspan="3">`email-2`  </td>                        
+                              
+                        </tr>
+                              <th colspan="6">Credit Card Information</th>  
+                        <tr>
+                              <td>Credit Card Type</td><td>`card-typ`  </td>
+                              <td>Credit Card Number</td><td> `card`  </td>
+                              <td colspan="2"></td> 
+                        </tr>
+                        <tr>
+                              <td>Expiration Date</td><td>`card-expmouth`- `card-expyear`  </td>
+                              <td>Security Code</td><td> `card-sec`  </td>
+                              <td colspan="2"> </td>
+                         </tr>           
+                              
+                              
+           </table>                        
+         </div> <!-- end of div class='table_3col'> -->  
+       <p>&nbsp;</p>  
+       
+<SCRIPT LANGUAGE="SpeedScript"> 
+
+
+
+		            FIND FIRST TK_mstr WHERE TK_cust_ID = cust_id AND
+		                             TK_mstr.TK_deleted = ? NO-LOCK NO-ERROR.  /* Checking to see if a test kit has been sold to this customer  */
+		                             
+		            IF AVAILABLE TK_mstr THEN DO:
+		                 
+		         {&OUT}
+		         "<div style='text-align:center;'>" skip 
+                 "   <h2><font color='#E60000'>Unable to delete this Customer Record. These Test Kits are Assigned to it.</font></h2>" skip
+                 "</div>".        
+		  		       
+ 		         {&OUT}         
+		         "<div class='table_report'>" skip
+		         "  <table>" skip
+		         "    <THEAD>" skip 
+		         "    <tr>" skip
+		         "        <th  colspan=5></th>" skip
+		         "    </tr>" skip		               
+		         "    <tr>" skip
+		         "       <td>Test Kit ID</td>" skip
+		         "       <td>Created Date</td>" skip
+		         "       <td nowrap>Created By</td>" skip
+		         "       <td>Domestic</td>" skip
+		         "       <td>Professional</td>" skip
+		         "    </tr>"  			     
+		         "    </THEAD>" SKIP.         
+		            FOR EACH TK_mstr WHERE TK_cust_ID = cust_ID NO-LOCK. 
+		                    
+                 {&OUT}
+                 "    <tr>" skip
+                 "       <td>" "<a href=~"../../DataHub/rcode/TRH-history-R.r?whattorun=1.41&h-low-serial=" TK_id 
+                                    "&h-high-serial=" TK_id "&h-act=1&submit=Search~" >"  TK_ID "</a></td>" skip
+                 "       <td>" tk_create_date "</td>" skip                          
+                 "       <td>" tk_created_by "</td>" skip
+                 "       <td>" tk_domestic "</td>" skip
+                 "       <td>" tk_prof "</td>".
+                          
+                    END. /* for each TK_mstr where seq = tk_cust_id */
+                    
+                 {&OUT}
+                 "    </tr>" skip
+                 "   <TFOOT>" SKIP
+                 "       <TR>" SKIP
+                 "           <TD COLSPAN=5>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+                 "       </TR>" SKIP
+                 "   </TFOOT>" SKIP                 
+                 "   </table>" skip
+                 "</div>" 
+                 
+                 "<br>" skip                                                    /* 1dot4 */
+                 "<div class='row'>" SKIP
+				 "   <div class='grid_5'> </DIV>" SKIP
+				 "   <div class='grid_2'>" skip
+				 "<form>" skip
+				 "   <BUTTON type='submit'name='whattorun' value=" whattorun " class='btn'>New Customer Delete</BUTTON></div>" SKIP
+				 "   <div class='grid_5'> </DIV>" SKIP
+				 "</form>" skip
+				 "</div>" SKIP
+				 "<BR>" SKIP.        
+                        
+/*		                                                                                                     */
+/*		                {&OUT}                                                                             */
+/*		         "     <p align='center'>" skip                                                            */
+/*		         "     <a href=custdelete.r?whattorun=2.99>Click here for New Customer Delete</a><br>" skip*/
+/*		         "     </p>".			                                                                           */
+		
+         END. /* for each TK_mstr where TK_cust_ID = cust_ID */     
+                              
+         ELSE DO:
+      
+{&OUT}  
+    "<FORM  method='post'>" skip                      
+    "      <input type='hidden' name='delete-form' value=' 1 '>" skip  
+    "      <input type='hidden' name='f-name' value='" fname  "'>" skip
+    "      <input type='hidden' name='l-name' value='" lname  "'>" skip
+    "      <input type='hidden' name='e-mail' value='" email  "'>" skip
+    "      <input type='hidden' name='pep-exist' value='" YES  "'>".     
+{&OUT}
+
+    "</DIV>         <!-- end of grid_8 -->" SKIP            /* 1dot4 */
+/*    "<DIV class='grid_2'> </DIV>" SKIP*/
+    "</DIV>     <!-- end of row -->" SKIP
+    
+    "<div class='row'>" SKIP                                /* dot4 */
+    "   <div class='grid_3'> </DIV>" SKIP
+    "   <div class='grid_2'><BUTTON type='submit' name='submit' value='Delete' class='btn'>Delete</BUTTON></div>" SKIP
+    "   <div class='grid_2'> </DIV>" SKIP
+    "   <div class='grid_2'>" skip
+    "   </form>" skip
+    "   <form>" skip
+    "   <BUTTON type='submit' name='whattorun' value=" whattorun " class='btn'>New Customer Delete</BUTTON></div>" SKIP
+    "   </form>" skip
+    "   <div class='grid_3'> </DIV>" SKIP
+    "</div>" SKIP
+    "<BR>" SKIP.
+    
+
+/*     "<div align='center'>" skip                                                                                          */
+/*     "      &nbsp;&nbsp;<input type='submit' name='submit' value='Delete' onclick='this.form.action='custdelete.r''>" skip*/
+/*     "      <br><p> <a href=custdelete.r?whattorun=" whattorun ">Click here for New Customer Delete</a><br></p>" skip     */
+/*     " </form>".*/
+               
+         END.
+   END. /* IF cust-delete <> 1 THEN DO: */ 
+   
+     ELSE    
+                                
+            IF cust-delete = 1 THEN DO:
+                                 
+		                                                                        IF ITfeedback = YES THEN 
+		                                                                        {&OUT} "<P>Inside cust-delete = 1</P>" SKIP
+		                                                                            "<P>ext-cust-scust-delete.r = " 
+		                                                                            SEARCH("ext-cust-scust-delete.r") "</P>" SKIP.
+                                 
+                      RUN VALUE(SEARCH("ext-cust-scust-delete.r"))                  /* 1.11 */  /* 1dot4 */         
+/*                      RUN "../depot/rcode/ext-cust-scust-delete.r"   /* This external procedure runs a procedure that runs 2 external procedures */*/ /* 1.11 */
+                           (cust_id,     
+                            OUTPUT cust-86,
+                            OUTPUT scust-86).
+                                                                                        IF ITfeedback = YES THEN                 
+                                                                                        {&OUT} "<p> Back from ext delete with a cust-86 of --" cust-86 "</p>". 
+                                            
+	                  FIND FIRST patient_mstr WHERE patient_id = cust_id AND
+	                              patient_mstr.patient_deleted = ? NO-LOCK NO-ERROR. /* cust_id */
+                              
+	                      IF AVAILABLE (patient_mstr) THEN DO:
+	                        ASSIGN                        
+	                        patient-id = patient_id.
+	                                                                                     IF ITfeedback = YES THEN                 
+                                                                                        {&OUT} "<p> This cust is a patient with an ID of -- " patient-id "</p>".
+	                      END.  
+	                
+	                  ELSE
+	                                                                                    IF ITfeedback = YES THEN                 
+                                                                                        {&OUT} "<p> This customer is not a patient </p>".
+	                        
+                        
+	                  FIND FIRST patient_mstr WHERE patient_RP_ID = cust-id  AND /* was cust_id 2/13/15 */
+	                                 patient_mstr.patient_deleted = ? NO-LOCK NO-ERROR. /* cust_id -- o-cust-id */
+	                                      
+	                      IF AVAILABLE patient_mstr THEN DO:
+	                        ASSIGN                        
+	                        patient-RP-id = patient_id.                            
+																                        IF ITfeedback = YES THEN                 
+																                        {&OUT} "<br>I'm a RP for patient " patient-RP-ID "</p>".
+                          END.  /*IF AVAILABLE patient_mstr */
+                     
+                      ELSE
+																                        IF ITfeedback = YES THEN
+																                        {&OUT} "<p>No RP patient record found </p>".  
+                       
+                      FIND doctor_mstr WHERE doctor_id = cust_id AND 
+                           doctor_mstr.doctor_deleted = ? NO-LOCK NO-ERROR. /* cust_id */
+                        
+	                      IF AVAILABLE (doctor_mstr) THEN DO:
+	                        ASSIGN
+	                        doctor-id = doctor_id. 
+                        
+																                        IF ITfeedback = YES THEN
+																                        {&OUT} "<p> this is doctor ID " doctor-id  "</p>".  
+                        
+                          END.  /* IF AVAILABLE doctor_mstr */
+                     
+                      ELSE
+																                        IF ITfeedback = YES THEN
+																                        {&out} "<p> No doctor record found </p>".
+                        
+                     FIND addr_mstr WHERE addr_id = people_addr_id AND
+                           addr_mstr.addr_deleted = ? NO-LOCK NO-ERROR. /* people_addr_id -- o-cust-addr-id  */
+                        
+                     IF AVAILABLE (addr_mstr) THEN DO:
+                        ASSIGN
+                        addr-id = addr_id. 
+                        
+																                        IF ITfeedback = YES THEN
+																                        {&OUT} "<p> this is the addr ID " addr-id  "</p>".                          
+                               
+                     END.  /* IF AVAILABLE addr_mstr */   
+                      
+                     ELSE
+                     
+                     ASSIGN
+                     act2 = YES.
+																                        IF ITfeedback = YES THEN
+																                        {&out} "<p> No addr record found </p>".                                 
+                        
+    /*-------------------------------------------------------------------------- looking for The address being used in multiple places  --------*/
+                        
+	                 FOR EACH people_mstr WHERE people_addr_id = addr-id AND /* addr-id -- o-cust-addr-id */
+	                               people_mstr.people_deleted = ? NO-LOCK.
+	                     
+	                      ASSIGN                        
+	                      cout = cout + 1. 
+	                      
+																                        IF ITfeedback = YES THEN
+																                         {&OUT} "<p> cout is --- " cout "</p>".                           
+	                      
+	                 END.  /* FOR EACH people_mstr WHERE people_addr_id = addr-id: */              
+                                             
+		                  IF cout <= 1 THEN  
+	                      ASSIGN
+	                      addr-cout = YES.
+                      
+    
+	                 FIND patient_mstr WHERE patient_mstr.patient_cust_ID = peop-id AND 
+	                                         patient_mstr.patient_deleted = ? NO-LOCK NO-ERROR.
+                                          
+                           IF AVAILABLE (patient_mstr) THEN                                           
+                           ASSIGN
+                           cust-pat = NO.
+                                          
+	                 FIND doctor_mstr WHERE doctor_mstr.doctor_ID = peop-id AND
+	                                   doctor_mstr.doctor_deleted = ? NO-LOCK NO-ERROR.
+                                          
+                           IF AVAILABLE (doctor_mstr) THEN                                          
+                           ASSIGN
+                           cust-doc = NO.
+                           
+               /*------------------------------------------------------------*/
+               
+                           IF patient-RP-id > 0 THEN  /* If customers is an RP this prevents deleting their address */
+                           ASSIGN
+                           addr-cout = NO.
+               
+               /*------------------------------------------------------------*/            
+                                          
+                  IF addr-cout = YES  AND
+                     cust-pat  = YES  AND
+                     cust-doc  = YES THEN DO:                       
+                      
+                      RUN VALUE(SEARCH("ext-addr-delete.r"))        /* 1.11 */ /* 1dot4 */
+/*                      RUN "../depot/rcode/ext-addr-delete.r"        /* 1.11 */*/
+                           (addr-id,
+                            OUTPUT addr-86) .              
+		               
+		          END. /* IF addr-cout, cust-pat,cust-doc = YES THEN DO:  */ 
+		                   
+		          
+		          IF  patient-id     = 0 AND
+                      patient-RP-id  = 0 AND 
+                      doctor-id      = 0 THEN DO:
+                      
+                      RUN VALUE(SEARCH("ext-people-delete.r"))          /* 1.11 */ /* 1dot4 */
+/*                      RUN "../depot/rcode/ext-people-delete.r"          /* 1.11 */*/
+                           (cust_id, /* peop-id */
+                            OUTPUT peop-86) . 
+                                 
+															                                IF ITfeedback = YES THEN
+															                                {&OUT}
+															                                "<p>Addr_mstr would have been flagged for deletion, Because there's no patient or Dr. ID or RP ID" SKIP 
+															                                "<br>patient-id is-- " patient-id SKIP
+															                                "<br>patient-RP-ID is -- " patient-RP-ID SKIP
+															                                "<br>doctor-is is -- " doctor-id "</p>".
+	                     
+                  END.  /*if patient-id = 0 and doctor-id = 0 then do: */ 
+                  
+                          
+                         
+                  ELSE   
+															                                IF ITfeedback = YES THEN
+															                                {&OUT}
+															                                "<p>Address and people records would NOT be deleted</p>" SKIP
+															                                "<p>patient-id is-- " patient-id SKIP
+															                                "<br>patient-RP-ID is -- " patient-RP-ID SKIP
+															                                "<br>doctor-is is -- " doctor-id "</p>" SKIP
+															                                "<p>This is cout-- " cout  " </p>". 
+                                
+                        
+ 
+			                   IF cust-86 = YES THEN DO:                 
+			                     
+			                     /*  "<h3 align='center'>You have Deleted a Customer Record</h3> */
+			                       {&OUT} 
+			                       "<DIV class='row'>" SKIP              /* 1dot4 */
+                                   "<DIV class='grid_4'> </DIV>" SKIP
+                                   "<DIV class='grid_4'>" SKIP
+                                   
+					               "<div class='table_2col' >" skip   /* style='width:30%'align='center' */
+					               "     <table >" skip
+					               "         <tr>"  skip
+					               "             <th colspan='2'>Customer Record Deleted</th></tr>" skip		                    
+					               "         <tr>" skip                                 
+					               "             <td>Customer ID</td><td>" seq  "</td></tr>" skip
+					               "         <tr>" skip
+					               "             <td>Create Date</td><td>" ddate "</td></tr>" skip
+					               "         <tr>" skip
+					               "             <td>Last Modified</td><td>" moddate "</td></tr>" skip			                        
+					               "     </table>" skip
+					               " </div>" skip
+					               
+					               "</DIV>     <!-- end of grid_4 -->" SKIP    /* 1dot4 */
+								   "<DIV class='grid_4'> </DIV>" SKIP
+								   "</DIV>     <!-- end of row -->" SKIP.              
+			                 
+			                   IF peop-86 = YES THEN                 
+                                 
+                                 /*   "<h3 align='center'>You have Deleted a People Record</h3> */
+                                   {&OUT}                                     
+                                   "<DIV class='row'>" SKIP             /* 1dot4 */
+                                   "<DIV class='grid_4'> </DIV>" SKIP
+                                   "<DIV class='grid_4'>" SKIP
+                                   
+		                           "<div class='table_2col' >" skip   
+		                           "     <table>" skip 
+		                           "         <tr>" skip
+		                           "             <th colspan='2'>People Record Deleted</th></tr>" skip                  
+		                           "         <tr>" skip                                 
+		                           "             <td>Customer First Name</td><td>" fname "</td>" skip
+		                           "         <tr>" skip
+		                           "             <td>Customer last Name</td><td>" lname "</td></tr>" skip
+		                           "         <tr>" skip
+		                           "             <td>Customer Email</td><td>" email "</td></tr>" skip                                 
+		                           "     </table>" skip		                                
+		                           "</div>" skip
+		                           
+		                           "</DIV>     <!-- end of grid_4 -->" SKIP    /* 1dot4 */
+                                   "<DIV class='grid_4'> </DIV>" SKIP
+                                   "</DIV>     <!-- end of row -->" SKIP.   
+                              
+                               ELSE DO: 
+	                              
+	                          /*     "<h3 align='center'>Unable to delete People record because</h3> */ 
+                                   {&OUT} 
+                                   "<DIV class='row'>" SKIP             /* 1dot4 */
+                                   "<DIV class='grid_4'> </DIV>" SKIP
+                                   "<DIV class='grid_4'>" SKIP
+                                    
+		                           "<div class='table_2col' >" skip   
+		                           "     <table>" skip
+		                           "         <tr>" skip
+		                           "             <th colspan='2'>Unable to delete People record because</th></tr>" skip.                    
+		                                                                  
+                                         IF patient-id > 0 THEN 
+                                         {&OUT} 
+                                   "         <tr><td style='background-color:#FFFF00;'>Caution</td><td>Customer Name is recorded as a Patient</td></tr>" skip.
+                                    
+                                         IF patient-RP-id > 0 THEN 
+                                         {&OUT}
+                                   "         <tr><td style='background-color:#FFFF00;'>Caution</td><td>Customer Name is recorded as a Responsible Person</td></tr>" skip.
+                                    
+                                         IF doctor-id > 0 THEN 
+                                         {&OUT}
+                                   "         <tr><td style='background-color:#FFFF00;'>Caution</td><td>Customer Name is recorded as a Doctor</td></tr>" skip.    		                                         
+		                                {&OUT}                                     
+		                           "     </table>" skip		                                 		                                 
+		                           "</div>" skip
+		                           
+		                           "</DIV>     <!-- end of grid_4 -->" SKIP    /* 1dot4 */
+                                   "<DIV class='grid_4'> </DIV>" SKIP
+                                   "</DIV>     <!-- end of row -->" SKIP.
+                                   
+                               END. /* of ELSE DO: */   
+		                              
+		                        IF act2 = YES AND 
+		                        addr-86 = NO THEN
+		                        {&OUT}
+		                           "<DIV class='row'>" SKIP               /* 1dot4 */
+                                   "<DIV class='grid_4'> </DIV>" SKIP
+                                   "<DIV class='grid_4'>" SKIP
+                                   
+		                           "<div class='table_2col' >" skip   
+                                   "     <table>" skip
+                                   "         <tr>" skip
+                                   "         <th colspan='2'>Address Record</th></tr>" skip                   
+                                   "         <tr>" skip
+                                   "         <td nowrap>Addresses Record</td><td>No Addresses Record Associated with this Customer</td></tr>" skip                               
+                                                                                
+                                   "     </table>" skip
+                                   "</div>" skip
+                                   
+                                   "</DIV>     <!-- end of grid_4 -->" SKIP    /* 1dot4 */
+                                   "<DIV class='grid_4'> </DIV>" SKIP
+                                   "</DIV>     <!-- end of row -->" SKIP.                                              
+                             
+			                   
+			                   ELSE IF addr-86 = YES THEN                
+			                     
+			                      /*  "<h3 align='center'>You have Deleted a Address Record</h3> */
+                                   {&OUT}
+                                   "<DIV class='row'>" SKIP               /* 1dot4 */         
+                                   "<DIV class='grid_4'> </DIV>" SKIP
+                                   "<DIV class='grid_4'>" SKIP
+                                    
+                                   "<div class='table_2col' >" skip   
+                                   "      <table>" skip 
+                                   "         <tr>" skip
+                                   "             <th colspan='2'>Address Record Deleted</th></tr>" skip                                   
+                                   "         <tr>" skip                                 
+                                   "             <td nowrap>Address Line1</td><td>" addr1  "</td></tr>" skip
+                                   "         <tr>" skip
+                                   "             <td nowrap>Address Line2</td><td>" addr2 "</td></tr>" skip
+                                   "         <tr>" skip
+                                   "             <td nowrap>Address Line3</td><td>" addr3 "</td></tr>" skip    
+                                   "         <tr>" skip
+                                   "             <td>City</td><td>" city "</td></tr>" skip
+                                   "         <tr>" skip
+                                   "             <td>Zip</td><td>" Zip "</td></tr>" skip     
+                                   "         <tr>" skip
+                                   "             <td>State</td><td>" state "</td></tr>" skip                                                                                    
+                                   "      </table>" skip 
+                                                             
+                                   "</div>" skip
+                                   "</DIV>     <!-- end of grid_4 -->" SKIP    /* 1dot4 */
+                                   "<DIV class='grid_4'> </DIV>" SKIP
+                                   "</DIV>     <!-- end of row -->" SKIP.                                    
+                                  
+                               ELSE 
+                               
+                                    /*   "<h3 align='center'>Unable to delete Address Record because</h3> */
+                                    {&OUT}
+                                   "<DIV class='row'>" SKIP             /* 1dot4 */
+                                   "<DIV class='grid_4'> </DIV>" SKIP
+                                   "<DIV class='grid_4'>" SKIP
+                                   
+                                   "<div class='table_2col' >" skip   
+                                   "      <table>" skip
+                                   "         <tr>" skip
+                                   "             <th colspan='2'>Unable to delete Address Record</th></tr>" skip                   
+                                   "         <tr>" skip
+                                   "             <td style='background-color:#FFFF00;'>Caution</td><td>Addresses being used by another Record</td></tr>" skip                               
+                                                                                
+                                   "      </table>" skip                                      
+                                   "</div>" skip
+                                   
+                                   "</DIV>     <!-- end of grid_4 -->" SKIP    /* 1dot4 */
+                                   "<DIV class='grid_4'> </DIV>" SKIP
+                                   "</DIV>     <!-- end of row -->" SKIP. 
+                                   
+                                   
+							 {&OUT}       
+							       "<br>" skip                                          /* 1dot4 */
+							       "<div class='row'>" SKIP                                               
+							       "   <div class='grid_4-5'> </DIV>" SKIP
+							       "   <div class='grid_3'>" skip
+							       "<form>"  skip							
+							       "   <button type='submit' name='whattorun' value=" whattorun " class='btn'>Click here for New Customer Delete</BUTTON></div>" SKIP
+							       "</form>" skip
+							       "   <div class='grid_4-5'> </DIV>" SKIP
+							       "</div>" SKIP
+							       "<BR>" SKIP.
+							       
+/*                                   "   <br><p align='center'> <a href=custdelete.r?whattorun=2.99>Click here for New Customer Delete</a></p>".*/
+			                        
+			                 
+			                      
+                        END. /* IF cust-86 = YES THEN   DO:  */
+	            END. /* if cust-delete = 1 then do: */
+		     END. /* else do: */                   
+	      END.  /* else do: */  
+          
+      
+</SCRIPT>   
+        </BODY>
+</HTML>

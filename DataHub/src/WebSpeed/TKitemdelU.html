@@ -1,0 +1,189 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.1">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="06/Aug/14">
+    <META NAME="LAST_UPDATED" CONTENT="27/Jan/15">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <TITLE>Item / Marker Deletion</TITLE>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+/**********************************************************************************
+ *
+ *  TKitemdelU.html   -   Version 1.1
+ *
+ *  This program is based on the TKitemU.html code but is for deletion of records.
+ *
+ *  ---------------------------------------------------------------------------- 
+ *
+ *  Revision History:
+ *  -----------------
+ *  1.0 - written by Doug Luttrell.  Original Version.
+ *  1.1 - written by DOUG LUTTRELL on 27/Jan/15.  Included new grid css commands.
+ *  1.2 - written by Jacob Luttrell on 18/Mar/16. Added progname. Marked by 1dot2.
+ ***********************************************************************************/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/  
+ 
+/***************************  Variable Definition Section  *************************/
+ DEFINE VARIABLE markid     LIKE marker_list.marker_ID      NO-UNDO.
+ DEFINE VARIABLE markitem   LIKE marker_list.marker_item    NO-UNDO.
+ DEFINE VARIABLE markdesc   LIKE marker_list.marker_desc    NO-UNDO.
+ DEFINE VARIABLE markdisp   LIKE marker_list.marker_disp    NO-UNDO.
+ 
+ DEFINE VARIABLE act        AS CHARACTER                    NO-UNDO. 
+ DEFINE VARIABLE ITshowmsg  AS LOG INITIAL NO               NO-UNDO.
+ 
+ DEFINE VARIABLE thismarker AS CHARACTER                    NO-UNDO. 
+ DEFINE VARIABLE textcontents   LIKE marker_list.marker_desc    NO-UNDO. 
+
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre get-value</P>" skip.
+        
+ ASSIGN 
+    act         = get-value('h-act')
+    markid      = integer(get-value('h-markid'))
+    markitem    = get-value('h-markitem')
+    markdesc    = get-value('h-markdesc')
+    markdisp    = get-value('h-markdisp').                                      /* 1dot4 - bonus fix */
+    
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Post get-value</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>markid = " markid "</P>" skip    
+																				       "<P>markitem = " markitem "</P>" skip
+																				       "<P>markdesc = " markdesc "</P>" skip
+																				       "<hr width=90%>" skip.
+        
+ IF act = "" THEN 
+    act = "INITIAL".
+     
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre Case</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>markid = " markid "</P>" skip   
+																				       "<P>markitem = " markitem "</P>" skip
+																				       "<P>markdesc = " markdesc "</P>" skip
+																				       "<hr width=90%>" skip.
+        
+/********************************  Main Program  ***********************************/
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:
+        
+        {TLitemU-form.i "FIND" "NOTHING" "DISABLED" "DELETE" "Delete"}. 
+        
+    END.  /** of act = "INITIAL" **/
+    
+    WHEN "FIND" THEN DO:
+        
+        FIND marker_list WHERE marker_list.marker_id = markid AND 
+            marker_list.marker_deleted = ? 
+                NO-LOCK NO-ERROR.
+        IF AVAILABLE marker_list THEN 
+            ASSIGN 
+                markitem    = marker_list.marker_item
+                markdesc    = marker_list.marker_desc
+                markdisp    = marker_list.marker_disp.                              /* 1dot4 - bonus fix */
+ 
+        {TLitemU-form.i "DELETE" "DISABLED" "DISABLED" "DELETE" "Delete"}.    
+                
+																				IF ITshowmsg = YES THEN 
+																				    {&OUT}
+																				        "<P>Post FIND</P>" skip  
+																				        "<P>Act = " act "</P>" skip
+																				        "<P>markid = " markid "</P>" skip   
+																				        "<P>markitem = " markitem "</P>" skip
+																				        "<P>markdesc = " markdesc "</P>" skip
+																				        "<hr width=90%>" skip.
+         
+    END.  /** of act = "INITIAL" **/
+    
+    WHEN "DELETE" THEN DO: 
+        
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Delete</P>" skip  
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>markid = " markid "</P>" skip   
+                                                                                        "<P>markitem = " markitem "</P>" skip
+                                                                                        "<P>markdesc = " markdesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.        
+        
+        FIND marker_list WHERE marker_list.marker_ID = markid AND 
+            marker_list.marker_deleted = ? 
+                EXCLUSIVE-LOCK NO-ERROR.
+        IF AVAILABLE marker_list THEN DO: 
+            
+            IF CAN-FIND(FIRST tld_det WHERE tld_det.tld_item_ID = marker_list.marker_ID NO-LOCK) THEN DO: 
+             
+                {&OUT} "<CENTER><H3>ERROR! Item / Marker " marker_list.marker_item " in use.  Cannot delete.</H3></CENTER>" skip.
+                
+            END.  /** of if can-find tld_det --- marker in use **/
+            
+            ELSE DO: 
+                
+	            ASSIGN 
+	                marker_list.marker_deleted          = TODAY 
+	                marker_list.marker_modified_by      = USERID("HHI")
+	                marker_list.marker_modified_date    = TODAY
+	                markid                              = 0
+	                markitem                            = ""
+	                markdesc                            = ""
+	                marker_list.marker_prog_name        = THIS-PROCEDURE:FILE-NAME.        /* 1dot2 */
+	                
+	        END.  /** of else do --- marker not in use **/
+	                
+        END.  /** of if avail marker_list **/
+        ELSE 
+            {&OUT} "<P>ERROR - marker_list not found for marker = " markid ".</P>" skip. 
+ 
+        {TLitemU-form.i "INITIAL" "DISABLED" "DISABLED" "DELETE" "Delete"}.   
+        
+    END.  /** of act = "DELETE" **/
+      
+    OTHERWISE DO: 
+                       
+																		        IF ITshowmsg = YES THEN 
+																		            {&OUT}
+																		                "<P>Inside Otherwise Do</P>" skip
+																		                "<P>Act = " act "</P>" skip
+																		                "<P>markid = " markid "</P>" skip   
+																		                "<P>markitem = " markitem "</P>" skip
+																		                "<P>markdesc = " markdesc "</P>" skip
+																		                "<hr width=90%>" skip.
+                                           
+        {&OUT} 
+            "<P class='errmsg'>Unexpected Condition!  Please contact <a href='mailto:hhi.techsupport@mysolsource.com?subject=Error with TKitemdelU.html -- " act "'>Solsource</a> immediately.</P>" SKIP             
+            "<FORM method='post'>" skip
+            "<center><INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP 
+            "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP 
+            "</FORM>" skip.     
+        
+    END.  /** of otherwise **/
+    
+END CASE.  /*** case of act ***/
+
+																				IF ITshowmsg = YES THEN 
+																				    {&OUT} "<P>End OF LINE.</P>".
+
+/*******************************  End of Program  **********************************/
+</SCRIPT>
+</BODY>
+</HTML>

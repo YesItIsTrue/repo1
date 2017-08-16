@@ -1,0 +1,372 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<TITLE>Reorder Recommendation</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="09/Oct/2016">
+    <META NAME='LAST_UPDATED' CONTENT="18/Oct/2016">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core-2.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+
+<style TYPE="text/css">
+
+.leftToRightGradient{
+  width: 40%;
+  background: 
+    linear-gradient(to right, 
+    rgba(102,204,102,.9) 32%, /** green end */
+    rgba(255,255,102,.8) 32%, /** yellow start */
+    rgba(255,255,102,.8) 66%, /** yellow end */
+    rgba(255,153,153,.9) 66%); /* red start */
+}
+
+.bar{
+  width:0px;
+  height:12px;
+  background:black;
+  border-radius:2px;
+}
+
+/** Animation keyframes **/
+@keyframes stretch {
+    0% {transform: scaleX(0.3);}
+    60% {transform: scaleX(1);}         
+    80% {transform: scaleX(0.98);}
+    100% {transform: scaleX(1);}                            
+}
+@-webkit-keyframes stretch {
+    0% {-webkit-transform: scaleX(0.3);}
+    60% {-webkit-transform: scaleX(1);}
+    80% {-webkit-transform: scaleX(0.98);}
+    100% {-webkit-transform: scaleX(1);}        
+}
+
+</style>
+
+<SCRIPT LANGUAGE="SpeedScript">
+  /*-----------------------------------------------------------------
+    
+      animation-name: stretch;
+  -webkit-animation-name: stretch;  
+    animation-duration: 1.5s;   
+  -webkit-animation-duration: 1.5s;
+    animation-timing-function: ease-out;    
+    -webkit-animation-timing-function: ease-out;    
+    transform-origin: 0% 0%;
+    -ms-transform-origin: 0% 0%;
+    -webkit-transform-origin: 0% 0%;
+  --------------------------------------------------------------------  
+    File: ICreorderR.html           
+    Description: This is the Reorder Recommendation Report. It recommends when 
+        you ought to reorder things because you are running low according to the 
+        things you set up in the Item Master (min/max, order mult, etc...).
+    Created: 18/Jun/2016
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-site LIKE qoh_det.qoh_site NO-UNDO.
+DEFINE VARIABLE v-item LIKE item_mstr.item_nbr NO-UNDO.
+DEFINE VARIABLE v-code LIKE item_mstr.item_code NO-UNDO.
+DEFINE VARIABLE v-status LIKE item_mstr.item_status NO-UNDO.
+DEFINE VARIABLE v-loc-type LIKE item_mstr.item_req_loc_type NO-UNDO.
+DEFINE VARIABLE v-group LIKE item_mstr.item_group NO-UNDO.
+DEFINE VARIABLE v-abc-class LIKE item_mstr.item_abc_class NO-UNDO.
+DEFINE VARIABLE v-prod-line LIKE item_mstr.item_prod_line NO-UNDO.
+DEFINE VARIABLE math-pos-buy LIKE qoh_det.qoh_quantity LABEL "Pos Buy" NO-UNDO.
+DEFINE VARIABLE math-rec-buy LIKE qoh_det.qoh_quantity LABEL "Rec Buy" NO-UNDO.
+DEFINE VARIABLE math1 AS DECIMAL NO-UNDO.
+DEFINE VARIABLE x AS INTEGER NO-UNDO. 
+DEFINE VARIABLE v-all-sites AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-site-found AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-min-percentage AS DECIMAL NO-UNDO.
+DEFINE VARIABLE v-reorder-percentage AS DECIMAL NO-UNDO.
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act         = html-encode(get-value("h-act"))
+    v-site      = html-encode(get-value("h-site"))
+    v-item      = html-encode(get-value("h-item"))
+    v-code      = html-encode(get-value("h-code"))
+    v-status    = html-encode(get-value("h-status"))
+    v-loc-type  = html-encode(get-value("h-loc-type"))
+    v-group     = html-encode(get-value("h-group"))
+    v-abc-class = html-encode(get-value("h-abc-class"))
+    v-prod-line = html-encode(get-value("h-prod-line"))
+    
+    v-all-sites = IF html-encode(get-value("h-all-sites")) = "yes" THEN YES ELSE NO .
+    
+IF act= "" THEN 
+    act = "INITIAL".
+/*    act = "SEARCH".*/
+
+IF itmessage = YES THEN {&OUT}
+    "act         = " get-value("h-act") "<br>" SKIP
+    "v-site      = " get-value("h-site") "<br>" SKIP
+    "v-item      = " get-value("h-item") "<br>" SKIP
+    "v-code      = " get-value("h-code") "<br>" SKIP
+    "v-status    = " get-value("h-status") "<br>" SKIP
+    "v-loc-type  = " get-value("h-loc-type") "<br>" SKIP
+    "v-group     = " get-value("h-group") "<br>" SKIP
+    "v-abc-class = " get-value("h-abc-class") "<br>" SKIP
+    "v-prod-line = " get-value("h-prod-line") "<br>" SKIP
+    
+    "v-all-sites = " IF get-value("h-all-sites") = "yes" THEN YES ELSE NO  "<br>" SKIP.
+    
+        
+/* ************************* Main Block *************************** */   
+
+CASE act:
+   
+    WHEN "Initial" THEN DO:
+    
+    {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP
+            "<DIV class='grid_10'>" SKIP   
+            "<div class='table_col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=4>Reorder Report Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Site</td>" skip
+            "           <td><input type='text' name='h-site' value='" v-site "' /></td>" skip    
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Status</td>" skip
+            "           <td><input type='text' name='h-status' value='" v-status "' /></td>" skip         
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Account for All Sites</td>" SKIP
+            "           <td><input type='checkbox' name='h-all-sites' value='YES' /></td>" SKIP
+            "       </tr>" SKIP
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Search' class='btn'>Search</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+        
+    END. /*** of initial ***/
+   
+    WHEN "SEARCH" THEN DO:
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP  
+            "                <TH colspan='99'>Reorder Recommendation Report".
+        
+        IF v-all-sites = YES OR v-site = "" THEN {&OUT} " for All Sites" .
+        ELSE IF v-site <> "" THEN {&OUT} " for " v-site "".
+            
+        {&OUT} "</TH>" SKIP    
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "               <td>Item Number</td>" SKIP
+/*            "               <td></td>" SKIP*/
+            "               <td>Min</td>" SKIP
+            "               <td>Reorder</td>" SKIP
+            "               <td>Max</td>" SKIP
+            "               <td>Order Mult</td>" SKIP
+/*            "               <td></td>" SKIP*/
+            "               <td>Quantity</td>" SKIP
+            "               <td>Recommended</td>" SKIP
+/*            "               <td></td>" SKIP*/
+            "               <td>Buffer Penetration</td>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1).
+              
+        maine-loop: FOR EACH QOH_det WHERE  qoh_det.qoh_deleted = ? AND
+            ((qoh_det.qoh_site = v-site OR v-site = "") OR v-all-sites = YES) AND 
+            (qoh_det.qoh_status = v-status OR v-status = "")
+             NO-LOCK, 
+            FIRST item_mstr WHERE item_mstr.item_nbr = qoh_det.qoh_item_nbr AND
+                item_mstr.item_deleted = ?
+                NO-LOCK BREAK BY qoh_det.qoh_item_nbr:
+            
+            IF FIRST-OF(qoh_det.qoh_item_nbr) THEN DO:
+            
+                ASSIGN 
+                    x = 0                
+                    math-pos-buy = 0
+                    math1 = 0
+                    math-rec-buy = 0.
+                
+            END.
+            
+            /** "each" part of the for each ***/
+            
+            x = x + qoh_det.qoh_quantity.
+            
+            /**** insert location comparing tool... ***/
+            
+            /** end of "each" part ***/
+            
+            IF LAST-OF(qoh_det.qoh_item_nbr) THEN DO:
+
+                ASSIGN math-pos-buy = item_mstr.item_max_qoh - x.   
+                
+                IF math-pos-buy <= 0 THEN NEXT maine-loop.   
+                
+                ASSIGN math1 = TRUNCATE (math-pos-buy / item_mstr.item_order_mult, 0).
+                
+                ASSIGN math-rec-buy = math1 * item_mstr.item_order_mult.
+                
+                IF (item_mstr.item_min_order_qty >= x OR item_mstr.item_min_QOH >= x) THEN DO:
+
+                    {&OUT}
+                        "           <tr>" SKIP
+                        "               <td>" item_mstr.item_nbr  "</td>" SKIP
+/*                        "               <td></td>" SKIP*/
+                        "               <td>" item_mstr.item_min_qoh "</td>" SKIP
+                        "               <td>" item_mstr.item_def_reorder "</td>" SKIP
+                        "               <td>" item_mstr.item_max_qoh "</td>" SKIP
+                        "               <td>" item_mstr.item_order_mult "</td>" SKIP
+/*                        "               <td></td>" SKIP*/
+                        "               <td>" x "</td>" SKIP.
+                    
+                    ASSIGN v-site-found = NO.
+                    
+                    FOR FIRST site_mstr WHERE site_mstr.site_name = qoh_det.qoh_site AND 
+                        site_mstr.site_deleted = ? NO-LOCK,
+                        FIRST warehouse_mstr WHERE warehouse_mstr.warehouse_site = site_mstr.site_name AND 
+                            warehouse_mstr.warehouse_name = site_mstr.site_def_ware AND 
+                            warehouse_mstr.warehouse_deleted = ? NO-LOCK,
+                            FIRST loc_mstr WHERE loc_mstr.loc_site = warehouse_mstr.warehouse_site AND 
+                                loc_mstr.loc_warehouse = warehouse_mstr.warehouse_name AND 
+                                loc_mstr.loc_name = warehouse_mstr.warehouse_def_loc AND 
+                                loc_mstr.loc_deleted = ? NO-LOCK:
+
+                        ASSIGN v-site-found = YES.
+
+                        {&OUT}
+                            "<td><a href=~"../../InvCtrl/rcode/ICinv-receiptU.r?h-site="  qoh_det.qoh_site
+                            "&h-warehouse=" site_mstr.site_def_ware
+                            "&h-loc=" warehouse_mstr.warehouse_def_loc
+                            "&h-item_nbr=" item_mstr.item_nbr
+                            "&h-lot=" qoh_det.qoh_lot
+                            "&h-serial=" qoh_det.qoh_serial
+                            "&h-quantity=" math-rec-buy
+                            "&whattorun=".
+                        
+                        {menu-hyperlinkR.i ICinv-receiptU.r}.
+                            
+                        {&OUT}
+                            "&h-act=Item~">" math-rec-buy "</a></td>".
+                    
+                    END. /*** for first site ***/
+                    
+                    IF v-site-found = NO THEN DO:
+                        
+                        {&OUT}
+                            "<td><a href=~"../../InvCtrl/rcode/ICinv-receiptU.r?h-item_nbr=" item_mstr.item_nbr
+                            "&h-lot=" qoh_det.qoh_lot
+                            "&h-serial=" qoh_det.qoh_serial
+                            "&h-quantity=" math-rec-buy
+                            "&whattorun=".
+                        
+                        {menu-hyperlinkR.i ICinv-receiptU.r}.
+                            
+                        {&OUT}
+                            "&h-act=SITE~">" math-rec-buy "</a></td>".
+                    END. /*** unavailable defualts ***/
+                        
+                    {&OUT} 
+/*                        "               <td></td>" SKIP*/
+                        "               <td style=~"width: 40%;position:relative;padding-bottom:16px;" SKIP
+                        "            background:linear-gradient(to right," SKIP 
+                        "rgba(255,153,153,.9) " ((item_mstr.item_min_QOH / item_mstr.item_max_qoh ) * 100) "%," SKIP
+                        "rgba(255,255,102,.8) " ((item_mstr.item_min_QOH / item_mstr.item_max_qoh ) * 100) "%," SKIP
+                        "rgba(255,255,102,.8) " ((item_mstr.item_def_reorder / item_mstr.item_max_qoh ) * 100) "%," SKIP
+                        "rgba(102,204,102,.9) " ((item_mstr.item_def_reorder / item_mstr.item_max_qoh ) * 100) "%);~">" SKIP
+                        "                   <div style='width:" ((x / item_mstr.item_max_qoh ) * 100) "%;height:12px;background:black;border-radius:10px;position:absolute;z-index:10;margin-bottom:3px;'></div>"
+                        "                   <div style='width:" ((math-rec-buy / item_mstr.item_max_qoh ) * 100) + ((x / item_mstr.item_max_qoh ) * 100) "%;height:12px;background:white;border-radius:10px;position:absolute;z-index:5;'></div>" SKIP
+    /*                    "                   <div style='width:" ((math-rec-buy / item_mstr.item_max_qoh ) * 100) "%;height:12px;background:white;border-radius:10px;'></div>" SKIP*/
+    /*                    "                   <div style='width:" ((math-rec-buy / item_mstr.item_max_qoh ) * 100) "%;height:12px;" SKIP*/
+    /*                    "background:black"                                                                                            */
+    /*                    "            background:linear-gradient(to right," SKIP                                                       */
+    /*                    "rgba(26,42,56) " ((x / item_mstr.item_max_qoh ) * 100) "%," SKIP                                             */
+    /*                    "rgba(224,238,238) " ((x / item_mstr.item_max_qoh ) * 100) "%," SKIP                                          */
+    /*                    ";border-radius:10px;'></div>" SKIP                                                                           */
+                        "               </td>" SKIP
+                        "           </tr>" SKIP.
+    
+                END. /*** all conditions met. ***/
+    
+            END. /*** last of ***/
+                
+        END. /* 4ea. */
+        
+        {&OUT}          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TH COLSPAN='14'>END OF REPORT</TH>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR></br>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP. 
+            
+    END. /* SEARCH */
+    
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<h2>Could not find act " act ".</h2>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

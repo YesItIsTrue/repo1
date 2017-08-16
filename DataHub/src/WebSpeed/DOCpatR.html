@@ -1,0 +1,224 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Patient by Doctor Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:           DocPatR.html
+    Description:    Report page search by doctor to find customers
+    Created:        11/4/14
+    Notes:
+        the corresponding fields to the Doctor_ID field are not filled in.
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE from-tcp    LIKE doctor_mstr.doctor_TCP_code NO-UNDO.
+DEFINE VARIABLE to-tcp      LIKE doctor_mstr.doctor_TCP_code NO-UNDO.
+DEFINE VARIABLE tcp         LIKE doctor_mstr.doctor_TCP_code NO-UNDO.
+DEFINE VARIABLE from-fname  LIKE people_mstr.people_firstname NO-UNDO.
+DEFINE VARIABLE to-fname    LIKE people_mstr.people_firstname NO-UNDO.
+DEFINE VARIABLE from-lname  LIKE people_mstr.people_lastname NO-UNDO.
+DEFINE VARIABLE to-lname    LIKE people_mstr.people_lastname NO-UNDO.
+
+DEFINE BUFFER people2       FOR people_mstr.
+DEFINE VARIABLE act         AS CHARACTER NO-UNDO.
+
+/********************** assign stuff ********************************/
+ASSIGN 
+    act         = get-value("s-act")
+
+    from-tcp    = get-value("s-from-tcp")
+    to-tcp      = get-value("s-to-tcp")
+    from-fname  = get-value("s-from-fname")
+    to-fname    = get-value("s-to-fname")
+    from-lname  = get-value("s-from-lname")
+    to-lname    = get-value("s-to-lname")
+    tcp         = get-value("s-tcp").
+
+IF act = "" THEN 
+    ASSIGN 
+        act = "Search".
+        
+/*********************** search **************************************/
+IF act = "Search" THEN DO:
+   {&OUT} 
+        "<CENTER>
+        <div class='table_2col'>
+            <FORM>   
+                <Table>
+                    <tr>
+                        <th colspan=4> Search Criteria</th>" SKIP "
+                    </tr>
+                    <tr>
+                        <td>TCP Code</td><td><INPUT type='text' name='s-from-tcp'/></td> " SKIP "
+                        <td>To</td><td><INPUT type='text' name='s-to-tcp'/></td> " SKIP "
+                    </tr>
+                    <tr>
+                        <td>First Name</td><td><INPUT type='text' name='s-from-fname'/></td>" SKIP "
+                        <td>To</td><td><INPUT type='text' name='s-to-fname'/></td>" SKIP "
+                    </tr>
+                    <tr>
+                        <td>Last Name</td><td><INPUT type='text' name='s-from-lname'/></td>" SKIP "
+                        <td>To</td><td><INPUT type='text' name='s-to-lname'/></td>" SKIP "
+                    </tr>
+                </Table>
+                <INPUT type='hidden' name='s-act' value='Results' />" SKIP "
+                <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP "
+                <INPUT type='submit' name='s-submit' value='Submit'/>" SKIP "
+                <INPUT type='reset' name='s-reset' value='Reset'/>" SKIP "
+            </FORM>  
+        </div>".
+END. /*** act 0 ***/
+
+/*********************************** act 1 ***************************************/
+
+IF act = "Results" THEN DO:
+    
+    {&OUT}
+        "<CENTER>
+        <form>
+            <div class='table_report_FromTo'>" SKIP "
+                <table>
+                    <thead>
+                        <tr>
+                            <td colspan=4>Doctor Report</td>" SKIP "
+                        </tr>
+                        <tr>
+                            <th>From</th>" SKIP "
+                            <th>"from-tcp "</th>" SKIP "
+                            <th>"from-fname "</th>" SKIP "
+                            <th>"from-lname "</th>" SKIP "
+                        </tr>
+                        <tr>
+                            <th>To</th>
+                            <th>"to-tcp "</th>" SKIP "
+                            <th>"to-fname "</th>" SKIP "
+                            <th>"to-lname "</th>" SKIP "
+                        </tr>        
+                        <tr>
+                            <td></td>
+                            <td>TCP Code</td>" SKIP "
+                            <td>First Name</td>" SKIP "
+                            <td>Last Name</td>" SKIP "
+                        </tr>
+                    </thead>".      
+       
+FOR EACH doctor_mstr        WHERE ((doctor_mstr.doctor_TCP_code >= from-tcp) OR
+                                       (from-tcp = "")) AND
+                                      ((doctor_mstr.doctor_TCP_code <= to-tcp) OR
+                                       (to-tcp = "")) AND 
+                                      doctor_mstr.doctor_deleted = ?
+                                        NO-LOCK,
+    EACH people_mstr    WHERE people_mstr.people_id = doctor_mstr.doctor_ID AND                          
+                                      ((people_mstr.people_firstname >= from-fname) OR
+                                       (from-fname = "")) AND
+                                      ((people_mstr.people_firstname <= to-fname) OR
+                                       (to-fname = "")) AND 
+                                      ((people_mstr.people_lastname >= from-lname) OR
+                                       (from-lname = "")) AND
+                                      ((people_mstr.people_lastname <= to-lname ) OR
+                                       (to-lname = "")) AND 
+                                      people_mstr.people_deleted = ?
+                                        NO-LOCK
+                                BY doctor_mstr.doctor_TCP_code:
+        
+        {&OUT}
+            "<tr>
+                <td></td>
+               <td><a href='DocPatR.r?s-tcp=" doctor_mstr.doctor_TCP_code "&s-act=Pat' >" doctor_mstr.doctor_TCP_code "</a></td>" SKIP "
+                <td>" people_mstr.people_firstname "</td>" SKIP "
+                <td>" people_mstr.people_lastname "</td>" SKIP "            
+            </tr>".
+            
+    
+    
+END. /*** for each ***/
+
+    {&OUT}
+        "<tr>
+            <td colspan=4>End of Report</td>" SKIP "
+        </tr>
+     </table>
+     <form>
+        <input type='hidden' name='s-act' value='Search' />" SKIP "
+        <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP "
+        <input type='submit' name='submit' value='Search Again' />" SKIP "
+     </form>
+     </div>".
+     
+END. /*** act 1 ***/
+/*********************************************** Pat act **************************************/
+IF act = "Pat" THEN DO:
+    
+    FOR FIRST doctor_mstr       WHERE doctor_mstr.doctor_TCP_code = tcp AND 
+                                          doctor_mstr.doctor_deleted = ?
+                                        NO-LOCK,
+        FIRST people_mstr   WHERE people_mstr.people_id = doctor_mstr.doctor_ID AND 
+                                          people_mstr.people_deleted = ?
+                                        NO-LOCK:
+                                        
+        
+     {&OUT}
+        "<CENTER>
+        <form>
+            <div class='table_report'>
+                <table>
+                    <thead>
+                        <tr>
+                            <td>" people_mstr.people_firstname " " people_mstr.people_lastname "</td>" SKIP "
+                        </tr>
+                        <tr>
+                            <th>Patient</th>" SKIP "                           
+                        </tr>                       
+                    </thead>". 
+      END.    
+       
+ FOR EACH patient_mstr      WHERE patient_mstr.patient_doctor_ID = doctor_mstr.doctor_ID AND 
+                                      patient_mstr.patient_deleted = ?
+                                BREAK BY patient_mstr.patient_ID:
+     FIND people2               WHERE people2.people_id = patient_mstr.patient_ID AND 
+                                     people2.people_deleted = ?
+                                    NO-LOCK NO-ERROR.
+                                
+                                
+          
+        {&OUT}
+            "<tr> 
+                <td>" people2.people_firstname " " people2.people_lastname "</td>" SKIP "       
+            </tr>".
+END. /** for each **/
+
+    {&OUT}
+        "<tr>
+            <td>End of Report</td>" SKIP "
+        </tr>
+     </table>
+     <form>
+        <input type='hidden' name='s-act' value='Search' />" SKIP "
+        <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP "
+        <input type='submit' name='submit' value='Search Again' />" SKIP "
+     </form>
+     </div>".
+ END. /*** cust act ***/ 
+</SCRIPT>
+</BODY>
+</HTML>

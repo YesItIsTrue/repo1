@@ -1,0 +1,26 @@
+SETLOCAL ENABLEEXTENSIONS
+SET me=%~n0
+SET parent=%~dp0
+SET log=C:\apps\HL7\src\Error_log\%me%.%DATE:~10,4%_%DATE:~4,2%_%DATE:~7,2%.%TIME:~0,2%_%TIME:~3,2%_%TIME:~6,2%.txt
+
+ECHO /* ************************* Error Log Initiated ************************* */ > %log%
+ECHO %parent% >> %log%
+ECHO %me% >> %log%
+
+CD c:\apps\HL7\src
+
+IF %ERRORLEVEL% NEQ 0 (
+ECHO error - CD failed. >> %log%
+)
+
+java -jar UTM_pipeline.jar "%1" "%2" "%3" "%4" >> %log%
+
+DEL c:\apps\HL7\src\%2
+
+IF %ERRORLEVEL% NEQ 0 (
+ECHO error - HL7 xml file did not delete. >> %log%
+)
+
+ECHO /* **************************** END OF FILE **************************** */ >> %log%
+
+EXIT

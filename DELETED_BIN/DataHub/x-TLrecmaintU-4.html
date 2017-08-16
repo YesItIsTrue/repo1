@@ -1,0 +1,1326 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+<TITLE>Recommendation Maintenance by Test by Item (Marker)</TITLE>
+<META name="AUTDOR" content="Doug Luttrell">
+<META name="VERSION" content="1.0">
+<META name="COPYRIGHT" content="Solsource">
+<META name="CREATE_DATE" content="03/Nov/14">
+<META name="LAST_UPDATED" content="13/Mar/15">
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT language='SpeedScript'>
+/* Create an unnamed pool to store all TDe widgets created by TDis procedure.
+   TDis is a good default which assures TDat TDis procedure's triggers and
+   internal procedures will execute in TDis procedure's storage, and TDat
+   proper cleanup will occur on deletion of TDe procedure. */
+CREATE WIDGET-POOL.
+
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT language='SpeedScript'>
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+        
+  ****************************************************************************
+  Revision History:
+  -----------------
+  0 to 1.0 - still struggling to get the time to finish this code.  This is the fourth
+                approach to how to handle the flow since it's inception back in Nov 2014.
+                
+        Danielle has been using this code in its various iterations all along.  Latest
+        set of changes she wants incorporated are - 
+        a) Wants a Sort Order for the recommendations
+        b) Doesn't want the hexcolor stuff. (I think she's going to change her mind on this.)
+        c) Wants to be able to edit the range after it has been created.
+        d) Wants a Dosage From and Dosage To set of fields instead of Dosage
+        e) Wants UOM to be a drop-down driven from uom_mstr.
+        f) Needs decimal quantities for Dosages.
+        g) Wants start & end effectivity dates for trr_det records.
+        h) Wants to delete a recommendation and then add it back.
+                         
+                
+  1.0 - written by DOUG LUTTRELL on ??/???/??.  Finally a releasable version.
+  
+  ****************************************************************************
+  
+  -------------------------------------------------------------------*/
+ 
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/   
+
+
+DEFINE VARIABLE testtype LIKE test_mstr.test_type NO-UNDO. 
+DEFINE VARIABLE itemid LIKE tld_det.tld_item_ID NO-UNDO. 
+DEFINE VARIABLE itemname LIKE tld_det.tld_item_name NO-UNDO. 
+DEFINE VARIABLE isselected AS CHARACTER NO-UNDO.
+DEFINE VARIABLE starteff LIKE tld_det.tld_start_eff NO-UNDO.
+DEFINE VARIABLE endeff LIKE tld_det.tld_end_eff NO-UNDO.
+DEFINE VARIABLE supplement_ID LIKE trr_det.trr_suppl_id NO-UNDO.
+DEFINE VARIABLE startrange LIKE trr_det.trr_start_range NO-UNDO.
+DEFINE VARIABLE endrange LIKE trr_det.trr_end_range NO-UNDO.
+DEFINE VARIABLE sortorder LIKE trr_det.trr_order NO-UNDO.
+DEFINE VARIABLE ignore4grouping AS LOG NO-UNDO.
+DEFINE VARIABLE whichrec AS RECID NO-UNDO.    /* laziness kicked in - using a RECID */
+DEFINE VARIABLE v-submit AS LOGICAL NO-UNDO.
+
+DEFINE VARIABLE passok AS LOGICAL NO-UNDO.
+DEFINE VARIABLE sowhat AS LOGICAL NO-UNDO.
+
+DEFINE VARIABLE dosage LIKE trr_det.trr_dosage NO-UNDO.
+DEFINE VARIABLE doseuom LIKE trr_det.trr_uom NO-UNDO.
+DEFINE VARIABLE notes LIKE trr_det.trr_notes NO-UNDO.
+DEFINE VARIABLE hexcolor LIKE trr_det.trr_hexcolor NO-UNDO.
+
+DEFINE VARIABLE foundrecs AS LOGICAL INITIAL NO NO-UNDO.
+
+
+/* widTD='25%' height='25%' */
+
+DEFINE VARIABLE img-edit AS CHARACTER 
+    INITIAL "<input type='image' src='/depot/src/HTMLContent/images/edit-pencil.jpg' alt='Edit Record' width='20' height='20' name='h-act' value='EDIT' />" NO-UNDO.
+    
+DEFINE VARIABLE img-delete AS CHARACTER 
+    INITIAL "<input type='image' src='/depot/src/HTMLContent/images/delete-redx.jpg' alt='Delete Record' width='20' height='20' name='h-act' value='DELETE' />" NO-UNDO.
+    
+DEFINE VARIABLE img-save AS CHARACTER 
+    INITIAL "<input type='image' src='/depot/src/HTMLContent/images/save-disk.jpg' alt='Save Record' width='20' height='20' name='h-act' value='SAVE' />" NO-UNDO.
+    
+    
+
+DEFINE VARIABLE act AS CHARACTER NO-UNDO.
+DEFINE VARIABLE ITshowmsg AS LOGICAL INITIAL NO NO-UNDO.
+
+ASSIGN 
+    testtype        = get-value('h-testtype')
+    itemid          = integer(get-value('h-itemid'))
+    itemname        = get-value('h-itemname')
+    supplement_ID   = INTEGER(get-value('h-supplement_ID'))
+    startrange      = DECIMAL(get-value('h-startrange'))
+    endrange        = DECIMAL(get-value('h-endrange'))
+    act             = get-value('h-act')
+    whichrec        = INTEGER(get-value('h-whichrec'))
+    v-submit        = IF get-value('h-submit') = "YES" THEN 
+                            YES
+                      ELSE 
+                            NO
+    dosage          = decimal(get-value('h-dosage'))
+    doseuom         = get-value('h-doseuom')
+    notes           = get-value('h-notes')
+    hexcolor        = get-value('h-hexcolor')
+    sortorder       = integer(get-value('h-sortorder')).
+    
+                            
+    
+/*** use my Dad's code to run the starteff and endeff dates through ***/    
+    
+    
+IF act = "" THEN 
+    act = "SELECT_TEST".    
+
+
+
+
+    
+
+     
+    
+/****************  Test Type Selection or Display  *******************/    
+IF act = "SELECT_TEST" THEN DO:                                                 /* STEP 1 */
+    
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "Just inside INITIAL" SKIP
+                                                                                       "<OL>Variables" SKIP
+                                                                                       "<LI>act = " act SKIP
+                                                                                       "<LI>testtype = " testtype SKIP
+                                                                                       "<LI>itemid = " itemid SKIP
+                                                                                       "</OL>" SKIP
+                                                                                       "<hr widTD='90%'>" SKIP.     
+    
+	{&OUT}
+	    "<FORM>" SKIP
+	    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+		"<DIV class='row'>" SKIP
+		"<DIV class='grid_2'> </DIV>" SKIP
+		"<DIV class='grid_8'>" SKIP	    
+	    "<DIV class='table_col'>" SKIP                                          
+	    "<TABLE>" SKIP
+	    "   <THEAD>" SKIP
+	    "       <TR>" SKIP
+	    "           <TH colspan=2>Recommendations by Test by Item (Marker)</TH>" SKIP
+	    "       </TR>" SKIP
+	    "   </THEAD>" SKIP
+	    "   <TR>" SKIP
+	    "       <Td>Test Type</Td>" SKIP
+        "       <Td><select name='h-testtype' value='" testtype "' >" SKIP.
+        
+	FOR EACH tl_mstr WHERE tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND         
+            tld_det.tld_deleted = ? NO-LOCK 
+        BREAK BY tl_mstr.tl_testtype: 
+	            
+	    IF first-of(tl_mstr.tl_testtype) THEN
+	        
+            {&OUT}
+                "           <option value='" tl_mstr.tl_testtype "' >" tl_mstr.tl_testtype "</option>" SKIP.
+                         
+	END.  /** of 4ea. tl_mstr, etc. **/           
+                
+    {&OUT}
+        "           </select></Td>" SKIP
+        "   </TR>" SKIP
+        "</TABLE>" SKIP
+        "</DIV>              <!-- end of table_col -->" SKIP
+
+        "<BR>" SKIP
+
+        "<div class='row'>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "   <div class='grid_2'><button type='submit' name='h-act' value='TEST_SELECTED' class='btn'>Select Test</Button></div>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "</div>" SKIP
+        "<BR>" SKIP
+
+        "</DIV>          <!-- end of grid_8 -->" SKIP
+        "<DIV class='grid_2'> </DIV>" SKIP  
+        "</DIV>     <!-- end of row -->" SKIP
+
+    "</FORM>" SKIP.
+               
+
+    
+END.  /*** of if act = SELECT_TEST ***/
+
+ELSE IF act = "TEST_SELECTED" THEN DO:                                          /* Step 2 */
+    
+	{&OUT}
+	    "<FORM>" SKIP	
+	    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP    
+		"<DIV class='row'>" SKIP
+		"<DIV class='grid_2'> </DIV>" SKIP
+		"<DIV class='grid_8'>" SKIP
+	    "<DIV class='table_col'>" SKIP                                          
+	    "<TABLE>" SKIP
+	    "   <THEAD>" SKIP
+	    "       <TR>" SKIP
+	    "           <TH colspan=2>Recommendations by Test by Item (Marker)</TH>" SKIP
+	    "       </TR>" SKIP
+	    "   </THEAD>" SKIP
+        "   <TR>" SKIP
+        "       <TD>Test Type</TD>" SKIP
+        "       <TD><input type='hidden' name='h-testtype' value='" testtype "' />" testtype "</TD>" SKIP
+        "   </TR>" SKIP
+        "   <TR>" SKIP
+        "       <TD>Item / Marker</TD>" SKIP
+        "       <TD><select name='h-itemid' value='" itemid "' >" SKIP.
+        
+	FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND 
+            tl_mstr.tl_deleted = ? NO-LOCK,
+	    EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND 	    
+	        tld_det.tld_deleted = ? NO-LOCK 
+        BREAK BY tl_mstr.tl_testtype BY tld_det.tld_item_name: 
+	            
+	    IF first-of(tld_det.tld_item_name) THEN DO: 
+	        
+	        IF tld_det.tld_item_id = itemid THEN 
+	           isselected  = "SELECTED".
+	        ELSE 
+	           isselected  = "".
+	        
+	        {&OUT}
+	            "           <option value=" tld_det.tld_item_id " " isselected " >" tld_det.tld_item_name "</option>" SKIP.
+	            
+	    END.  /*** of if first-of tld_item ***/
+	                     
+	END.  /** of 4ea. tl_mstr, etc. **/           
+	
+	{&OUT}
+	   "       </select></TD>" SKIP
+	   "   </TR>" SKIP        
+        "</TABLE>" SKIP
+        "</DIV>              <!-- end of table_col -->" SKIP
+
+        "<BR>" SKIP
+
+        "<div class='row'>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "   <div class='grid_2'><button type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>Select This Item</BUTTON></div>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "</div>" SKIP
+        "<BR>" SKIP
+
+        "</DIV>          <!-- end of grid_8 -->" SKIP
+        "<DIV class='grid_2'> </DIV>" SKIP  
+        "</DIV>     <!-- end of row -->" SKIP
+        
+        "</FORM>" SKIP.
+  	       
+        
+END.  /** of else if act = test_selected **/
+
+ELSE IF act = "ITEM_SELECTED" THEN DO:                                          /* Step 3 */
+
+    FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND 
+            tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            tld_det.tld_item_ID = itemid AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND 
+            tld_det.tld_deleted = ? NO-LOCK: 
+                
+		{&OUT}
+		    "<FORM>" SKIP		  
+		    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP  
+			"<DIV class='row'>" SKIP
+/*			"<DIV class='grid_1'> </DIV>" SKIP*/
+			"<DIV class='grid_12'>" SKIP
+			"<DIV class='table_3col'>" SKIP
+			"<table>" SKIP
+			"    <THEAD>" SKIP
+			"       <TR>" SKIP
+            "           <TH colspan=6>Recommendations by Test by Item (Marker)</TH>" SKIP
+            "       </TR>" SKIP
+            "   </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <TD>Test Type</TD>" SKIP
+            "       " SKIP
+            "       " SKIP         
+            "       <TD><INPUT type='hidden' name='h-testtype' value='" tl_mstr.tl_testtype "' />" SKIP 
+                            tl_mstr.tl_testtype SKIP
+            "       </TD>" SKIP
+            "       <TD>Section</TD>" SKIP
+            "       <TD>" tl_mstr.tl_section_desc "</TD>" SKIP
+            "       <TD>Item / Marker</TD>" SKIP
+            "       <TD><INPUT type='hidden' name='h-itemid' value=" tld_det.tld_item_ID " />" tld_det.tld_item_name "</TD>" SKIP
+            "   </TR>" SKIP
+            "</TABLE>" SKIP
+            "</DIV>             <!-- end of table_3col -->" SKIP
+            
+            
+		    "<DIV class='table_report'>" SKIP                                   
+		    "<TABLE>" SKIP
+		    "   <THEAD>" SKIP
+		    "       <TR>" SKIP
+	        "          <TD>Select</TD>" SKIP
+	        "          <TD>Sort Order</TD>" SKIP
+	        "          <TD>Start</TD>" SKIP
+	        "          <TD>End</TD>" SKIP
+/*	        "          <TD>Range Color</TD>" SKIP*/
+	        "          <TD>Recommendation</TD>" SKIP
+	        "          <TD>Dosage Qty</TD>" SKIP
+	        "          <TD>Dosage UOM</TD>" SKIP
+	        "          <TD>Notes</TD>" SKIP
+	        "      </TR>" SKIP
+	        "  </THEAD>" SKIP.
+
+
+	    FOR EACH trr_det WHERE trr_det.trr_testtype = tl_mstr.tl_testtype AND 
+	            trr_det.trr_item_ID = tld_det.tld_item_ID AND 
+	            trr_det.trr_deleted = ? NO-LOCK 
+	        BREAK BY trr_det.trr_start_range BY trr_det.trr_end_range: 
+	            
+            IF trr_det.trr_suppl_ID = 0 THEN DO: 
+            
+                ASSIGN 
+                   foundrecs   = YES.    
+        
+                {&OUT} 
+                    "   <TR>" SKIP
+                    "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " /></TD>" SKIP
+                    "       <TD>" trr_det.trr_order "</TD>" SKIP
+                    "       <TD>" trr_det.trr_start_range "</TD>" SKIP
+                    "       <TD>" trr_det.trr_end_range "</TD>" SKIP      
+/*                    "       <TD bgcolor='" trr_det.trr_hexcolor "' >" trr_det.trr_hexcolor "</TD>" SKIP*/
+                    "       <TD>NOTES ONLY</TD>" SKIP           
+                    "       <TD colspan=3><textarea rows=2 columns=100 disabled>" trr_det.trr_notes "</textarea></TD>" SKIP   
+                    "  </TR>" SKIP.
+            
+            END.  /** of if trr_suppl_id = 0 --- notes only **/
+            
+            ELSE DO:     
+                
+                FIND FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_ID AND 
+                    suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR. 	            
+	            
+		        ASSIGN 
+		           foundrecs   = YES.    
+		
+				{&OUT} 
+				    "   <TR>" SKIP
+				    "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " /></TD>" SKIP
+				    "       <TD>" trr_det.trr_order "</TD>" SKIP
+				    "       <TD>" trr_det.trr_start_range "</TD>" SKIP
+				    "       <TD>" trr_det.trr_end_range "</TD>" SKIP      
+/*				    "       <TD bgcolor='" trr_det.trr_hexcolor "' >" trr_det.trr_hexcolor "</TD>" SKIP*/
+				    "       <TD>" suppl_list.suppl_name "</TD>" SKIP      
+				    "       <TD>" trr_det.trr_dosage "</TD>" SKIP      
+				    "       <TD>" trr_det.trr_uom "</TD>" SKIP      
+				    "       <TD>" trr_det.trr_notes "</TD>" SKIP   
+				    "  </TR>" SKIP.
+				    
+            END.  /** of else do --- trr_suppl_id > 0 **/
+            
+            
+	                     
+	    END.  /*** of 4ea. trr_det, etc. ***/
+
+        IF foundrecs = NO THEN 
+            {&OUT}
+                "<TR>" SKIP
+                "   <TD colspan=8>No Recommendations found for this Test / Item combination</TD>" SKIP
+                "</TR>" SKIP.
+	
+	    {&OUT}
+	        "</TABLE>" SKIP
+	        "</DIV>            <!-- of table_report -->" SKIP
+		
+	        "<BR>" SKIP
+	        
+	        "<div class='row'>" SKIP
+	        "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='ADD' class='btn'>ADD New Recommendation</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='EDIT' class='btn'>EDIT Selected Recommendation</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='DELETE' class='btn'>DELETE Selected Recommendation</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "</div>" SKIP
+	        "<BR>" SKIP
+	        
+	        "</DIV>         <!-- end of grid_12 -->" SKIP
+/*            "<DIV class='grid_1'> </DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP.        
+
+    END.  /** of 4ea. tl_mstr, etc. **/
+
+END.  /** of if act = item_selected **/
+
+ELSE IF act = "ADD" THEN DO:                                                    /* Step 4 */
+
+																			    IF ITshowmsg = YES THEN 
+																			        {&OUT} "Inside ADD"
+																			            "<OL>" SKIP
+																			            "   <LI>testtype    = " testtype "</LI>" SKIP
+																			            "   <LI>itemid      = " itemid "</LI>" SKIP
+																			            "</OL>" SKIP 
+																			            "<HR width='80%'>" SKIP(1).
+             
+
+    FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND 
+            tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            tld_det.tld_item_ID = itemid AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND 
+            tld_det.tld_deleted = ? NO-LOCK: 
+                
+                
+        {&OUT}
+            "<FORM>" SKIP        
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP   
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_1'> </DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_3col'>" SKIP
+            "<table>" SKIP
+            "    <THEAD>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan=6>Recommendations by Test by Item (Marker)</TH>" SKIP
+            "       </TR>" SKIP
+            "   </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <TD>Test Type</TD>" SKIP
+            "       " SKIP
+            "       " SKIP         
+            "       <TD><INPUT type='hidden' name='h-testtype' value='" tl_mstr.tl_testtype "' />" SKIP 
+                            tl_mstr.tl_testtype SKIP
+            "       </TD>" SKIP
+            "       <TD>Section</TD>" SKIP
+            "       <TD>" tl_mstr.tl_section_desc "</TD>" SKIP
+            "       <TD>Item / Marker</TD>" SKIP
+            "       <TD><INPUT type='hidden' name='h-itemid' value=" tld_det.tld_item_ID " />" tld_det.tld_item_name "</TD>" SKIP
+            "   </TR>" SKIP
+            "</TABLE>" SKIP
+            "</DIV>             <!-- end of table_3col -->" SKIP
+                        
+            "<DIV class='table_report'>" SKIP                                  
+            "<TABLE>" SKIP
+            "   <THEAD>" SKIP
+            "       <TR>" SKIP
+            "          <TD>Select</TD>" SKIP
+            "           <TD>Sort Order</TD>" SKIP
+            "          <TD>Start</TD>" SKIP
+            "          <TD>End</TD>" SKIP
+/*            "          <TD>Range Color</TD>" SKIP*/
+            "          <TD>Recommendation</TD>" SKIP
+            "          <TD>Dosage Qty</TD>" SKIP
+            "          <TD>Dosage UOM</TD>" SKIP
+            "          <TD>Notes</TD>" SKIP
+            "      </TR>" SKIP
+            "  </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <TD><input type='radio' name='h-whichrec' value=0 CHECKED /></TD>" SKIP
+            "       <TD><input type='number' name='h-sortorder' /></TD>" SKIP
+            "       <TD class='REQ'><input type='number' name='h-startrange' /></TD>" SKIP
+            "       <TD class='REQ'><input type='number' name='h-endrange' /></TD>" SKIP.    
+/*            "       <TD class='REQ'><input type='color' name='h-hexcolor' /> </TD>" SKIP.*/
+            
+        {&OUT}
+            "       <TD class='REQ'><select name='h-supplement_ID' >" SKIP
+            "           <option value=0>NOTES ONLY</option>" SKIP.
+                    
+		FOR EACH suppl_list WHERE 
+		   suppl_list.suppl_deleted = ? NO-LOCK 
+		       BREAK BY suppl_list.suppl_name:
+		           
+		   {&OUT}
+		       "           <option value=" suppl_list.suppl_id ">" suppl_list.suppl_name "</option>" SKIP.
+		
+		END.  /** of 4ea. suppl_list **/
+                                      
+        {&OUT}
+            "           </select>" SKIP   
+            "       <TD colspan=3> </TD>" SKIP   
+            "  </TR>" SKIP.
+
+        FOR EACH trr_det WHERE trr_det.trr_testtype = tl_mstr.tl_testtype AND 
+                trr_det.trr_item_ID = tld_det.tld_item_ID AND 
+                trr_det.trr_deleted = ? NO-LOCK
+            BREAK BY trr_det.trr_start_range BY trr_det.trr_end_range: 
+                
+            IF trr_det.trr_suppl_ID > 0 THEN 
+	            FIND FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_ID AND 
+	                suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.
+                
+                
+            {&OUT} 
+                "   <TR>" SKIP
+                "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " DISABLED /></TD>" SKIP
+                "       <TD>" trr_det.trr_order "</TD>" SKIP
+                "       <TD>" trr_det.trr_start_range "</TD>" SKIP
+                "       <TD>" trr_det.trr_end_range "</TD>" SKIP. 
+/*                "       <TD bgcolor='" trr_det.trr_hexcolor "' >" trr_det.trr_hexcolor "</TD>" SKIP.*/
+                
+            IF trr_det.trr_suppl_ID = 0 THEN 
+                {&OUT}
+                    "<TD>NOTES ONLY</TD>" SKIP
+                    "<TD colspan=3><TEXTAREA>" trr_det.trr_notes "</TEXTAREA></TD>" SKIP.
+                             
+            ELSE 
+                {&OUT}      
+	                "       <TD>" suppl_list.suppl_name "</TD>" SKIP      
+	                "       <TD>" trr_det.trr_dosage "</TD>" SKIP      
+	                "       <TD>" trr_det.trr_uom "</TD>" SKIP      
+	                "       <TD>" trr_det.trr_notes "</TD>" SKIP.
+                
+            {&OUT}       
+                "  </TR>" SKIP.
+                         
+        END.  /*** of 4ea. trr_det, etc. ***/
+    
+        {&OUT}
+            "</table>" SKIP
+            "</DIV>         <!-- end of table_report -->" SKIP
+            
+            "<BR>" SKIP
+            
+            "<div class='row'>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Save Changes</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>Cancel Creation</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "</div>" SKIP
+            
+            "<BR>" SKIP        
+
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+/*            "<DIV class='grid_1'> </DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP
+            "</FORM>" SKIP.
+            
+            
+    END.  /** of 4ea. tl_mstr, etc. **/
+
+END.  /** of if act = add **/   
+
+ELSE IF act = "EDIT" THEN DO:                                                   /* Step 5 */
+
+    FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND 
+            tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            tld_det.tld_item_ID = itemid AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND 
+            tld_det.tld_deleted = ? NO-LOCK: 
+                
+        {&OUT}          
+            "<FORM>" SKIP         
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP  
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_1'> </DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_3col'>" SKIP
+            "<table>" SKIP
+            "    <THEAD>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan=6>Recommendations by Test by Item (Marker)</TH>" SKIP
+            "       </TR>" SKIP
+            "   </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <TD>Test Type</TD>" SKIP
+            "       " SKIP
+            "       " SKIP         
+            "       <TD><INPUT type='hidden' name='h-testtype' value='" tl_mstr.tl_testtype "' />" SKIP 
+                            tl_mstr.tl_testtype SKIP
+            "       </TD>" SKIP
+            "       <TD>Section</TD>" SKIP
+            "       <TD>" tl_mstr.tl_section_desc "</TD>" SKIP
+            "       <TD>Item / Marker</TD>" SKIP
+            "       <TD><INPUT type='hidden' name='h-itemid' value=" tld_det.tld_item_ID " />" tld_det.tld_item_name "</TD>" SKIP
+            "   </TR>" SKIP
+            "</TABLE>" SKIP
+            "</DIV>             <!-- end of table_3col -->" SKIP
+                        
+            "<DIV class='table_report'>" SKIP                                  
+            "<TABLE>" SKIP
+            "   <THEAD>" SKIP
+            "       <TR>" SKIP
+            "          <TD>Select</TD>" SKIP
+            "           <TD>Sort Order</TD>" SKIP
+            "          <TD>Start</TD>" SKIP
+            "          <TD>End</TD>" SKIP
+/*            "          <TD>Range Color</TD>" SKIP*/
+            "          <TD>Recommendation</TD>" SKIP
+            "          <TD>Dosage Qty</TD>" SKIP
+            "          <TD>Dosage UOM</TD>" SKIP
+            "          <TD>Notes</TD>" SKIP
+            "      </TR>" SKIP
+            "  </THEAD>" SKIP.            
+  
+            
+            
+
+        FOR EACH trr_det WHERE trr_det.trr_testtype = tl_mstr.tl_testtype AND 
+                trr_det.trr_item_ID = tld_det.tld_item_ID AND 
+                trr_det.trr_deleted = ? NO-LOCK
+            BREAK BY trr_det.trr_testtype BY trr_det.trr_start_range BY trr_det.trr_end_range: 
+                                
+			IF RECID(trr_det) = whichrec THEN DO:   /** record to edit **/ 
+			    
+			    isselected = "CHECKED".
+			    
+			    IF trr_det.trr_suppl_ID = 0 THEN DO: 
+			        
+			        {&OUT} 
+			            "   <TR>" SKIP
+			            "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " /></TD>" SKIP
+			            "        <TD><INPUT type='number' name='h-sortorder' value='" trr_det.trr_order "' /></TD>" SKIP
+                        "       <TD><input type='number' name='h-startrange' value='" trr_det.trr_start_range "' /></TD>" SKIP
+                        "       <TD><input type='number' name='h-endrange' value='" trr_det.trr_end_range "' /></TD>" SKIP    
+/*			            "       <TD><input type='color' name='h-hexcolor' value='" trr_det.trr_hexcolor "' class='REQ' /> </TD>" SKIP*/
+			            "       <TD>NOTES ONLY</TD>" SKIP          
+			            "       <TD colspan=3  class='REQ'><textarea rows=2 cols=100 name='h-notes'>" trr_det.trr_notes "</textarea></TD>" SKIP
+			            "  </TR>" SKIP.  
+			                                    
+			    END.  /** of trr_suppl_id = 0 --- notes only **/
+			    
+			    ELSE DO: 
+			        
+			        FIND FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_id AND 
+			             suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.
+			
+			        {&OUT} 
+			            "   <TR class='REQ'>" SKIP
+			            "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " /></TD>" SKIP
+			            "        <TD><INPUT type='number' name='h-sortorder' value='" trr_det.trr_order "' /></TD>" SKIP
+			            "       <TD><input type='number' name='h-startrange' value='" trr_det.trr_start_range "' /></TD>" SKIP
+			            "       <TD><input type='number' name='h-endrange' value='" trr_det.trr_end_range "' /></TD>" SKIP.      
+/*			            "       <TD><input type='color' name='h-hexcolor' value='" trr_det.trr_hexcolor "' class='REQ'/> </TD>" SKIP.*/
+			            
+			        IF AVAILABLE (suppl_list) THEN 
+			            {&OUT}      
+			                 "       <TD><input type='hidden' value='" trr_det.trr_suppl_id 
+			                 "' name='h-supplement_ID' />" suppl_list.suppl_name 
+			                 "</TD>" SKIP.
+			        ELSE 
+			            {&OUT}
+			                 "       <TD><input type='hidden' value='" trr_det.trr_suppl_id "' name='h-supplement_ID' />" trr_det.trr_suppl_ID "</TD>" SKIP.
+			                 
+			        {&OUT}    
+			            "       <TD><input type='number' name='h-dosage' value='" trr_det.trr_dosage "' class='REQ' step='.0001' /></TD>" SKIP      
+			            "       <TD><input type='text' name='h-doseuom' value='" trr_det.trr_uom "' class='REQ' /></TD>" SKIP      
+			            "       <TD><input type='text' name='h-notes' value='" trr_det.trr_notes "' class='REQ' /></TD>" SKIP   
+			            "  </TR>" SKIP.                
+			    
+			    END.  /** of else do -- trr_suppl_id > 0 **/
+			    
+			END.  /* if recid trr_det = whichrec */
+			    
+			ELSE DO:                                /** other records **/
+			    
+			    isselected = "".
+			    
+			    IF trr_det.trr_suppl_ID = 0 THEN DO: 
+			
+			        {&OUT} 
+			            "   <TR>" SKIP
+			            "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " DISABLED /></TD>" SKIP
+			            "        <TD>" trr_det.trr_order "</TD>" SKIP
+			            "       <TD>" trr_det.trr_start_range "</TD>" SKIP
+			            "       <TD>" trr_det.trr_end_range "</TD>" SKIP      
+/*			            "       <TD bgcolor='" trr_det.trr_hexcolor "' >" trr_det.trr_hexcolor "</TD>" SKIP*/
+			            "       <TD>NOTES ONLY</TD>" SKIP           
+			            "       <TD colspan=3>" trr_det.trr_notes "</TD>" SKIP   
+			            "  </TR>" SKIP.                     
+			    
+			    END.  /** of if trr_suppl_id = 0 --- notes only **/
+			    
+			    ELSE DO: 
+			    
+			        FIND FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_id AND 
+                         suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.
+			    
+			        {&OUT} 
+			            "   <TR>" SKIP
+			            "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " DISABLED /></TD>" SKIP
+                        "       <TD>" trr_det.trr_order "</TD>" SKIP
+			            "       <TD>" trr_det.trr_start_range "</TD>" SKIP
+			            "       <TD>" trr_det.trr_end_range "</TD>" SKIP.      
+/*			            "       <TD bgcolor='" trr_det.trr_hexcolor "' >" trr_det.trr_hexcolor "</TD>" SKIP.*/
+			            
+			        IF AVAILABLE (suppl_list) THEN 
+                        {&OUT}     
+			                 "       <TD>" suppl_list.suppl_name "</TD>" SKIP.
+			        ELSE 
+			            {&OUT}
+			                 "       <TD>" trr_det.trr_suppl_ID "</TD>" SKIP.
+			                 
+			        {&OUT}     
+			            "       <TD>" trr_det.trr_dosage "</TD>" SKIP      
+			            "       <TD>" trr_det.trr_uom "</TD>" SKIP      
+			            "       <TD>" trr_det.trr_notes "</TD>" SKIP   
+			            "  </TR>" SKIP.
+			             
+			   END.  /** of else do -- if trr_suppl_id > 0 **/
+			                
+			END.  /** of else do --- other records **/
+                        
+        END.  /*** of 4ea. trr_det, etc. ***/
+ 
+        {&OUT}
+            "</table>" SKIP
+            "</DIV>         <!-- end of table_report -->" SKIP
+            
+            "<BR>" SKIP
+            
+            "<div class='row'>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Save Changes</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>Cancel Creation</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "</div>" SKIP
+            
+            "<BR>" SKIP        
+
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+/*            "<DIV class='grid_1'> </DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP
+            "</FORM>" SKIP.
+
+    END.  /** of 4ea. tl_mstr, etc. **/
+
+END.  /*** of if act = edit **/                                                 
+
+ELSE IF act = "VALIDATION" THEN DO:                                             /* Step 4a or 5a */
+
+/*                                                                                ITshowmsg = YES.*/
+
+    passok = YES. 
+
+																			     IF ITshowmsg = YES THEN 
+																			        {&OUT} "Inside VALIDATE, about to enter 4ea." SKIP
+																			            "<OL>" SKIP
+																			            "   <LI>testtype    = " testtype "</LI>" SKIP
+																			            "   <LI>itemid      = " itemid "</LI>" SKIP
+																			            "   <LI>supplement_ID = " supplement_ID "</LI>" SKIP
+																			            "    <LI>Start Range = " startrange "</LI>" SKIP
+																			            "    <LI>End Range = " endrange "</LI>" SKIP
+																			            "</OL>" SKIP 
+																			            "<HR width='80%'>" SKIP(1).
+            
+    IF supplement_ID > 0 THEN DO: 
+                
+	    FOR EACH trr_det WHERE trr_det.trr_testtype = testtype AND 
+	        trr_det.trr_item_ID = itemid AND 
+	        trr_det.trr_suppl_ID = supplement_ID AND    
+	        RECID(trr_det) <> whichrec AND
+	        trr_det.trr_deleted = ? NO-LOCK: 
+	            
+	        IF ((startrange < trr_det.trr_start_range AND 
+	             startrange < trr_det.trr_end_range) OR 
+	            (startrange > trr_det.trr_start_range AND 
+	             startrange > trr_det.trr_end_range)) AND 
+	           ((endrange < trr_det.trr_start_range AND 
+	             endrange < trr_det.trr_end_range) OR
+	            (endrange > trr_det.trr_start_range AND
+	             endrange > trr_det.trr_end_range)) AND
+	           (endrange = 0 OR
+	            startrange < endrange) THEN 
+	            
+	            sowhat = YES.
+	                
+	        ELSE 
+	            passok = NO.     
+	          
+																			        IF ITshowmsg = YES THEN 
+																			            {&OUT}
+																			                "<H3>" trr_det.trr_start_range 
+																			                " | " trr_det.trr_end_range 
+																			                " | " passok 
+																			                "</H3>".  
+																			                
+																			        IF ITshowmsg = YES THEN 
+																				        {&OUT} "Inside VALIDATE, inside 4ea." SKIP
+																				            "<OL>" SKIP
+																				            "   <LI>testtype    = " testtype "</LI>" SKIP
+																				            "   <LI>testtype    = " trr_det.trr_testtype "</LI>" SKIP
+																			                "   <LI>itemid      = " itemid "</LI>" SKIP
+																				            "   <LI>itemid      = " trr_det.trr_item_id "</LI>" SKIP
+																				            "   <LI>supplement_ID = " supplement_ID "</LI>" SKIP
+																				            "   <LI>Supplement_ID = " trr_det.trr_suppl_ID "</LI>" SKIP
+																				            "   <LI>startrange  = " startrange "</LI>" SKIP
+																				            "   <LI>Start Range = " trr_det.trr_start_range "</LI>" SKIP
+																				            "   <LI>endrange = " endrange "</LI>" SKIP
+																				            "   <LI>End Range = " trr_det.trr_end_range "</LI>" SKIP
+																			                "</OL>" SKIP 
+																				            "<HR width='80%'>" SKIP(1).        
+		            
+	    END.  /** of 4ea. trr_det **/        
+    
+    END.  /** of if supplement_ID > 0 **/
+    
+																			    IF ITshowmsg = YES THEN 
+																			        {&OUT} "<H3>Post Supplement > 0 | " passok "</H3>". 
+
+    IF passok = YES THEN DO:        /** actually create a record **/
+    
+        /** what about NOTES ONLY records?  **/
+        IF supplement_ID > 0 THEN DO: 
+            
+	        FIND FIRST suppl_list WHERE suppl_list.suppl_id = supplement_id AND 
+	           suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.
+	        
+	        IF NOT AVAILABLE (suppl_list) THEN DO:
+	            
+	            {&OUT} "ERROR!  Supplement not found.  Contact Solsource.".
+	            
+	        END.  /** of if not avail suppl_list **/
+	        
+	        ELSE DO: 
+	            
+	            FIND trr_det WHERE trr_det.trr_testtype = testtype AND 
+	               trr_det.trr_item_ID = itemid AND 
+	               trr_det.trr_suppl_ID = supplement_id AND 
+	               trr_det.trr_start_range = startrange AND 
+	               trr_det.trr_end_range = endrange
+	                   EXCLUSIVE-LOCK NO-ERROR.
+	            
+	            IF NOT AVAILABLE (trr_det) THEN DO: 
+	                       
+                    CREATE trr_det.
+			        ASSIGN 
+			            trr_det.trr_testtype       = testtype
+			            trr_det.trr_item_ID        = itemid
+			            trr_det.trr_suppl_id       = suppl_list.suppl_id
+			            trr_det.trr_start_range    = startrange
+			            trr_det.trr_end_range      = endrange
+			            trr_det.trr_dosage         = suppl_list.suppl_def_qty
+	                    trr_det.trr_uom            = suppl_list.suppl_def_uom
+	                    trr_det.trr_notes          = suppl_list.suppl_def_notes.
+		            
+		        END.  /** of if not avail trr_det **/
+		        
+		        ASSIGN     
+		            trr_det.trr_dosage         = IF dosage = 0    THEN trr_det.trr_dosage     ELSE dosage
+		            trr_det.trr_order         = IF sortorder = 0  THEN trr_det.trr_order      ELSE sortorder
+		            trr_det.trr_uom            = IF doseuom = ""  THEN trr_det.trr_uom        ELSE doseuom
+		            trr_det.trr_notes          = IF notes = ""    THEN trr_det.trr_notes      ELSE notes
+		            trr_det.trr_hexcolor       = IF hexcolor = "" THEN trr_det.trr_hexcolor   ELSE hexcolor
+		            act                        = "EDIT_REC"
+		            whichrec                   = RECID(trr_det).
+	    
+	        END.  /** of else do -- suppl_list avail **/
+        
+        END.  /** of if h-supplement_ID > 0 **/
+        
+        ELSE DO:
+            
+            FIND marker_list WHERE marker_list.marker_ID = itemid AND  
+                marker_list.marker_deleted = ? NO-LOCK NO-ERROR.
+                
+            FIND trr_det WHERE trr_det.trr_testtype = testtype AND 
+               trr_det.trr_item_ID = itemid AND 
+               trr_det.trr_suppl_ID = supplement_id AND 
+               trr_det.trr_start_range = startrange AND 
+               trr_det.trr_end_range = endrange
+                   EXCLUSIVE-LOCK NO-ERROR.
+            
+            IF NOT AVAILABLE (trr_det) THEN DO: 
+                       
+                CREATE trr_det.
+                ASSIGN 
+                    trr_det.trr_testtype       = testtype
+                    trr_det.trr_item_ID        = itemid
+                    trr_det.trr_suppl_id       = suppl_list.suppl_id
+                    
+                    trr_det.trr_start_range    = startrange
+                    trr_det.trr_end_range      = endrange
+                    trr_det.trr_notes          = marker_list.marker_desc WHEN AVAILABLE(marker_list).
+                
+            END.  /** of if not avail trr_det **/
+            
+			ASSIGN 
+                trr_det.trr_order          = IF sortorder = 0 THEN trr_det.trr_order    ELSE sortorder
+                trr_det.trr_notes          = IF notes = ""    THEN trr_det.trr_notes      ELSE notes
+                trr_det.trr_hexcolor       = IF hexcolor = "" THEN trr_det.trr_hexcolor   ELSE hexcolor
+			    act                        = "EDIT_REC"
+			    whichrec                   = RECID(trr_det).
+            
+        END.  /** of else do --- h-supplement_ID = 0 (notes only) **/    
+            
+    END.  /** of if passok = yes --- create record **/ 
+    
+    ELSE DO:
+        
+        {&OUT} "<H3>Error message - overlapping ranges</H3>" SKIP.
+        
+    END.  /** of else do --- passok = no **/    
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT} "Inside VALIDATE, about to enter EDIT_REC" SKIP
+																				       "<OL>" SKIP
+																				       "   <LI>testtype    = " testtype "</LI>" SKIP
+																				       "   <LI>itemid      = " itemid "</LI>" SKIP
+																				       "   <LI>act         = " act "</LI>" SKIP
+																				       "</OL>" SKIP 
+																				       "<HR width='80%'>" SKIP(1).       
+        
+
+
+	IF act = "EDIT_REC" THEN DO:
+	    
+	    FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND 
+	            tl_mstr.tl_deleted = ? NO-LOCK,
+	        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+	            tld_det.tld_item_ID = itemid AND 
+	            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+	            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND 
+	            tld_det.tld_deleted = ? NO-LOCK: 
+	                
+			{&OUT}
+			    "<FORM>" SKIP    
+			    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+			    "<DIV class='row'>" SKIP
+/*			    "<DIV class='grid_1'> </DIV>" SKIP*/
+			    "<DIV class='grid_12'>" SKIP
+	            "<DIV class='table_3col'>" SKIP
+	            "<table>" SKIP
+	            "    <THEAD>" SKIP
+	            "       <TR>" SKIP
+	            "           <TH colspan=6>Recommendations by Test by Item (Marker)</TH>" SKIP
+	            "       </TR>" SKIP
+	            "   </THEAD>" SKIP
+	            "   <TR>" SKIP
+	            "       <TD>Test Type</TD>" SKIP
+	            "       " SKIP
+	            "       " SKIP         
+	            "       <TD><INPUT type='hidden' name='h-testtype' value='" tl_mstr.tl_testtype "' />" SKIP 
+	                            tl_mstr.tl_testtype SKIP
+	            "       </TD>" SKIP
+	            "       <TD>Section</TD>" SKIP
+	            "       <TD>" tl_mstr.tl_section_desc "</TD>" SKIP
+	            "       <TD>Item / Marker</TD>" SKIP
+	            "       <TD><INPUT type='hidden' name='h-itemid' value=" tld_det.tld_item_ID " />" tld_det.tld_item_name "</TD>" SKIP
+	            "   </TR>" SKIP
+	            "</TABLE>" SKIP
+	            "</DIV>             <!-- end of table_3col -->" SKIP
+			    
+			    "<DIV class='table_report'>" SKIP                                  
+			    "<TABLE>" SKIP
+			    "   <THEAD>" SKIP
+			    "       <TR>" SKIP
+			    "          <TD>Select</TD>" SKIP
+			    "            <TD>Sort Order</TD>" SKIP
+			    "          <TD>Start</TD>" SKIP
+			    "          <TD>End</TD>" SKIP
+/*			    "          <TD>Range Color</TD>" SKIP*/
+			    "          <TD>Recommendation</TD>" SKIP
+			    "          <TD>Dosage Qty</TD>" SKIP
+			    "          <TD>Dosage UOM</TD>" SKIP
+			    "          <TD>Notes</TD>" SKIP
+			    "      </TR>" SKIP
+			    "  </THEAD>" SKIP.
+			    	
+	
+	        FOR EACH trr_det WHERE trr_det.trr_testtype = tl_mstr.tl_testtype AND 
+	                trr_det.trr_item_ID = tld_det.tld_item_ID AND 
+/*	                trr_det.trr_suppl_ID = supplement_ID AND*/
+	                trr_det.trr_deleted = ? NO-LOCK
+	            BREAK BY trr_det.trr_start_range BY trr_det.trr_end_range: 
+	                
+                IF trr_det.trr_suppl_ID > 0 THEN 
+                    FIND FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_ID AND 
+                        suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.     
+	                
+	            IF RECID(trr_det) = whichrec THEN DO:   /** record to edit **/ 
+	                
+	                isselected = "CHECKED".
+	                
+	                IF trr_det.trr_suppl_ID = 0 THEN DO: 
+	                    
+                        {&OUT} 
+                            "   <TR>" SKIP
+                            "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " /></TD>" SKIP
+                            "       <TD>" trr_det.trr_order "</TD>" SKIP
+                            "       <TD>" trr_det.trr_start_range "</TD>" SKIP
+                            "       <TD>" trr_det.trr_end_range "</TD>" SKIP      
+/*                            "       <TD>" trr_det.trr_hexcolor "</TD>" SKIP*/
+                            "       <TD><input type='hidden' name='h-supplement_id' value=0 />NOTES ONLY</TD>" SKIP          
+                            "       <TD colspan=3  class='REQ'><textarea rows=2 cols=100 name='h-notes'>" trr_det.trr_notes "</textarea></TD>" SKIP
+/*                            <input type='text' name='h-notes' value='" trr_det.trr_notes "' /></TD>" SKIP*/
+                            "  </TR>" SKIP.  
+                            	                    
+	                END.  /** of trr_suppl_id = 0 --- notes only **/
+	                
+	                ELSE DO: 
+
+		                {&OUT} 
+		                    "   <TR class='REQ'>" SKIP
+		                    "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " /></TD>" SKIP
+                            "       <TD>" trr_det.trr_order "</TD>" SKIP
+		                    "       <TD>" trr_det.trr_start_range "</TD>" SKIP
+		                    "       <TD>" trr_det.trr_end_range "</TD>" SKIP      
+/*		                    "       <TD>" trr_det.trr_hexcolor "</TD>" SKIP*/
+		                    "       <TD><input type='hidden' name='h-supplement_id' value='" trr_det.trr_suppl_ID "' />" suppl_list.suppl_name "</TD>" SKIP      
+		                    "       <TD class='REQ'><input type='number' name='h-dosage' value='" trr_det.trr_dosage "' step='.0001' /></TD>" SKIP     
+		                    "       <TD class='REQ'><input type='text' name='h-doseuom' value='" trr_det.trr_uom "'  /></TD>" SKIP      
+		                    "       <TD class='REQ'><input type='text' name='h-notes' value='" trr_det.trr_notes "'  /></TD>" SKIP   
+		                    "  </TR>" SKIP.                
+	                
+	                END.  /** of else do -- trr_suppl_id > 0 **/
+	                
+	            END.  /* if recid trr_det = whichrec */
+	                
+	            ELSE DO:                                /** other records **/
+	                
+	                isselected = "".
+	                
+	                IF trr_det.trr_suppl_ID = 0 THEN DO: 
+
+                        {&OUT} 
+                            "   <TR>" SKIP
+                            "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " DISABLED /></TD>" SKIP
+                            "       <TD>" trr_det.trr_order "</TD>" SKIP
+                            "       <TD>" trr_det.trr_start_range "</TD>" SKIP
+                            "       <TD>" trr_det.trr_end_range "</TD>" SKIP      
+/*                            "       <TD>" trr_det.trr_hexcolor "</TD>" SKIP*/
+                            "       <TD>NOTES ONLY</TD>" SKIP           
+                            "       <TD colspan=3>" trr_det.trr_notes "</TD>" SKIP   
+                            "  </TR>" SKIP.	                    
+	                
+	                END.  /** of if trr_suppl_id = 0 --- notes only **/
+	                
+	                ELSE DO: 
+	                
+			            {&OUT} 
+			                "   <TR>" SKIP
+			                "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " DISABLED /></TD>" SKIP
+                            "       <TD>" trr_det.trr_order "</TD>" SKIP
+			                "       <TD>" trr_det.trr_start_range "</TD>" SKIP
+			                "       <TD>" trr_det.trr_end_range "</TD>" SKIP      
+/*			                "       <TD>" trr_det.trr_hexcolor "</TD>" SKIP*/
+			                "       <TD>" suppl_list.suppl_name "</TD>" SKIP      
+			                "       <TD>" trr_det.trr_dosage "</TD>" SKIP      
+			                "       <TD>" trr_det.trr_uom "</TD>" SKIP      
+			                "       <TD>" trr_det.trr_notes "</TD>" SKIP   
+			                "  </TR>" SKIP.
+	                         
+	               END.  /** of else do -- if trr_suppl_id > 0 **/
+	                            
+	            END.  /** of else do --- other records **/
+	                             
+	        END.  /*** of 4ea. trr_det, etc. ***/
+	    
+	        {&OUT}
+                "</TABLE>" SKIP
+                "</DIV>             <!-- end of table_report -->" SKIP
+                
+                "<BR>" SKIP
+            
+	            "<div class='row'>" SKIP
+	            "   <div class='grid_3'> </DIV>" SKIP
+	            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='FINAL_UPDATE' class='btn'>Save Changes</BUTTON></div>" SKIP
+	            "   <div class='grid_2'> </DIV>" SKIP
+	            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+	            "   <div class='grid_3'> </DIV>" SKIP
+	            "</div>" SKIP
+	            
+	            "<BR>" SKIP
+            
+	            "</DIV>         <!-- end of grid_12 -->" SKIP
+/*	            "<DIV class='grid_1'> </DIV>" SKIP*/
+	            "</DIV>     <!-- end of row -->" SKIP
+	            "</FORM>" SKIP.          
+	            	
+	    END.  /** of 4ea. tl_mstr, etc. **/
+	    
+	    
+	END.  /** of else -- act = edit_rec **/
+
+END. /** of if act = validation **/
+
+ELSE IF act = "FINAL_UPDATE" THEN DO: 
+    
+/*                                                                                ITshowmsg = YES.*/
+                                                                                
+																			    IF ITshowmsg = YES THEN 
+																			        {&OUT} "Inside FINAL_UPDATE, about to enter 4ea." SKIP
+																			            "<OL>" SKIP
+																			            "   <LI>testtype    = " testtype "</LI>" SKIP
+																			            "   <LI>itemid      = " itemid "</LI>" SKIP
+																			            "   <LI>supplid     = " supplement_id "</LI>" SKIP
+																			            "   <LI>whichrec    = " whichrec "</LI>" SKIP
+																			            "   <LI>act         = " act "</LI>" SKIP
+																			            "   <LI>Dosage      = " dosage "</LI>" SKIP
+																			            "   <LI>Dosage UOM  = " doseuom "</LI>" SKIP
+																			            "   <LI>Notes       = " notes "</LI>" SKIP
+																			            "</OL>" SKIP 
+																			            "<HR width='80%'>" SKIP(1).   
+
+                    
+
+    
+    FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND 
+            tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            tld_det.tld_item_ID = itemid AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND 
+            tld_det.tld_deleted = ? NO-LOCK, 
+        EACH trr_det WHERE trr_det.trr_testtype = tl_mstr.tl_testtype AND 
+            trr_det.trr_item_ID = tld_det.tld_item_ID AND 
+            trr_det.trr_suppl_ID = supplement_id AND 
+            RECID(trr_det) = whichrec AND
+            trr_det.trr_deleted = ?
+        BREAK BY trr_det.trr_start_range BY trr_det.trr_end_range: 
+   
+/*        FIND FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_ID AND*/
+/*            suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.                        */
+    
+        ASSIGN 
+            trr_det.trr_dosage      = dosage 
+            trr_det.trr_uom         = doseuom
+            trr_det.trr_notes       = notes.
+            
+    END.  /** of 4ea. tl_mstr, etc. **/
+    
+    {&OUT}
+        "<DIV class='row'>" SKIP
+		"<DIV class='grid_3'> </DIV>" SKIP
+		"<DIV class='grid_6'>" SKIP
+		"<CENTER>" SKIP
+        "<H2>Record Updated</H2>" SKIP
+        "<FORM>" SKIP
+        "   <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+        "   <INPUT type='hidden' name='h-testtype' value='" testtype "' />" SKIP
+        "   <INPUT type='hidden' name='h-itemid' value=" itemid " />" SKIP
+                        
+        "<div class='row'>" SKIP
+		"   <div class='grid_3'> </DIV>" SKIP
+		"   <div class='grid_2'><button type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>Return to Item</BUTTON></div>" SKIP
+		"   <div class='grid_2'> </DIV>" SKIP
+		"   <div class='grid_2'><button type='submit' name='h-act' value='SELECT_TEST' class='btn'>Return to Start</BUTTON></div>" SKIP
+		"   <div class='grid_3'> </DIV>" SKIP
+		"</div>" SKIP
+		"<BR>" SKIP
+
+        "</FORM>" SKIP
+        "</CENTER>" SKIP
+        "</DIV>         <!-- end of grid_6 -->" SKIP
+		"<DIV class='grid_3'> </DIV>" SKIP  
+		"</DIV>     <!-- end of row -->" SKIP.
+    
+END.  /** of else if act = final_update **/
+
+ELSE IF act = "DELETE" THEN DO:                                                 /* Step 7 */
+
+    
+    IF v-submit = NO THEN DO: 
+        
+	    FIND trr_det WHERE RECID(trr_det) = whichrec NO-LOCK NO-ERROR.
+	    
+	    IF NOT AVAILABLE (trr_det) THEN DO:
+	        
+	        {&OUT} "<BR><CENTER><H1>ERROR!  Recommendation NO longer AVAILABLE.  Contact Solsource FOR assistance.</H1></CENTER>" SKIP.
+	        
+	    END.  /** of if not avail trr_det **/
+	    
+	    ELSE DO: 
+	        
+            FIND marker_list WHERE marker_list.marker_ID = trr_det.trr_item_ID
+                NO-LOCK NO-ERROR.
+                
+            IF trr_det.trr_suppl_ID > 0 THEN 
+                FIND suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_ID
+                    NO-LOCK NO-ERROR.
+                    
+		    {&OUT}
+	            "<DIV class='row'>" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "<DIV class='grid_6'>" SKIP
+	            "<CENTER><H2>You are about TO DELETE this record - </H2>" SKIP
+				"<FORM>" SKIP
+				"<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+				"<DIV class='table_col'>" SKIP
+				"<TABLE class='wee_table'>" SKIP
+				"   <THEAD>" SKIP
+				"       <TH colspan=2>Record Summary</TH>" SKIP
+				"   </THEAD>" SKIP
+				"   <TR>" SKIP
+				"       <TD>Test Type</TD>" SKIP
+				"       <TD><input type='hidden' name='h-testtype' value='" trr_det.trr_testtype "' />" trr_det.trr_testtype "</TD>" SKIP
+				"   </TR>" SKIP
+				"   <TR>" SKIP
+				"       <TD>Item / Marker</TD>" SKIP
+				"       <TD><input type='hidden' name='h-itemid' value='" trr_det.trr_item_ID "' />" marker_list.marker_item "</TD>" SKIP
+				"   </TR>" SKIP
+				"   <TR>" SKIP
+				"       <TD>Supplement Recommendation</TD>" SKIP.
+				
+			IF trr_det.trr_suppl_ID = 0 THEN 
+			    {&OUT}
+			        "       <TD>NOTES ONLY</TD>" SKIP.
+			        
+			ELSE 
+			    {&OUT}
+			        "       <TD>" suppl_list.suppl_name "</TD>" SKIP.
+				        
+			{&OUT}	        
+				"   </TR>" SKIP
+                "   <TR>" SKIP
+                "       <TD>Start Range</TD>" SKIP
+                "       <TD>" trr_det.trr_start_range "</TD>" SKIP
+                "   </TR>" SKIP
+                "   <TR>" SKIP
+                "       <TD>End Range</TD>" SKIP
+                "       <TD>" trr_det.trr_end_range "</TD>" SKIP
+                "   </TR>" SKIP                  
+                "   <TR>" SKIP
+                "       <TD>Dosage</TD>" SKIP
+                "       <TD>" trr_det.trr_dosage "</TD>" SKIP
+                "   </TR>" SKIP
+                "   <TR>" SKIP
+                "       <TD>UOM</TD>" SKIP
+                "       <TD>" trr_det.trr_uom "</TD>" SKIP
+                "   </TR>" SKIP
+                "   <TR>" SKIP
+                "       <TD>Notes</TD>" SKIP
+                "       <TD><TEXTAREA rows=2 columns=100>" trr_det.trr_notes "</textarea></TD>" SKIP
+                "   </TR>" SKIP                                                              
+				"</TABLE>" SKIP
+				"</DIV>                 <!-- end of table_col -->" SKIP
+				
+	            "<H2>Are you sure?</H2>"
+	            "<input type='hidden' name='h-submit' value='YES' />" SKIP
+	            "<input type='hidden' name='h-whichrec' value=" RECID(trr_det) " />" SKIP
+	            
+				"<div class='row'>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='DELETE' class='btn'>Yes</button></div>" SKIP
+				"   <div class='grid_2'> </DIV>" SKIP
+				"   <div class='grid_2'><button type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>No</button>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"</div>         <!-- end of row for buttons -->" SKIP
+				"<BR>" SKIP
+
+		        "</FORM>" SKIP
+		        "</CENTER>" SKIP
+		        "</DIV>       <!-- end of grid_4 -->" SKIP
+				"<DIV class='grid_3'> </DIV>" SKIP
+				"</DIV>     <!-- end of row -->" SKIP  
+		        "<BR>".
+	        
+	   END.  /** of else do -- if avail trr_det **/
+	           
+    END.  /** of if v-submit = NO **/
+       
+    ELSE IF v-submit = YES THEN DO: 
+        
+        FIND trr_det WHERE RECID(trr_det) = whichrec EXCLUSIVE-LOCK NO-ERROR.
+        
+        IF NOT AVAILABLE (trr_det) THEN DO:
+            
+            {&OUT} "<H1>ERROR!  Recommendation NO longer AVAILABLE.  Contact Solsource FOR assistance.</H1>" SKIP.
+            
+        END.  /** of if not avail trr_det **/
+        
+        ELSE DO: 
+            
+            ASSIGN 
+                trr_det.trr_deleted         = TODAY 
+                trr_det.trr_modified_by     = USERID("HHI")
+                trr_det.trr_modified_date   = TODAY. 
+                
+            {&OUT}
+                "<FORM>" SKIP
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+                "<INPUT type='hidden' name='h-testtype' value='" testtype "' />" SKIP
+                "<INPUT type='hidden' name='h-itemid' value=" itemid " />" SKIP              
+                "<CENTER>" SKIP
+                "<h2>Record Deleted.</H2>" SKIP  
+				"<div class='row'>" SKIP
+		        "   <div class='grid_3'> </DIV>" SKIP
+		        "   <div class='grid_2'><button type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>Return to Item</BUTTON></div>" SKIP 
+		        "   <div class='grid_2'> </DIV>" SKIP
+		        "   <div class='grid_2'><button type='submit' name='h-act' value='SELECT_TEST' class='btn'>Return to Start</BUTTON></div>" SKIP
+		        "   <div class='grid_3'> </DIV>" SKIP
+				"</div>             <!-- of row -->" SKIP
+				"</CENTER>" SKIP
+                "</FORM>" SKIP
+				"<BR>" SKIP.
+
+        END.  /** of else do - if avail trr_det **/
+                
+    END.  /** of else if v-submit = yes **/    
+                
+END.  /*** of else if act = delete ***/
+
+    
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "After Everything" SKIP
+                                                                                       "<OL>Variables" SKIP
+                                                                                       "<LI>act = " act SKIP
+                                                                                       "<LI>testtype = " testtype SKIP
+                                                                                       "<LI>itemid = " itemid SKIP
+                                                                                       "</OL>" SKIP
+                                                                                       "<hr widTD='90%'>" SKIP. 
+                                                                                       
+</SCRIPT>
+</BODY>
+</HTML>

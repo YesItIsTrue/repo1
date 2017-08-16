@@ -1,0 +1,322 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Paid Testkit Report</TITLE>
+<META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+<META NAME="VERSION" CONTENT="1.0">
+<META NAME="COPYRIGHT" CONTENT="Solsource">
+<META NAME="CREATE_DATE" CONTENT="2/Feb/16">
+<META NAME="LAST_UPDATED" CONTENT="2/Feb/16">   
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY CLASS='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           TKvendpaindR.html
+    Description:    Rewritten program of TKvendpayR.html to be a normal report
+    Created:        2Feb16
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE from-id          LIKE TK_mstr.TK_ID NO-UNDO.
+DEFINE VARIABLE to-id            LIKE TK_mstr.TK_ID NO-UNDO.
+DEFINE VARIABLE from-seq         LIKE TK_mstr.TK_test_seq NO-UNDO.
+DEFINE VARIABLE to-seq           LIKE TK_mstr.TK_test_seq NO-UNDO.
+DEFINE VARIABLE from-lab-samp-id LIKE TK_mstr.TK_lab_sample_ID NO-UNDO.
+DEFINE VARIABLE to-lab-samp-id   LIKE TK_mstr.TK_lab_sample_ID NO-UNDO.
+DEFINE VARIABLE from-lab-id      LIKE TK_mstr.TK_lab_ID NO-UNDO.
+DEFINE VARIABLE to-lab-id        LIKE TK_mstr.TK_lab_ID NO-UNDO.
+DEFINE VARIABLE from-status      LIKE TK_mstr.TK_status NO-UNDO.
+DEFINE VARIABLE to-status        LIKE TK_mstr.TK_status NO-UNDO.
+{../depot/src/WebSpeed/Statuslist.i}.
+DEFINE VARIABLE from-test-type   LIKE TK_mstr.TK_test_type NO-UNDO.
+DEFINE VARIABLE to-test-type     LIKE TK_mstr.TK_test_type NO-UNDO.
+DEFINE VARIABLE from-char-date   AS CHARACTER NO-UNDO.
+DEFINE VARIABLE to-char-date     AS CHARACTER NO-UNDO.
+DEFINE VARIABLE from-mod-date    AS DATE NO-UNDO.
+DEFINE VARIABLE to-mod-date      AS DATE NO-UNDO.
+DEFINE VARIABLE act              AS CHARACTER NO-UNDO.
+DEFINE VARIABLE itmessage        AS LOGICAL INITIAL NO NO-UNDO. 
+DEFINE VARIABLE x                AS INTEGER NO-UNDO.
+
+ASSIGN 
+    from-id             = get-value("h-from-id")
+    to-id               = get-value("h-to-id")
+    from-seq            = INTEGER(get-value("h-from-seq"))
+    to-seq              = INTEGER(get-value("h-to-seq"))
+    from-lab-samp-id    = get-value("h-from-lab-samp-id")
+    to-lab-samp-id      = get-value("h-to-samp-id")
+    from-lab-id         = get-value("h-from-lab-id")
+    to-lab-id           = get-value("h-to-lab-id")
+    from-status         = get-value("h-from-status")
+    to-status           = get-value("h-to-status")
+    from-test-type      = get-value("h-from-test-type")
+    to-test-type        = get-value("h-to-test-type")
+    from-char-date       = get-value("html5-from-mod-date")
+    to-char-date         = get-value("html5-to-mod-date")
+    act                 = get-value("h-act").
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))
+                (from-char-date, OUTPUT from-mod-date).
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))
+                (to-char-date, OUTPUT to-mod-date).
+    
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL".    
+
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP   
+            "<div class='table_2col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=4>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Testkit ID</td>" skip
+            "           <td><input type='text' name='h-from-id' value='" from-id "' /></td>" skip
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-id' value='" to-id "' /></td>" skip            
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Testkit Sequence Number</td>" skip
+            "           <td><input type='text' name='h-from-seq' /></td>" skip
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-seq' /></td>" skip            
+            "       </tr>" SKIP(1)            
+            "       <tr>" skip
+            "           <td>From Lab Sample ID</td>" skip
+            "           <td><input type='text' name='h-from-lab-samp-id' value='" from-lab-samp-id "' /></td>" skip
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-lab-samp-id' value='" to-lab-samp-id "' /></td>" skip            
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP            
+            "           <td>From Lab ID</td>" skip          
+            "           <td><select name='h-from-lab-id'>" skip
+            "               <option value='' ></option>" SKIP.
+   
+            FOR EACH lab_mstr WHERE lab_mstr.lab_deleted = ? NO-LOCK:   
+                    
+                {&OUT}
+                "<option value='" lab_mstr.lab_ID "' >" lab_mstr.lab_ID "</option>" SKIP.
+                    
+            END.  /** of 4ea. client_mstr **/
+            
+        {&OUT}
+            "             </SELECT></td>" SKIP                   
+            "           <td>To</td>" skip 
+            "           <td><select name='h-to-lab-id'>" skip
+            "               <option value='' ></option>" SKIP.
+   
+            FOR EACH lab_mstr WHERE lab_mstr.lab_deleted = ? NO-LOCK:   
+                    
+                {&OUT}
+                "<option value='" lab_mstr.lab_ID "' >" lab_mstr.lab_ID "</option>" SKIP.
+                    
+            END.  /** of 4ea. client_mstr **/
+            
+        {&OUT}
+            "         </SELECT></td>" SKIP 
+            "       <tr>" SKIP
+            "           <td>From Status</td>" skip
+            "           <td><select name='h-from-status'>" skip.
+
+            {../depot/src/WebSpeed/StatusListDropDown.i}. 
+
+         {&OUT}
+            "           </SELECT></td>" SKIP
+            "           <td>To</td>" skip
+            "           <td><select name='h-to-status'>" skip. 
+            
+            {../depot/src/WebSpeed/StatusListDropDown.i}.
+            
+         {&OUT} 
+            "           </SELECT></td>" SKIP  
+            "       </tr>" skip
+            "       <tr>" skip
+            "           <td>From Status Modified Date</td>" skip
+            "           <td><input type='date' name='html5-from-mod-date' value='" from-char-date "' /></td>" skip
+            "           <td>To</td>" skip
+            "           <td><input type='date' name='html5-to-mod-date' value='" to-char-date "' /></td>" skip            
+            "       </tr>" SKIP(1)                      
+            "       <tr>" skip
+            "           <td>From Test Type</td>" skip          
+            "           <td><select name='h-from-test-type'>" skip.
+   
+            FOR EACH test_mstr WHERE test_mstr.test_deleted = ? NO-LOCK
+                    BY test_mstr.test_type:  
+                    
+                {&OUT}
+                "<option value='" test_mstr.test_type "' >" test_mstr.test_type "</option>" SKIP.
+                    
+            END.  /** of 4ea. client_mstr **/
+            
+        {&OUT}
+            "             </SELECT></td>" SKIP                   
+            "           <td>To</td>" skip
+            "           <td><select name='h-to-test-type'>" skip.
+   
+                        FOR EACH test_mstr WHERE test_mstr.test_deleted = ? NO-LOCK
+                    BY test_mstr.test_type:  
+
+                {&OUT}
+                "<option value='" test_mstr.test_type "' >" test_mstr.test_type "</option>" SKIP.
+                    
+            END.  /** of 4ea. client_mstr **/
+            
+        {&OUT}
+            "         </SELECT></td>" SKIP
+            "       </tr>" SKIP
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report_FromTo'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan=8>Testkits - Paid by Customer</TH>" SKIP    /* thead, tr, th makes the silver bar */
+            "            </TR>" SKIP
+            "            <tr>" SKIP
+            "               <th>From</th>" SKIP
+            "               <th>" from-id " / " from-seq "</th>" SKIP
+            "               <th>" from-lab-samp-id "</th>" SKIP
+            "               <th>" from-lab-id "</th>" SKIP
+            "               <th>" from-status "</th>" SKIP
+            "               <th>" from-mod-date "</th>" SKIP
+            "               <th>" from-test-type "</th>" SKIP
+            "               <th rowspan='2'></th>" SKIP
+            "            </TR>" SKIP
+            "            <tr>" SKIP
+            "               <th>To</th>" SKIP
+            "               <th>" to-id " / " to-seq "</th>" SKIP
+            "               <th>" to-lab-samp-id "</th>" SKIP
+            "               <th>" to-lab-id "</th>" SKIP
+            "               <th>" to-status "</th>" SKIP
+            "               <th>" to-mod-date "</th>" SKIP
+            "               <th>" to-test-type "</th>" SKIP           
+            "            </TR>" SKIP            
+            "            <TR>" SKIP
+            "               <th></th>" SKIP            
+            "               <Th>Testkit ID / Seq</Th>" SKIP
+            "               <Th>Lab Sample ID</Th>" SKIP          /* thead, tr, td makes the blue bar */
+            "               <Th>Lab ID</Th>" SKIP
+            "               <Th>Status</Th>" SKIP
+            "               <th>Vendor Paid Date</th>" SKIP  
+            "               <Th>Test Type</Th>" SKIP     
+            "               <th>Customer Paid?</th>" SKIP              
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1).
+            
+
+            FOR EACH TK_mstr WHERE ((TK_mstr.TK_ID >= from-id) OR 
+                                (from-id = "")) AND 
+                               ((TK_mstr.TK_ID <= to-id) OR 
+                                (to-id = "")) AND 
+                               ((TK_mstr.TK_test_seq >= from-seq) OR 
+                                (from-seq = 0)) AND 
+                               ((TK_mstr.TK_test_seq <= to-seq) OR 
+                                (to-seq = 0)) AND  
+                               ((TK_mstr.TK_lab_sample_ID >= from-lab-samp-id) OR 
+                                (from-lab-samp-id = "")) AND 
+                               ((TK_mstr.TK_lab_sample_ID <= to-lab-samp-id) OR 
+                                (to-lab-samp-id = "")) AND                                                                  
+                               ((TK_mstr.TK_test_type >= from-test-type) OR 
+                                (from-test-type = "")) AND 
+                               ((TK_mstr.TK_test_type <= to-test-type) OR 
+                                (to-test-type = "")) AND 
+                                ((LOOKUP(TK_mstr.TK_status,statlist) >= LOOKUP(from-status,statlist)) OR 
+                                 (from-status = "")) AND                                                                                 
+                                ((LOOKUP(TK_mstr.TK_status,statlist) <= LOOKUP(to-status,statlist)) OR 
+                                 (to-status = "")) AND
+                                TK_mstr.TK_lab_paid <> ?  AND 
+                                ((TK_mstr.TK_lab_paid >= from-mod-date) OR 
+                                 (from-mod-date = ?)) AND 
+                                ((TK_mstr.TK_lab_paid <= to-mod-date) OR 
+                                 (to-mod-date = ?)) AND 
+                                TK_mstr.TK_deleted = ? NO-LOCK,
+            EACH lab_mstr WHERE lab_mstr.lab_ID = TK_mstr.TK_lab_ID AND
+                                    ((lab_mstr.lab_ID >= from-lab-id) OR 
+                                     (from-lab-id = "")) AND 
+                                    ((lab_mstr.lab_ID <= to-lab-id) OR 
+                                     (to-lab-id = "")) AND 
+                                    lab_mstr.lab_deleted = ? NO-LOCK                                                      
+                                BY TK_mstr.TK_ID BY TK_mstr.TK_test_seq:  
+                               
+            x = x + 1.                               
+                               
+            {&OUT}
+                "       <TR>" SKIP
+                "           <TD></TD>" SKIP
+                "           <TD>" TK_mstr.TK_ID " / " TK_mstr.TK_test_seq "</TD>" SKIP
+                "           <TD>" TK_mstr.TK_lab_sample_ID "</TD>" SKIP
+                "           <TD>" TK_mstr.TK_lab_ID "</TD>" SKIP
+                "           <TD>" TK_mstr.TK_status "</TD>" SKIP
+                "           <TD>" TK_mstr.TK_lab_paid "</td>" SKIP
+                "           <TD>" TK_mstr.TK_test_type "</TD>" SKIP                
+                "           <TD>" TK_mstr.TK_cust_paid "</td>" SKIP
+                "       </TR>" SKIP. 
+        
+        END. /* 4ea. people, emp, emph */   
+        {&OUT}          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN=8>" x " Records</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN=8>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+
+END CASE.         
+
+</SCRIPT>
+</BODY>
+</HTML>

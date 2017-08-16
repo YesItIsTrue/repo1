@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="root">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="test_mstr"/>
+        <xs:element ref="people_mstr"/>
+        <xs:element ref="patent_mstr"/>
+        <xs:element ref="addr_mstr"/>
+        <xs:element ref="tk_mstr"/>
+        <xs:element maxOccurs="unbounded" ref="tkr_det"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="test_mstr">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="test_lab_ID"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="test_lab_ID" type="xs:NCName"/>
+  <xs:element name="people_mstr">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="people_lastname"/>
+        <xs:element ref="people_firstname"/>
+        <xs:element ref="people_midname"/>
+        <xs:element ref="people_perfname"/>
+        <xs:element ref="people_dob"/>
+        <xs:element ref="people_gender"/>
+        <xs:element ref="people_homephone"/>
+        <xs:element ref="people_workphone"/>
+        <xs:element ref="people__char1"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="people_lastname" type="xs:NCName"/>
+  <xs:element name="people_firstname" type="xs:NCName"/>
+  <xs:element name="people_midname" type="xs:NCName"/>
+  <xs:element name="people_perfname" type="xs:NCName"/>
+  <xs:element name="people_dob">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="year"/>
+        <xs:element ref="month"/>
+        <xs:element ref="day"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="people_gender" type="xs:NCName"/>
+  <xs:element name="people_homephone" type="xs:NMTOKEN"/>
+  <xs:element name="people_workphone" type="xs:NMTOKEN"/>
+  <xs:element name="people__char1">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="SSN"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SSN" type="xs:integer"/>
+  <xs:element name="patent_mstr">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="patent_comments"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="patent_comments" type="xs:string"/>
+  <xs:element name="addr_mstr">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="addr_addr1"/>
+        <xs:element ref="addr_addr2"/>
+        <xs:element ref="addr_city"/>
+        <xs:element ref="state_iso"/>
+        <xs:element ref="addr_zip"/>
+        <xs:element ref="country_iso"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="addr_addr1" type="xs:string"/>
+  <xs:element name="addr_addr2" type="xs:string"/>
+  <xs:element name="addr_city" type="xs:string"/>
+  <xs:element name="state_iso" type="xs:NCName"/>
+  <xs:element name="addr_zip" type="xs:integer"/>
+  <xs:element name="country_iso" type="xs:NCName"/>
+  <xs:element name="tk_mstr">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="TK_ID"/>
+        <xs:element ref="tk_lab_sample_ID"/>
+        <xs:element ref="tk_test_desc"/>
+        <xs:element ref="coll_begin"/>
+        <xs:element ref="coll_end"/>
+        <xs:element ref="volume"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="TK_ID" type="xs:NCName"/>
+  <xs:element name="tk_lab_sample_ID" type="xs:NCName"/>
+  <xs:element name="tk_test_desc" type="xs:string"/>
+  <xs:element name="coll_begin">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="year"/>
+        <xs:element ref="month"/>
+        <xs:element ref="day"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="coll_end">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="year"/>
+        <xs:element ref="month"/>
+        <xs:element ref="day"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="volume" type="xs:integer"/>
+  <xs:element name="tkr_det">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="set_id"/>
+        <xs:element ref="tkr_item"/>
+        <xs:element ref="tkr_result"/>
+        <xs:element ref="tkr_ref_uom"/>
+        <xs:element ref="tkr_lab_ref"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="set_id" type="xs:integer"/>
+  <xs:element name="tkr_item" type="xs:string"/>
+  <xs:element name="tkr_result" type="xs:string"/>
+  <xs:element name="tkr_ref_uom" type="xs:string"/>
+  <xs:element name="tkr_lab_ref" type="xs:string"/>
+  <xs:element name="year" type="xs:integer"/>
+  <xs:element name="month" type="xs:integer"/>
+  <xs:element name="day" type="xs:integer"/>
+</xs:schema>

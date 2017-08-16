@@ -1,0 +1,226 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<TITLE>HHI Label View</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<CENTER>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:           hhi_label_view.html -> ADRSviewR.html
+    Description:    2 of 3 files in label creation 
+    Created:        6/23/2014
+    Author:         Jacob Luttrell
+  -------------------------------------------------------------------*/
+/*************************** Define Vars *****************************/
+DEFINE VARIABLE hhi_pat_ver     LIKE HHI.patient_mstr.patient_verified NO-UNDO.
+DEFINE VARIABLE hhi_pat_id      LIKE HHI.patient_mstr.patient_ID  NO-UNDO.
+DEFINE VARIABLE tk_pat_id       LIKE HHI.tk_mstr.tk_patient_ID NO-UNDO.
+DEFINE VARIABLE tk_prt_date     LIKE HHI.tk_mstr.tk__date03 NO-UNDO.
+DEFINE VARIABLE tk_ttype        LIKE HHI.tk_mstr.tk_testtype NO-UNDO.
+DEFINE VARIABLE gen_pep_id      LIKE General.people_mstr.people_id NO-UNDO.
+DEFINE VARIABLE gen_pep_add_id  LIKE General.people_mstr.people_addr_id NO-UNDO.
+DEFINE VARIABLE gen_add_add_id  LIKE General.addr_mstr.addr_id NO-UNDO.
+
+DEFINE VARIABLE suffix          LIKE General.people_mstr.people_suffix NO-UNDO EXTENT 3.
+DEFINE VARIABLE address1        LIKE General.addr_mstr.addr_addr1 NO-UNDO EXTENT 3.
+DEFINE VARIABLE address2        LIKE General.addr_mstr.addr_addr2 NO-UNDO EXTENT 3.
+DEFINE VARIABLE address3        LIKE General.addr_mstr.addr_addr3 NO-UNDO EXTENT 3.
+DEFINE VARIABLE city            LIKE General.addr_mstr.addr_city NO-UNDO EXTENT 3.
+DEFINE VARIABLE stateprov       LIKE General.addr_mstr.addr_stateprov NO-UNDO EXTENT 3.
+DEFINE VARIABLE cntry           LIKE General.addr_mstr.addr_country NO-UNDO EXTENT 3.
+DEFINE VARIABLE zip             LIKE General.addr_mstr.addr_zip NO-UNDO EXTENT 3.
+
+DEFINE VARIABLE x               AS INTEGER NO-UNDO.
+DEFINE VARIABLE y               AS INTEGER NO-UNDO.
+DEFINE VARIABLE z               AS INTEGER NO-UNDO.
+DEFINE VARIABLE testkitcount    AS INTEGER NO-UNDO.
+DEFINE VARIABLE confirm         AS CHARACTER NO-UNDO.
+DEFINE VARIABLE denied          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE labelline       AS CHARACTER NO-UNDO EXTENT 18.
+DEFINE VARIABLE showmsg         AS LOGICAL INITIAL "NO".
+
+DEFINE BUFFER morepeople        FOR general.people_mstr.
+DEFINE VARIABLE lastname        AS CHARACTER NO-UNDO EXTENT 3.
+DEFINE VARIABLE firstname       AS CHARACTER NO-UNDO EXTENT 3.
+DEFINE VARIABLE fromTK          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toTK            AS CHARACTER NO-UNDO.
+DEFINE VARIABLE fromLN          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toLN            AS CHARACTER NO-UNDO.
+DEFINE VARIABLE fromFN          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toFN            AS CHARACTER NO-UNDO.
+DEFINE VARIABLE numpgs          AS INTEGER NO-UNDO.
+DEFINE VARIABLE labelcount      AS INTEGER NO-UNDO.
+
+ASSIGN 
+    confirm     = get-value('s-Submit')
+    denied      = get-value('s-Submit')
+    fromTK      = get-value('a-fromTK')
+    toTK        = get-value('a-toTK')
+    fromLN      = get-value('a-fromLN')
+    toLN        = get-value('a-toLN')
+    fromFN      = get-value('a-fromFN')
+    toFN        = get-value('a-toFN')
+    numpgs      = INTEGER(get-value('a-numpgs')).
+    
+</Script>
+<P>Does this look right?</P>
+<table>
+<tr>
+<td><FORM action='ADRSprintR.r' method='post'>  
+    <INPUT type='hidden' name='b-fromTK' value="`fromTK`"/>
+    <INPUT type='hidden' name='b-toTK' value="`toTK`"/>
+    <INPUT type='hidden' name='b-fromFN' value="`fromFN`"/>
+    <INPUT type='hidden' name='b-toFN' value="`toFN`"/>
+    <INPUT type='hidden' name='b-fromLN' value="`fromLN`"/>
+    <INPUT type='hidden' name='b-toLN' value="`toLN`"/>
+    <INPUT type='hidden' name='b-numpgs' value="`numpgs`"/>
+    <INPUT type='hidden' name='whattorun' value=' get-value("whattorun") ' />
+    <INPUT type='submit' value='Yes' name='s-Submit'/>
+</FORM></td>
+
+<td><FORM action="ADRScriteriaR.r" method="post">
+    <INPUT type="submit" value='No' name='s-Submit' />
+    </FORM>
+</td>
+</tr>
+</table>
+<table class='print_label'>
+<Script language='SpeedScript'>
+    
+/*************************** Main Body ******************************/
+
+froot_loop:    
+FOR EACH HHI.patient_mstr       WHERE HHI.patient_mstr.patient_verified = LOGICAL("yes") AND 
+                                HHI.patient_mstr.patient_deleted = ? NO-LOCK,
+    EACH HHI.tk_mstr            WHERE HHI.TK_mstr.TK_patient_ID = HHI.patient_mstr.patient_id AND
+                                HHI.TK_mstr.TK_lbl_print = ? AND 
+                                HHI.TK_mstr.TK_testtype = "MD" AND 
+                                HHI.TK_mstr.TK_deleted = ? AND 
+                                ((HHI.TK_mstr.TK_ID >= fromTK) OR
+                                    (fromTK = "")) AND 
+                                ((HHI.TK_mstr.TK_ID <= toTK ) OR 
+                                    (toTK = "")) NO-LOCK,
+    FIRST General.people_mstr   WHERE General.people_mstr.people_id = HHI.patient_mstr.patient_ID AND 
+                                General.people_mstr.people_deleted = ? AND 
+                                ((General.people_mstr.people_firstname >= fromFN) OR 
+                                    (fromFN = "")) AND 
+                                ((General.people_mstr.people_firstname <= toFN ) OR 
+                                    (fromFN = "" )) AND 
+                                ((General.people_mstr.people_lastname >= fromLN) OR 
+                                    (fromLN = "")) AND 
+                                ((General.people_mstr.people_lastname <= toLN ) OR 
+                                    (toLN = "")) NO-LOCK,                              
+    FIRST General.addr_mstr     WHERE General.addr_mstr.addr_id = General.people_mstr.people_addr_id AND
+                                General.addr_mstr.addr_deleted = ? NO-LOCK
+    BREAK BY General.people_mstr.people_lastname:
+   
+    FIND morepeople             WHERE morepeople.people_id = patient_mstr.patient_RP_ID NO-LOCK NO-ERROR.
+
+   x = y * 6.  
+   y = y + 1.
+    
+    IF showmsg = YES THEN 
+        {&OUT}
+            " firstname = " general.people_mstr.people_firstname "<br>" skip
+            " lastname = " general.people_mstr.people_lastname "<br>" skip
+            " tk_id = " tk_id "<br>" skip(1).
+              
+   
+   IF morepeople.people_firstname = "" AND morepeople.people_lastname = "" OR 
+            morepeople.people_firstname = "NEW" OR morepeople.people_lastname = "PATIENT" THEN
+             
+            ASSIGN 
+                x               = x + 1
+                labelline[x]    = people_mstr.people_firstname + " " + people_mstr.people_lastname.  
+       ELSE 
+        IF morepeople.people_firstname <> "" OR morepeople.people_lastname <> "" THEN 
+        ASSIGN                                                                  
+            x               = x + 1 
+            labelline[x]    = morepeople.people_firstname + " " + morepeople.people_lastname.        
+                
+    IF addr_mstr.addr_addr1 <> "" THEN
+        ASSIGN
+            x               = x + 1 
+            labelline[x]    = addr_mstr.addr_addr1.
+            
+    IF addr_mstr.addr_addr2 <> "" THEN
+        ASSIGN
+            x               = x + 1 
+            labelline[x]    = addr_mstr.addr_addr2.
+            
+    IF addr_mstr.addr_addr3 <> "" THEN
+        ASSIGN
+            x               = x + 1 
+            labelline[x]    = addr_mstr.addr_addr3.
+        
+    IF addr_mstr.addr_city <> "" OR addr_mstr.addr_stateprov <> "" OR addr_mstr.addr_zip <> "" THEN
+        ASSIGN
+            x               = x + 1 
+            labelline[x]    = addr_mstr.addr_city + ", " + addr_mstr.addr_stateprov + "  " + addr_mstr.addr_zip.
+            
+    IF addr_mstr.addr_country <> "" THEN
+        ASSIGN
+            x               = x + 1 
+            labelline[x]    = addr_mstr.addr_country.  
+            
+   IF y = 3 THEN DO:
+       {&OUT}
+            "<tr><td>" labelline[1] "</td><td>" labelline[7] "</td><td>" labelline[13] "</td></tr>
+             <tr><td>" labelline[2] "</td><td>" labelline[8] "</td><td>" labelline[14] "</td></tr>
+			 <tr><td>" labelline[3] "</td><td>" labelline[9] "</td><td>" labelline[15] "</td></tr>
+			 <tr><td>" labelline[4] "</td><td>" labelline[10] "</td><td>" labelline[16] "</td></tr>
+             <tr><td>" labelline[5] "</td><td>" labelline[11] "</td><td>" labelline[17] "</td></tr>
+             <tr><td>" labelline[6] "</td><td>" labelline[12] "</td><td>" labelline[18] "</td></tr>
+             <tr><td>&nbsp;</td></tr>". 
+             
+       DO z = 1 TO 18:
+        labelline[z] = "" .
+        
+    END. /** do x = 1 to 18 **/
+    
+    x = 0.
+    y = 0.
+    
+    END. /** y = 3 **/      
+                  
+ labelcount = labelcount + 1. 
+ IF numpgs > 0 AND
+    labelcount >= (30 * numpgs) THEN
+        LEAVE froot_loop.     
+                                   
+END. /*** of for each patient_mstr ***/
+
+IF y <> 0 THEN DO:
+       {&OUT}
+            "<tr><td>" labelline[1] "</td><td>" labelline[7] "</td><td>" labelline[13] "</td></tr>
+             <tr><td>" labelline[2] "</td><td>" labelline[8] "</td><td>" labelline[14] "</td></tr>
+             <tr><td>" labelline[3] "</td><td>" labelline[9] "</td><td>" labelline[15] "</td></tr>
+             <tr><td>" labelline[4] "</td><td>" labelline[10] "</td><td>" labelline[16] "</td></tr>
+             <tr><td>" labelline[5] "</td><td>" labelline[11] "</td><td>" labelline[17] "</td></tr>
+             <tr><td>" labelline[6] "</td><td>" labelline[12] "</td><td>" labelline[18] "</td></tr>
+             <tr><td>&nbsp;</td></tr>". 
+END.                                 
+
+</SCRIPT>
+</table>
+</CENTER>
+</BODY>
+</HTML>

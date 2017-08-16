@@ -1,0 +1,499 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+<TITLE>Nuclear Testkit Delete</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="4/Apr/16">
+    <META NAME='LAST_UPDATED' CONTENT="4/Apr/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+<script src='/depot/src/HTMLContent/buttons.js'></script>
+
+<script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Template Notes: 
+        This template is designed to be used with a maintenance screen.
+        Quoted areas are either instuctions or place holders for your 
+        variables and fields.
+    
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+DEFINE VARIABLE v-new           AS LOGICAL              NO-UNDO.
+DEFINE VARIABLE o-successful    AS LOGICAL              NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+
+DEFINE VARIABLE v-tk-id         LIKE TK_mstr.TK_ID          NO-UNDO.
+DEFINE VARIABLE v-tk-seq        LIKE TK_mstr.TK_test_seq    NO-UNDO.
+DEFINE VARIABLE v-tk-string     AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE v-test-type     LIKE TK_mstr.TK_test_type   NO-UNDO.
+
+DEFINE VARIABLE x               AS LOGICAL INITIAL NO       NO-UNDO.
+
+DEFINE TEMP-TABLE brother
+        FIELD brother_name AS CHARACTER.
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act             = get-value("h-act")
+    v-new           = IF get-value("h-new") = "YES" THEN YES ELSE IF get-value("h-new") = "NO" THEN NO ELSE ?
+    /* additional variables here */
+    v-tk-id         = get-value("h-tk-id")
+    v-tk-seq        = INTEGER(get-value("h-tk-seq"))
+    v-tk-string     = get-value("h-tk-string")
+    v-test-type     = get-value("h-test-type")
+    .
+
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+
+/* ************************ Validation Acts ************************ */ 
+IF act = "VALIDATE_DELETE" THEN DO: 
+    
+    /* use a multi table find first here to find if there are any records dependent on the one you are 
+    trying to delete.  */
+                                                                                                                                               
+    FIND TK_mstr WHERE TK_mstr.TK_ID = v-tk-id AND 
+                       TK_mstr.TK_test_seq = v-tk-seq
+                       NO-LOCK NO-ERROR. 
+
+    IF AVAILABLE (TK_mstr) THEN
+    DO:
+
+        FIND BFM_mstr WHERE BFM_mstr.BFM_ID = TK_mstr.TK_ID AND 
+                            BFM_mstr.BFM_test_seq = TK_mstr.TK_test_seq NO-LOCK NO-ERROR.
+                                 
+            IF AVAILABLE (BFM_mstr) THEN DO: 
+             
+                CREATE brother.
+                  
+                ASSIGN 
+                    brother_name = "BFM_mstr"
+                    x = YES.
+                  
+            END. /* if avail BFM_mstr */ 
+   
+        FIND BHE_mstr WHERE BHE_mstr.BHE_ID = TK_mstr.TK_ID AND 
+                            BHE_mstr.BHE_test_seq = TK_mstr.TK_test_seq NO-LOCK NO-ERROR.
+                             
+            IF AVAILABLE (BHE_mstr) THEN DO: 
+             
+                CREATE brother.
+                  
+                ASSIGN 
+                    brother_name = "BHE_mstr"
+                    x = YES.
+                  
+            END. /* if avail BHE_mstr */ 
+                                                           
+        FIND BMPA_det WHERE BMPA_det.BMPA_ID = TK_mstr.TK_ID AND 
+                            BMPA_det.BMPA_test_seq = TK_mstr.TK_test_seq NO-LOCK NO-ERROR.
+                             
+            IF AVAILABLE (BMPA_det) THEN DO: 
+             
+                CREATE brother.
+                  
+                ASSIGN 
+                    brother_name = "BMPA_det"
+                    x = YES.
+                  
+            END. /* if avail BMPA_det */  
+             
+                     
+        FIND BUTEE_mstr WHERE BUTEE_mstr.BUTEE_ID = TK_mstr.TK_ID AND 
+                              BUTEE_mstr.BUTEE_test_seq = TK_mstr.TK_test_seq NO-LOCK NO-ERROR.
+                               
+            IF AVAILABLE (BUTEE_mstr) THEN DO: 
+             
+                CREATE brother.
+                  
+                ASSIGN 
+                    brother_name = "BUTEE_mstr"
+                    x = YES.
+                  
+           END. /* if avail BUTEE_mstr */ 
+                                              
+        FIND TKR_det WHERE TKR_det.TKR_ID = TK_mstr.TK_ID AND 
+                           TKR_det.TKR_test_seq = TK_mstr.TK_test_seq NO-LOCK NO-ERROR.
+                            
+            IF AVAILABLE (TKR_det) THEN DO: 
+             
+                 CREATE brother.
+                  
+                 ASSIGN 
+                    brother_name = "TKR_det"
+                    x = YES.
+                  
+            END. /* if avail TKR_det */ 
+
+        IF x = YES THEN DO:        
+			{&OUT}
+				"<form>" SKIP
+				"<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+				"<DIV class='row'>" SKIP
+				"<DIV class='grid_3'> </DIV>" SKIP
+				"<DIV class='grid_6'>" SKIP
+				"<center><h2>The record you are trying to delete has brother records in the following tables:</BR>" SKIP.
+			
+			FOR EACH brother NO-LOCK:
+			    
+			    {&OUT}
+			        brother_name "</BR>" SKIP.
+			        
+			END.        
+			
+			{&OUT}	
+				"Deleting now will perminatly delete the brother records as well. Are you sure you want to proceed?</h2></center>" SKIP
+				"</DIV>         <!-- end of grid_6 -->" SKIP
+				"<DIV class='grid_3'> </DIV>" SKIP
+				"</DIV>     <!-- end of row -->" SKIP
+				"<BR>" SKIP 
+				"<div class='row'>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP          
+				"<INPUT type='hidden' name='h-tk-id' value='" v-tk-id "' />" SKIP
+				"<INPUT type='hidden' name='h-tk-seq' value='" v-tk-seq "' />" SKIP
+				"   <div class='grid_2'><button type='submit' name='h-act' value='DELETE' class='btn'>Yes</BUTTON></div>" SKIP
+				"   <div class='grid_2'> </DIV>" SKIP
+				"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>No</BUTTON></div>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"</div>" SKIP
+				"</form>" SKIP.
+        
+        END. /* x = yes */       
+        
+        ELSE 
+            ASSIGN act = "DELETE".
+         
+    END. /* if avail table_mstr */
+    ELSE
+
+	    {&OUT}
+	        "<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP       
+	        "<DIV class='row'>" SKIP
+	        "<DIV class='grid_3'> </DIV>" SKIP
+	        "<DIV class='grid_6'>" SKIP   
+	        "<center><H2>An Error has occured while trying to find the record you want to delete. Please contact Solsource.</H2></center>" SKIP
+	        "</DIV>         <!-- end of grid_6 -->" SKIP
+	        "<DIV class='grid_3'> </DIV>" SKIP  
+	        "</DIV>     <!-- end of row -->" SKIP.     
+
+END. /* validate delete */         
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                        {&OUT}
+                                                                                                                                            "itmessage = " itmessage "<BR>" SKIP.                                        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Test Type</td>" skip
+            "           <td><select name='h-test-type'>" SKIP
+            "               <option value=''></option>" SKIP.
+            
+        FOR EACH test_mstr WHERE test_mstr.test_deleted = ? NO-LOCK:
+        
+            {&OUT}
+                "           <option value='" test_mstr.test_type "'>" test_mstr.test_type "</option>" SKIP.    
+        
+        END. /* 4ea. test_mstr */    
+        {&OUT}       
+            "           </td>" SKIP            
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Testkit ID</td>" skip
+            "           <td><input type='text' name='h-tk-id'  value='" v-tk-id "' /></td>" SKIP            
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Testkit Sequence</td>" skip
+            "           <td><input type='number' name='h-tk-seq'  value='" v-tk-seq "' /></td>" SKIP            
+            "       </tr>" SKIP(1)            
+        /* copy and paste above <tr>...</tr> for more fields */
+        
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP			 
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP       
+			"   <div class='grid_3'> </DIV>" SKIP
+			"</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+    
+    /********** * * * JAVASCRIPT * * * *************/
+</script> 
+
+<script TYPE='text/javascript'>
+
+$(document).ready(function() {
+
+                // Get an array of all element heights
+
+                var elementHeights = $('.btn').map(function() {
+                    return $(this).height();
+                }).get();
+
+                // Math.max takes a variable number of arguments
+
+                var maxHeight = Math.max.apply(null, elementHeights);
+
+                // Set each height to the max height
+
+                $('.btn').height(maxHeight);
+            });
+
+$(document).ready(function() {
+   //change .table to the table class being used.
+    $('.table_report tbody tr').click(function(event) {
+        if (event.target.type !== 'radio') {
+            $(':radio', this).trigger('click');
+        }
+    });
+});
+
+</script>
+
+<SCRIPT language='SpeedScript'>
+/********** * * * END OF JAVA * * * *************/ 
+    
+        
+/*    {../depot/src/WebSpeed/Java_ClickableRow.i}.*/
+        
+        {&OUT}
+            "<form>" SKIP        
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='4'>Testkits Available for Deletion</TH>" SKIP    
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD>Selected</TD>" SKIP
+            "                <TD>Testkit ID / Sequence</TD>" SKIP
+            "                <TD>Testkit Type</TD>" SKIP
+            "                <TD>Status</TD>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1)
+            "        <tbody class='clickable'>" SKIP.
+            
+        FOR EACH TK_mstr WHERE ((TK_mstr.TK_test_type = v-test-type) OR
+                                (v-test-type = "")) AND 
+                               TK_mstr.TK_ID BEGINS v-tk-id AND
+                               ((TK_mstr.TK_test_seq = v-tk-seq) OR 
+                                (v-tk-seq = 0)) AND 
+                               TK_mstr.TK_deleted = ?
+                                         NO-LOCK BY TK_mstr.TK_test_type BY TK_mstr.TK_ID:
+            
+            
+            
+            ASSIGN  
+                v-tk-string = TK_mstr.TK_ID + "/" + STRING(TK_mstr.TK_test_seq).
+            
+            {&OUT}
+            "           <tr>" SKIP
+            "               <TD><center><input type='radio' name='h-tk-string' value='" v-tk-string "' /></center></TD>" SKIP
+            "               <td><center>" TK_mstr.TK_ID " / " TK_mstr.TK_test_seq "</center></td>" SKIP            
+            "               <td>" TK_mstr.TK_test_type "</td>" SKIP
+            "               <td>" TK_mstr.TK_status "</td>" SKIP
+            "           </tr>" SKIP.
+
+        END. /* 4ea. */
+        
+        {&OUT}
+            "        </tbody>" SKIP          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='4'>END OF REPORT</TD>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP 
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='DOUBLE_CHECK' class='btn'>Delete</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+    WHEN "DOUBLE_CHECK" THEN DO:
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                        {&OUT}
+                                                                                                                                            "Before Unstring<BR>" SKIP
+                                                                                                                                            "v-tkstring = " v-tk-string "<BR>" SKIP
+                                                                                                                                            "v-tk-id = " v-tk-id "<BR>" SKIP
+                                                                                                                                            "v-tk-seq = " v-tk-seq "<BR>" SKIP.   
+    ASSIGN 
+        v-tk-id = SUBSTRING(v-tk-string,1,(INDEX(v-tk-string,"/") - 1))
+        v-tk-seq = INTEGER(SUBSTRING(v-tk-string,(INDEX(v-tk-string,"/") + 1),LENGTH(v-tk-string))).
+    
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                        {&OUT}
+                                                                                                                                            "After Unstring<BR>" SKIP
+                                                                                                                                            "v-tk-id = " v-tk-id "<BR>" SKIP
+                                                                                                                                            "v-tk-seq = " v-tk-seq "<BR>" SKIP.       
+
+    FIND TK_mstr WHERE TK_mstr.TK_ID = v-tk-id AND 
+                  TK_mstr.TK_test_seq = v-tk-seq
+                  NO-LOCK NO-ERROR.
+                                                                                                                                        
+        {TKnuclearDelU-form.i "VALIDATE_DELETE"}.
+        
+    END. /* DOUBLE_CHECK */    
+    WHEN "DELETE" THEN DO: 
+    
+    
+    
+    
+        FIND TK_mstr WHERE TK_mstr.TK_ID = v-tk-id AND
+                           TK_mstr.TK_test_seq = v-tk-seq EXCLUSIVE-LOCK NO-ERROR.
+
+        IF AVAILABLE (TK_mstr) THEN
+        DO: 
+            
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>Testkit " v-tk-id " / " v-tk-seq " has been deleted.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP 
+                "<BR>" SKIP.
+            
+            {TKnuclearDelU-form.i "INITIAL"}.  
+            
+            FIND BFM_mstr WHERE BFM_mstr.BFM_ID = TK_mstr.TK_ID AND 
+                                BFM_mstr.BFM_test_seq = TK_mstr.TK_test_seq EXCLUSIVE-LOCK NO-ERROR.
+                                    
+                IF AVAILABLE (BFM_mstr) THEN 
+                
+                    DELETE BFM_mstr. 
+                        
+            FIND BHE_mstr WHERE BHE_mstr.BHE_ID = TK_mstr.TK_ID AND 
+                                BHE_mstr.BHE_test_seq = TK_mstr.TK_test_seq EXCLUSIVE-LOCK NO-ERROR.
+                                
+                IF AVAILABLE (BHE_mstr) THEN 
+                    
+                    DELETE BHE_mstr. 
+                        
+            FIND BMPA_det WHERE BMPA_det.BMPA_ID = TK_mstr.TK_ID AND 
+                                BMPA_det.BMPA_test_seq = TK_mstr.TK_test_seq EXCLUSIVE-LOCK NO-ERROR.
+                                
+                IF AVAILABLE (BMPA_det) THEN 
+                
+                    DELETE BMPA_det.
+                        
+            FIND BUTEE_mstr WHERE BUTEE_mstr.BUTEE_ID = TK_mstr.TK_ID AND 
+                                  BUTEE_mstr.BUTEE_test_seq = TK_mstr.TK_test_seq EXCLUSIVE-LOCK NO-ERROR.
+                                  
+                 IF AVAILABLE (BUTEE_mstr) THEN 
+                 
+                    DELETE BUTEE_mstr.
+                         
+                         
+            FIND TKR_det WHERE TKR_det.TKR_ID = TK_mstr.TK_ID AND 
+                               TKR_det.TKR_test_seq = TK_mstr.TK_test_seq EXCLUSIVE-LOCK NO-ERROR.
+                               
+                IF AVAILABLE (TKR_det) THEN 
+                    
+                    DELETE TKR_det.
+                        
+            DELETE TK_mstr.                                                                                                   
+                  
+        END. /* if avail table_mstr */
+        ELSE
+         
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>Could not find record " v-tk-id " / " v-tk-seq " to delete. Please contact Solsource.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP.                                  
+        
+    END. /* delete */                
+    OTHERWISE DO: 
+    
+    
+        IF act <> "VALIDATE_DELETE" THEN 
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<center><h2>Could not find act " act ".</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,774 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Time Sheet Maintenance</TITLE>
+    <META name="AUTHOR" content="Jacob Luttrell">
+    <META name="VERSION" content="1.0">
+    <META name="COPYRIGHT" content="Solsource">
+    <META name="CREATE_DATE" content="05/Jan/16">
+    <META name="MODIFIED_DATE" content="05/Jan/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT language="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+<BODY class='inside'>
+<script type="text/javascript">
+function CheckMaxLength(target, txt, maxLen) {
+   try {
+     if(txt.value.length > (maxLen)) {
+       txt.value = txt.value.substring(0, maxLen)
+       document.getElementById(target).innerText = (maxLen -
+txt.value.length) + " characters remaining. (" + maxLen + " Max.)";
+       document.getElementById(target).textContent = (maxLen -
+txt.value.length) + " characters remaining. (" + maxLen + " Max.)";
+       return false;
+     }
+   }
+   catch(Err) {
+   }
+
+   document.getElementById(target).innerText = (maxLen -
+txt.value.length) + " characters remaining. (" + maxLen + " Max.)";
+   document.getElementById(target).textContent = (maxLen -
+txt.value.length) + " characters remaining. (" + maxLen + " Max.)";
+}
+</script>
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           TSmaintU.html
+    Description:    Time Sheet Entry Maintenance
+    Created:        Jacob Luttrell 
+    Version History:
+        1.0 - Created by Jacob Luttrell on 05/Jan/16. 
+                Notes: for future versions add a hours_credit_hrs field 
+                to the Hours_Mstr if needed for situations where base
+                rate is still to much.  Use in place of hours_amount for
+                all math.  The field would be identical to hours_amount
+                initial but would allow the admin to charge clients less
+                if needed without fringing up the employee's actual hours.
+                This would also affect the math of TSwrkstatR, TSfnshstatR,
+                and invoice programs. 
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE fromdate      LIKE Hours_Mstr.Hours_date          NO-UNDO.  
+DEFINE VARIABLE todate        LIKE Hours_Mstr.Hours_date          NO-UNDO.
+DEFINE VARIABLE disp-from     AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE disp-to       AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE empname       AS   CHARACTER                      NO-UNDO.
+
+DEFINE VARIABLE amount        LIKE Hours_Mstr.Hours_amount        NO-UNDO.
+DEFINE VARIABLE clientid      LIKE Hours_Mstr.Hours_client_ID     NO-UNDO.
+DEFINE VARIABLE hours-date    LIKE Hours_Mstr.Hours_date          NO-UNDO.
+DEFINE VARIABLE disp-date     AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE hours-desc    LIKE Hours_Mstr.Hours_description   NO-UNDO.
+DEFINE VARIABLE empid         LIKE Hours_Mstr.Hours_employee_ID   NO-UNDO.
+DEFINE VARIABLE projname      LIKE Hours_Mstr.Hours_project_name  NO-UNDO.
+DEFINE VARIABLE translation   LIKE Hours_Mstr.Hours_translation   NO-UNDO.
+
+DEFINE VARIABLE v-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE c-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE db-time       LIKE Hours_Mstr.Hours_time          NO-UNDO.
+DEFINE VARIABLE h-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE m-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE pass-old-time AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE time-desc     AS   CHARACTER                      NO-UNDO.  
+DEFINE VARIABLE time-desclist AS   CHARACTER INITIAL "CLOCKED_IN,CLOCKED_OUT,BREAK_OUT,BREAK_IN" NO-UNDO.
+DEFINE VARIABLE x             AS   INTEGER                        NO-UNDO.
+
+DEFINE VARIABLE clientabbv    LIKE Client_Mstr.Client_abbv        NO-UNDO.
+
+DEFINE VARIABLE entrynbr      AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE entrytotal    AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE isselected    AS CHARACTER                        NO-UNDO. 
+DEFINE VARIABLE isdisabled    AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE curr-entry    AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE progname      AS CHARACTER                        NO-UNDO.
+
+DEFINE VARIABLE update-act    AS CHARACTER INITIAL ""             NO-UNDO.
+DEFINE VARIABLE act           AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE itmessage     AS LOGICAL INITIAL NO               NO-UNDO.
+
+DEFINE VARIABLE curr-total    LIKE Proj_Mstr.Proj_curr_total      NO-UNDO.
+DEFINE VARIABLE curr-hour     LIKE Proj_Mstr.Proj_curr_hours      NO-UNDO.
+
+DEFINE VARIABLE old-clientid  LIKE Hours_Mstr.Hours_client_ID     NO-UNDO.
+DEFINE VARIABLE old-projname  LIKE Hours_Mstr.Hours_project_name  NO-UNDO.
+DEFINE VARIABLE old-date      LIKE Hours_Mstr.Hours_date          NO-UNDO.
+DEFINE VARIABLE old-time      LIKE Hours_Mstr.Hours_time          NO-UNDO.
+DEFINE VARIABLE old-time-desc LIKE Hours_Mstr.Hours_time_desc     NO-UNDO.
+
+DEFINE VARIABLE pass-old-date AS CHARACTER                        NO-UNDO.  
+DEFINE VARIABLE o-create      AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE o-update      AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE o-avail       AS LOGICAL                          NO-UNDO. 
+DEFINE VARIABLE o-successful  AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE o-error       AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE o-addrid      AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE o-fpat-ran    AS LOGICAL                          NO-UNDO.
+
+DEFINE VARIABLE gotanything    AS LOGICAL INITIAL NO              NO-UNDO. 
+
+DEFINE QUERY entry-qry FOR Hours_Mstr SCROLLING. 
+DEFINE VARIABLE empidlist     AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE jumpto-value            AS CHARACTER  NO-UNDO.
+DEFINE VARIABLE Hours_employee_ID-key   AS CHARACTER  NO-UNDO.
+DEFINE VARIABLE repo-to                 AS INTEGER    NO-UNDO.
+DEFINE VARIABLE i-count                 AS INTEGER    NO-UNDO.
+DEFINE VARIABLE JumpForm                AS CHARACTER  NO-UNDO.
+DEFINE VARIABLE TmpUrl                  AS CHARACTER  NO-UNDO.
+DEFINE VARIABLE DelimiterField          AS CHARACTER  NO-UNDO.       
+
+ASSIGN 
+    empid           = INTEGER(html-encode(get-value("h-empid")))
+    disp-from       = html-encode(get-value("html5-from"))
+    disp-to         = html-encode(get-value("html5-to"))   
+    amount          = DECIMAL(html-encode(get-value("h-amount")))
+    clientid        = INTEGER(html-encode(get-value("h-clientid")))
+    hours-desc      = html-encode(get-value("h-hours-desc"))
+    projname        = html-encode(get-value("h-projname"))
+    translation     = html-encode(get-value("h-translation"))
+    act             = html-encode(get-value("h-act"))
+    update-act      = html-encode(get-value("h-update-act"))
+    disp-date       = html-encode(get-value("html5-date"))
+    clientabbv      = html-encode(get-value("h-clientabbv"))
+    progname        = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1)
+    JumpForm        = html-encode(get-field("NoJumpForm"))
+    jumpto-value    = html-encode(get-field("jumpto-name"))
+    repo-to         = INTEGER(html-encode(get-field("repo-to")))
+    empidlist       = html-encode(get-value("h-empidlist"))
+    old-clientid    = INTEGER(html-encode(get-value("h-old-clientid")))
+    old-projname    = html-encode(get-value("h-old-projname"))
+    old-time-desc   = html-encode(get-value("h-old-time-desc"))
+    pass-old-date   = html-encode(get-value("h-old-date"))
+    pass-old-time   = html-encode(get-value("h-old-time"))
+    curr-entry      = INTEGER(html-encode(get-value("h-curr-entry")))
+    v-time          = html-encode(get-value("h-time"))
+    time-desc       = html-encode(get-value("h-time-desc"))
+    .
+
+
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    pass-old-date,                                                               
+    OUTPUT old-date                                                             
+    ). 
+    
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    disp-from,                                                               
+    OUTPUT fromdate                                                             
+    ).                                                                          
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                   
+    disp-to,                                                                 
+    OUTPUT todate                                                               
+    ).                                          
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    disp-date,                                                               
+    OUTPUT hours-date                                                             
+    ).           
+
+IF pass-old-time <> "" THEN 
+    ASSIGN
+        h-time      = SUBSTRING(pass-old-time,1,2)
+        m-time      = SUBSTRING(pass-old-time,4,2)
+        old-time    = DATETIME-TZ(MONTH(old-date),DAY(old-date),YEAR(old-date),int(h-time),int(m-time),0).
+ELSE
+    ASSIGN 
+        old-time    = ?.
+                
+        
+IF v-time <> "" THEN 
+    ASSIGN
+        h-time  = SUBSTRING(v-time,1,2)
+        m-time  = SUBSTRING(v-time,4,2)
+        db-time = DATETIME-TZ(MONTH(hours-date),DAY(hours-date),YEAR(hours-date),int(h-time),int(m-time),0).
+ELSE
+    ASSIGN 
+        db-time = ?.       
+        
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL". 
+        
+IF repo-to = 0 THEN
+    repo-to = 1.
+
+IF update-act = "UPDATE" THEN DO:
+
+    FIND Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid AND 
+                         Proj_Mstr.Proj_name = projname NO-LOCK NO-ERROR.
+               
+    IF AVAILABLE (Proj_Mstr) THEN DO: 
+    
+		RUN VALUE(SEARCH("SUBhours-ucU.r")) (
+		    amount,                 /*Hours_Mstr.Hours_amount      */
+		    clientid,               /*Hours_Mstr.Hours_client_ID   */
+		    projname,               /*Hours_Mstr.Hours_project_name*/
+		    hours-date,             /*Hours_Mstr.Hours_date        */
+		    hours-desc,             /*Hours_Mstr.Hours_description */
+		    empid,                  /*Hours_Mstr.Hours_employee_ID */
+		    translation,            /*Hours_Mstr.Hours_translation */
+		    ?,                      /*Hours_Mstr.Hours_billed      */
+	        db-time,                /*Hours_Mstr.Hours_time        */
+	        time-desc,              /*Hours_Mstr.Hours_time_desc   */
+		
+		    old-clientid,
+		    old-projname,
+		    old-date,
+		    old-time,
+		    old-time-desc,
+		
+		    OUTPUT clientid,
+		    OUTPUT projname,
+		    OUTPUT empid,
+		    OUTPUT hours-date,
+		    OUTPUT o-create,
+		    OUTPUT o-update,
+		    OUTPUT o-avail,
+		    OUTPUT o-successful,
+		    OUTPUT o-error
+		    ).
+	
+	    IF o-successful = YES AND o-error = NO THEN
+	        {&OUT}
+	            "<center><h2>Entry successfully updated.</h2></center>" SKIP.
+	    ELSE
+	        {&OUT}
+	            "<center><h2>An error occurred during entry update. Please contact Solsource.</h2></center>" SKIP.
+	
+	    repo-to = curr-entry.
+	    
+	    ASSIGN
+	        old-clientid = 0
+	        old-projname = ""
+	        old-date = ?
+	        old-time = ?
+	        update-act = "".
+    
+    END. /* if avail proj_mstr */
+    ELSE DO:
+        
+        {&OUT}
+        "<div class='row'>" skip
+        "   <div class='grid_2'></div>" skip
+        "       <div class='grid_8'>" skip             
+        "           <center><h2>Dwight Error: You tried to break this so you are a bad person.</h2></center>" skip
+        "       </DIV>" SKIP
+        "   <div class='grid_2'></div>" skip
+        "</DIV>" SKIP.
+        
+    END. /* Dwight Error */
+            
+END. /* update */
+IF update-act = "DOUBLECHECK" THEN 
+    
+    ASSIGN 
+        act = "DELETE".
+
+IF update-act = "DELETE" THEN DO: 
+       
+    ASSIGN 
+           act = "ENTRIES".
+       
+    FOR FIRST Hours_Mstr WHERE
+              Hours_Mstr.Hours_employee_ID    = empid AND 
+              Hours_Mstr.Hours_client_ID      = clientid AND
+              Hours_Mstr.Hours_project_name   = projname AND          
+              Hours_Mstr.Hours_date           = hours-date AND 
+              Hours_Mstr.Hours_time           = db-time
+                EXCLUSIVE-LOCK:
+    
+	    DELETE Hours_Mstr. 
+ 
+	    {&OUT}
+	        "<center><h2>Entry successfully deleted.</h2></center>".
+        
+    END.
+END. /* delete */
+
+IF update-act = "NEW" THEN 
+    ASSIGN 
+        act = "INITIAL".   
+     
+IF act = "VALIDATION" THEN DO: 
+
+    FIND FIRST Hours_Mstr WHERE LOOKUP(STRING(Hours_Mstr.Hours_employee_ID),empidlist) > 0 NO-LOCK NO-ERROR.
+    
+    IF AVAILABLE (Hours_Mstr) THEN 
+    
+        ASSIGN 
+            act = "ENTRIES".
+            
+    ELSE 
+
+            {&OUT}
+               "<div class='row'>" skip
+               "   <div class='grid_2'> </DIV>" SKIP
+               "   <div class='grid_8'>" skip
+               "           <CENTER><h2>No records found.</h2></CENTER>" SKIP
+               "   </DIV>" SKIP
+               "   <div class='grid_2'> </DIV>" SKIP
+               "</DIV>" SKIP
+               "<form>" SKIP
+               "<div class='row'>" skip
+               "   <div class='grid_5'> </DIV>" SKIP
+               "   <div class='grid_2'><BUTTON type='submit' name='h-update-act' value='NEW' class='btn'>Search Again</BUTTON></div>" SKIP
+               "   <div class='grid_5'> </DIV>" SKIP
+               "</DIV>" SKIP
+               "</form>" SKIP.
+    
+END. /* VALIDATION */    
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO: 
+      {&OUT}
+        "<form>" SKIP 
+        "<div class='row'>" skip
+        "   <div class='grid_3'></div>" skip
+        "       <div class='grid_6'>" skip             
+        "               <div class='table_2col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='4'>Time Sheet Maintenance</th>" skip
+        "                       </tr>" skip      
+        "                       <tr>" skip
+        "                           <td>From Date</td>" skip
+        "                           <td><input type='date' name='html5-from' value='" disp-from "' required></td>" skip
+        "                           <td>TO</td>" skip
+        "                           <td><input type='date' name='html5-to' value='" disp-to "' required></td>" skip
+        "                       </tr>" skip      
+        "                       <tr>" skip
+        "                           <td>Select Employee(s)</td>" skip
+        "                           <td colspan='3'class='req'><select name='h-empidlist' multiple required>" skip. 
+
+		FOR EACH Emp_Mstr WHERE Emp_Mstr.Emp_deleted = ?
+		                           NO-LOCK,
+		    EACH people_mstr WHERE people_mstr.people_id = Emp_Mstr.Emp_ID AND 
+		                           people_mstr.people_deleted = ?
+		                           NO-LOCK
+		                           BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname: 
+		        ASSIGN 
+		            empname   = people_mstr.people_lastname + ", " + people_mstr.people_firstname
+		            empid     = people_mstr.people_id.
+        
+            {&OUT}                                                                                
+        "                               <option value='" empid "'>" empname "</option>" SKIP.
+        
+        END.  /* 4ea. client_mstr */     
+        {&OUT} 
+        "                           </td>" SKIP
+        "                       </tr>" skip               
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_3'></div>" skip
+        "</div>" skip  
+        "<BR>" SKIP
+        "<div class='row'>" SKIP
+		"   <div class='grid_2'> </DIV>" SKIP
+		"   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+		"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Retrieve Time Sheet Entries</BUTTON></div>" SKIP
+		"   <div class='grid_1'> </DIV>" SKIP
+		"   <div class='grid_2'><form><input type='hidden' name='h-admin' value='yes'><BUTTON type='submit' formaction='../../TimeSheet/rcode/TSentryU.r' class='btn'>New Entry</BUTTON></form></div>" SKIP
+		"   <div class='grid_1'> </DIV>" SKIP
+		"   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+		"   <div class='grid_2'> </DIV>" SKIP
+		"</div>" SKIP.
+
+             
+    END. /* INITIAL */     
+    WHEN "ENTRIES" THEN DO:
+                                                                                       IF itmessage = YES THEN 
+                                                                                           {&OUT}
+                                                                                               "Act = Entries<BR>" skip
+                                                                                               "empidlist = " empidlist "<br>" SKIP
+                                                                                               "fromdate = " fromdate "<BR>" skip
+                                                                                               "todate = " todate "<BR>" SKIP
+                                                                                               "disp-from = " disp-from "<BR>" skip
+                                                                                               "disp-to = " disp-to "<br>" SKIP.  
+                                                                                                 
+	    OPEN QUERY entry-qry FOR EACH Hours_Mstr WHERE LOOKUP(STRING(Hours_Mstr.Hours_employee_ID),empidlist) > 0 AND
+	                                                   ((Hours_Mstr.Hours_date >= fromdate) OR
+	                                                    (fromdate = ?)) AND
+	                                                   ((Hours_Mstr.Hours_date <= todate) OR 
+	                                                    (todate = ?)) AND
+	                                                   Hours_Mstr.Hours_deleted = ? EXCLUSIVE-LOCK                       
+	         BY Hours_Mstr.Hours_employee_ID BY Hours_Mstr.Hours_date BY Hours_Mstr.Hours_client_ID BY Hours_Mstr.Hours_project_name.   
+                
+        IF Hours_employee_ID-key = "" THEN
+            
+            FIND LAST Hours_Mstr WHERE LOOKUP(STRING(Hours_Mstr.Hours_employee_ID),empidlist) > 0 AND
+                                 ((Hours_Mstr.Hours_date >= fromdate) OR
+                                  (fromdate = ?)) AND
+                                 ((Hours_Mstr.Hours_date <= todate) OR 
+                                  (todate = ?)) AND
+                                 Hours_Mstr.Hours_deleted = ?
+                 USE-INDEX hours-maint-idx NO-LOCK NO-ERROR.
+            
+        ELSE
+            FIND LAST Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = INTEGER(Hours_employee_ID-key) AND 
+                                 LOOKUP(STRING(Hours_Mstr.Hours_employee_ID),empidlist) > 0 AND
+                                 ((Hours_Mstr.Hours_date >= fromdate) OR
+                                  (fromdate = ?)) AND
+                                 ((Hours_Mstr.Hours_date <= todate) OR 
+                                  (todate = ?)) AND
+                                 Hours_Mstr.Hours_deleted = ?
+                   USE-INDEX hours-maint-idx NO-LOCK NO-ERROR.
+            
+        REPOSITION entry-qry TO ROWID ROWID(Hours_Mstr).
+            
+        entrytotal = CURRENT-RESULT-ROW("entry-qry").
+        
+        
+	    IF repo-to = -1000 THEN DO:
+	
+	        IF Hours_employee_ID-key = "" THEN
+	
+	        FIND FIRST Hours_Mstr
+	          WHERE Hours_Mstr.Hours_project_name >= jumpto-value
+	          USE-INDEX hours-main-idx NO-LOCK NO-ERROR.
+	
+			ELSE
+			
+			  FIND FIRST Hours_Mstr
+			    WHERE Hours_Mstr.Hours_project_name >= jumpto-value
+			      AND Hours_Mstr.Hours_employee_ID = INTEGER(Hours_employee_ID-key)
+			    USE-INDEX hours-main-idx NO-LOCK NO-ERROR.
+			
+		      IF AVAILABLE Hours_Mstr THEN
+		
+		        REPOSITION entry-qry TO ROWID ROWID(Hours_Mstr).
+		      ELSE
+		
+		        REPOSITION entry-qry TO ROW 1.
+	
+	    END. /* Close of "IF repo-to eq -1000 THEN DO:" */
+
+        ELSE DO:
+
+            IF repo-to > 0 THEN DO:
+
+                REPOSITION entry-qry TO ROW repo-to.
+
+                GET NEXT entry-qry NO-LOCK.
+
+                IF NOT AVAILABLE Hours_Mstr THEN repo-to = -999.
+            END.
+
+			IF repo-to = -999 THEN DO:
+			
+			    IF Hours_employee_ID-key = "" THEN
+			
+			     FIND LAST Hours_Mstr
+			     USE-INDEX hours-maint-idx NO-LOCK NO-ERROR.
+			
+			    ELSE
+			
+			   FIND LAST Hours_Mstr
+			     WHERE Hours_Mstr.Hours_employee_ID = INTEGER(Hours_employee_ID-key)
+			       USE-INDEX hours-maint-idx NO-LOCK NO-ERROR.
+			
+			    REPOSITION entry-qry TO ROWID ROWID(Hours_Mstr).
+			
+			    repo-to = CURRENT-RESULT-ROW("entry-qry") - 1 + 1.
+			
+			END. /* repo-to = -999 */
+
+            REPOSITION entry-qry TO ROW repo-to.
+
+        END. /* Close of "If repo-to eq -1000 THEN DO:...ELSE DO:" */
+
+	    DO i-count = 1 TO 1:
+	      GET NEXT entry-qry NO-LOCK.
+	      IF AVAILABLE Hours_Mstr THEN DO:
+            
+            ASSIGN 
+                old-clientid  = Hours_Mstr.Hours_client_ID
+                old-projname  = Hours_Mstr.Hours_project_name
+                old-date      = Hours_Mstr.Hours_date
+                old-time-desc = Hours_Mstr.Hours_time_desc
+                amount        = Hours_Mstr.Hours_amount
+                hours-desc    = Hours_Mstr.Hours_description
+                translation   = Hours_Mstr.Hours_translation
+                c-time        = STRING(Hours_Mstr.Hours_time)
+                pass-old-time = IF c-time <> ? THEN SUBSTRING(c-time,index(c-time," ") + 1,5) ELSE ""
+                v-time        = IF c-time <> ? THEN SUBSTRING(c-time,index(c-time," ") + 1,5) ELSE ""
+                time-desc     = Hours_Mstr.Hours_time_desc
+                .
+            
+            FIND people_mstr WHERE people_mstr.people_id = Hours_Mstr.Hours_employee_ID NO-LOCK NO-ERROR.
+            
+            IF AVAILABLE (people_mstr) THEN 
+				ASSIGN 
+				    empname = people_mstr.people_lastname + ", " + people_mstr.people_firstname
+				    empid = people_mstr.people_id.
+           
+           FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = Hours_Mstr.Hours_client_ID NO-LOCK NO-ERROR.
+           
+           IF AVAILABLE (Client_Mstr) THEN
+                ASSIGN
+                    clientabbv  = Client_Mstr.Client_abbv
+                    clientid    = Client_Mstr.Client_people_ID
+                    translation = IF translation = "" THEN Client_Mstr.Client_trans_def ELSE translation.               
+          
+           RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                              
+                old-date,                                                                             
+                OUTPUT pass-old-date                                                                        
+                ).
+           
+           RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                              
+                Hours_Mstr.Hours_date,                                                                             
+                OUTPUT disp-date                                                                        
+                ).
+ 
+	        {&OUT}
+		        "<form>" SKIP
+		        "<div class='row'>" skip
+		        "   <div class='grid_2'></div>" skip
+		        "       <div class='grid_8'>" skip                 
+		        "               <div class='table_2col'>" skip
+		        "                   <table>" skip
+		        "                       <tr>" skip
+		        "                           <th colspan='4'>Timesheet Entry Maintenance</th>" skip
+		        "                       </tr>" skip 
+	            "   <INPUT type='hidden' name='h-old-clientid' value='" old-clientid "' />" SKIP
+	            "   <INPUT type='hidden' name='h-old-projname' value='" old-projname "' />" SKIP
+	            "   <INPUT type='hidden' name='h-old-time-desc' value='" old-time-desc "' />" SKIP
+	            "   <INPUT type='hidden' name='h-old-date' value='" pass-old-date "' />" SKIP
+	            "   <INPUT type='hidden' name='h-empid' value='" empid "' />" SKIP
+		        "   <INPUT type='hidden' name='h-clientid' value='" clientid "' />" SKIP
+		        "   <INPUT type='hidden' name='h-old-time' value='" pass-old-time "' />" SKIP
+                "                       <tr>" skip
+		        "                           <td>Name</td>" skip
+		        "                           <td >" empname "</td>" skip
+		        "                           <td>Entry</td><td>" repo-to " of " entrytotal "</td>" skip
+		        "                       </tr>" skip
+		        
+		        "                       <tr>" skip  
+		        "                           <td>Translation</td>" skip.
+		        	       
+		        IF translation = "Full" THEN 
+		            {&OUT}
+		        "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated'>Translated"
+                "                           <BR><input type='radio' name='h-translation' value='Full'checked>Full" skip                              
+                "                           <br><input type='radio' name='h-translation' value='Bare'>Bare</td>" SKIP.
+		        ELSE IF translation = "Bare" THEN 
+		             {&OUT}
+		        "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated'>Translated"
+                "                           <BR><input type='radio' name='h-translation' value='Full'>Full" skip                              
+                "                           <br><input type='radio' name='h-translation' value='Bare' checked>Bare</td>" SKIP.
+                ELSE  
+                    {&OUT}
+                "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated' checked>Translated"
+                "                           <BR><input type='radio' name='h-translation' value='Full'>Full" skip                              
+                "                           <br><input type='radio' name='h-translation' value='Bare'>Bare</td>" SKIP. 
+		        
+		    {&OUT}          
+		        "                       </tr>" skip 		                                     
+		        "                       <tr>" skip
+		        "                           <td>Client</td>" skip
+		        "                           <td>" clientabbv "</td>" SKIP 
+		        "                           <td>Project</td>" skip
+		         "                           <td><select name='h-projname'>" skip.    
+		        
+		        FOR EACH Proj_Mstr  WHERE Proj_Mstr.Proj_client_ID = Hours_Mstr.Hours_client_ID AND               
+		                 Proj_Mstr.Proj_deleted = ? NO-LOCK BREAK BY Proj_Mstr.Proj_sort:                                    		            		                  
+		            
+		            IF Proj_Mstr.Proj_name = Hours_Mstr.Hours_project_name THEN
+		                ASSIGN
+		                    isselected = "SELECTED"
+		                    projname = Proj_Mstr.Proj_name.
+		            ELSE
+		                ASSIGN
+		                    isselected = "".          
+		                    
+		            {&OUT}
+		              "<option value='" Proj_Mstr.Proj_name "' " isselected " >" Proj_Mstr.Proj_name "</option>" SKIP.
+		        
+		        END.  /** of 4ea. proj_mstr **/                
+		          
+		        {&OUT}
+		        "                           </SELECT></td>" SKIP       
+		        "                       </tr>" skip  
+		        "                       </tr>" skip        
+		
+		        "                       <tr>" skip
+		        "                           <td>Date</td>" skip
+		        "                           <td><input type='date' name='html5-date' value='" disp-date "' /></td>" skip
+		        "                           <td>Hours</td>" skip             
+		        "                           <td><input type='number' step='.5' name='h-amount' value='" amount "'></td>" skip                         
+		        "                       </tr>" skip        
+                "                       <tr>" skip
+                "                           <td>Punch Time</td>" skip.
+                
+                
+                IF projname = "Regular / Salary" THEN 
+                    isdisabled = "".
+                ELSE 
+                    isdisabled = "DISABLED".
+                
+                    {&OUT} 
+                "                           <td><input type='time' name='h-time' value='" v-time "' " isdisabled "/></td>" skip
+                "                           <td>Punch Time Description</td>" skip
+                "                           <td><select name='h-time-desc' " isdisabled ">" skip
+                "                               <option value=''>" SKIP.
+                
+                DO x = 1 TO NUM-ENTRIES(time-desclist): 
+                    IF ENTRY(x,time-desclist) = time-desc THEN 
+                                 
+                        {&OUT}
+                "                               <option value='" ENTRY(x,time-desclist) "' SELECTED>" ENTRY(x,time-desclist) "</option>" SKIP.
+                
+                    ELSE
+                        {&OUT}
+                "                               <option value='" ENTRY(x,time-desclist) "'>" ENTRY(x,time-desclist) "</option>" SKIP.
+                
+                
+                END.
+                
+                {&OUT}
+                "                           </select></td>" skip                         
+                "                       </tr>" skip		
+		        "                       <tr>" skip
+		        "                           <td>Description of Hours Charged</td>" skip
+                "                           <td colspan='3'>" SKIP
+                "                             <textarea rows='5' cols='85' maxlength='500' NAME='h-hours-desc' VALUE='" hours-desc "' " SKIP 
+                                            "onkeypress='CheckMaxLength(~"chars_remaining~", this, 500);' " SKIP
+                                            "onkeydown='CheckMaxLength(~"chars_remaining~", this, 500);' " SKIP
+                                            "onkeyup='CheckMaxLength(~"chars_remaining~", this, 500);'>" hours-desc "</textarea><br>" SKIP 
+                "                             <span id='chars_remaining'></span>" skip
+                "                           </td>" SKIP  		        
+                "                       </tr>" skip.
+		        		        
+            END. /* if avail hours_mstr */
+            ELSE DO:
+
+	           LEAVE. /* Reached End of Query */
+	        	        
+            END. /* else if not avail hours_mstr */               
+        END. /* Close of "DO i-count = 1 to {&Result-Rows}:" */
+        
+        {&OUT}
+                "                   </table>" skip
+                "               </div>" skip                 
+                "       </div>" skip
+                "   <div class='grid_2'></div>" skip
+                "</div>" skip
+                "<br>" SKIP.
+        
+        curr-entry = CURRENT-RESULT-ROW("entry-qry").
+        
+        repo-to = (IF NOT AVAILABLE hours_mstr THEN -1
+             ELSE CURRENT-RESULT-ROW("entry-qry") + 1).
+      
+        {&OUT}
+        "<div class='row'>" SKIP
+        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+        "   <INPUT type='hidden' name='h-act' value='ENTRIES' />" SKIP
+        "   <INPUT type='hidden' name='html5-from' value='" disp-from "' />" SKIP
+        "   <INPUT type='hidden' name='html5-to' value='" disp-to "' />" SKIP
+        "   <INPUT type='hidden' name='h-empidlist' value='" empidlist "' />" SKIP
+        "   <INPUT type='hidden' name='h-curr-entry' value='" curr-entry "' />" SKIP.      
+      
+        IF curr-entry = 1 AND entrytotal <> 1 THEN 
+      
+            {&OUT}
+        "   <div class='grid_2-5'> </DIV>" SKIP
+        "   <div class='grid_1'><BUTTON type='submit' name='h-update-act' value='NEW' class='btn'>Search Again</BUTTON></div>" SKIP
+        "   <div class='grid_1'> </DIV>" SKIP
+        "   <div class='grid_1'><BUTTON type='submit' name='h-update-act' value='UPDATE' class='btn'>Update Entry</BUTTON></div>" SKIP
+        "   <div class='grid_1'> </DIV>" SKIP
+        "   <div class='grid_1'><BUTTON type='submit' name='h-update-act' value='DOUBLECHECK' class='btn'>Delete Entry</BUTTON></div>" SKIP
+        "   <div class='grid_1'> </DIV>" SKIP
+        "   <div class='grid_1'><BUTTON type='submit' name='repo-to' value='" string(repo-to) "' class='btn'>Next</BUTTON></div>" SKIP
+        "   <div class='grid_2-5'> </DIV>" SKIP
+        "</div>" SKIP
+        "</form>" SKIP.
+      
+        ELSE IF curr-entry = entrytotal AND entrytotal <> 1 THEN 
+      
+            {&OUT}
+        "   <div class='grid_2-5'> </DIV>" SKIP
+        "   <div class='grid_1'><BUTTON type='submit' name='repo-to' value='" string(repo-to - 2) "' class='btn'>Previous</BUTTON></div>" SKIP
+        "   <div class='grid_1'> </DIV>" SKIP
+        "   <div class='grid_1'><BUTTON type='submit' name='h-update-act' value='UPDATE' class='btn'>Update Entry</BUTTON></div>" SKIP
+        "   <div class='grid_1'> </DIV>" SKIP
+        "   <div class='grid_1'><BUTTON type='submit' name='h-update-act' value='DOUBLECHECK' class='btn'>Delete Entry</BUTTON></div>" SKIP
+        "   <div class='grid_1'> </DIV>" SKIP
+        "   <div class='grid_1'><BUTTON type='submit' name='h-update-act' value='NEW' class='btn'>Search Again</BUTTON></div>" SKIP
+        "   <div class='grid_2-5'> </DIV>" SKIP
+        "</div>" SKIP
+        "</form>" SKIP.
+      
+        ELSE IF curr-entry = entrytotal AND entrytotal = 1 THEN 
+        
+            {&OUT}
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-update-act' value='UPDATE' class='btn'>Update Entry</BUTTON></div>" SKIP
+        "   <div class='grid_1'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-update-act' value='DOUBLECHECK' class='btn'>Delete Entry</BUTTON></div>" SKIP
+        "   <div class='grid_1'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-update-act' value='NEW' class='btn'>Search Again</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "</div>" SKIP
+        "</form>" SKIP.        
+        
+        ELSE 
+           
+            {&OUT}
+		"   <div class='grid_2-5'> </DIV>" SKIP
+		"   <div class='grid_1'><BUTTON type='submit' name='repo-to' value='" string(repo-to - 2) "' class='btn'>Previous</BUTTON></div>" SKIP
+		"   <div class='grid_1'> </DIV>" SKIP
+		"   <div class='grid_1'><BUTTON type='submit' name='h-update-act' value='UPDATE' class='btn'>Update Entry</BUTTON></div>" SKIP
+		"   <div class='grid_1'> </DIV>" SKIP
+		"   <div class='grid_1'><BUTTON type='submit' name='h-update-act' value='DOUBLECHECK' class='btn'>Delete Entry</BUTTON></div>" SKIP
+		"   <div class='grid_1'> </DIV>" SKIP
+		"   <div class='grid_1'><BUTTON type='submit' name='repo-to' value='" string(repo-to) "' class='btn'>Next</BUTTON></div>" SKIP
+		"   <div class='grid_2-5'> </DIV>" SKIP
+		"</div>" SKIP
+		"</form>" SKIP.
+
+    END. /* ENTRY */  
+    WHEN "DELETE" THEN DO:
+        
+        {&OUT}
+        "<div class='row'>" skip 
+        "   <div class='grid_3'> </div>" skip 
+        "   <div class='grid_6'><center><h2>Are you sure you want to delete this file?</h2></center></div>" SKIP
+        "   <div class='grid_3'> </div>" skip
+        "</div>" skip
+        "<form>" skip        
+        "<div class='row'>" skip 
+        "   <div class='grid_3'> </DIV>" SKIP
+        "   <INPUT type='hidden' name='h-old-clientid' value='" old-clientid "' />" SKIP
+        "   <INPUT type='hidden' name='h-old-projname' value='" old-projname "' />" SKIP
+        "   <INPUT type='hidden' name='h-old-time-desc' value='" old-time-desc "' />" SKIP
+        "   <INPUT type='hidden' name='h-old-date' value='" pass-old-date "' />" SKIP
+        "   <INPUT type='hidden' name='h-empid' value='" empid "' />" SKIP
+        "   <INPUT type='hidden' name='h-clientid' value='" clientid "' />" SKIP
+        "   <INPUT type='hidden' name='h-projname' value='" projname "' />" SKIP
+        "   <INPUT type='hidden' name='html5-date' value='" disp-date "' />" SKIP
+        "   <INPUT type='hidden' name='h-old-time' value='" pass-old-time "' />" SKIP        
+        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+        "   <INPUT type='hidden' name='html5-from' value='" disp-from "' />" SKIP
+        "   <INPUT type='hidden' name='html5-to' value='" disp-to "' />" SKIP
+        "   <INPUT type='hidden' name='h-empidlist' value='" empidlist "' />" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-update-act' value='DELETE' class='btn'>Yes</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='ENTRIES' class='btn'>No</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</div>" SKIP
+        "</form>" skip.
+    END. /* DELETE */                                                                                                                             
+END CASE.      
+</SCRIPT>
+</BODY>
+</HTML>

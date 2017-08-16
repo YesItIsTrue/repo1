@@ -1,0 +1,180 @@
+<html>
+
+<head>
+    <title>Discrepancy </title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel='stylesheet' type='text/css' href='/DataHub/src/HTMLContent/stylesheets/discrepancy.css'>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+<script language="SpeedScript">
+
+DEFINE VARIABLE action AS CHARACTER NO-UNDO.
+DEFINE VARIABLE people_id LIKE people_mstr.people_id NO-UNDO.
+DEFINE VARIABLE addr_id LIKE addr_mstr.addr_id NO-UNDO.
+DEFINE VARIABLE people_id2 LIKE D_people_mstr.D_people_id NO-UNDO.
+DEFINE VARIABLE addr_id2 LIKE D_addr_mstr.D_addr_id NO-UNDO.
+
+DEFINE VARIABLE firstname LIKE people_mstr.people_firstname NO-UNDO.
+DEFINE VARIABLE midname LIKE people_mstr.people_midname NO-UNDO.
+DEFINE VARIABLE lastname LIKE people_mstr.people_lastname NO-UNDO.
+DEFINE VARIABLE prefix LIKE people_mstr.people_prefix NO-UNDO.
+DEFINE VARIABLE suffix LIKE people_mstr.people_suffix NO-UNDO.
+DEFINE VARIABLE company LIKE people_mstr.people_company NO-UNDO.
+DEFINE VARIABLE gender LIKE people_mstr.people_gender NO-UNDO.
+DEFINE VARIABLE homephone LIKE people_mstr.people_homephone NO-UNDO.
+DEFINE VARIABLE workphone LIKE people_mstr.people_workphone NO-UNDO.
+DEFINE VARIABLE cellphone LIKE people_mstr.people_cellphone NO-UNDO.
+DEFINE VARIABLE fax LIKE people_mstr.people_fax NO-UNDO.
+DEFINE VARIABLE email LIKE people_mstr.people_email NO-UNDO.
+DEFINE VARIABLE email2 LIKE people_mstr.people_email2 NO-UNDO.
+DEFINE VARIABLE contact LIKE people_mstr.people_contact NO-UNDO.
+DEFINE VARIABLE dob LIKE people_mstr.people_dob NO-UNDO.
+DEFINE VARIABLE peopletitle LIKE people_mstr.people_title NO-UNDO.
+DEFINE VARIABLE prefname LIKE people_mstr.people_prefname NO-UNDO.
+
+DEFINE VARIABLE addr1 LIKE addr_mstr.addr_addr1 NO-UNDO.
+DEFINE VARIABLE addr2 LIKE addr_mstr.addr_addr2 NO-UNDO.
+DEFINE VARIABLE addr3 LIKE addr_mstr.addr_addr3 NO-UNDO.
+DEFINE VARIABLE city LIKE addr_mstr.addr_city NO-UNDO.
+DEFINE VARIABLE stateprov LIKE addr_mstr.addr_stateprov NO-UNDO.
+DEFINE VARIABLE zip LIKE addr_mstr.addr_zip NO-UNDO.
+DEFINE VARIABLE country LIKE addr_mstr.addr_country NO-UNDO.
+
+DEFINE VARIABLE addr1_2 LIKE addr_mstr.addr_addr1 NO-UNDO.
+DEFINE VARIABLE addr2_2 LIKE addr_mstr.addr_addr2 NO-UNDO.
+DEFINE VARIABLE addr3_2 LIKE addr_mstr.addr_addr3 NO-UNDO.
+DEFINE VARIABLE city_2 LIKE addr_mstr.addr_city NO-UNDO.
+DEFINE VARIABLE stateprov_2 LIKE addr_mstr.addr_stateprov NO-UNDO.
+DEFINE VARIABLE zip_2 LIKE addr_mstr.addr_zip NO-UNDO.
+DEFINE VARIABLE country_2 LIKE addr_mstr.addr_country NO-UNDO.
+
+DEFINE VARIABLE newPeopleID LIKE people_mstr.people_id NO-UNDO.
+DEFINE VARIABLE newAddrID LIKE people_mstr.people_addr_id INITIAL 0 NO-UNDO.
+DEFINE VARIABLE requestedKey LIKE pal_list.pal_people_ID INITIAL 0 NO-UNDO.
+
+DEFINE VARIABLE created AS LOGICAL NO-UNDO.
+DEFINE VARIABLE updated AS LOGICAL NO-UNDO.
+DEFINE VARIABLE isAvail AS LOGICAL NO-UNDO.
+DEFINE VARIABLE success AS LOGICAL NO-UNDO.
+
+IF get-value("gender") = "Male" THEN DO:
+    ASSIGN gender = TRUE.
+END.
+ELSE IF get-value("gender") = "Female" THEN DO:
+    ASSIGN gender = FALSE.
+END.
+ELSE DO:
+    ASSIGN gender = ?.
+END.
+
+ASSIGN 
+    action      = get-value("action")
+    people_id   = INT(get-value("people_id"))
+    addr_id     = INT(get-value("addr_id"))
+    people_id2 = INT(get-value("people_id2"))
+    addr_id2   = INT(get-value("addr_id2"))
+    firstname   = get-value("firstname")
+    midname     = get-value("midname")
+    lastname    = get-value("lastname")
+    prefix      = get-value("prefix")
+    suffix      = get-value("suffix")
+    company     = get-value("company")
+    homephone   = get-value("homephone")
+    workphone   = get-value("workphone")
+    cellphone   = get-value("cellphone")
+    fax         = get-value("fax")
+    email       = get-value("email")
+    email2      = get-value("email2")
+    contact     = get-value("contact")
+    DOB         = DATETIME(get-value("dob"))
+    peopletitle = get-value("peopletitle")
+    prefname    = get-value("prefname")
+    addr1       = get-value("addr1")
+    addr2       = get-value("addr2")
+    addr3       = get-value("addr3")
+    city        = get-value("city")
+    stateprov   = get-value("stateprov")
+    zip         = get-value("zip")
+    country     = get-value("country")
+    .
+  
+PROCEDURE checkForDuplicateAddress:
+    /* Look for duplicate addresses */
+	FIND FIRST addr_mstr WHERE 
+        addr_mstr.addr_addr1 = addr1 AND
+        addr_mstr.addr_addr2 = addr2 AND
+        addr_mstr.addr_addr3 = addr3 AND
+        addr_mstr.addr_city = city AND
+        addr_mstr.addr_stateprov = stateprov AND
+        addr_mstr.addr_zip = zip AND
+        addr_mstr.addr_country = country AND
+        addr_mstr.addr_deleted = ?
+	    NO-LOCK NO-ERROR.
+    IF AVAILABLE (addr_mstr) THEN
+        ASSIGN addr_id = addr_mstr.addr_id.
+	ELSE
+	    ASSIGN addr_id = 0.
+END PROCEDURE.    
+
+IF (people_id2 <> 0) THEN DO: /*If there is a right person record*/
+    
+    IF action = "create" THEN /*  change people_id TO 0 so the PROCESS creates a NEW record instead OF updating an OLD one*/
+        ASSIGN people_id = 0.                                                                    
+
+    RUN VALUE(SEARCH("SUBpeop-ucU.r"))
+    (people_id, firstname, midname, lastname, prefix, suffix, company, gender, homephone, workphone, cellphone, fax, email, email2, 0, contact, dob, 0, prefname, peopletitle,
+    OUTPUT people_id, OUTPUT created, OUTPUT updated, OUTPUT isAvail, OUTPUT success).
+
+	 /*TODO: What things do we need to check/do before 'deleting' the merged in patient record?*/
+	 IF action = "mergePatientRecords" THEN DO:
+	     FIND FIRST people_mstr WHERE  people_mstr.people_id = people_id2 NO-ERROR.
+	     IF AVAILABLE (people_mstr) THEN
+	         ASSIGN people_mstr.people_deleted = NOW.
+	         
+	     FOR EACH pal_list WHERE pal_list.pal_people_ID = people_id2 EXCLUSIVE-LOCK:
+	         ASSIGN pal_list.pal_deleted = NOW.
+	     END.
+	 END.
+	 ELSE DO:
+	     FIND FIRST D_people_mstr WHERE D_people_mstr.D_people_id = people_id2 NO-ERROR.
+	     IF AVAILABLE (D_people_mstr) THEN
+	         ASSIGN D_people_mstr.D_people_Verify_Flag = TRUE.
+	 END.
+END.
+
+IF (addr_id2 <> 0) THEN DO: /*If there is a right address*/
+    /*If there is a duplicate address, use that; otherwise, create a new address record*/
+    RUN checkforDuplicateAddress.
+
+    RUN VALUE(SEARCH("SUBaddr-ucU.r"))
+	(addr_id, addr1, addr2, addr3, city, stateprov, zip, country, "",
+	OUTPUT newAddrID, OUTPUT created, OUTPUT updated, OUTPUT isAvail, OUTPUT success).
+	
+	IF (success = TRUE) THEN DO:
+	    /*Create a pal_list record to link the new address and the patient record*/
+	    RUN VALUE(SEARCH("SUBpal-ucU.r"))
+	    (people_id, newAddrID, "Primary", "address_id", NO, "",
+	    OUTPUT requestedKey, OUTPUT created, OUTPUT updated, OUTPUT isAvail, OUTPUT success).
+	END.
+	
+    IF (action <> "mergePatientRecords") THEN DO:
+        FIND FIRST D_addr_mstr WHERE D_addr_mstr.D_addr_id = addr_id2 NO-ERROR.
+		IF AVAILABLE (D_addr_mstr) THEN DO:
+		    ASSIGN D_addr_mstr.D_addr_Verify_Flag = TRUE.
+		END.
+	END.
+END.
+
+</script>
+  <script>
+  $(document).ready(function() {
+    window.location.replace('hhi-discrepancy.html');
+  });
+  </script>
+</body>
+
+</html>

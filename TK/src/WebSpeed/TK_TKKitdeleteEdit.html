@@ -1,0 +1,358 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+<TITLE>Testkit Delete</TITLE>
+
+<META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.11">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="13/Feb/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+
+<SCRIPT LANGUAGE="SpeedScript">
+/*------------------------------------------------------------------
+    File: TK_TKKitdeleteEdit.html
+    Description: Deletes a test kit out of the database.
+    Created:
+
+*------------------------------------------------------------------- 
+* Revision History:    
+* ---------------------
+*  1.1 - Written by MARK JACOBS on 04/Nov/15.This procedure was written before the CSS.
+*           Removed all the old formatting and replace them with the grid class and button class.   
+*           Removed hyperlinks and replace them with buttons. Marked by 1dot1.
+*  1.11 - Written by Jacob Luttrell on 13/Feb/16. changed TK_testtype to TK_test_type. Unmarked.   
+*   {../depot/src/WebSpeed/menuname.i}.
+*----------------------------------------------------------------------*/  
+ 
+ {../depot/src/WebSpeed/menuname.i}.
+   
+    DEFINE VARIABLE qty AS INTEGER LABEL "Quantity Activating"  NO-UNDO.
+    DEFINE VARIABLE act AS INTEGER LABEL "Testkits Activated?" NO-UNDO. /* user feedback */
+    DEFINE VARIABLE TKnum LIKE Tk_ID NO-UNDO. /* typ & seq */
+  /*  DEFINE VARIABLE seq LIKE Tk_seq NO-UNDO. */ 
+    DEFINE VARIABLE cout AS INTEGER NO-UNDO.
+    DEFINE VARIABLE ddate AS DATE FORMAT "99/99/9999" NO-UNDO.
+   
+    /*******************************************************************/
+    
+    DEFINE VARIABLE remove AS LOG LABEL "Delete Records?" FORMAT "yes/no" NO-UNDO.
+    DEFINE VARIABLE ddel LIKE Tk_id LABEL "Testkit Number to be Delete" NO-UNDO.
+     DEFINE VARIABLE areyou AS CHARACTER NO-UNDO. /* This is being used in an attempt to convert the ones and zeros to yes and no, see below */ 
+  
+    
+    DEFINE VARIABLE tID LIKE Tk_id LABEL "To" NO-UNDO.   
+   
+    DEFINE VARIABLE tdate LIKE Tk_create_date LABEL "To" NO-UNDO.
+    DEFINE VARIABLE sold AS INTEGER NO-UNDO.
+    
+    DEFINE VARIABLE tk   LIKE TK_mstr.Tk_id NO-UNDO.
+    DEFINE VARIABLE typ  LIKE TK_mstr.TK_test_type NO-UNDO.
+    DEFINE VARIABLE prof LIKE scust_shadow.scust_prof NO-UNDO.
+    DEFINE VARIABLE dom  LIKE TK_mstr.TK_domestic  NO-UNDO.
+    DEFINE VARIABLE who  LIKE TK_mstr.TK_created_by NO-UNDO.
+  
+    DEFINE VARIABLE C-date LIKE TK_mstr.TK_create_date NO-UNDO.
+    
+    DEFINE VARIABLE Can AS INTEGER  NO-UNDO.
+    
+    DEFINE VARIABLE test-seq LIKE TK_mstr.TK_test_seq NO-UNDO.
+    
+    DEFINE VARIABLE statlist AS CHARACTER 
+    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,COMPLETE,VOID" NO-UNDO.
+    
+    /* DEFINE VARIABLE soldate LIKE tk_sold_date NO-UNDO. */
+    
+    /*------------------------------------------------------------*/
+    DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.    /*---< ITfeedback (YES or NO)  */
+    /* -----------------------------------------------------------*/
+    DEFINE VARIABLE whattorun AS CHARACTER NO-UNDO.
+    
+    ASSIGN
+       tk         =   get-value ("testkit")
+       can        =   INTEGER   (get-value ("h-can"))
+       whattorun  =   get-value ("whattorun")
+       test-seq   =   INTEGER (get-value("h-test-seq")).
+     
+     
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+ <!------------------------------------------------------------------------- End of Header ---------------------------------------->    
+   
+<SCRIPT LANGUAGE="SpeedScript">  
+											
+											                IF ITfeedback = YES THEN     
+											                     {&OUT} "<p>whattorun-- " whattorun "<p>" SKIP.
+
+        IF tk = "" OR 
+          can = 1 THEN DO:
+{&OUT}                          /* 1dot1 */
+"<DIV class='row'>" SKIP            
+"<DIV class='grid_4'> </DIV>" SKIP
+"<DIV class='grid_4'>" SKIP.                        
+</SCRIPT>                          
+          <FORM ACTION="TK_TKKitdeleteEdit.r method="post">  <!-- ACTION="TK_TKdeleteU.r" -->  
+      <div class='table_2col'> 
+        <TABLE >
+            <thead>
+            <tr>
+                <th colspan=2>Search Criteria</th>
+            </tr>                    
+            <TR>
+                <td> Testkit ID &nbsp</td><td class='REQ'><input type="text" name="testkit" value="" autofocus></td>  <!-- Setting cursor in 1st input field on load using autofocus  --> 
+            </TR>
+            <TR>
+                <td> Testkit Sequence</td><td class='REQ'><input type="text" name="h-test-seq" value="1" ></td>       
+            </TR>  
+        </TABLE>
+      </div>
+<SCRIPT LANGUAGE="SpeedScript"> 
+{&OUT}                                          /* 1dot1 */
+"</DIV>         <!-- end of grid_4 -->" SKIP
+"<DIV class='grid_4'> </DIV>" SKIP  
+"</DIV>     <!-- end of row -->" SKIP   
+
+"<div class='row'>" SKIP                        /* 1dot1 */
+"   <div class='grid_4'> </DIV>" SKIP
+"   <div class='grid_1-5'><BUTTON type='submit' name='whattorun' value='1.2' class='btn'>Find TestKit</BUTTON></div>" SKIP
+"   <div class='grid_1'> </DIV>" SKIP
+"   <div class='grid_1-5'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+"   <div class='grid_4'> </DIV>" SKIP
+"</div>" SKIP
+"</FORM>" skip
+"<BR>" SKIP.
+
+
+
+{&OUT}                          /* 1dot1 */
+"<DIV class='row'>" SKIP            
+"<DIV class='grid_3'> </DIV>" SKIP
+"<DIV class='grid_6'>" SKIP.  
+
+ 
+{&OUT} 
+    "<div class='table_report fixed-table'>" skip
+    "            <table>" skip
+    "                <thead>" skip
+    "                    <tr>" skip    
+    "                        <th colspan='4'>Testkits Available for Deletion</th>" skip
+    "                    </tr>" skip    
+    "                        <td>TestKit ID</td>" skip
+    "                        <td>Testkit Type</td>" skip
+    "                        <td>Testkit Sequence</td>" skip
+    "                        <td>Status</td>" skip
+    "                     </tr>" skip
+    "                </thead>" skip.
+                
+                FOR EACH TK_mstr WHERE TK_mstr.TK_status = "Created" OR 
+                                       TK_mstr.TK_status = "In_stock" NO-LOCK. 
+                IF avail (tk_mstr)  THEN
+{&OUT}                
+    "                     <tr>" skip
+    "                        <td><a href='TK_TKKitdeleteEdit.r?testkit=" TK_id "&whattorun=" whattorun "&h-test-seq=" TK_test_seq "'>" TK_id "</a></TD>" skip    
+    "                        <td>" TK_test_type "</td>" skip
+    "                        <td>" TK_test_seq "</td>" skip
+    "                        <td>" tk_status "</td>" skip
+    "                     </tr>" skip.
+                
+                END. /* FOR EACH TK_mstr WHERE TK_mstr.TK_status = "created" THEN DO:*/
+         
+{&OUT} 
+      
+      
+	"   <TFOOT>" SKIP               /* 1dot1 */
+	"       <TR>" SKIP
+	"           <TD COLSPAN=4>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+	"       </TR>" SKIP
+	"   </TFOOT>" SKIP
+	"   </TABLE>" SKIP
+	"</DIV>                 <!-- end of table_report -->" SKIP(1)
+   /*                
+                          "<tr>
+                            <td colspan='4'align='center'>End of Report</td>
+                          </tr>
+     */                      
+  "             </table> " skip
+  "           </div>" skip.
+{&OUT}                          /* 1dot1 */
+"<DIV class='row'>" SKIP            
+"<DIV class='grid_6'> </DIV>" SKIP
+"<DIV class='grid_3'>" SKIP.  
+ 
+        END. /* IF tk = "" THEN DO: */  
+        
+											                IF ITfeedback = YES THEN     
+											                 {&OUT} "<p>I'm at end of browser and I have can of-- " can "<p>" SKIP.
+              
+        IF tk > "" AND
+        can   < 1 THEN DO:
+			                    
+			                  FIND FIRST Tk_mstr WHERE  Tk_id = TK AND
+			                              TK_mstr.TK_test_seq = test-seq AND 
+			                               TK_mstr.TK_deleted = ? NO-LOCK NO-ERROR.
+			                   IF AVAILABLE  (TK_mstr) THEN DO:       
+			                                 
+			                    ASSIGN  
+			                        TK       = tk_mstr.TK_ID                                
+			                        typ      = TK_mstr.TK_test_type                               
+			                        dom      = TK_mstr.TK_domestic
+			                        C-date   = TK_mstr.TK_create_date
+			                        who      = TK_mstr.TK_created_by
+			                        prof     = TK_mstr.TK_prof.
+			                        
+{&OUT}
+"<br>" skip
+"<DIV class='row'>" SKIP                        /* 1dot1 */
+"<DIV class='grid_1'> </DIV>" SKIP
+"<DIV class='grid_10'>" SKIP.			                        
+			                        
+			                                               
+ </SCRIPT>              <!--                   
+                         <div align="center">
+                            <h3>If you need more information about this Testkit click on Testkit ID</h3>  
+                            <p></p>                                                             
+			             </div >
+			            --> 
+			        <div class="table_report">
+				        <table>
+				            <thead>
+				                <tr>
+				                    <th colspan=7>Search Results</th>
+				                </tr>     
+				         
+                                <tr>
+                                    <td nowrap>Testkit ID</td>
+                                    <td>Testkit Type</td>
+                                    <td>Testkit Sequence</td>
+                                    <td>Domestic</td>
+                                    <td>Professional</td>
+                                    <td>Date Created</td>
+                                    <td nowrap>Created By</td>
+                                </tr>
+                             </thead>   
+                                                                                                  
+<SCRIPT LANGUAGE="SpeedScript"> 
+                         
+                         {&OUT} "</THEAD>                                                        
+                                  <TR> 
+	                              <td>" "<a href=~"../../DataHub/rcode/TRH-history-R.r?whattorun=1.21&h-low-serial=" TK_id "&h-high-serial=" TK_id "&h-act=1&submit=Search~" >"  TK_ID "</a>"
+	                             "<td>" typ "</td> 
+	                              <td>" test-seq "</td>
+	                              <td>" prof "</td>
+	                              <td>" dom "</td>                     
+	                              <td>" C-date "</td> 	                                              
+	                              <td>" who "</td>
+	                              </tr>".                    
+             
+</SCRIPT>  
+                                 
+                          </table>
+    
+             
+     
+  </div>                             
+ <SCRIPT LANGUAGE="SpeedScript">  
+{&OUT}                                                          /* 1dot1 */
+"</DIV>         <!-- end of grid_10 -->" SKIP
+"<DIV class='grid_1'> </DIV>" SKIP  
+"</DIV>     <!-- end of row -->" SKIP.
+                          
+                   
+			         /*        IF  TK_mstr.TK_status = "sold" THEN DO:  */
+			                     
+			                     IF LOOKUP(TK_status,statlist) > lookup("IN_STOCK",statlist) THEN DO:  /* Checking to see if Testkit can be Deleted (status) */
+			                      
+						{&OUT}
+	                           "<div align='center'>
+	                            <h3><font color='#E60000'> This Testkit &nbsp</font>" TK_ID  "&nbsp <font color='#E60000'>has been sold. 
+	                            It's Status is</font>&nbsp" TK_status " <font color='#E60000'>Testkits that have been sold cannot be Deleted. </font></h3>" skip
+	                            
+"<div class='row'>" SKIP                                        /* 1 dot1 */
+"   <div class='grid_5'> </DIV>" SKIP
+"   <div class='grid_2'>" skip
+"<FORM ACTION='TK_TKKitdeleteEdit.r method='post' ''>" skip 
+"   <button type='submit' name='whattorun' value='1.2' class='btn'>NEW Testkit DELETE</BUTTON></div>" SKIP
+"</FORM>" skip
+"   <div class='grid_5'> </DIV>" SKIP
+"</div>" SKIP
+"<BR>" SKIP .          
+	                   
+			                            
+			                     END. /* IF LOOKUP */  		         
+                            
+             ELSE  DO:                              
+</SCRIPT>
+					     <!--    </table> -->
+					     
+							 <FORM ACTION="TK_TKFormDelete.r" method="post">    
+							   
+							                       
+		                             <td><input type="hidden" name="testkit" value="`TK`"></td>		                             
+		                             <td><input type="hidden" name="TK-typ" value="`typ`"></td>		                             
+		                             <td><input type="hidden" name="h-test-seq" value="`test-seq`"></td>
+		                             <td><input type="hidden" name="domic" value="`dom`"></td>
+		                             <td><input type="hidden" name="profal" value="`prof`"></td>		                             
+		                             <td><input type="hidden" name="cdate" value="`C-date`"></td>
+		                             <td><input type="hidden" name="by" value="`who`"></td>
+		                             <td><input type="hidden" name="whattorun" value=1.2></td>                          
+                                
+<SCRIPT LANGUAGE="SpeedScript">                                 
+{&OUT}
+"<br>" skip                                
+"<div class='row'>" SKIP
+"   <div class='grid_3-5'> </DIV>" SKIP
+"   <div class='grid_2'><BUTTON type='submit' name='delete' value='Deleted' class='btn'>Delete This Record</BUTTON></div>" SKIP
+"</FORM>" skip
+"   <div class='grid_1'></div>" skip
+"   <div class='grid_2'>" SKIP
+"<FORM ACTION='TK_TKKitdeleteEdit.r method='post' ''>" skip 
+"   <input type='hidden' name='h-Can' value='1' >" skip
+"   <button type='submit' name='whattorun' value='1.2' class='btn'>Cancel DELETE</BUTTON></div>" SKIP
+"</FORM>" skip
+"   <div class='grid_3-5'> </DIV>" SKIP
+"</div>" SKIP
+"<BR>" SKIP.                        
+                                
+                            END.  /* of ELSE DO */    
+            
+             END. /*  IF AVAILABLE  TK_mstr then do: */   
+        
+          ELSE       
+              {&OUT} 
+              "<div align='center'>" skip   
+              
+              " <h2>" skip
+              "  <tr><td><font color='#E60000'> This TestKit&nbsp</font>" TK "&nbsp<font color='#E60000'&nbsp>does not Exist </font></h2>" skip
+              
+"<div class='row'>" SKIP                                        /* 1 dot1 */
+"   <div class='grid_5'> </DIV>" SKIP
+"   <div class='grid_2'>" skip
+"<FORM ACTION='TK_TKKitdeleteEdit.r method='post' ''>" skip 
+"   <button type='submit' name='whattorun' value='1.2' class='btn'>NEW Testkit DELETE</BUTTON></div>" SKIP
+"</FORM>" skip
+"   <div class='grid_5'> </DIV>" SKIP
+"</div>" SKIP
+"<BR>" SKIP .                        
+                
+                
+                
+              
+      
+          
+    END.  /* if fid > 0 */    
+           
+          
+</SCRIPT>
+         
+         
+ 
+<SCRIPT LANGUAGE="SpeedScript">
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,46 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Your Name">
+<TITLE>WebSpeed Script</TITLE>
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE x AS INTEGER NO-UNDO.
+
+{&OUT}
+    "<P>This Procedure = " this-procedure:file-name "</P>" SKIP.
+    
+DO x = 1 TO num-entries(PROPATH):
+    
+    
+{&OUT} 
+
+    "<P>" entry(x,PROPATH) "</P>" SKIP.
+    
+END.
+
+{&OUT}
+    "<P>Search for SUBcust-findR.r = " SEARCH ("../depot/rcode/SUBcust-findR.r") "</P>"
+    "<P>Search for Self = " SEARCH (THIS-PROCEDURE:FILE-NAME) "</P>".
+    
+/*{&OUT}                                                        */
+/*    "<P>Search for Self = " SEARCH ("SUBcust-findR.r") "</P>".*/
+    
+    
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,76 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Your Name">
+<TITLE>ProPath Test</TITLE>
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}. /* 1dot1 */
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+        Version 1.1 - by Jacob Luttrell 01Oct15
+                    - Div's
+                    - menuname.i
+                    - marked by 1dot1
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE x AS INTEGER NO-UNDO.
+
+{&OUT}
+	"<DIV class='row'>" SKIP                                           /* 1dot1 */
+	"<DIV class='grid_3'> </DIV>" SKIP                                 /* 1dot1 */
+	"<DIV class='grid_6'>" SKIP                                        /* 1dot1 */
+	"<div class='table_report'>" SKIP                                  /* 1dot1 */
+	"<table>" SKIP                                                     /* 1dot1 */
+	"<thead>" SKIP                                                     /* 1dot1 */
+	"<tr><th>PROPATH Test</th></tr>" SKIP                              /* 1dot1 */
+	"<tr>" SKIP                                                        /* 1dot1 */
+    "<td>This Procedure = " this-procedure:file-name "</td>" SKIP
+    "</tr>" SKIP                                                       /* 1dot1 */
+    "</thead>" SKIP.                                                   /* 1dot1 */ 
+    
+DO x = 1 TO num-entries(PROPATH):
+    
+    
+{&OUT} 
+    "<tr>" SKIP                                                        /* 1dot1 */
+    "<td>" entry(x,PROPATH) "</td>" SKIP
+    "</tr>" SKIP.                                                      /* 1dot1 */ 
+    
+END.
+
+{&OUT}
+    "<tr>" SKIP                                                        /* 1dot1 */
+    "<td>Search for SUBcust-findR.r = " SEARCH ("SUBcust-findR.r") "</td>"
+    "</tr>" SKIP                                                       /* 1dot1 */    
+    "<tr>" SKIP                                                        /* 1dot1 */ 
+    "<td>Search for Self = " SEARCH (THIS-PROCEDURE:FILE-NAME) "</td>"
+    "</tr>" SKIP                                                       /* 1dot1 */
+    "<thead>" SKIP                                                     /* 1dot1 */
+    "<td>End of Report</td>" SKIP                                      /* 1dot1 */
+    "</tr>" SKIP                                                       /* 1dot1 */
+    "</thead>" SKIP                                                    /* 1dot1 */                                                      
+    "</table>" SKIP                                                    /* 1dot1 */
+    "</div>" SKIP                                                      /* 1dot1 */ 
+    "</DIV>         <!-- end of grid_6 -->" SKIP                       /* 1dot1 */ 
+	"<DIV class='grid_3'> </DIV>" SKIP                                 /* 1dot1 */        
+	"</DIV>     <!-- end of row -->" SKIP                              /* 1dot1 */
+    .
+/*{&OUT}                                                        */
+/*    "<P>Search for Self = " SEARCH ("SUBcust-findR.r") "</P>".*/
+    
+    
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,364 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<TITLE>Replenishment Report</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="15/Oct/2016">
+    <META NAME='LAST_UPDATED' CONTENT="15/Oct/2016">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+
+    File: ICreplenishR.html          
+    Description: This is the report is identical to it's consumption 
+        brother, except that it uses the replenishment types of trh_actions
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE v-act               AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage           AS LOGICAL INITIAL NO   NO-UNDO.
+
+DEFINE VARIABLE v-to-item_nbr       LIKE item_mstr.item_nbr NO-UNDO.
+DEFINE VARIABLE v-from-item_nbr     LIKE item_mstr.item_nbr NO-UNDO.
+DEFINE VARIABLE v-to-item_code       LIKE item_mstr.item_code NO-UNDO.
+DEFINE VARIABLE v-from-item_code     LIKE item_mstr.item_code NO-UNDO.
+DEFINE VARIABLE v-to-item_status       LIKE item_mstr.item_status NO-UNDO.
+DEFINE VARIABLE v-from-item_status     LIKE item_mstr.item_status NO-UNDO.
+DEFINE VARIABLE v-to-item_group       LIKE item_mstr.item_group NO-UNDO.
+DEFINE VARIABLE v-from-item_group     LIKE item_mstr.item_group NO-UNDO.
+DEFINE VARIABLE v-to-item_req_loc_type       LIKE item_mstr.item_req_loc_type NO-UNDO.
+DEFINE VARIABLE v-from-item_req_loc_type     LIKE item_mstr.item_req_loc_type NO-UNDO.
+DEFINE VARIABLE v-to-date           AS DATE NO-UNDO.
+DEFINE VARIABLE v-from-date         AS DATE NO-UNDO.
+DEFINE VARIABLE v-to-html-date      AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-from-html-date    AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-datemode          AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE c-each-day          AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE m-bucket-size       AS INTEGER NO-UNDO.
+DEFINE VARIABLE m-nbr-of-buckets    AS INTEGER NO-UNDO.   /*** this is the magic number ***/
+DEFINE VARIABLE m-qty-in-bucket     AS DECIMAL NO-UNDO. 
+DEFINE VARIABLE m-start-date        AS DATE NO-UNDO.
+DEFINE VARIABLE m-start-month       AS INTEGER NO-UNDO.
+DEFINE VARIABLE m-start-year        AS INTEGER NO-UNDO.
+DEFINE VARIABLE m-total-qty         AS DECIMAL NO-UNDO.
+DEFINE VARIABLE m-avg               AS DECIMAL DECIMALS 2 NO-UNDO.
+DEFINE VARIABLE m-next-date         AS DATE NO-UNDO.
+
+DEFINE VARIABLE m-qty-array         AS DECIMAL EXTENT 40 NO-UNDO.
+DEFINE VARIABLE y                   AS INTEGER NO-UNDO.
+DEFINE VARIABLE m-date-array        AS DATE EXTENT 40 NO-UNDO.
+DEFINE VARIABLE x                   AS INTEGER INITIAL 1 NO-UNDO.
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    v-act               = html-encode(get-value("h-act"))
+    v-to-item_nbr       = html-encode(get-value("h-to-item_nbr"))
+    v-from-item_nbr     = html-encode(get-value("h-from-item_nbr"))
+    v-to-item_code       = html-encode(get-value("h-to-item_code"))
+    v-from-item_code     = html-encode(get-value("h-from-item_code"))
+    v-to-item_status       = html-encode(get-value("h-to-item_status"))
+    v-from-item_status     = html-encode(get-value("h-from-item_status"))
+    v-to-item_group       = html-encode(get-value("h-to-item_group"))
+    v-from-item_group     = html-encode(get-value("h-from-item_group"))
+    v-to-item_req_loc_type       = html-encode(get-value("h-to-item_req_loc_type"))
+    v-from-item_req_loc_type     = html-encode(get-value("h-from-item_req_loc_type"))
+    v-to-html-date      = html-encode(get-value("h-to-date"))
+    v-from-html-date    = html-encode(get-value("h-from-date"))
+    v-datemode          = html-encode(get-value("h-datemode"))
+    m-nbr-of-buckets    = INTEGER(html-encode(get-value("h-nbr-of-buckets"))).
+
+IF m-nbr-of-buckets < 1 OR m-nbr-of-buckets > 21 THEN ASSIGN m-nbr-of-buckets = 12.
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-to-html-date, OUTPUT v-to-date).
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-from-html-date, OUTPUT v-to-date).
+
+IF v-datemode = "Weekly" THEN DO:
+ 
+    ASSIGN 
+        m-bucket-size = 7
+        m-start-date = (TODAY - (m-bucket-size * m-nbr-of-buckets)).
+
+    DO x = 1 TO m-nbr-of-buckets: 
+    
+        ASSIGN m-date-array[x] = m-start-date + (m-bucket-size * (x - 1)).
+    
+    END. /*** date array builder - weekly ***/ 
+    
+END. /** Weekly Math **/
+
+ELSE IF v-datemode = "Monthly" THEN DO:
+
+    ASSIGN 
+        m-bucket-size = 30
+        m-start-month = (MONTH(TODAY) - m-nbr-of-buckets + 1)
+        m-start-year = (YEAR(TODAY)).
+    
+    DO WHILE m-start-month < 1:
+        
+        ASSIGN 
+            m-start-month = 12 + m-start-month 
+            m-start-year = (m-start-year - 1). 
+          
+    END. /*** month fixer ***/
+    
+    ASSIGN 
+        m-start-date = DATE(m-start-month,1,m-start-year)
+        m-next-date = m-start-date
+        m-date-array[1] = m-start-date.
+
+    DO x = 2 TO m-nbr-of-buckets: 
+    
+        ASSIGN m-date-array[x] = DATE(MONTH(m-date-array[x - 1] + 45), 1, YEAR(m-date-array[x - 1] + 45)).
+    
+    END. /*** date array builder - weekly ***/ 
+    
+END. /** Monthly Math **/
+
+/*IF v-datemode = "Daily" THEN*/
+ELSE DO:
+
+    ASSIGN 
+        m-bucket-size = 1
+        m-start-date = (TODAY - (m-bucket-size * m-nbr-of-buckets)).
+        
+    DO x = 1 TO m-nbr-of-buckets:
+        
+        ASSIGN m-date-array[x] = m-start-date + (m-bucket-size * (x - 1)).
+        
+    END. /*** date array builder - daily ***/
+        
+END. /** Daily Math **/
+
+/* ********************************************  Main Block  ************************************************ */   
+
+IF v-act = "" THEN ASSIGN v-act = "INITIAL".
+
+CASE v-act:
+
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP                   
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP
+            "<DIV class='grid_10'>" SKIP   
+            "<div class='table_2col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=4>Search Criteria for Replenishment Report</th>" SKIP
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" skip
+            "           <td>From Item Number</td>" skip
+            "           <td><input type='text' name='h-from-item_nbr' value='" v-from-item_nbr "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-item_nbr' value='" v-to-item_nbr "' /></td>" skip         
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" skip
+            "           <td>From Code</td>" skip
+            "           <td><input type='text' name='h-from-item_code' value='" v-from-item_code "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-item_code' value='" v-to-item_code "' /></td>" skip         
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" skip
+            "           <td>From Status</td>" skip
+            "           <td><input type='text' name='h-from-item_status' value='" v-from-item_status "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-item_status' value='" v-to-item_status "' /></td>" skip         
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" skip
+            "           <td>From Group</td>" skip
+            "           <td><input type='text' name='h-from-item_group' value='" v-from-item_group "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-item_group' value='" v-to-item_group "' /></td>" skip         
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" skip
+            "           <td>From Required Location Type</td>" skip
+            "           <td><input type='text' name='h-from-item_req_loc_type' value='" v-from-item_req_loc_type "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-item_req_loc_type' value='" v-to-item_req_loc_type "' /></td>" skip         
+            "       </tr>" SKIP(1)
+                        
+            "       <tr>" skip
+            "           <td>Select Date View</td>" skip
+            "           <td colspan=3 class='req'><input required type='radio' name='h-datemode' value='daily'/> Daily <input required type='radio' name='h-datemode' value='weekly'/> Weekly <input required type='radio' name='h-datemode' value='Monthly'/> Monthly</td>" skip         
+            "       </tr>" SKIP(1).
+
+        IF itmessage = YES THEN {&OUT}
+            "       <tr>" skip
+            "           <td>Number of Buckets:</td>" skip
+            "           <td colspan=3 class='req'><input required type='number' min='1' max='21' name='h-nbr-of-buckets' value='" m-nbr-of-buckets "' /></td>" skip        
+            "       </tr>" SKIP(1).
+        
+        ELSE {&OUT} "   <INPUT type='hidden' name='h-nbr-of-buckets' value='" m-nbr-of-buckets "' />" SKIP .
+            
+        {&OUT}
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Search' class='btn'>Search</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP       
+            "</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        {&OUT}
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='" m-nbr-of-buckets + 3 "'>" v-datemode " Replenishment Report</TH>" SKIP    
+            "            </TR>" SKIP   
+            "            <TR>" SKIP
+            "                <TD>Item Number</Td>" SKIP.
+            
+        DO x = 1 TO m-nbr-of-buckets: 
+                {&OUT} "                <TD>" m-date-array[x] "</TD>" SKIP.   
+        END. /*** total addition ***/
+
+        {&OUT}
+            "                <TD>Total</Td>" SKIP
+            "                <TD>Average</Td>" SKIP
+            "            </TR>" SKIP       
+            "        </THEAD>" SKIP(1).
+            
+        FOR EACH item_mstr WHERE 
+            ((item_mstr.item_nbr >= v-from-item_nbr) OR (v-from-item_nbr = "")) AND
+            ((item_mstr.item_nbr <= v-to-item_nbr ) OR (v-to-item_nbr = "")) AND
+            ((item_mstr.item_code >= v-from-item_code) OR (v-from-item_code = "")) AND
+            ((item_mstr.item_code <= v-to-item_code ) OR (v-to-item_code = "")) AND
+            ((item_mstr.item_status >= v-from-item_status) OR (v-from-item_status = "")) AND
+            ((item_mstr.item_status <= v-to-item_status ) OR (v-to-item_status = "")) AND
+            ((item_mstr.item_group >= v-from-item_group) OR (v-from-item_group = "")) AND
+            ((item_mstr.item_group <= v-to-item_group ) OR (v-to-item_group = "")) AND
+            ((item_mstr.item_req_loc_type >= v-from-item_req_loc_type) OR (v-from-item_req_loc_type = "")) AND
+            ((item_mstr.item_req_loc_type <= v-to-item_req_loc_type ) OR (v-to-item_req_loc_type = "")) AND
+            item_mstr.item_deleted = ? NO-LOCK,
+          EACH trh_hist WHERE 
+            trh_hist.trh_item = item_mstr.item_nbr AND
+            trh_hist.trh_date <= TODAY AND  
+            trh_hist.trh_date >= m-start-date AND 
+            (trh_hist.trh_action = "PO-RCPT" OR trh_hist.trh_action = "WO-RCPT" OR trh_hist.trh_action = "UNP-RCPT") AND 
+            trh_hist.trh_deleted = ?
+                NO-LOCK                
+                BREAK BY trh_hist.trh_item BY trh_hist.trh_date:
+            
+            DO x = 1 TO (m-nbr-of-buckets - 1):
+                
+                IF trh_hist.trh_date >= m-date-array[x] AND 
+                    trh_hist.trh_date < m-date-array[x + 1] THEN 
+                    ASSIGN m-qty-array[x] = m-qty-array[x] + trh_hist.trh_qty.          
+                
+            END.
+           
+            IF trh_hist.trh_date >= m-date-array[m-nbr-of-buckets] THEN ASSIGN m-qty-array[m-nbr-of-buckets] = m-qty-array[m-nbr-of-buckets] + trh_hist.trh_qty.
+           
+            IF LAST-OF(trh_hist.trh_item) THEN DO:
+            
+                DO y = 1 TO m-nbr-of-buckets: 
+                    ASSIGN m-total-qty = m-total-qty + m-qty-array[y].   
+                END. /*** total addition ***/
+            
+                ASSIGN 
+                    m-avg = m-total-qty / m-nbr-of-buckets.
+            
+                ROUND ( m-avg , 2 ).
+            
+                {&OUT}
+                    "           <tr>" SKIP
+                    "               <td><center>" trh_hist.trh_item "</center></td>" SKIP.
+                
+                DO y = 1 TO m-nbr-of-buckets:
+                    {&OUT} "               <td><center>" m-qty-array[y] "</center></td>" SKIP.
+                END. /*** display qty iteration ***/
+                
+                {&OUT}
+                    "               <td><center>" m-total-qty "</center></td>" SKIP
+                    "               <td><center>" m-avg "</center></td>" SKIP 
+                    "            </tr>" SKIP.
+            
+                ASSIGN 
+                    m-qty-array = 0
+                    m-total-qty = 0
+                    m-avg = 0.
+                 
+            END. /*** last-of item ***/
+
+        END. /* 4ea. */
+        
+        {&OUT}          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='" m-nbr-of-buckets + 3 "'>END OF REPORT</TD>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+    
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<h2>Could not find v-act " v-act ".</h2>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

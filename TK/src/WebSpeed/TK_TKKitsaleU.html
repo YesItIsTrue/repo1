@@ -1,0 +1,731 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD> 
+
+    <TITLE>Testkit Selling Program </TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.25">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="10/Jun/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+  
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+ * File: TK_TKKitsaleU.html
+ * Description: Used to sell a Test Kit to a customer. 
+ * Created:
+ *------------------------------------------------------------------- 
+ * Revision History:    
+ * ---------------------
+ *  1.0 - written by MARK JACOBS on 08/May/14.  Original Version.
+ *  1.1 - written by MARK JACOBS on 18/Mar/15.
+ *          Added Customer before Magento Number in user input.Took out input field 
+ *          and made it just display Customers Magento Number.  Added a create Function 
+ *          to create a transaction record if paid by customer is yes.  Default Paid by Customer 
+ *          back to NO.
+ *  1.2 - written by DOUG LUTTRELL on 02/Jun/15.  Added code to support the 
+ *          pathing workaround.  Revamped flow to try to flush out the problem.
+ *          Marked by 1dot2.
+ *  1.21 - written by DOUG LUTTRELL on 29/Sep/15.  Problem with the pathing still.
+ *          Corrected using the RUN VALUE SEARCH stuff.
+ *  1.22 - written by DOUG LUTTRELL on 30/Sep/15.  Redid the sorting and the order
+ *          of the column displays in the table.  Fixed the End of Report row to 
+ *          use the blue row.  Marked by 1dot22.
+ *  1.23 - written by Mark Jacobs on 10/Oct/15. Edited "PAID_BY_CUSTOMER" in RUN VALUE(SEARCH("SUBtrh-ucU.r")) 
+ *          to "PAID_BY-CUST". Marked by 1dot1.23
+ *       - Added whattorun value to Hyperlink going to Transaction History Report. NOT MARKED 12/Nov/15
+ *  1.24 - Written by Jacob Luttrell on 15/Feb/16. Updated testtype to test_type unmarked.
+ *          Added updated fields to the SUBtrh-ucU for updates with v11.1.  Marked by 1dot24
+ *  1.25 - Written by Jacob Luttrell on 10/Jun/16. Changed FN/LN order on search screen. Not Marked. 
+ *-------------------------------------------------------------------- */
+             
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+</HEAD>
+
+<BODY class='inside'>
+
+<SCRIPT LANGUAGE="SpeedScript">
+
+{../depot/src/WebSpeed/menuname.i}.   
+
+DEFINE VARIABLE codetorun       AS CHARACTER                        NO-UNDO.    /* 1dot2 */  
+DEFINE VARIABLE depotcode       AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+DEFINE VARIABLE drive_letter    AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+         
+ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1).                /* 1dot2 */
+
+DEFINE VARIABLE v-custID        LIKE cust_mstr.cust_id              NO-UNDO.
+DEFINE VARIABLE v-fname         LIKE people_mstr.people_firstname   NO-UNDO. 
+DEFINE VARIABLE v-mname         LIKE people_mstr.people_midname     NO-UNDO.
+DEFINE VARIABLE v-lname         LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-addr1         LIKE addr_mstr.addr_addr1           NO-UNDO.
+DEFINE VARIABLE v-addr2         LIKE addr_mstr.addr_addr2           NO-UNDO.
+DEFINE VARIABLE v-city          LIKE addr_mstr.addr_city            NO-UNDO.
+DEFINE VARIABLE v-State_ISO    LIKE state_mstr.State_ISO          NO-UNDO. 
+DEFINE VARIABLE v-zip           LIKE addr_mstr.addr_zip             /*FORMAT "99999"*/  NO-UNDO.
+DEFINE VARIABLE v-Country_ISO  LIKE country_mstr.Country_ISO      NO-UNDO.  
+
+DEFINE VARIABLE v-phone   LIKE people_mstr.people_workphone /*FORMAT "9999999999"*/ NO-UNDO. 
+DEFINE VARIABLE v-email   LIKE people_mstr.people_email NO-UNDO.
+DEFINE VARIABLE v-cust-id LIKE cust_mstr.cust_id      NO-UNDO.
+	
+DEFINE VARIABLE v-magen     LIKE scust_shadow.scust_magento_id  NO-UNDO.       /* @@ this is on hold  (LIKE sold_magrntoID) @@ */  
+DEFINE VARIABLE v-TK_ID     LIKE TK_mstr.TK_ID                  NO-UNDO.
+DEFINE VARIABLE v-testtype  LIKE TK_mstr.TK_test_type            NO-UNDO.
+DEFINE VARIABLE v-dom       LIKE TK_mstr.Tk_domestic            NO-UNDO.
+DEFINE VARIABLE v-prof      LIKE TK_mstr.TK_prof                NO-UNDO.      
+DEFINE VARIABLE v-cust_paid LIKE TK_mstr.TK_cust_paid               NO-UNDO.         
+DEFINE VARIABLE v-serial    AS CHARACTER                            NO-UNDO.        
+DEFINE VARIABLE v-act       AS INTEGER                              NO-UNDO.  /* user feedback */
+
+DEFINE VARIABLE v-mainact AS CHARACTER            NO-UNDO.                        /* 1dot2 */
+	
+	
+/* ************************************  Added 1/6/15 *********************************************** */
+DEFINE VARIABLE keep-going    AS LOGICAL INITIAL NO  NO-UNDO. /* Added 1/6/15 */
+DEFINE VARIABLE first-stop    AS INTEGER             NO-UNDO.  /* Added 1/6/15 */
+DEFINE VARIABLE whattorun     AS CHARACTER           NO-UNDO.
+DEFINE VARIABLE TK-test-seq LIKE TK_mstr.TK_test_seq NO-UNDO.
+DEFINE VARIABLE v-trh-id    LIKE trh_hist.trh_ID NO-UNDO.
+DEFINE VARIABLE v-trh-err     AS LOGICAL NO-UNDO.
+   
+DEFINE VARIABLE TK-custid LIKE TK_mstr.TK_cust_ID NO-UNDO.
+DEFINE VARIABLE v-count AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE statlist AS CHARACTER 
+    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,COMPLETE,VOID" NO-UNDO.
+	
+   /*------------------------------------------------------------*/     
+DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.  /*---< ITfeedback (YES or NO)  */
+   /*------------------------------------------------------------*/     
+/* *************************************************************************************************** */	
+
+ASSIGN 
+    v-custID      =  INTEGER (get-value ("customer"))
+    v-magen       =  get-value  ("Magrnto")
+    v-TK_ID       =  get-value   ("kitnum")
+    v-cust_paid          =  IF get-value("pdfor") <> "" THEN            /*Examples for fixing logical error in black box */
+                          LOGICAL (get-value("pdfor"))
+                     ELSE
+                          NO
+    keep-going  =   IF get-value("h-keep-going") = "" THEN              /*2nd Examples for fixing logical error in black box (Just to mess with my mind) */
+                          NO
+                    ELSE   
+                          LOGICAL (get-value ("h-keep-going"))          /* Added 1/6/15 */
+    First-stop  =   INTEGER (get-value ("h-first-stop"))                /* Added 1/6/15 */
+    TK-test-seq =   INTEGER (get-value ("h-TK-test-seq"))               /* Added 1/6/15 by 1 min. */
+    v-fname       =   get-value ("f-name")
+    v-lname       =   get-value ("l-name")
+    whattorun   =   get-value ("whattorun") 
+    v-mainact     = get-value("h-act").
+
+IF v-mainact  = "" THEN 
+    v-mainact = "INITIAL".
+        
+IF v-mainact = "INITIAL" THEN DO:  
+    
+    ASSIGN 
+        v-fname   = ""
+        v-lname   = "".       
+    
+    {&OUT}
+        "<FORM>" SKIP
+        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP      
+        "<DIV class='row'>" SKIP
+        "<DIV class='grid_2'> </DIV>" SKIP      /* grid_2 spacer */
+        "<DIV class='grid_8'>" SKIP     
+        "<DIV class='table_col'>" SKIP                                          
+        "<TABLE>" SKIP
+        "   <THEAD>" SKIP
+        "       <TR>" SKIP
+        "           <TH colspan=2>Customer Record ID Search</TH>" SKIP
+        "       </TR>" SKIP
+        "   </THEAD>" SKIP
+        "   <TR>" SKIP
+        "       <TD>Last Name Begins</TD>" SKIP
+        "       <td><input type='text' name='l-name' value=~"" v-lname "~"></TD>" SKIP
+        "   </TR>" SKIP
+        "   <TR>" SKIP
+        "       <Td>First Name Begins</Td>" SKIP
+        "       <Td><input type='text' name='f-name' autofocus value=~"" v-fname "~" ></TD>" SKIP
+        "   </TR>" SKIP        
+        "</TABLE>" SKIP
+        "</DIV>" SKIP       /* end of DIV table_col */
+        "</DIV>" SKIP       /* end of DIV grid_8 */
+        "<DIV class='grid_2'> </DIV>" SKIP      /* grid_2 spacer */
+        "</DIV>" SKIP       /* end of DIV row */
+        "<br></br>" SKIP(1)
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "   <div class='grid_2'>" SKIP
+        "       <button type='submit' name='h-act' value='SEARCH_FOR_CUST' class='btn'>Search for Customer</BUTTON>" SKIP
+        "   </div>" SKIP
+        "   <DIV class='grid_2'> </DIV>" SKIP
+        "   <DIV class='grid_2'>" SKIP
+        "       <button type='reset' name='reset' value='RESET' class='btn'>Reset Values</BUTTON>" SKIP
+        "   </DIV>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</DIV>     <!-- end of row -->" SKIP
+        "</FORM>" SKIP.
+    
+END.  /*** of v-mainact = INITIAL ***/
+        
+ELSE IF v-mainact = "SEARCH_FOR_CUST" THEN DO: 
+    
+    {&OUT}
+        "<FORM>" SKIP
+        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+        "<DIV class='row'>" SKIP
+        "<DIV class='grid_1'> </DIV>" SKIP      /* grid_1 spacer */
+        "<DIV class='grid_10'>" SKIP     
+        "<DIV class='table_report fixed_table'>" SKIP                                          
+        "<TABLE>" SKIP
+        "   <THEAD>" SKIP
+        "       <TR>" SKIP
+        "           <th colspan='6'>Select the Customer ID that you would like to Sell the Testkit to</th>" SKIP
+        "       </tr>" SKIP
+        "       <tr>" SKIP
+        "           <td>Customer ID</td>" SKIP        
+        "           <td>Last Name</td>" SKIP                                                            /* 1dot22 */
+        "           <td>First Name</td>" SKIP                                                           /* 1dot22 */
+        "           <td>Email address</td>" SKIP
+        "           <td>Address</td>" SKIP
+        "           <td>State</td>" SKIP
+        "       </TR>" SKIP
+        "   </THEAD>" SKIP.
+
+    FOR EACH cust_mstr WHERE cust_mstr.cust_deleted = ? NO-LOCK,
+        EACH people_mstr WHERE people_mstr.people_id = cust_mstr.cust_id AND
+            people_mstr.people_firstname BEGINS v-fname AND
+            people_mstr.people_lastname  BEGINS v-lname AND
+            people_mstr.people_deleted = ?  NO-LOCK,
+        EACH addr_mstr WHERE addr_mstr.addr_id = people_mstr.people_addr_id AND
+            addr_mstr.addr_deleted = ?  NO-LOCK 
+        BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname BY people_mstr.people_email:       /* 1dot22 */
+	                               
+        v-count = v-count + 1.                           
+
+/*********** NOTE TO FIX: This code is not passing names correctly on to database ************************************/
+	                               
+        {&OUT}   
+            "<tr>" SKIP
+            "   <td>" SKIP
+            "       <a href=~"TK_TKKitsaleU.r?e-mail=" people_email              /* is this pathing OK? */
+            "&f-name=" people_firstname 
+            "&l-name=" people_lastname 
+            "&whattorun=" whattorun
+	        "&h-act=SELL&h-keep-going=YES&h-first-stop=1&customer=" people_id 
+	        "~">" people_id "</a>" SKIP
+            "   </TD>" SKIP
+            "   <td>" people_lastname "</td>" SKIP                                                      /* 1dot22 */
+            "   <td>" people_firstname "</td>" SKIP                                                     /* 1dot22 */
+            "   <td>" people_email "</td>" SKIP
+            "   <td>" addr_addr1 "</td>" SKIP
+            "   <td>" addr_stateprov "</td>" SKIP
+            "</tr>" SKIP.                    
+	          
+    END. /* FOR EACH cust_mstr */
+                
+    IF v-count > 0 THEN
+        {&OUT}
+            "<THEAD>" SKIP                                                                                  /* 1dot22 */
+            "<tr>" SKIP
+            "   <td colspan='6'align='center'>End of Report - " v-count " records found.</td>" SKIP
+            "</tr>" SKIP
+            "</THEAD>" SKIP                                                                                 /* 1dot22 */
+            "</table>" SKIP
+            "</div>" SKIP       /** end of DIV table_report **/
+	        "</DIV>" SKIP       /* end of DIV grid_10 */
+	        "<DIV class='grid_1'> </DIV>" SKIP      /* grid_1 spacer */
+	        "</DIV>" SKIP       /* end of DIV row */
+	        "<br></br>" SKIP
+	        "</FORM>" SKIP.
+	               
+    ELSE
+        {&OUT}
+            "<tr>" SKIP
+            "   <td colspan='6'align='center'>No Records Found</td>" SKIP
+            "</tr>" SKIP
+            "</table>" SKIP
+            "</div>" SKIP       /** end of DIV table_report **/
+            "</DIV>" SKIP       /* end of DIV grid_10 */
+            "<DIV class='grid_1'> </DIV>" SKIP      /* grid_1 spacer */
+            "</DIV>" SKIP       /* end of DIV row */
+            "<br></br>" SKIP
+			"<div class='row'>" SKIP
+			"   <div class='grid_4'> </DIV>" SKIP
+			"   <div class='grid_4'>" SKIP
+			"       <button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON>" SKIP
+			"   </div>" SKIP
+			"   <div class='grid_4'> </DIV>" SKIP
+			"</DIV>     <!-- end of row -->" SKIP
+            "</FORM>" SKIP.
+      
+    /* should we be resetting v-count here? */      
+      
+END. /* of if v-mainact = SEARCH_FOR_CUST */ 
+     
+ELSE IF v-mainact = "SELL" THEN DO: 
+    
+    FIND cust_mstr WHERE cust_mstr.cust_id =v-custID AND
+        cust_mstr.cust_deleted  = ? 
+            NO-LOCK NO-ERROR.
+           
+			         									                        IF ITfeedback = YES THEN
+												                                  {&OUT} "<p>v-custID  -- "v-custID  "</p>" SKIP.
+
+    IF NOT AVAILABLE (cust_mstr)  THEN DO: 
+	            
+		{&out}   /* User feedback */
+	        "<div id='User-feedback '>" SKIP
+	            "<h3><font color='#E60000'>Customer </font>"v-custID 
+	            " <font color='#E60000'>Does Not Exist, please re-enter.</font></h3>" SKIP
+	        "</div>" SKIP.                             
+	            
+    END. /* IF NOT AVAIL customer_mstr */
+ 
+    ELSE  DO: 
+        
+        FIND people_mstr  WHERE people_mstr.people_id = cust_mstr.cust_id AND
+            people_mstr.people_deleted = ?  NO-LOCK NO-ERROR.  
+               
+	    IF AVAILABLE (people_mstr) THEN DO:  
+	        
+            ASSIGN 
+                v-fname        = people_mstr.people_firstname
+                v-mname        = people_mstr.people_midname
+                v-lname        = people_mstr.people_lastname
+                v-email        = people_mstr.people_email
+                v-phone        = people_mstr.people_homephone.
+	    
+            FIND addr_mstr    WHERE addr_mstr.addr_id = people_mstr.people_addr_id AND
+                addr_mstr.addr_deleted = ? NO-LOCK NO-ERROR.
+                
+            IF AVAILABLE (addr_mstr) THEN DO: 	
+                                      
+                ASSIGN
+                    v-addr1        = addr_mstr.addr_addr1
+                    v-addr2        = addr_mstr.addr_addr2
+                    v-city         = addr_mstr.addr_city 
+                    v-State_ISO   = addr_mstr.addr_stateprov  
+                    v-zip          = addr_mstr.addr_zip
+                    v-Country_ISO       = addr_mstr.addr_country.                      /* I know */
+                    	                      
+            END.  /** of if avail addr_mstr **/
+            
+        END.  /*** of if avail people_mstr ***/    	       
+	    
+	    FIND scust_shadow WHERE scust_shadow.scust_id = cust_mstr.cust_id AND
+	       scust_shadow.scust_deleted = ? NO-LOCK NO-ERROR.
+	        
+	    IF AVAILABLE (scust_shadow) THEN 
+	       ASSIGN
+	           v-magen        = scust_shadow.scust_magento_id.                                     
+                
+	    {&OUT}
+	        "<DIV class='row'>" SKIP
+	        "<DIV class='grid_1'> </DIV>" SKIP      /* grid_1 spacer */
+	        "<DIV class='grid_10'>" SKIP     
+	        "<DIV class='table_report'>" SKIP                                          
+	        "<TABLE>" SKIP
+	        "   <THEAD>" SKIP
+	        "       <TR>" SKIP
+	        "           <th colspan='12'>Selected Customer</th>" SKIP
+	        "       </tr>" SKIP
+	        "       <tr>" SKIP
+	        "           <td>Customer ID</td>" SKIP
+	        "           <td>First Name</td>" SKIP
+	        "           <td>Middle Name</TD>" SKIP
+	        "           <td>Last Name</td>" SKIP
+	        "           <TD>Address</TD>" SKIP
+	        "           <TD>Address 2</TD>" SKIP
+	        "           <TD>City</TD>" SKIP
+	        "           <TD>State</TD>" SKIP
+	        "           <TD>Country</TD>" SKIP
+	        "           <TD>Zip Code</TD>" SKIP
+	        "           <td>Email address</td>" SKIP
+	        "           <td>Phone</td>" SKIP
+	        "       </TR>" SKIP
+	        "   </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <TD>" SKIP
+            "           <a href='TK_custs_search.html?f-cust="v-custID
+            "&t-cust="v-custID
+            "&whattorun=2.2'>" v-custID "</a>" SKIP
+            "       </TD>" SKIP
+            "       <td>"  v-fname  "</td>" SKIP
+            "       <td>" v-mname "</td>" SKIP
+            "       <td>" v-lname "</td>" SKIP                                      
+            "       <td>" v-addr1 "</td>" SKIP
+            "       <td>" v-addr2 "</td>" SKIP                   
+            "       <td>" v-city "</td>" SKIP
+            "       <td>" v-State_ISO "</td>" SKIP
+            "       <td>" v-Country_ISO "</td>" SKIP           
+            "       <td>" v-zip "</td>" SKIP        
+            "       <td>" v-email "</td>" SKIP
+            "       <td>" v-phone "</td>" SKIP
+            "   </tr>" SKIP
+            "</TABLE>" SKIP
+            "</DIV>" SKIP       /** end of DIV table_report **/
+            "<BR><BR>" SKIP
+            "<FORM>" SKIP
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+            "<input type='hidden' name='customer' value='" v-custID "' />" SKIP
+            "<input type='hidden' name='f-name' value=~"" v-fname "~" />" SKIP
+            "<input type='hidden' name='l-name' value=~"" v-lname "~" />" SKIP
+            "<div class='table_2col'>" SKIP
+            "<TABLE>" SKIP
+            "   <THEAD>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan=2>Testkit Information</TH>" SKIP
+            "       </TR>" SKIP
+            "   </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <td>Customer Magento Num</td>" SKIP
+            "       <td>" v-magen "</td>" SKIP
+            "   </tr>" SKIP
+            "   <tr>" SKIP
+            "       <td>Paid by Customer</td>" SKIP
+            "       <td class='REQ'> YES <input type='radio' name='pdfor' value='Yes' required>" 
+		    " NO <input type='radio' name='pdfor' value='NO' ></td>" SKIP
+            "   </tr>" SKIP
+            "   <tr>" SKIP
+            "       <td>Testkit ID</td>" SKIP
+            "       <td class='REQ'><input type='text' name='kitnum' value=~"" v-TK_ID "~" /></td>" SKIP
+            "   </tr>" SKIP
+            "   <tr>" SKIP
+            "       <td>Testkit Test Seq</td>" SKIP
+            "       <td class='REQ'><input align='left' type='text' name='h-TK-test-seq' value=~"" 1 "~" /></td>" SKIP
+            "   </tr>" SKIP
+            "</table>" SKIP
+            "</div>" SKIP       /** end of DIV table_2col **/
+            "</DIV>" SKIP       /* end of DIV grid_10 */
+            "<DIV class='grid_1'> </DIV>" SKIP      /* grid_1 spacer */
+            "</DIV>" SKIP       /* end of DIV row */
+            "<br></br>" SKIP
+			"<div class='row'>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATE' class='btn'>Sell Testkit</BUTTON></div>" SKIP
+			"   <div class='grid_1'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' name='reset' value='' class='btn'>Reset</BUTTON></div>" SKIP
+			"   <div class='grid_1'> </DIV>" SKIP
+			"</FORM>" skip
+			" <div class='grid_2'>" skip
+			"<form ACTION='TK_TKKitsaleU.r' method='post' >" SKIP
+			"  <BUTTON type='submit' name='whattorun' value='1.6' class='btn'>Search for Different Customer</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"</div>" SKIP
+			"<BR>" SKIP           
+            "</FORM>" SKIP.
+ 
+						                                                        IF ITfeedback = YES THEN
+						                                                           {&OUT} 
+						                                                                "<p> v-custID after else do and not found  -- " 
+						                                                                v-custID  SKIP
+						                                                                "<br>pd -- " v-cust_paid "</p>".
+                                                  
+    END. /* of else do --- IF AVAIL customer_mstr */ 
+
+END. /* of If v-mainact = SELL */ 
+
+ELSE IF v-mainact = "VALIDATE" THEN DO: 
+
+                                                                                IF ITfeedback = YES THEN
+                                                                                    {&OUT} 
+                                                                                        "<H6>Start of VALIDATE</H6>" SKIP
+                                                                                        "<P>mainact = " v-mainact "</P>" SKIP
+                                                                                        "<P>TKnum = " v-TK_ID "</P>" SKIP
+                                                                                        "<P>fname = " v-fname "</P>" SKIP
+                                                                                        "<P>lname = " v-lname "</P>" SKIP
+                                                                                        "<P>custid = " v-custID "</P>" SKIP(1).
+        
+    /********  Check to make sure this Testkit already exists   ***********/       
+    IF v-TK_ID > "" THEN DO:
+                                                                                IF ITfeedback = YES THEN
+                                                                                    {&OUT} 
+                                                                                        "<H6>Start of v-TK_ID</H6>" SKIP
+                                                                                        "<P>mainact = " v-mainact "</P>" SKIP
+                                                                                        "<P>TKnum = " v-TK_ID "</P>" SKIP.                                                                                 
+        FIND Tk_mstr WHERE Tk_ID = v-TK_ID AND             
+            TK_mstr.TK_test_seq = TK-test-seq  AND     
+            TK_mstr.TK_deleted  = ? 
+                NO-LOCK NO-ERROR. 
+              
+        IF NOT AVAILABLE (TK_mstr) THEN DO:  /* User feedback NOT AVAILABLE */
+		
+            {&OUT} 
+                "<FORM>" SKIP
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+                "<input type='hidden' name='customer' value='" v-custID "' />" SKIP
+                "<input type='hidden' name='f-name' value=~"" v-fname "~" />" SKIP
+                "<input type='hidden' name='l-name' value=~"" v-lname "~" />" SKIP                
+	            "<DIV class='row'>" SKIP
+	            "<DIV class='grid_1'> </DIV>" SKIP      /* grid_1 spacer */
+	            "<DIV class='grid_10'>" SKIP     
+                "   <h3 align='center'>" v-TK_ID " Testkit Record does not exist.</h3>" SKIP
+	            "</DIV>" SKIP       /* end of DIV grid_10 */
+	            "<DIV class='grid_1'> </DIV>" SKIP      /* grid_1 spacer */
+	            "</DIV>" SKIP       /* end of DIV row */
+	            "<br></br>" SKIP
+	            "<div class='row'>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SELL' class='btn'>Return to Sell Testkit</BUTTON></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+	            "</div>" SKIP
+	            "<BR>" SKIP           
+	            "</FORM>" SKIP.
+                
+                /** send back to SELL **/
+            
+            v-mainact = "FAILED".
+            
+        END. /* IF NOT AVAILABLE (TK_mstr) */
+             
+             
+        ELSE DO:    /*IF AVAILABLE Tk_mstr THEN DO: */
+        
+	        ASSIGN
+	            TK-custid = TK_mstr.TK_cust_ID.
+        
+			         													        IF ITfeedback = YES THEN
+					       									                        {&OUT} "<p>tk_staus is --" tk_status SKIP
+														                                  "<br>custid -- " v-custID SKIP
+														                                  "<br>TK_id -- " v-TK_ID SKIP
+													                                  "<br>TK-custid -- " TK-custid "</p>" SKIP.
+        /** should be inside of an else do because of the use of the TK_mstr record **/
+	        /*************** Checking to see if testkit can be sold (status) **************/
+	        IF LOOKUP(TK_status,statlist) > lookup("IN_STOCK",statlist) THEN DO:  
+                                                                                IF ITfeedback = YES THEN
+                                                                                    {&OUT} 
+                                                                                        "<H6>Start of status lookup</H6>" SKIP
+                                                                                        "<P>mainact = " v-mainact "</P>" SKIP
+                                                                                        "<P>TKnum = " v-TK_ID "</P>" SKIP
+                                                                                        "<P>TK_status = " TK_mstr.TK_status.
+	            v-mainact = "FAILED".
+            
+	            {&OUT} 
+	                "<FORM>" SKIP
+	                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+	                "<input type='hidden' name='customer' value='" v-custID "' />" SKIP
+	                "<input type='hidden' name='f-name' value=~"" v-fname "~" />" SKIP
+	                "<input type='hidden' name='l-name' value=~"" v-lname "~" />" SKIP                
+	                "<DIV class='row'>" SKIP
+	                "<DIV class='grid_1'> </DIV>" SKIP      /* grid_1 spacer */
+	                "<DIV class='grid_10'>" SKIP     
+	                "   <h3 align='center'>" 
+                    /** is this pathing OK? NO it is not. **/
+                    /** actually the pathing for the local machine seems OK, but the target code is busted. **/                                                            
+                    "       <a href=~"../../DataHub/rcode/TRH-history-R.r?whattorun=1.41&h-low-serial=" TK_mstr.TK_id 
+                    "&h-high-serial=" TK_mstr.TK_id 
+                    "&h-act=1&submit=Search~" >" TK_mstr.TK_ID "</a>" SKIP	                
+	                " Testkit " TK_mstr.TK_ID " / " TK_mstr.TK_test_seq " has already been SOLD and has a status of " SKIP
+	                TK_mstr.TK_status ". </h3>" SKIP
+	                "</DIV>" SKIP                              /* end of DIV grid_10 */
+	                "<DIV class='grid_1'> </DIV>" SKIP         /* grid_1 spacer */
+	                "</DIV>" SKIP                              /* end of DIV row */
+	                "<br></br>" SKIP
+	                "<div class='row'>" SKIP
+	                "   <div class='grid_5'> </DIV>" SKIP
+	                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SELL' class='btn'>Return to Sell Testkit</BUTTON></div>" SKIP  
+	                "   <div class='grid_5'> </DIV>" SKIP
+	                "</div>" SKIP
+	                "<BR>" SKIP           
+	                "</FORM>" SKIP.            
+            
+/*                {&OUT}                                                                                         */
+/*                    "<div align='center'>" SKIP                                                                */
+/*                    "   <h3>" SKIP                                                                             */
+/*                                                                                                               */
+/*                    /** is this pathing OK? NO it is not. **/                                                  */
+/*                    /** actually the pathing for the local machine seems OK, but the target code is busted. **/*/
+/*                    "       <a href=~"../../DataHub/rcode/TRH-history-R.r?h-low-serial=" TK_mstr.TK_id         */
+/*                    "&h-high-serial=" TK_mstr.TK_id                                                            */
+/*                    "&h-act=1&submit=Search~" >" TK_mstr.TK_ID "</a>" SKIP                                     */
+/*                    " Testkit Has Already Been Sold and has a Testkits status of "                             */
+/*                    TK_mstr.TK_status ". </h3>" SKIP                                                           */
+/*                    "</div>".                                                                                  */
+                    
+                /*** send back to SELL ***/
+                
+            END.  /*** of if lookup TK_status > IN_STOCK ***/    
+
+        END.  /*** of else do --- if avail tk_mstr ***/            
+
+    END.  /** of v-TK_ID > "" **/                                                 /* 1dot2 */
+    
+    IF v-mainact = "VALIDATE" THEN                /* meaning that nothing failed during the VALIDATE v-act */
+        v-mainact = "FINAL_UPDATE".
+    
+END.  /** of if v-mainact = VALIDATE **/                                          /* 1dot2 */
+
+IF v-mainact = "FINAL_UPDATE" THEN DO: 
+    
+                                                                                IF ITfeedback = YES THEN
+                                                                                    {&OUT} 
+                                                                                        "<H6>Start of FINAL_UPDATE</H6>" SKIP
+                                                                                        "<P>mainact = " v-mainact "</P>" SKIP
+                                                                                        "<P>TKnum = " v-TK_ID "</P>" SKIP
+                                                                                    "<P>TK-test-seq = " TK-test-seq "</P>" SKIP.
+	        
+	ASSIGN                                   
+		v-serial = TK_mstr.TK_ID  /******* why is this NOT the v-TK_ID ??????? ********/
+		v-testtype    = TK_mstr.Tk_test_type
+		v-prof   = TK_mstr.Tk_prof
+		v-dom    = TK_mstr.TK_domestic.
+	     
+	DO TRANSACTION:
+	
+		FIND Tk_mstr WHERE TK_mstr.Tk_ID = v-TK_ID AND             
+			TK_mstr.TK_test_seq = TK-test-seq  AND     
+			TK_mstr.TK_deleted  = ? 
+			    EXCLUSIVE-LOCK NO-ERROR. 
+		        
+		IF AVAILABLE (TK_mstr) THEN DO: 
+		        
+		                                                                        IF ITfeedback = YES THEN
+		                                                                               {&OUT} 
+	                                                                                   "<H6>Start of if avail TK_mstr</H6>" SKIP
+		                                                                                   "<P>mainact = " v-mainact "</P>" SKIP
+		                                                                                   "<P>TKnum = " v-TK_ID "</P>" SKIP
+                                                                                   "<P>TK-test-seq = " TK-test-seq "</P>" SKIP
+		                                                                                   "<P>custID = " v-custID "</P>" SKIP
+		                                                                                   "<P>fname = " v-fname "</P>" SKIP
+		                                                                                   "<P>lname = " v-lname "</P>" SKIP(1).
+		                                                                           
+			ASSIGN 
+			    TK_mstr.TK_cust_ID       = v-custID
+			    TK_mstr.TK_status        = "SOLD"
+			    TK_mstr.TK_cust_paid     = v-cust_paid
+			    TK_mstr.TK_modified_date = TODAY
+			    TK_mstr.TK_modified_by   = USERID ("HHI")
+			    TK_mstr.TK_prog_name     = this-procedure:FILE-NAME.         /* 1dot42 */
+		             
+		                                                                     IF ITfeedback = YES THEN
+		                                                                               {&OUT} 
+		                                                                                   "Right before first pathfix".
+		             
+			
+			                                                                    IF ITfeedback = YES THEN
+                                                                                       {&OUT} 
+                                                                                           "<P>depotcode = " depotcode "</P>" SKIP.
+                                                                                                    
+			RUN VALUE(SEARCH("SUBtrh-ucU.r"))                                /* 1dot2 */
+			    (0,
+			     TK_mstr.TK_test_type,
+			     "SOLD",
+			     1,
+			     "",
+			     "",
+			     TK_mstr.TK_ID,
+			     "", 
+			     TK_mstr.TK_test_seq, 
+			/* 1dot42 --> */     
+			     "",                            /*i-ctrh-comments*/
+                 TK_mstr.TK_magento_order,      /*i-ctrh-other   */
+                 TK_mstr.Tk_cust_id,            /*i-ctrh-people  */
+                 "",                            /*i-ctrh-order   */
+                 TODAY,                         /*i-ctrh-date    */
+                 STRING(TIME,"HH:MM:SS"),       /*i-ctrh-time    */
+                 (TK_mstr.TK_lab_sample_ID + " / " + STRING(TK_mstr.TK_lab_seq)),      /*i-ctrh-ref     */
+			 /* <-- 1dot42 */    
+			     "", /* warehouse */        
+			     OUTPUT v-trh-id, 
+			     OUTPUT v-trh-err).
+		            
+			IF v-trh-err = YES THEN 
+			    {&OUT}
+			        "WARNING!  Transaction History Record not created for SOLD transaction!  Contact Solsource.".
+			
+			IF v-cust_paid = YES THEN DO:  
+			
+			    v-trh-err = NO.     /* reset variable to make sure it is correctly reporting */
+		                                                                        
+		                                                                        IF ITfeedback = YES THEN
+                                                                                       {&OUT} 
+                                                                                           "Right before second pathfix".
+		                                                                      
+				RUN VALUE(SEARCH("SUBtrh-ucU.r"))                              /* 1dot2 */
+				    (0, TK_mstr.TK_test_type, "PAID_BY_CUST", 1, "", "", TK_mstr.TK_ID, "", TK_mstr.TK_test_seq, 
+				/* 1dot42 --> */     
+	                 "",                                           /*i-ctrh-comments*/
+	                 TK_mstr.TK_magento_order,                     /*i-ctrh-other   */
+	                 TK_mstr.Tk_cust_id,                           /*i-ctrh-people  */
+	                 STRING("SO-" + TK_mstr.TK_magento_order),     /*i-ctrh-order   */
+	                 TODAY,                                        /*i-ctrh-date    */
+	                 STRING(TIME,"HH:MM:SS"),                      /*i-ctrh-time    */
+	                 TK_mstr.TK_lab_sample_ID,                     /*i-ctrh-ref     */
+                /* <-- 1dot42 */    
+                    "", /* warehouse */        
+				    OUTPUT v-trh-id, OUTPUT v-trh-err).  /* 1dot1.23 */
+		            
+				IF v-trh-err = YES THEN 
+				    {&OUT}
+				        "WARNING!  Transaction History Record not created for PAID_BY_CUSTOMER transaction!  Contact Solsource.".  
+		
+		    END.  /** if if v-cust_paid = YES **/
+		                        
+								                               IF ITfeedback = YES THEN
+							                                                    {&OUT} "<p>pd --" v-cust_paid  SKIP
+								                                                       "<br>keep-going --" Keep-going "</p>".
+		                                                    
+			{&OUT}
+				"<FORM>" SKIP
+				"<DIV class='row'>" SKIP
+				"<DIV class='grid_1'> </DIV>" SKIP      /* grid_1 spacer */
+				"<DIV class='grid_10'>" SKIP     
+				"<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+				"<input type='hidden' name='customer' value='" v-custID "' />" SKIP
+				"<input type='hidden' name='f-name' value=~"" v-fname "~" />" SKIP
+				"<input type='hidden' name='l-name' value=~"" v-lname "~" />" SKIP
+				"<div class='table_report'>" SKIP
+				"<table>" SKIP
+				"   <THEAD>" SKIP
+				"       <TR>" SKIP
+				"           <TH colspan=6>Sales Record Has Been Created for Testkit " TK_mstr.TK_ID "</TH>" SKIP
+				"       </TR>" SKIP
+				"       <TR>" SKIP
+				"           <td>Customer Firstname</td>" SKIP
+				"           <Td>Customer Lastname</Td>" SKIP
+				"           <td>Customer ID</td>" SKIP
+				"           <Td>Testkit ID / Seq</Td>" SKIP
+				"           <Td>Testkit Status</Td>" SKIP
+				"           <Td>Testkit Paid For</Td>" SKIP
+				"       </TR>" SKIP
+				"   </THEAD>" SKIP
+				"   <tr>" SKIP
+				"       <td>" v-fname "</TD>" SKIP
+				"       <TD>" v-lname "</td>" SKIP
+				"       <TD>" v-custID "</TD>" SKIP
+				"       <TD>" TK_mstr.TK_ID " / " TK_mstr.TK_test_seq "</TD>" SKIP
+				"       <TD>" TK_mstr.TK_status "</TD>" SKIP
+				"       <TD>" TK_mstr.TK_cust_paid "</TD>" SKIP
+				"  </tr>" SKIP
+				"</table>" SKIP
+				"</div>"   /** end of DIV table_report **/		
+				"</DIV>" SKIP       /* end of DIV grid_10 */
+				"<DIV class='grid_1'> </DIV>" SKIP      /* grid_1 spacer */
+				"</DIV>" SKIP       /* end of DIV row */
+				"<br></br>" SKIP										
+				"<div class='row'>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"   <div class='grid_2'>" SKIP
+				"       <button type='submit' name='h-act' value='INITIAL' class='btn'>Search for a Different Customer</BUTTON>" SKIP
+				"   </div>" SKIP
+				"   <DIV class='grid_2'> </DIV>" SKIP
+				"   <DIV class='grid_2'>" SKIP
+				"       <button type='submit' name='h-act' value='SELL' class='btn'>Sell Another Testkit to this Customer</BUTTON>" SKIP
+				"   </DIV>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"</DIV>     <!-- end of row -->" SKIP
+				"</FORM>" SKIP.
+                    
+        END.  /* of if avail tk_mstr */ 		                  
+    END.    /* of do transaction --- database update */
+END.  /** of if v-mainact = FINAL_UPDATE **/
+
+</script>
+</BODY>
+</HTML>

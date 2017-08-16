@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="Solsource" CONTENT="Andrew Garver">
+<TITLE>Select Records</TITLE>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<link rel='stylesheet' type='text/css' href='/DataHub/src/HTMLContent/stylesheets/discrepancy.css'>
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+<script>
+    function submit() {
+        $("#record-form").submit();
+    }
+</script>
+</HEAD>
+
+<BODY>
+<script LANGUAGE="SpeedScript">
+    DEFINE VARIABLE record_firstname LIKE people_mstr.people_firstname NO-UNDO.
+    DEFINE VARIABLE record_lastname LIKE people_mstr.people_lastname NO-UNDO.
+    DEFINE VARIABLE discrepancy_firstname LIKE people_mstr.people_firstname NO-UNDO.
+    DEFINE VARIABLE discrepancy_lastname LIKE people_mstr.people_lastname NO-UNDO.
+    
+    ASSIGN
+        record_firstname = get-value("record_firstname")
+        record_lastname = get-value("record_lastname")
+        discrepancy_firstname = get-value("discrepancy_firstname")
+        discrepancy_lastname = get-value("discrepancy_lastname")
+        .
+</script>
+
+<div class='w3-theme-d5 title-bar var-width'>
+    <h1 class='center'>Select Records to Reconcile</h1>
+</div>
+<br>
+<div class='var-width'>
+    <form id='record-form' action='hhi-discrepancy.html' method='get'>
+    <div class='row'>
+		    <div class='col-md-6'>
+		        <div class='w3-card card-padding w3-theme-l5'>
+		            <h3 class='bold center'>Person on Record</h3>
+		            <div class='var-width'>
+		                <div class="record-container" data-toggle="buttons">
+		                    
+		                    <label class="btn btn-primary option">
+		                        <input type="radio" name="records" value="123">
+		                            <div>Andrew Garver</div>
+		                            <div>Apr 6, 1992</div>
+		                            <div>123 W 12th N, Rexburg, ID</div>
+		                        </input>
+		                    </label>
+		                    <label class="btn btn-primary option">
+                                <input type="radio" name="discrepancies" value="123">
+                                    <div>Andrew Carson</div>
+                                    <div>May 16, 1972</div>
+                                    <div>161 East Shore Rd, Naples, ME</div>
+                                </input>
+                            </label>
+
+		                </div>
+		            </div>
+		        </div>
+		    </div>
+		    <div class='col-md-6'>
+		        <div class='w3-card card-padding w3-theme-l5'>
+		            <h3 class='bold center'>Discrepancy Record</h3>
+		            <div class='var-width'>
+		                <div class="record-container" data-toggle="buttons">
+		                   
+		                    <label class="btn btn-primary option">
+		                        <input type="radio" name="discrepancies" value="123">
+		                            <div>Ben Carson</div>
+		                            <div>Jan 1, 1970</div>
+		                            <div>Addr1, City, State</div>
+		                        </input>
+		                    </label>
+		                    <label class="btn btn-primary option">
+                                <input type="radio" name="discrepancies" value="123">
+                                    <div>Ben Benson</div>
+                                    <div>Jun 5, 1974</div>
+                                    <div>Addr1, City, State</div>
+                                </input>
+                            </label>
+                            <label class="btn btn-primary option">
+                                <input type="radio" name="discrepancies" value="123">
+                                    <div>Benny Billiard</div>
+                                    <div>Dec 21, 1958</div>
+                                    <div>Addr1, City, State</div>
+                                </input>
+                            </label>
+
+		                </div>
+		            </div>
+		        </div>
+		    </div>
+	    </div>
+    </form>
+           
+    <button class='btn btn-warning select-submit' onclick='submit()'>Reconcile these records</button>
+</div>
+</BODY>
+</HTML>

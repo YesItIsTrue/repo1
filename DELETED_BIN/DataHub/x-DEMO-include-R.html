@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>DEMO - Include Files</TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="27/Feb/15">
+    <META NAME="LAST_UPDATED" CONTENT="27/Feb/15">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:    Quick report based code to demo include file usage.
+    Created:
+  -------------------------------------------------------------------*/
+
+DEFINE VARIABLE act AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE tkid LIKE TK_mstr.TK_ID NO-UNDO. 
+DEFINE VARIABLE v-other AS CHARACTER NO-UNDO.
+
+ASSIGN 
+    act     = get-value("h-act")
+    tkid    = get-value("h-tkid")
+    v-other = get-value("h-other").
+    
+IF act = "" THEN 
+    act = "START_SCREEN".
+    
+IF act = "START_SCREEN" THEN DO: 
+    
+    {&OUT}
+        "<DIV class='row'>" SKIP
+		"<DIV class='grid_2'> </DIV>" SKIP
+		"<DIV class='grid_8'>" SKIP
+		
+        "<div class='table_2col'>"      SKIP
+        "<form>" SKIP
+        "   <table>"    SKIP
+        "       <tr>"   SKIP
+        "           <th colspan=4>Search Criteria</th>" SKIP
+        "       </tr>"  SKIP 
+        "       <tr>"   SKIP
+        "           <td>Testkit ID</td>" SKIP
+        "           <td><input type='text' name='h-tkid' value='" tkid "'/></td>" SKIP
+        "           <td>Other Data</td>" SKIP
+        "           <td><input type='text' name='h-other' value='" v-other "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "   </TABLE>" SKIP
+        "</DIV>     <!-- end of table_2col -->" SKIP
+		
+		
+		"</DIV>         <!-- end of grid_8 -->" SKIP
+		"<DIV class='grid_2'> </DIV>" SKIP  
+		"</DIV>     <!-- end of row -->" SKIP.
+    
+    
+    {&OUT}
+        "<div class='row'>" SKIP
+		"   <div class='grid_3'> </DIV>" SKIP
+		"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='REPORT_SCREEN_1' class='btn'>Report 1</BUTTON></div>" SKIP
+		"   <div class='grid_2'> </DIV>" SKIP
+		"   <div class='grid_2'><BUTTON type='submit' name='h-act' class='btn' value='REPORT_SCREEN_2' >Report 2</BUTTON></div>" SKIP
+		"   <div class='grid_3'> </DIV>" SKIP
+		"</div>" SKIP
+		"</FORM>" SKIP
+		"<BR>" SKIP.
+
+    
+    
+    
+END.  /** of if act = start_screen **/
+
+ELSE IF act = "REPORT_SCREEN_1" THEN DO: 
+    
+    {&OUT}
+        "<H1> Inside REPORT_SCREEN_1 </H1>" SKIP.
+    
+    {DEMO-include-4eawrap.i "Cat" "Dog" "TK_id DESCENDING"}.
+    
+	{&OUT}
+	    "<BR><BR>" SKIP
+	    "<div class='row'>" SKIP
+	    "   <div class='grid_5'> </DIV>" SKIP
+	    "   <div class='grid_2'><button type='submit' name='h-act' value='START_SCREEN' class='btn'>Return to Start</BUTTON></div>" SKIP
+	    "   <div class='grid_5'> </DIV>" SKIP
+	    "</div>" SKIP
+	    "</FORM>" SKIP
+	    "<BR>" SKIP.    
+    
+END.  /** of act = report_screen_1 **/ 
+
+ELSE IF act = "REPORT_SCREEN_2" THEN DO: 
+    
+    {&OUT}
+        "<H1> Inside REPORT_SCREEN_2 </H1>" SKIP.
+        
+    {DEMO-include-4eawrap.i  "Squirrel" "Giraffe" "TK_id"}.  
+    
+    {&OUT}
+        "<BR><BR>" SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "   <div class='grid_2'><button type='submit' name='h-act' value='START_SCREEN' class='btn'>Return to Start</BUTTON></div>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "</div>" SKIP
+        "</FORM>" SKIP
+        "<BR>" SKIP.         
+        
+END.  /** of act = report_screen_2 **/
+
+
+
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,234 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+	<META NAME="AUTHOR" CONTENT="Doug Luttrell">
+	<TITLE>Display Error Test</TITLE>
+	
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+
+/***
+    document.getElementById("error_dialog_message").innerHTML = "Error Message Goes Here";
+    
+    document.getElementById("error_dialog_message").background-color = " #CCCDDD ";
+    
+    ***/
+    
+    
+</SCRIPT>
+
+<!-- This stuff goes into the stylesheets along with different ones for the different message types -->
+<style type="text/css">
+
+/** this is the background window for the whole screen **/
+  #error_dialog_window {
+    background-color: rgba(200, 128, 128, 0.5);
+    position: fixed;
+      top: 0px;
+      bottom: 0px;
+      left: 0px;
+      right: 0px;
+    z-index: 10;
+  }
+
+/** this is the button region of the dialog window **/
+  #error_dialog_buttons {
+    position: absolute;
+      bottom: 5%;
+    text-align: center;
+    width: 100%;
+  }
+
+/** this is the background of the dialog window **/
+  #error_dialog {
+    background-color: #FFFFFF;
+    position: absolute;
+      top: 35%;
+      bottom: 35%;
+      left: 35%;
+      right: 35%;
+    z-index: 20;
+
+  }
+
+/** this is the foreground of the dialog window **/
+  #error_dialog_message {
+    background-color: purple;
+    display: table;
+    text-align: center;
+    border: 1px solid black;
+    height: 90%;
+    width: 90%;
+  
+  }
+
+/** this is the text holder of the dialog window **/
+  #test-id {
+  display: table-cell;
+  vertical-align: middle;
+  }
+
+</style>
+
+
+
+<!-- This needs some content passed into it, somehow -->
+
+<script type="text/javascript">
+
+<!-- My Modified Javascript Functions
+
+  function setMsgContent(msg) {
+    document.getElementById("dialog_message").innerHTML = msg; 
+  }
+  
+  function setMsgType(msgtype) {
+    if (msgtype = "FATAL") {
+        document.getElementById("dialog_box").style.background = fatalcolor;
+    } else if (msgtype = "MINOR") {
+        document.getElementById("dialog_box").style.background = minorcolor;
+    } else if (msgtype = "WARNING") {
+        document.getElementById("dialog_box").style.background = warningcolor;
+    } else if (msgtype = "INFORMATION") {
+        document.getElementById("dialog_box").style.background = infocolor;
+    } else if (msgtype = "QUESTION") {
+        document.getElementById("dialog_box").style.background = questioncolor;
+    } else {
+        document.getElementById("dialog_box").style.background = progerrcolor;
+    }
+  }
+         
+  function showMsg() {
+    document.getElementById("dialog_window").style['display'] = "block";
+  }
+
+  function dismissMsg() {
+    document.getElementById("dialog_window").style['display'] = "none";
+  }
+  
+  function bgChange(bg) {
+    document.getElementById("dialog_box").style.background = bg;
+  }
+  
+-->  
+  
+  
+  function showError() {
+    document.getElementById("error_dialog_window").style['display'] = "block";
+  }
+
+  function dismissError() {
+    document.getElementById("error_dialog_window").style['display'] = "none";
+  }
+  
+  function bgChange(bg) {
+    document.getElementById("error_dialog").style.background = bg;
+  }
+
+</script>
+
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE whatcolor AS CHARACTER NO-UNDO.
+DEFINE VARIABLE whichmsg AS INTEGER INITIAL 4 NO-UNDO.
+
+FIND err_message WHERE err_message.err_num = whichmsg NO-LOCK NO-ERROR.
+{&OUT} "Error MESSAGE #" err_message.err_num " = " err_message.err_msg "<BR>" SKIP.
+
+CASE err_message.err_type:
+    
+    WHEN "FATAL" THEN DO:
+        whatcolor = "#FF0000".      /* red */
+    END.
+    WHEN "MINOR" THEN DO:
+        whatcolor = "#FF99CC".      /* pink */
+    END.
+    WHEN "WARNING" THEN DO:
+        whatcolor = "#FFFF66".      /* yellow */
+    END.
+    WHEN "INFORMATION" THEN DO:
+        whatcolor = "#00CC00".      /* green */
+    END.
+    WHEN "QUESTION" THEN DO:
+        whatcolor = "#0066FF".      /* blue */
+    END.
+    OTHERWISE DO:
+        whatcolor = "#FFFFFF".      /* white */
+    END.
+
+END.    /** of case err_type **/
+     
+</SCRIPT>
+
+
+  
+<script type="text/javascript">
+
+  function ChangeError() {
+    document.getElementById("error_dialog_message").innerHTML = " `err_message.err_msg` ";
+    document.getElementById("error_dialog").style.background = " `whatcolor` ";    
+  }
+  
+  function ChangeItBack() {
+    document.getElementById("error_dialog_message").innerHTML = " Original Error Message ";
+    document.getElementById("error_dialog").style.background = " #FFFFFF ";  
+  }
+ 
+</script>
+
+
+
+<div id="error_dialog_window">
+<div id="error_dialog">
+<div id="error_dialog_message">
+<span id="test-id">This is an error dialog.</span>
+</div>
+<div id="error_dialog_buttons">
+<button type="button" id="error_dismiss_button" onclick="dismissError()">Dismiss</button>
+<button type="button" onclick="bgChange(' lightblue ')">Change Color</button>
+</div>
+
+</div>
+</div>
+
+<!-- My Adjusted Version 
+
+<div id="dialog_window">
+    <div id="dialog_box">
+    
+        <div id="dialog_message">
+            <span id="test-id">This is an error dialog.</span>
+        </div>   <!-- of dialog_message -->
+        
+<!-- 
+        <div id="dialog_buttons">
+			<button type="button" id="dismiss_button" onclick="dismissButton()">Dismiss</button>
+			<button type="button" onclick="bgChange(' lightblue ')">Change Color</button>
+        </div>  <!-- of dialog_buttons -->
+
+<!-- 
+    </div>  <!-- of dialog_box -->
+
+<!-- 
+</div>  <!-- of dialog_window -->
+
+
+
+I am the things in the background - I am covered by the success/error message.
+
+<button type="button" onclick="ChangeError()">Change Error</button>
+<button type="button" onclick="ChangeItBack()">Change It Back</button>
+<button type="button" onclick="showError()">Show Error</button>
+</BODY>
+</HTML>

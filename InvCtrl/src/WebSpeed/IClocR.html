@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<TITLE>Location Report</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="17/Aug/2016">
+    <META NAME='LAST_UPDATED' CONTENT="18/Oct/2016">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Template Notes: 
+        This template is designed to be used with a simple search report.
+        It has a link designed to send the user to a more advanced (From
+        To) search. The validation act allows you to decide weather the 
+        criteria the user is inputting is valid for your table to search
+        by (outside date range for example).  Quoted areas are either
+        instuctions or place holders for your variables and fields. 
+    
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-site LIKE loc_mstr.loc_site NO-UNDO.
+DEFINE VARIABLE v-warehouse LIKE loc_mstr.loc_warehouse NO-UNDO.
+DEFINE VARIABLE v-name LIKE loc_mstr.loc_name NO-UNDO.
+DEFINE VARIABLE v-to-site LIKE loc_mstr.loc_site NO-UNDO.
+DEFINE VARIABLE v-to-warehouse LIKE loc_mstr.loc_warehouse NO-UNDO.
+DEFINE VARIABLE v-to-name LIKE loc_mstr.loc_name NO-UNDO.
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act             = html-encode(get-value("h-act"))
+    v-site          = html-encode(get-value("h-site"))
+    v-warehouse     = html-encode(get-value("h-warehouse"))
+    v-name          = html-encode(get-value("h-name"))
+    v-to-site       = html-encode(get-value("h-to-site"))
+    v-to-warehouse  = html-encode(get-value("h-to-warehouse"))
+    v-to-name       = html-encode(get-value("h-to-name"))
+    .
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP
+            "<DIV class='grid_10'>" SKIP   
+            "<div class='table_2col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=4>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)           
+            "       <tr>" skip
+            "           <td>Site Name</td>" skip
+            "           <td><input type='text' name='h-site' value='" v-site "' /></td>" skip   
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-site' value='" v-to-site "' /></td>" skip         
+            "       </tr>" SKIP(1)
+            "           <td>Warehouse Name</td>" skip
+            "           <td><input type='text' name='h-warehouse' value='" v-warehouse "' /></td>" skip  
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-warehouse' value='" v-to-warehouse "' /></td>" skip          
+            "       </tr>" SKIP(1)
+            "           <td>Location Name</td>" SKIP
+            "           <td><input type='text' name='h-name' value='" v-name "' /></td>" SKIP    
+            "           <td>To</td>" SKIP
+            "           <td><input type='text' name='h-to-name' value='" v-to-name "' /></td>" SKIP        
+            "       </tr>" SKIP(1)
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Search' class='btn'>Search</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP         
+			"</div>" SKIP.
+    
+    END. /* INITIAL */
+    
+    WHEN "SEARCH" THEN DO:
+        {&OUT}
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_1'></DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='6'>Location Report</TH>" SKIP    
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD>Site Name</TD>" SKIP
+            "                <TD>Warehouse Name</TD>" SKIP
+            "                <TD>Location Name</TD>" SKIP
+            "                <TD>Type</TD>" SKIP
+            "                <TD>Description</TD>" SKIP
+            "                <TD>Default Status</TD>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1).
+            
+        FOR EACH loc_mstr WHERE 
+            (loc_mstr.loc_site >= v-site OR v-site = "") AND
+            (loc_mstr.loc_site <= v-to-site OR v-to-site = "") AND
+            (loc_mstr.loc_warehouse >= v-warehouse OR v-warehouse = "") AND
+            (loc_mstr.loc_warehouse <= v-to-warehouse OR v-to-warehouse = "") AND
+            (loc_mstr.loc_name >= v-name OR v-name = "") AND
+            (loc_mstr.loc_name <= v-to-name OR v-to-name = "") AND
+            loc_mstr.loc_deleted = ? NO-LOCK 
+                BREAK BY loc_mstr.loc_site 
+                BY loc_mstr.loc_warehouse 
+                BY loc_mstr.loc_name:
+             
+            {&OUT}
+                "           <tr>" SKIP
+                "               <td>" loc_mstr.loc_site "</td>" SKIP
+                "               <td>" loc_mstr.loc_warehouse "</td>" SKIP
+                "               <td><a href=~"../../InvCtrl/rcode/ICloc_maintU.r?h-site=" loc_mstr.loc_site
+                "&h-warehouse=" loc_mstr.loc_warehouse
+                "&h-name=" loc_mstr.loc_name
+                "&h-act=Search&whattorun=".
+            
+            {menu-hyperlinkR.i ICloc_maintU.r}.
+                
+            {&OUT} "~">" loc_mstr.loc_name "</a></td>" SKIP
+                "               <td>" loc_mstr.loc_type "</td>" SKIP
+                "               <td>" loc_mstr.loc_desc "</td>" SKIP
+                "               <td>" loc_mstr.loc_def_status "</td>" SKIP
+                "           </tr>" SKIP.
+
+        END. /* 4ea. */
+        
+        {&OUT}          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='6'>END OF REPORT</TD>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_10-->" SKIP
+/*            "<DIV class='grid_1'></DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+    
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+            "<h2>Could not find act " act ".</h2>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,276 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+   <META NAME="VERSION" CONTENT="1.1">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="19/Mar/14">
+    <META NAME="LAST_UPDATED" CONTENT="18/Mar/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<TITLE>WebSpeed Script</TITLE>
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:       3/19/2015
+    Version History:
+        1.1 - Written by Jacob Luttrell on 19/Mar/16.  Added in progname updater.
+                Marked by 1dot1.
+  -------------------------------------------------------------------*/
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/  
+
+/***************************  Variable Definition Section  *************************/
+DEFINE VARIABLE uomuom      LIKE uom_mstr.uom_uom         NO-UNDO.
+DEFINE VARIABLE uomtype     LIKE uom_mstr.uom_type        NO-UNDO.
+DEFINE VARIABLE uomdesc     LIKE uom_mstr.uom_descrip     NO-UNDO.
+DEFINE VARIABLE uomdest     LIKE uom_mstr.uom_dest_uom    NO-UNDO.
+DEFINE VARIABLE uomvalue    LIKE uom_mstr.uom_value       NO-UNDO. 
+ 
+ DEFINE VARIABLE act        AS CHARACTER                    NO-UNDO. 
+ DEFINE VARIABLE ITshowmsg  AS LOG INITIAL NO               NO-UNDO.
+ 
+ DEFINE VARIABLE thisuom AS CHARACTER                    NO-UNDO. 
+ 
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "<P>Pre get-value</P>" skip
+                                                                                       "<P>Act = " act "</P>" skip
+                                                                                       "<P>Pre GET uomuom = " get-value('h-uomuom') "</P>" SKIP
+                                                                                       "<P>uomuom = " uomuom "</P>" skip    
+                                                                                       "<P>uomtype = " uomtype "</P>" skip
+                                                                                       "<P>uomdesc = " uomdesc "</P>" skip
+                                                                                       "<P>uomvalue = " uomvalue "</P>" skip
+                                                                                       "<P>h-uomvalue = " get-value('h-uomvalue') "</P>" skip
+                                                                                       "<hr width=90%>" skip.                                                                                      
+         
+ ASSIGN 
+    act         = get-value('h-act')
+    uomuom      = get-value('h-uomuom')
+    uomtype     = get-value('h-uomtype')
+    uomdesc     = get-value('h-uomdesc').
+/*    uomvalue    = DECIMAL(get-value('h-uomvalue'))*/
+/*    uomdest     = DECIMAL(get-value('h-uomdest'))*/
+
+    
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "<P>Post get-value</P>" skip
+                                                                                       "<P>Act = " act "</P>" skip
+                                                                                       "<P>Pre GET uomuom = " get-value('h-uomuom') "</P>" SKIP
+                                                                                       "<P>uomuom = " uomuom "</P>" skip    
+                                                                                       "<P>uomtype = " uomtype "</P>" skip
+                                                                                       "<P>uomdesc = " uomdesc "</P>" skip
+/*                                                                                       "<P>uomvalue = " uomvalue "</P>" skip*/
+/*                                                                                       "<P>h-uomvalue = " get-value('h-uomvalue') "</P>" skip*/
+                                                                                       "<hr width=90%>" skip.
+        
+ IF act = "" THEN 
+    act = "INITIAL".
+     
+ ELSE IF act = "CREATE_UOM" THEN 
+    act = "CREATE_UOM".
+    
+ ELSE IF act = "SAVE_CHANGES" THEN                                              /* 1dot1 */
+    act = "SAVE_CHANGES".                                                       /* 1dot1 */
+     
+ ELSE IF uomuom = "" THEN 
+    act = "CREATE".
+     
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "<P>Pre Case</P>" skip
+                                                                                       "<P>Act = " act "</P>" skip
+                                                                                       "<P>uomuom = " uomuom "</P>" skip   
+                                                                                       "<P>uomtype = " uomtype "</P>" skip
+                                                                                       "<P>uomdesc = " uomdesc "</P>" skip
+                                                                                       "<hr width=90%>" skip.
+        
+/********************************  Main Program  ***********************************/
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:
+        
+        {UOMmaintU-form.i "FIND_UOM" "NOTHING" "DISABLED" "NOTHING" "CREATE"}.
+         
+    END.  /** of act = "INITIAL" **/
+    
+    WHEN "FIND_UOM" THEN DO:
+        
+        FIND uom_mstr WHERE uom_mstr.uom_uom = uomuom AND
+/*            uomuom <> "" AND*/
+            uom_mstr.uom_deleted = ?
+                NO-LOCK NO-ERROR.
+        IF AVAILABLE uom_mstr THEN 
+            ASSIGN 
+                uomtype    = uom_mstr.uom_type
+                uomdesc    = uom_mstr.uom_descrip.
+/*              uomvalue   = uom_mstr.uom_value*/ 
+/*              uomdest    = uom_mstr.uom_dest_uom.*/
+                
+ 
+        {UOMmaintU-form.i "SAVE_CHANGES" "DISABLED" "NOTHING" "NOTHING" "NO_BUTTON"}.      /* 1dot1 */
+                
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Post FIND</P>" skip  
+                                                                                        "<P>Act = " act "</P>" skip 
+                                                                                        "<P>uomuom = " uomuom "</P>" skip   
+                                                                                        "<P>uomtype = " uomtype "</P>" skip
+                                                                                        "<P>uomdesc = " uomdesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.
+         
+    END.  /** of act = "FIND" **/ 
+    
+    WHEN "SAVE_CHANGES" THEN DO:                                                /* 1dot1 */
+        
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Update</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>uomuom = " uomuom "</P>" skip   
+                                                                                        "<P>uomtype = " uomtype "</P>" skip
+                                                                                        "<P>uomdesc = " uomdesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.
+        
+        FIND uom_mstr WHERE uom_mstr.uom_uom = uomuom AND 
+            uom_mstr.uom_deleted = ? 
+                EXCLUSIVE-LOCK NO-ERROR.
+        IF AVAILABLE uom_mstr THEN 
+            ASSIGN 
+                uom_mstr.uom_type       = uomtype
+                uom_mstr.uom_desc       = uomdesc
+                uom_mstr.uom_prog_name  = THIS-PROCEDURE:FILE-NAME.                     /* 1dot1 */
+/*                uom_mstr.uom_value      = uomvalue*/
+/*                uom_mstr.uom_dest_uom   = uomdest*/  
+        
+        ELSE   
+            {&OUT} "<P>ERROR - uom_mstr not found for Unit of Measure = '" uomuom "'.</P>" skip.
+ 
+        {UOMmaintU-form.i "INITIAL" "DISABLED" "DISABLED" "NOTHING" "NO_BUTTON"}.                
+        
+    END.  /** of act = "UPDATE" **/
+    
+    WHEN "CREATE" THEN DO: 
+        ASSIGN
+            uomuom = ""
+            uomtype = ""
+            uomdesc = ""
+            uomdest = 0
+            uomvalue = 0.
+        
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside CREATE</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>uomuom = " uomuom "</P>" skip
+                                                                                        "<P>uomtype = " uomtype "</P>" skip
+                                                                                        "<P>uomdesc = " uomdesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.
+        {UOMmaintU-form.i "CREATE_UOM" "NOTHING" "NOTHING" "NOTHING" "NO_BUTTON"}.
+         
+                                                                                          
+        
+    END.  /** of act = "CREATE" **/
+     
+    WHEN "CREATE_UOM" THEN DO:
+        
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Create</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>uomuom = " uomuom "</P>" skip   
+                                                                                        "<P>uomtype = " uomtype "</P>" skip
+                                                                                        "<P>uomdesc = " uomdesc "</P>" skip
+/*                                                                                        "<P>uomvalue = " uomvalue "</P>" skip*/
+                                                                                        "<hr width=90%>" skip.
+                
+        FIND uom_mstr WHERE uom_mstr.uom_uom = uomuom AND
+            uom_mstr.uom_type = uomtype AND
+            uom_mstr.uom_dest_uom = uomdest AND 
+            uom_mstr.uom_deleted = ?
+                NO-LOCK NO-ERROR.
+        IF AVAILABLE uom_mstr THEN DO: 
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Avail uom_mstr</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>uomuom = " uomuom "</P>" skip   
+                                                                                        "<P>uomtype = " uomtype "</P>" skip
+                                                                                        "<P>uomdesc = " uomdesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.
+            {&OUT}
+                "<CENTER><P class='errmsg'>ERROR! UOM " uomuom " already exists.  Would you like to update the existing record?</P>" SKIP
+                "<FORM><button name='h-uomuom' value=" uom_mstr.uom_uom " type='submit'>Yes</button>" SKIP 
+                "<button name='h-uomuom' value=0 type='submit'>No</button></FORM></CENTER>" SKIP.
+                                                                                                    
+            act = "UOM EXISTS".    /* not actually used.  Was originally going to be tied to the OTHERWISE uom in the email */
+        
+        END.  /** of if avail uom_mstr **/
+        
+        ELSE DO:
+            
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Not Avail uom_mstr</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>uomuom = " uomuom "</P>" skip   
+                                                                                        "<P>uomtype = " uomtype "</P>" skip
+                                                                                        "<P>uomdesc = " uomdesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.
+                    
+                    
+            CREATE uom_mstr.
+            ASSIGN 
+                uom_mstr.uom_uom            = uomuom    
+                uom_mstr.uom_type           = uomtype
+                uom_mstr.uom_descrip        = uomdesc
+                uom_mstr.uom_prog_name      = THIS-PROCEDURE:FILE-NAME.                     /* 1dot1 */
+/*                uom_mstr.uom_value          = uomvalue*/
+/*                uom_mstr.uom_dest_uom       = uomdest.*/
+                
+            {UOMmaintU-form.i "INITIAL" "DISABLED" "DISABLED" "NOTHING" "NO_BUTTON"}. 
+                
+        END.  /** of else do **/
+        
+    END.  /** of act = "CREATE" **/
+      
+    OTHERWISE DO: 
+                       
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Otherwise Do</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>uomuom = " uomuom "</P>" skip   
+                                                                                        "<P>uomtype = " uomtype "</P>" skip
+                                                                                        "<P>uomdesc = " uomdesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.
+                                           
+        {&OUT} 
+            "<P class='errmsg'>Unexpected UOM!  Please contact <a href='mailto:hhi.techsupport@mysolsource.com?subject=Error with UOMmaintU.html -- " act "'>Solsource</a> immediately.</P>" SKIP             
+            "<FORM method='post'>" skip
+            "<center><INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP 
+            "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP 
+            "</FORM>" skip.     
+           
+    END.  /** of otherwise **/
+    
+END CASE.  /*** case of act ***/
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT} "<P>End OF LINE.</P>".
+
+/*******************************  End of Program  **********************************/
+</SCRIPT>
+</BODY>
+</HTML>

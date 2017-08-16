@@ -1,0 +1,466 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="DOUG LUTTRELL">
+    <TITLE>Module Maintenance</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="21/Oct/16">
+    <META NAME='LAST_UPDATED' CONTENT="21/Oct/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+<script src='/depot/src/HTMLContent/buttons.js'></script>
+
+<script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Template Notes: 
+        This template is designed to be used with a maintenance screen.
+        Quoted areas are either instuctions or place holders for your 
+        variables and fields.
+    
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+DEFINE VARIABLE v-new           AS LOGICAL              NO-UNDO.
+DEFINE VARIABLE whichrec        AS INTEGER              NO-UNDO.
+DEFINE VARIABLE o-successful    AS LOGICAL              NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act             = get-value("h-act")
+    whichrec        = INTEGER(get-value("h-whichrec"))
+    v-new           = IF get-value("h-new") = "YES" THEN YES ELSE IF get-value("h-new") = "NO" THEN NO ELSE ?
+    /* additional variables here */
+    .
+
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+
+/* ************************ Validation Acts ************************ */
+IF act = "VALIDATION" THEN DO: 
+    
+    RUN VALUE(SEARCH(/* SUB_find.r */))(
+        /* input parameters */
+        /* output parameters */
+        ).
+    
+        IF v-new = YES THEN DO: 
+            
+            IF /* ID */ = 0 THEN
+                ASSIGN    
+                    act = "UPDATE".
+            
+            ELSE DO:
+                
+                ASSIGN v-new = NO.
+                
+               {&OUT}
+		            "<form>" SKIP
+		            "<INPUT type='hidden' name='h-new' value='" v-new "' />" SKIP
+		            "<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP 
+                    "<INPUT type='hidden' name='" /* h-carried-variable */ "' value='" /* v-carried-variable */ "' />" SKIP
+                    "<INPUT type='hidden' name='" /* h-updatable-variable */ "' value='" /* v-updateable-variable */ "' />" SKIP		                   
+		            "<DIV class='row'>" SKIP
+		            "<DIV class='grid_3'> </DIV>" SKIP
+		            "<DIV class='grid_6'>" SKIP   
+		            "<center><h2>The record you are trying to create already exists. Would you like to Update it?</h2></center>" SKIP
+		            "</DIV>         <!-- end of grid_6 -->" SKIP
+		            "<DIV class='grid_3'> </DIV>" SKIP  
+		            "</DIV>     <!-- end of row -->" SKIP
+		            "<BR>" SKIP
+		            "<div class='row'>" SKIP
+		            "   <div class='grid_3'> </DIV>" SKIP
+		            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Yes</BUTTON></div>" SKIP
+		            "   <div class='grid_2'> </DIV>" SKIP
+		            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>No</BUTTON></div>" SKIP        
+		            "   <div class='grid_3'> </DIV>" SKIP
+		            "</div>" SKIP.
+                
+            
+            END. /* else ID <> 0 */
+        END. /* v-new = yes */    
+        ELSE IF v-new = NO THEN DO:  
+            
+            IF /* ID */ = 0 THEN DO:
+                
+                ASSIGN v-new = YES.
+                
+                {&OUT}
+                    "<form>" SKIP
+                    "<INPUT type='hidden' name='h-new' value='" v-new "' />" SKIP
+                    "<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                    "<INPUT type='hidden' name='" /* h-carried-variable */ "' value='" /* v-carried-variable */ "' />" SKIP
+                    "<INPUT type='hidden' name='" /* h-updatable-variable */ "' value='" /* v-updateable-variable */ "' />" SKIP        
+                    "<DIV class='row'>" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "<DIV class='grid_6'>" SKIP   
+                    "<center><h2>The record you are trying to update does not exist. Would you like to create it?</h2></center>" SKIP
+                    "</DIV>         <!-- end of grid_6 -->" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP  
+                    "</DIV>     <!-- end of row -->" SKIP
+                    "<BR>" SKIP
+                    "<div class='row'>" SKIP
+                    "   <div class='grid_3'> </DIV>" SKIP
+                    "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Yes</BUTTON></div>" SKIP
+                    "   <div class='grid_2'> </DIV>" SKIP
+                    "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>No</BUTTON></div>" SKIP        
+                    "   <div class='grid_3'> </DIV>" SKIP
+                    "</div>" SKIP
+                    "</form>" SKIP.
+            END. /* if /* ID */ = 0 */       
+            
+            ELSE         
+                ASSIGN    
+                    act = "UPDATE".
+        
+        END. /* v-new = no */
+        ELSE DO:
+            {&OUT} 
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>An error has occured in the validation process. v-new = " v-new ". Please contact Solsource.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP.
+
+        END. /* else do v-new = ? */
+END. /* validation */    
+IF act = "VALIDATE_DELETE" THEN DO: 
+    
+    /* use a multi table find first here to find if there are any records dependent on the one you are 
+    trying to delete.  */
+    
+    RUN VALUE(SEARCH(/* SUB_find.r*/))(
+        /* input parameters */
+        /* output parameters */
+        ).
+    
+    IF /* output id */ <> 0 THEN
+    DO: 
+        
+        FIND FIRST /* dependent_table */ WHERE /* dependent_id */ = /* v-id */ AND
+                                               /* dependent_delete */ = ?
+                                               NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (/* dependent_table */) THEN
+    
+            {&OUT}
+				"<form>" SKIP
+				"<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP       
+				"<DIV class='row'>" SKIP
+				"<DIV class='grid_3'> </DIV>" SKIP
+				"<DIV class='grid_6'>" SKIP   
+				"<center><h2>The record you are trying to delete has dependent records in " /* dependent_table */ ".  Delete dependent records before continuing.</h2></center>" SKIP
+				"</DIV>         <!-- end of grid_6 -->" SKIP
+				"<DIV class='grid_3'> </DIV>" SKIP  
+				"</DIV>     <!-- end of row -->" SKIP
+				"<BR>" SKIP 
+				"<div class='row'>" SKIP
+				"   <div class='grid_5'> </DIV>" SKIP
+				"   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+				"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+				"   <div class='grid_5'> </DIV>" SKIP
+				"</div>" SKIP
+				"</form>" SKIP. 
+         
+         ELSE
+         
+            ASSIGN act = "DELETE".
+         
+    END. /* if avail table_mstr */
+    ELSE
+
+	    {&OUT}
+	        "<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP       
+	        "<DIV class='row'>" SKIP
+	        "<DIV class='grid_3'> </DIV>" SKIP
+	        "<DIV class='grid_6'>" SKIP   
+	        "<center><H2>An Error has occured while trying to find the record you want to delete. Please contact Solsource.</H2></center>" SKIP
+	        "</DIV>         <!-- end of grid_6 -->" SKIP
+	        "<DIV class='grid_3'> </DIV>" SKIP  
+	        "</DIV>     <!-- end of row -->" SKIP.     
+
+END. /* validate delete */         
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" skip
+            "           <td>" /* Field Title */ "</td>" skip
+            "           <td><input type='text' name='" /* h-field */ "'  value='" /* v-field */ "' /></td>" SKIP            
+            "       </tr>" SKIP(1)
+            
+        /* copy and paste above <tr>...</tr> for more fields */
+        
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP        
+			"   <div class='grid_3'> </DIV>" SKIP
+			"</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+    
+    /* the .i file below is a holding pin for the javascript only.  You will need to go to the file and copy 
+    and paste the javascript from there and into your code here. */ 
+        
+    {../depot/src/WebSpeed/Java_ClickableRow.i}.       
+        
+        {&OUT}
+            "<form>" SKIP        
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='" /* # of columns */ "'>" /* Table Header */ "</TH>" SKIP    
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD>" /* Column Header */ "</TD>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1)
+            "        <tbody class='clickable'>" SKIP.
+            
+        FOR EACH /* table_mstr */ WHERE /* table_field */ BEGINS /* v-field */ AND
+                                        /* table_deleted */ = ?
+                                          NO-LOCK BY /* index field */:
+            {&OUT}
+            "           <tr>" SKIP
+            "               <TD><center><input type='radio' name='h-whichrec' value='" /* Record_ID */ "' /></center></TD>" SKIP
+            "               <td>" /* Display Field */ "</td>" SKIP
+            "           </tr>" SKIP.
+
+        END. /* 4ea. */
+        
+        {&OUT}
+            "        </tbody>" SKIP          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='" /* # of columns */ "'>END OF REPORT</TD>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP 
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<div class='row'>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='MAINTENANCE' class='btn'>Select</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='NEW' class='btn'>New</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP            
+            "   <div class='grid_1'><button type='submit' name='h-act' value='VALIDATE_DELETE' class='btn'>Delete</BUTTON></div>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+    WHEN "NEW" THEN DO:
+        
+        ASSIGN v-new = YES.
+         
+        {../depot/src/WebSpeed/MaintRecordDispTemp.i "VALIDATION" "NOTHING" "REQ"}.
+            
+    END. /* new */
+    WHEN "MAINTENANCE" THEN DO:
+    
+        ASSIGN v-new = NO.
+        
+        FIND FIRST /* table_mstr */ WHERE /* table_field */ = /* v-field */ AND
+                                      /* table_deleted */ = ?
+                                        NO-LOCK BY /* index field */:
+
+        IF AVAILABLE (/* table_mstr */) THEN
+        DO:
+
+            ASSIGN
+               /* v-carried-variable */ = /* table_mstr.table_field */
+               /* v-updatable-field */  = /* table_mstr.table_field2 */
+                .
+                
+            {../depot/src/WebSpeed/MaintRecordDispTemp.i "VALIDATION" "REQUIRED" "REQ"}.
+        
+        END. /* if avial table_mstr */
+        ELSE
+
+            {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<center><h2>Could not find record " /* v-carried-variable */ ".</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.              
+        
+    END. /* maintenance */
+    WHEN "UPDATE" THEN DO:
+      
+      RUN VALUE(SEARCH(/* SUB_ucU.r*/))(
+          /* input parameters */
+          /* output parameters */
+          /* OUTPUT o-successful */
+          ).
+
+        IF o-successful = YES THEN
+
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center>" SKIP
+                    "<h2>Record updated.</h2>" SKIP
+                    "</center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</div>" SKIP.
+        
+            {../depot/src/WebSpeed/MaintRecordDispTemp.i "INITIAL" "NOTHING" "DISABLED"}.
+         
+        ELSE
+        
+            {&OUT}
+                "<DIV class='row'>" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "<DIV class='grid_6'>" SKIP 
+	                "<center><h2>Could not update/create record " /* v-carried-variable */ ". Contact Solsource.</h2></center>" SKIP
+	            "</DIV>         <!-- end of grid_6 -->" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "</DIV>     <!-- end of row -->" SKIP
+	            "<BR>" SKIP 
+	            "<form>" SKIP
+	            "<div class='row'>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+	            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "</DIV>     <!-- end of row -->" SKIP
+	            "</form>" SKIP.     
+        
+    END. /* update */
+    WHEN "DELETE" THEN DO: 
+    
+        FIND /* table_mstr */ WHERE /* table_ID */ = /* v-ID */ AND
+                                    /* table_delete */ = ? EXCLUSIVE-LOCK NO-ERROR.
+
+        IF AVAILABLE (/* table_mstr */) THEN
+        DO: 
+            
+            /* delete record here either with the delete command or by flaging the table's delete field. */
+            
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>Record " /* v-id */ " has been deleted.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP.
+            
+            {../depot/src/WebSpeed/MaintRecordDispTemp.i "INITIAL" "NOTHING" "DISABLED"}.
+        
+        END. /* if avail table_mstr */
+        ELSE
+         
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>Could not find record " /* v-carried-variable */ " to delete. Please contact Solsource.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP.                                  
+        
+    END. /* delete */                
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<center><h2>Could not find act " act ".</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

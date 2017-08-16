@@ -1,0 +1,253 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Test Kit Quantities Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/for-flowchart.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+
+  /*------------------------------------------------------------------
+    File:           TKquantitiesR.html
+    Description:    Status Quantities for Test kits in the TK_mstr
+    Created:        1/7/15
+    Notes:
+        
+        
+  -------------------------------------------------------------------*/    
+    
+    DEFINE VARIABLE ITmessage   AS CHARACTER INITIAL "NO" NO-UNDO.
+    DEFINE VARIABLE statlist    AS CHARACTER 
+        INITIAL "DELETED,CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,VOID,COMPLETE,VEND_PAID,BLANK" NO-UNDO.
+    DEFINE VARIABLE quant-count AS INTEGER EXTENT 18 NO-UNDO.
+    DEFINE VARIABLE v-TK_stat   LIKE TK_mstr.TK_status NO-UNDO.
+
+/************************ body of code ***********************/
+              
+
+		FOR EACH TK_mstr NO-LOCK:
+		    
+			v-tk_stat = IF TK_mstr.TK_status = "" THEN "BLANK" ELSE TK_mstr.TK_status.
+			
+			IF LOOKUP(v-tk_stat,statlist) = 0 THEN DO:
+			     
+			    
+                    
+			    
+			    quant-count[18] = quant-count[18]  + 1. 
+			    
+		    END.
+		    ELSE DO:
+                 
+                IF TK_mstr.TK_lab_paid <> ? THEN 
+                quant-count[16] = quant-count[16]  + 1.
+                  
+                 
+                quant-count[LOOKUP(v-TK_stat,statlist)] = quant-count[LOOKUP(v-TK_stat,statlist)]  + 1. 		     
+		    
+		    END. 
+		        
+		 END. /**** for each TK_mstr ****/
+
+{&OUT}
+" <div class='row'> <!-- Deleted Box and arrows -->
+      <div class='grid_0-5'></div>
+      <div class='grid_2'>
+        <div class='curved_arrow_long'></div>
+      </div>
+      <div class='grid_7'>
+        <div class='curved_arrow'></div>
+      </div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_black'>Deleted</div>
+          <div class='box_info'>" quant-count[1] "</div>
+        </div>
+      </div>
+      <div class='grid_0-5'></div>
+    </div>
+    <div class='row'>
+      <div class='grid_12 gap'>
+      </div>
+    </div>
+    <div class='row'> <!-- Top Row -->
+      <div class='grid_0-5'></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_blue'>Created</div>
+          <div class='box_info'>" quant-count[2] "</div>
+        </div>
+      </div>
+      <div class='grid_0-25'><div class='arrow_right'></div></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_blue'>In Stock</div>
+          <div class='box_info'>" quant-count[3] "</div>
+        </div>
+      </div>
+      <div class='grid_0-25'><div class='arrow_right'></div></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_orange'>Sold</div>
+          <div class='box_info'>" quant-count[4] "</div>
+        </div>
+      </div>
+      <div class='grid_0-25'><div class='arrow_right'></div></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_orange'>Shipped</div>
+          <div class='box_info'>" quant-count[5] "</div>
+        </div>
+      </div>
+      <div class='grid_0-25'><div class='arrow_right'></div></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_green'>Collected</div>
+          <div class='box_info'>" quant-count[6] "</div>
+        </div>
+      </div>
+      <div class='grid_0-5'></div>
+    </div>
+    <div class='row'><!-- Gap Arrow -->
+      <div class='grid_1'></div>
+      <div class='grid_10'>
+        <div class='gap'>
+          <div class='gap_arrow_top'></div>
+          <div class='gap_arrow'></div>
+        </div>
+      </div>
+      <div class='grid_1'></div>
+    </div>
+    <div class='row'> <!-- Middle Row -->
+      <div class='grid_0-5'></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_green'>Lab Received</div>
+          <div class='box_info'>" quant-count[7] "</div>
+        </div>
+      </div>
+      <div class='grid_0-25'><div class='arrow_right'></div></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_green'>Lab Process</div>
+          <div class='box_info'>" quant-count[8] "</div>
+        </div>
+      </div>
+      <div class='grid_0-25'><div class='arrow_right'></div></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_green'>HHI Received</div>
+          <div class='box_info'>" quant-count[9] "</div>
+        </div>
+      </div>
+      <div class='grid_0-25'><div class='arrow_right'></div></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_green'>Loaded</div>
+          <div class='box_info'>" quant-count[10] "</div>
+        </div>
+      </div>
+      <div class='grid_0-25'><div class='arrow_right'></div></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_green'>Processed</div>
+          <div class='box_info'>" quant-count[11] "</div>
+        </div>
+      </div>
+      <div class='grid_0-5'></div>
+    </div>
+    <div class='row'><!-- Gap Arrow -->
+      <div class='grid_1'></div>
+      <div class='grid_10'>
+        <div class='gap'>
+          <div class='gap_arrow_top'></div>
+          <div class='gap_arrow'></div>
+        </div>
+      </div>
+      <div class='grid_1'></div>
+    </div>
+    <div class='row'> <!-- Diamond Row -->
+      <div class='grid_0-5'></div>
+      <div class='grid_2'>
+        <div class='diamond'></div>
+        <div class='diamond_text'>Is the test BioMed or MPA?</div>
+      </div>
+      <div class='grid_2'>
+        <div class='arrow_right'></div>
+        <div class='arrow_text'>MPA</div>
+      </div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_red'>Printed</div>
+          <div class='box_info'>" quant-count[12] "</div>
+        </div>
+      </div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_red'>Burned</div>
+          <div class='box_info'>" quant-count[13] "</div>
+        </div>
+      </div>
+      <div class='grid_1'></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_black'>VOID</div>
+          <div class='box_info'>" quant-count[14] "</div>
+        </div>
+      </div>
+      <div class='grid_0-5'></div>
+    </div>
+    <div class='row'>
+      <div class='grid_6-5'></div>
+      <div class='grid_2'>
+        <div class='gap'>
+          <div class='vertical_arrow'></div>
+        </div>
+      </div>
+      <div class='grid_3-5'></div>
+    </div>
+    <div class='row'>
+      <div class='grid_1'></div>
+      <div class='grid_5-5'>
+        <div class='arrow_text'>BioMed</div>
+        <div class='gap_arrow_bottom_left'></div>
+        <div class='gap_arrow_bottom'></div>
+      </div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_gold'>Complete</div>
+          <div class='box_info'>" quant-count[15] "</div>
+        </div>
+      </div>
+      <div class='grid_1'></div>
+      <div class='grid_2'>
+        <div class='box'>
+          <div class='box_title_lightgreen'>Vendor Paid</div>
+          <div class='box_info'>" quant-count[16] "</div>
+        </div>
+      </div>
+      <div class='grid_0-5'></div>
+    </div>"
+    "<P>Files without a status = " quant-count[17] "</P>"
+    "<p> Other statuses totalled " quant-count[18] ".</p>". 
+  
+
+
+    
+</SCRIPT>
+</BODY>
+</HTML>

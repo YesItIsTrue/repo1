@@ -1,0 +1,33 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Your Name">
+<TITLE>WebSpeed Script</TITLE>
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE x AS CHARACTER FORMAT "x(60)" NO-UNDO.
+DEFINE VARIABLE tmpurl AS CHARACTER NO-UNDO.
+
+x = x + url-field("HI","5","?").
+x = x + url-field("BYE","10","&").
+TmpUrl         = url-format(?,"45,16,DOGSTAR",",").
+
+{&OUT} tmpurl x.
+
+</SCRIPT>
+</BODY>
+</HTML>

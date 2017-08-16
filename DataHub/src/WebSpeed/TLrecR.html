@@ -1,0 +1,338 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Recommendation Report</TITLE>
+<META name="AUTHOR" content="Trae Luttrell">
+<META name="VERSION" content="1.5">
+<META name="COPYRIGHT" content="Solsource">
+<META name="CREATE_DATE" content="12/Jan/16">
+<META name="MODIFIED_DATE" content="23/Aug/16">
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT language="SpeedScript">
+CREATE WIDGET-POOL. 
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+    <SCRIPT language="SpeedScript">
+    
+{../depot/src/WebSpeed/menuname.i}.
+
+  /*------------------------------------------------------------------
+    File:           tld_det_Rpt.html
+    Description:    report page for tld_det in the HHI database
+    Created:
+        
+        Select test type, (in the test_mstr and tl_mstr), 
+            show all the sections (tl_mstr) (30 minutes can go to making it search by section as well), 
+            show each item/element/compound/marker (tld_det), then 
+            show each range and recomendation (trr_det, sort by range).
+   
+    Version History:
+        1.3 - Written by Jacob Luttrell on 12/Jan/16 made changes to code to 
+                match changes made in the database. Marked by 1dot3.   
+        1.4 - Written by Jacob Luttrell on 3/Mar/16 added prompt for date and 4ea, displayed effective dates in
+                report.
+                Marked by 1dot4.         
+                
+        1.41 - written by DOUG LUTTRELL on 01/Apr/16.  Made some changes to work with CSS.  Marked by 141. 
+        1.5  - written by Jacob Luttrell on 23/Aug/16. Added Value field for new range format for MPA tests.
+                Marked by 1dot5.
+  -------------------------------------------------------------------*/
+  
+DEFINE VARIABLE v-testtype      LIKE tl_mstr.tl_testtype    NO-UNDO.
+DEFINE VARIABLE v-section_desc  LIKE tl_mstr.tl_section_desc    NO-UNDO.
+DEFINE VARIABLE v-thismarker    AS CHARACTER                    NO-UNDO.
+DEFINE VARIABLE v-act           AS CHARACTER                    NO-UNDO.
+DEFINE VARIABLE v-start_holder  AS CHARACTER INITIAL ""         NO-UNDO.
+DEFINE VARIABLE v-end_holder    AS CHARACTER INITIAL ""         NO-UNDO.
+DEFINE VARIABLE v-green         AS CHARACTER                    NO-UNDO.
+DEFINE VARIABLE x               AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE v-date          AS DATE                         NO-UNDO.            /* 1dot4 */
+DEFINE VARIABLE v-char-date     AS CHARACTER                    NO-UNDO.            /* 1dot4 */
+DEFINE VARIABLE whichrec        AS RECID                        NO-UNDO.            /* 1dot4 */
+/**********************  Prologue  ********************************/
+ASSIGN 
+    v-testtype      = get-value("h-testtype")
+    v-section_desc  = get-value("h-section_desc")
+    v-char-date     = get-value("html5-date")
+    v-act           = get-value("h-act").
+
+ RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                                             /* 1dot4 */    
+           (v-char-date, OUTPUT v-date).                                            /* 1dot4 */
+
+FIND test_mstr WHERE test_mstr.test_type = v-testtype NO-LOCK NO-ERROR.             /* 1dot5 */
+
+IF v-act = "" THEN 
+    ASSIGN 
+        v-act = "Search".
+        
+/*********************** Search Act **************************************/
+IF v-act = "Search" THEN DO:
+   {&OUT}
+        "<div class='row'>" SKIP
+        "<div class='grid_3'></div>" SKIP
+        "<div class='grid_6'>" SKIP
+        "<center>"                                                          SKIP
+        "   <div class='table_col'>"                                        SKIP 
+        "       <form>"                                                     SKIP
+        "           <table>"                                                SKIP
+        "               <tr>"                                               SKIP
+        "                   <th colspan=2> Search Criteria</th>"            SKIP
+        "               </tr>"                                              SKIP
+        "               <tr>"                                               SKIP
+        "                   <td>Test Type</td>"                             SKIP        
+        "       <Td><select name='h-testtype' value='" v-testtype "' >"     SKIP.
+
+  /* 1dot4 --> */      
+    FOR EACH tl_mstr WHERE tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND         
+            tld_det.tld_deleted = ? NO-LOCK 
+        BREAK BY tl_mstr.tl_testtype: 
+                
+        IF FIRST-OF (tl_mstr.tl_testtype) THEN
+            
+            {&OUT}
+                "           <option value='" tl_mstr.tl_testtype "' >" tl_mstr.tl_testtype "</option>" SKIP.
+                         
+    END.  /** of 4ea. tl_mstr, etc. **/           
+ /* <-- 1dot4 */       
+        
+/*        "                   <td>"                                           SKIP                                                                                                                                        */
+/*        "          <select name='h-testtype' value='" v-testtype "'{2}>"    SKIP.                                                                                                                                       */
+/*                                                                                                                                                                                                                        */
+/*    FOR EACH test_mstr WHERE                                                                                                                /* if they want to show future tests we will need to change this -- 1dot4 */*/
+/*        (test_mstr.test_starteff <= TODAY OR test_mstr.test_starteff = ?)   AND                                                                                                                                         */
+/*        (test_mstr.test_endeff >= TODAY OR test_mstr.test_endeff = ?)       AND                                                                                                                                         */
+/*        test_mstr.test_deleted = ? NO-LOCK BY test_mstr.test_type:                                                                                                                                                      */
+/*                                                                                                                                                                                                                        */
+/*        IF test_mstr.test_type = v-testtype                                                                                                                                                                             */
+/*            THEN v-thismarker  = "SELECTED".                                                                                                                                                                            */
+/*            ELSE v-thismarker  = "".                                                                                                                                                                                    */
+/*                                                                                                                                                                                                                        */
+/*            {&OUT}                                                                                                                                                                                                      */
+/*                "               <option value='" test_mstr.test_type "'" v-thismarker ">" test_mstr.test_type "</option>" SKIP.                                                                                         */
+/*                                                                                                                                                                                                                        */
+/*    END.    /** of 4ea test_mstr **/                                                                                                                                                                                    */
+    
+    {&OUT}
+        "                       </select>" SKIP 
+        "                    </td>" SKIP
+        "               </tr>" SKIP
+    /* 1dot4 --> */
+        "               <tr>" SKIP 
+        "                   <td>Date</td>" SKIP                                 
+        "                   <td><input type='date' name='html5-date' value='" v-char-date "' /></td>" SKIP
+        "               </tr>" SKIP
+   /* <-- 1dot4 */
+        /*"               <tr>" SKIP
+        "                   <td>Section Name</td>" SKIP
+        "                   <td><select name='h-section-desc'</td>" SKIP
+        "               </tr>" SKIP*/
+        "           </table>" SKIP
+/*        "       <INPUT type='hidden' name='h-act' value='Results'/>"                       SKIP*/
+        "       <input type='hidden' name='whattorun' value='" whatshouldrun "'>"           SKIP           
+        "</div>" SKIP
+        "</div> <!-- grid_6 -->" SKIP
+        "<div class='grid_3'></div>" SKIP
+        "</div>" SKIP        
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Results' class='btn'>Submit</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</div>" SKIP
+        "   </FORM>" SKIP.
+END. /*** v-act 0 ***/
+/******************************************* Results Act **************************************/
+IF v-act = "Results" THEN DO:
+
+    FIND FIRST test_mstr WHERE test_mstr.test_type = v-testtype AND 
+    /* 1dot4 --> */
+              (v-date <> ? AND
+              (test_mstr.test_starteff <= v-date OR test_mstr.test_starteff = ?) AND 
+              (test_mstr.test_endeff >= v-date OR test_mstr.test_endeff = ?) OR
+              v-date = ?) 
+    /* <-- 1dot4 */                        
+        NO-LOCK NO-ERROR.
+   
+    {&OUT}
+        "<div class='row'>" SKIP
+        "<div class='grid_1'></div>" SKIP
+        "<div class='gird_10'>" SKIP
+        "<CENTER>                                                               " SKIP
+        "   <h2>" test_mstr.test_type " - " test_mstr.test_name "</h2>  " SKIP
+        "</CENTER>                                                               " SKIP.     
+       
+    FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = test_mstr.test_type 
+        NO-LOCK BREAK BY tl_mstr.tl_order:
+                                
+        x = 0.
+          
+        {&OUT}
+        "" SKIP
+        "   <div class='table_report fixed_table'>" SKIP
+        "       <table>" SKIP
+        "           <thead>" SKIP
+        "               <tr>" SKIP
+        "                   <th colspan=2>" tl_mstr.tl_section_desc "</th>" SKIP
+        "               </tr>" SKIP                                          
+        
+        "           <tr>" SKIP        
+        "               <td>Item Name</td>" SKIP
+        "               <td>Recommendation</td>" SKIP
+        "           </TR>" SKIP
+        "           </thead>" SKIP.
+            
+        FOR EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id
+            NO-LOCK, 
+            FIRST marker_list WHERE marker_list.marker_ID = tld_det.tld_item_ID             /* 1dot3 */ 
+/*            marker_list.marker_item = tld_det.tld_item_name*/                                 /* removed in 1dot3 */
+            NO-LOCK BREAK BY tld_det.tld_order:
+            
+             x = x + 1.
+                     
+             IF x MODULO 2 = 0 THEN ASSIGN v-green = " class='green' ". ELSE v-green = "" .
+           
+             {&OUT}
+                "           <tr>"                                                          SKIP
+                "               <td><a href=~"TLrecmaintU-5.r?h-testtype=" test_mstr.test_type         /* 1dot4 */
+/*                "               <td><a href=~"TLitemmaintU.r?h-testtype=" test_mstr.test_type*/
+/*                "&h-sectid=" tld_det.tld_sect_id      */
+/*                "&h-sectdesc=" tl_mstr.tl_section_desc*/
+                "&h-itemid=" tld_det.tld_item_id
+                "&whattorun=4.11"  
+                "&h-act=EDIT~">" marker_list.marker_item "</a></td>"          SKIP                 /* 1dot3 */
+                "               <td class='inner9' style=background-color:#999999 >"                        /* 141 */
+                "<table>" SKIP
+                "   <tr>" SKIP 
+                "       <th>Start Effective Date</th>" SKIP                                                 /* 1dot4 */
+                "       <th>End Effective Date</th>" SKIP.                                                   /* 1dot4 */
+                
+                IF test_mstr.test_family = "MPA" THEN                                                       /* 1dot5 */               
+                {&OUT}                                                                                      /* 1dot5 */
+                "       <th colspan='2'>Value</th>" SKIP.                                                   /* 1dot5 */
+                ELSE                                                                                        /* 1dot5 */
+                {&OUT}
+                "       <th>From Result Range</th>" SKIP                                                    /* 141 */          
+                "       <th>To Result Range</TH>" SKIP.                                                      /* 141 */
+                
+                {&OUT}
+                "       <th>Supplement</th>" SKIP
+                "       <th>From Dosage</th>" SKIP                                                          /* 1dot3 */
+                "       <th>To Dosage</th>" SKIP                                                            /* 1dot3 */
+                "       <th>UOM</th>" SKIP
+                "       <th>Notes</th>" SKIP
+                "   </tr>"
+                . 
+                
+            FOR EACH trr_det WHERE trr_det.trr_testtype = tl_mstr.tl_testtype AND 
+                             trr_det.trr_item_ID = tld_det.tld_item_id AND 
+                             trr_det.trr_deleted = ? NO-LOCK,
+                         FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_ID OR 
+                                trr_det.trr_suppl_ID = 0 NO-LOCK                                       /* 1dot4 */     
+                             BREAK BY trr_det.trr_order BY trr_det.trr_start_range BY suppl_list.suppl_name :
+                    
+                    {&OUT}
+                        "   <tr>" SKIP
+                        "       <td" v-green ">" trr_det.trr_start_eff "</td>" SKIP                     /* 1dot4 */
+                        "       <td" v-green ">" trr_det.trr_end_eff "</td>" SKIP.                       /* 1dot4 */
+                        
+                    IF test_mstr.test_family = "MPA" THEN                                               /* 1dot5 */
+                    {&OUT}                                                                              /* 1dot5 */
+                        "       <td colspan='2' " v-green ">" trr_det.trr_charstart "</td>" SKIP.       /* 1dot5 */
+                    
+                    ELSE DO:                                                                            /* 1dot5 */    
+                        {&OUT}    
+                        "       <td" v-green ">" trr_det.trr_start_range "</TD>" SKIP.                  /* 141 */
+                         
+	                    IF trr_det.trr_end_range = 0 THEN 
+	                        {&OUT} "<TD " v-green "> + </TD>".                                              /* 141 */
+	                    
+	                    ELSE 
+	                        {&OUT} "<TD " v-green ">" trr_det.trr_end_range "</TD>" SKIP.                   /* 141 */
+
+                    END.                                                                                /* 1dot5 */
+                    /* 1dot4 --> */
+                    IF trr_det.trr_suppl_ID = 0 THEN 
+                        {&OUT}
+                        "       <td" v-green ">NOTES ONLY</td>" SKIP.
+                    
+                    ELSE     
+                        {&OUT}                 
+                        "       <td" v-green ">" suppl_list.suppl_name "</td>" SKIP.
+                  /* <-- 1dot4 */
+                  {&OUT}      
+                        "       <td" v-green ">" trr_det.trr_dosage_from "</td>" SKIP                   /* 1dot3 */
+                        "       <td" v-green ">" trr_det.trr_dosage_to "</td>" SKIP                     /* 1dot3 */
+                        "       <td" v-green ">" trr_det.trr_uom "</td>" SKIP
+                        "       <td" v-green ">" trr_det.trr_notes "</td>" SKIP
+                        "   </tr>" SKIP.
+                    
+            END. /*** 4ea trr_det ***/          
+               
+            {&OUT} 
+                "</table>" SKIP
+                "               </td>" SKIP
+                "           </tr>" SKIP.
+              
+        END. /** for each tdl_det **/      
+        
+/*       {&OUT}                                           */
+/*           "        </table>" SKIP                      */
+/*           "    </div>" SKIP                            */
+/*           "</DIV>         <!-- end of grid_10 -->" SKIP*/
+/*			"<DIV class='grid_1'> </DIV>" SKIP                   */
+/*			"</DIV>     <!-- end of row -->" SKIP                */
+/*           "<br>" SKIP.                                 */
+        
+    END. /*** for each tl_mstr ***/
+
+    {&OUT}
+    "        </table>" SKIP                                                                                                         /* 1dot1 */ 
+    "    </div>" SKIP                                                                                                               /* 1dot1 */
+    "</DIV>         <!-- end of grid_10 -->" SKIP                                                                                   /* 1dot1 */
+     "<DIV class='grid_1'> </DIV>" SKIP                                                                                             /* 1dot1 */
+     "</DIV>     <!-- end of row -->" SKIP                                                                                          /* 1dot1 */
+    "<br>" SKIP
+    "<DIV class='row'>" SKIP                                                                                                        /* 1dot1 */
+	"<DIV class='grid_1'> </DIV>" SKIP                                                                                              /* 1dot1 */
+	"<DIV class='grid_10'>" SKIP                                                                                                    /* 1dot1 */
+    "   <div class='table_report_fromto'>"                                        SKIP                                              /* 1dot1 */            
+    "   <table>" SKIP                                                                                                               /* 1dot1 */
+    "      <tfoot>" SKIP                                                                                                            /* 1dot1 */
+    "       <tr>" SKIP                                                                                      
+    "           <td>End of Report</td>" SKIP
+    "       </tr>" SKIP
+    "      </tfoot>" SKIP                                                                                                           /* 1dot1 */
+    "   </table>" SKIP
+    "   </div>" SKIP
+    "</DIV>         <!-- end of grid_10 -->" SKIP                                                                                   /* 1dot1 */
+	"<DIV class='grid_1'> </DIV>" SKIP                                                                                              /* 1dot1 */
+	"</DIV>     <!-- end of row -->" SKIP                                                                                           /* 1dot1 */
+    "<br>" SKIP
+    "<form>" SKIP                                                                                                                   /* 1dot1 */
+    "<div class='row'>" SKIP
+    "       <input type='hidden' name='whattorun' value='" whatshouldrun "'>"           SKIP                                        /* 1dot1 */
+    "   <div class='grid_5'> </DIV>" SKIP       
+    "   <div class='grid_2'><form><button type='submit' name='h-act' value='Search' class='btn'>Search Again</BUTTON></form></div>" SKIP
+    "   <div class='grid_5'> </DIV>" SKIP
+    "</div>" SKIP
+    "</form>" SKIP.                                                                                                                 /* 1dot1 */
+    
+/*    "</div>" SKIP                    */
+/*    "<div class='grid_1'></div>" SKIP*/
+/*    "</div>".                        */
+     
+END. /*** v-act 1 ***/
+
+</SCRIPT>
+ 
+
+</BODY>
+</HTML>

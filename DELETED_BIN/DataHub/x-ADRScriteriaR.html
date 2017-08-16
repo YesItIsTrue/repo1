@@ -1,0 +1,76 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>HHI Label Criteria</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<center>
+<SCRIPT LANGUAGE="SpeedScript">
+/*------------------------------------------------------------------
+    File:           hhi_label_criteria.html -> ADRScriteriaR.html
+    Description:    1 of 3 label creation files
+    Created:        6/12/2014 
+    Author:         Jacob Luttrell
+-------------------------------------------------------------------*/
+
+/************************* Define vars *******************************/
+DEFINE VARIABLE confirm AS CHARACTER NO-UNDO.
+DEFINE VARIABLE search_file AS CHARACTER NO-UNDO.
+DEFINE VARIABLE email_file AS CHARACTER INITIAL "C:\apps\biomed\batch-files\errormail.exe" NO-UNDO.
+
+DO:
+search_file = SEARCH(email_file).
+    
+IF search_file = ? THEN /*** I need a white box behind this ***/
+    {&OUT}
+        "<P>The email program required for printing address labels does not exist on this machine. <br>                          
+          Please have your administrator install the email program before continuing.</P>".   
+ELSE 
+    {&OUT}
+       "<FORM action='ADRSviewR.r' method='post'>
+        <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />
+		<div class='table_2col'>
+		<TABLE>
+		    <TR>
+		        <TD>From Test Kit ID:</TD><TD><INPUT type='text' name='a-fromTK'/></TD><TD>To Test Kit ID:</TD><TD><INPUT type='text' name='a-toTK'/></TD>
+		    </TR>
+		    <TR>
+		        <TD>From First Name:</TD><TD><INPUT type='text' name='a-fromFN'/></TD><TD>To First Name:</TD><TD><INPUT type='text' name='a-toFN'/></TD>
+		    </TR>
+		    <TR>
+		        <TD>From Last Name:</TD><TD><INPUT type='text' name='a-fromLN'/></TD><TD>To Last Name:</TD><TD><INPUT type='text' name='a-toLN'/></TD>
+		    </TR>
+		    <TR>
+		        <TD> Number of Pages:</TD><TD colspan='3'><INPUT type='number' name='a-numpgs'/></TD>
+		    </TR>
+		</TABLE>
+		</div>  
+		   <h3 align='center'> Leave all fields blank if you wish to print all labels. </h3>
+		   <input align='left' type='submit' value='Print Labels' name='s-Create'>
+        </FORM>".
+END.
+</SCRIPT>
+<form action="" method="Post"> <!-- Where is Back? -->
+<input align="right" type="submit" value="Back" name="s-Back"> <!-- Back needs to go somewhere -->
+</form>
+</center>
+</BODY>
+</HTML>

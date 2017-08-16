@@ -1,0 +1,94 @@
+/****** this is how Trae thinks the colors ought to be, more or less. *******/
+.leftToRightGradient{
+  width: 40%;
+  background: 
+  linear-gradient(to right, 
+  rgba(102,204,102,.9) 32%, /** green end */
+  rgba(255,255,102,.8) 32%, /** yellow start */
+  rgba(255,255,102,.8) 66%, /** yellow end */
+  rgba(255,153,153,.9) 66%); /* red start */
+}
+.centerGradient{
+  width: 40%;
+  background: linear-gradient(to right, 
+  rgba(255,153,153,.9) 15%,     /** red end **/
+  rgba(255,255,102,.8) 15%,     /** yellow start **/
+  rgba(255,255,102,.8) 30%,     /** yellow end **/
+  rgba(102,204,102,.9) 30%,     /** green start **/
+  rgba(102,204,102,.9) 45%,     /** green end **/
+  rgba(255,255,255,.9) 45%,     /** white start **/
+  rgba(255,255,255,.9) 55%,     /** white end **/
+  rgba(102,204,102,.9) 55%,     /** green start **/
+  rgba(102,204,102,.9) 70%,     /** green end **/
+  rgba(255,255,102,.8) 70%,     /** yellow start **/
+  rgba(255,255,102,.8) 85%,     /** yellow end **/
+  rgba(255,153,153,.9) 85%);    /** red start **/
+}
+.bar{
+  width:0px;
+  height:12px;
+  background:black;
+  border-radius:10px;
+  animation-name: stretch;
+  -webkit-animation-name: stretch;  
+  animation-duration: 1.5s;   
+  -webkit-animation-duration: 1.5s;
+  animation-timing-function: ease-out;    
+  -webkit-animation-timing-function: ease-out;    
+  transform-origin: 0% 0%;
+  -ms-transform-origin: 0% 0%;
+  -webkit-transform-origin: 0% 0%;
+} 
+/** 
+For the center bars, treat 50% as the maximum width for the centerToLeft bar, 
+and 52% as the maximum width for the centerToRight bar. This is because in 
+order to have the centerToRight bar start more centered, the bar needs to 
+start slightly less than halfway.
+**/
+.centerToRight{ 
+  /** Having the margin-left at 48% looks more centered than 50% **/  
+  margin-left:48%;
+  width:0px;
+  height:12px;
+  background:black;
+  border-radius:10px;
+  animation-name: stretch;
+  -webkit-animation-name: stretch;  
+  animation-duration: 1.5s;   
+  -webkit-animation-duration: 1.5s;
+  animation-timing-function: ease-out;    
+  -webkit-animation-timing-function: ease-out;    
+  transform-origin: 0% 0%;
+  -ms-transform-origin: 0% 0%;
+  -webkit-transform-origin: 0% 0%;
+}
+.centerToLeft{
+  margin-right:50%;
+  float:right;
+  width: 0px;
+  height:12px;
+  background:black;
+  border-radius:10px;
+  animation-name: stretch;
+  -webkit-animation-name: stretch;    
+  animation-duration: 1.5s;   
+  -webkit-animation-duration: 1.5s;
+  animation-timing-function: ease-out;    
+  -webkit-animation-timing-function: ease-out;    
+  transform-origin: 100% 0%;
+  -ms-transform-origin: 100% 0%;
+  -webkit-transform-origin: 100% 0%; 
+} 
+/** Animation keyframes **/
+@keyframes stretch {
+  0% {transform: scaleX(0.3);}
+  60% {transform: scaleX(1);}         
+  80% {transform: scaleX(0.98);}
+  100% {transform: scaleX(1);}                            
+}
+@-webkit-keyframes stretch {
+  0% {-webkit-transform: scaleX(0.3);}
+  60% {-webkit-transform: scaleX(1);}
+  80% {-webkit-transform: scaleX(0.98);}
+  100% {-webkit-transform: scaleX(1);}        
+}

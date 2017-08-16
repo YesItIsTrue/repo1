@@ -1,0 +1,405 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Country Maintenance</TITLE>
+    <META NAME='AUTHOR' CONTENT='Jacob Luttrell'>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT='06/Apr/16'>
+    <META NAME='LAST_UPDATED' CONTENT='06/Apr/16'>    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/ 
+
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE v-country-ISO   LIKE country_mstr.country_ISO NO-UNDO.
+DEFINE VARIABLE v-country-disp  LIKE country_mstr.country_display_name NO-UNDO.
+DEFINE VARIABLE v-intl-prfx     LIKE country_mstr.country_intl_prefix NO-UNDO.
+DEFINE VARIABLE v-primary       LIKE country_mstr.Country_Primary NO-UNDO.
+
+DEFINE VARIABLE isdisabled      AS CHARACTER NO-UNDO.
+DEFINE VARIABLE whichrec        AS RECID NO-UNDO.
+DEFINE VARIABLE isselected      AS CHARACTER NO-UNDO.  
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE act             AS CHARACTER NO-UNDO.
+
+ASSIGN 
+    v-country-ISO   = get-value("h-country-ISO")
+    v-country-disp  = get-value("h-country-disp")
+    v-intl-prfx     = INTEGER(get-value("h-intl-prfx"))
+    v-primary       = IF get-value("h-primary") = "YES" THEN YES ELSE NO 
+    whichrec        = INTEGER(get-value('h-whichrec'))
+    act             = get-value('h-act')
+    .
+    
+IF act = "" THEN 
+    ASSIGN  
+        act = "INITIAL".
+
+IF act = "RESET" THEN
+    ASSIGN
+        v-country-ISO   = ""
+	    v-country-disp  = ""
+	    v-intl-prfx     = 0
+	    v-primary       = ? 
+	    whichrec        = 0
+	    act             = "INITIAL"
+	    .
+
+IF act = "SAVE" THEN DO:
+    
+/*    {&OUT} "<H2>Pre 2 - " act "</H2>".*/
+    
+    update-country-block:  
+    DO TRANSACTION ON ERROR UNDO, LEAVE :
+    
+/*        {&OUT} "<H2>Inside trans - " act "</H2>".*/
+    
+        FIND FIRST country_mstr WHERE country_mstr.country_ISO = v-country-ISO AND 
+                                country_mstr.Country_Primary = YES AND 
+                                country_mstr.country_deleted = ?
+                                EXCLUSIVE-LOCK NO-ERROR.
+                                
+        IF AVAILABLE (country_mstr) THEN 
+                ASSIGN 
+                    country_mstr.Country_Primary = NO. 
+        ELSE DO: 
+            act = "ERROR1".
+            
+/*            {&OUT} "<H2>About to undo - " act "</H2>".*/
+               
+            UNDO update-country-block.
+                                                        
+        END.        
+
+/*        {&OUT} "<H2>Midpoint - " act "</H2>".*/
+     
+        FIND country_mstr WHERE country_mstr.country_ISO = v-country-ISO AND 
+                                country_mstr.country_display_name = v-country-disp AND 
+                                country_mstr.country_deleted = ?
+                                EXCLUSIVE-LOCK NO-ERROR.
+            
+        IF AVAILABLE (country_mstr) THEN 
+            
+            ASSIGN 
+                country_mstr.Country_Primary = YES
+                act = "SEARCH".
+                
+        ELSE DO: 
+            act = "ERROR2". 
+            
+/*            {&OUT} "<H2>About to undo from back half - " act "</H2>".*/
+            
+            UNDO update-country-block.                               
+        END.
+        
+    END. /* transaction */
+    
+    {&OUT} "<center><H3>ISO Group " v-country-ISO " Primary has been updated to " v-country-disp "</H3></center>". 
+    
+END. /* save */
+/* *********************************************** Body ******************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO: 
+    
+    {&OUT}
+        "<form>" SKIP
+        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+	    "  <DIV class='row'>" SKIP
+		"  <DIV class='grid_3'> </DIV>" SKIP
+		"  <DIV class='grid_6'>" SKIP
+		"  <div class='table_col'>" SKIP		
+		"     <table>" SKIP(1)
+		"         <tr>" SKIP
+		"             <th colspan=2>Search Criteria</th>" SKIP
+		"         </tr>" SKIP(1)
+		"         <tr>" SKIP
+		"             <td>Country</td>" SKIP
+		"             <TD>" SKIP
+        "               <SELECT name='h-country-ISO'>" SKIP
+        "                   <option value=''></option>".
+            
+        {../depot/src/WebSpeed/CountryDropDownList.i v-country-ISO}.
+        
+        {&OUT}
+        "               </SELECT>" SKIP
+        "           </TD>" SKIP
+		"       </tr>" SKIP(1)
+		"     </table>" SKIP
+		"  </DIV>" SKIP
+		"</DIV>         <!-- end of grid_6 -->" SKIP 
+		"<DIV class='grid_3'> </DIV>" SKIP  
+		"</DIV>     <!-- end of row -->" SKIP    
+        "<BR>" SKIP
+        "<div class='row'>" SKIP
+		"   <div class='grid_5'> </DIV>" SKIP
+		"   <div class='grid_2'><button type='submit' name='h-act' value='SEARCH' class='btn'>Select</BUTTON></div>" SKIP
+		"   <div class='grid_5'> </DIV>" SKIP
+		"</div>" SKIP
+		"</from>" SKIP
+		.
+
+    END. /* initial */ 
+    
+    WHEN "SEARCH" THEN DO:     
+      
+        {&OUT}
+            "<form>" SKIP
+            "<DIV class='row'>" SKIP
+			"<DIV class='grid_1'> </DIV>" SKIP
+			"<DIV class='grid_10'>" SKIP
+			"<DIV class='table_report'>" SKIP
+			"   <TABLE>" SKIP
+			"       <THEAD>" SKIP
+			"          <TR>" SKIP
+			"              <TH colspan=4>" v-country-ISO " List</TH>" SKIP    
+			"          </TR>" SKIP
+			"          <TR>" SKIP
+			"              <TD>Country ISO</TD>" SKIP          
+			"              <TD>Display Name</TD>" SKIP
+			"              <TD>International Prefix</TD>" SKIP
+			"              <TD>Primary</TD>" SKIP
+			"          </TR>" SKIP
+			"      </THEAD>" SKIP(1).
+            
+        FOR EACH country_mstr WHERE country_mstr.country_ISO = v-country-ISO AND 
+                                    country_mstr.country_deleted = ? NO-LOCK:
+        
+            {&OUT} 
+	            "   <TR>" SKIP
+	            "       <TD><center>" country_mstr.country_ISO "</center></TD>" SKIP
+	            "       <TD><center><a href='../../DataHub/rcode/CNTRYmaintU.r"    
+		                "?h-whichrec=" RECID(country_mstr)
+		                "&whattorun=" get-value('whattorun')  /* linking to itself in a different act */ 
+		                "&h-act=MAINTENANCE'>" country_mstr.country_display_name "</a></center></TD>" SKIP                                                         
+	            "       <TD><center>" country_mstr.country_intl_prefix "</center></TD>" SKIP.
+	            
+	       IF country_mstr.Country_Primary = YES THEN 
+	           isselected = "checked".
+           ELSE 
+	           isselected = "". 
+	           
+	         {&OUT}                                                          
+	            "       <TD><center><a href='../../DataHub/rcode/CNTRYmaintU.r"    
+		                "?h-country-ISO=" country_mstr.country_ISO
+		                "&h-country-disp=" country_mstr.country_display_name
+		                "&whattorun=" get-value('whattorun')  /* linking to itself in a different act */ 
+		                "&h-act=SAVE'><input type='radio' name='h-primary' value='YES' " isselected " DISABLED />Select</a></center></TD>" SKIP                                                    
+	            "   <TR>" SKIP.
+        
+        END. /* 4ea. country_mstr */
+        
+        {&OUT}
+			"   <TFOOT>" SKIP
+			"       <TR>" SKIP
+			"           <TD COLSPAN=4>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+			"       </TR>" SKIP
+			"   </TFOOT>" SKIP
+			"   </TABLE>" SKIP
+			"</DIV>                 <!-- end of table_report -->" SKIP(1) 
+			"<br>" SKIP
+			"<div class='row'>" SKIP
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP			
+			"<INPUT type='hidden' name='h-country-ISO' value='" v-country-ISO "' />" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='NEW' class='btn'>Add New</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"</div>" SKIP
+			"</form>" SKIP.
+    END. /* search */  
+    
+    WHEN "NEW" THEN DO:
+    
+        {CNTRYmaintU-form.i UPDATE NOTHING REQ REQUIRED}. 
+    
+    END.  /* new */
+    
+    WHEN "MAINTENANCE" THEN DO: 
+    
+        FIND country_mstr WHERE RECID(country_mstr) = whichrec NO-LOCK.
+        
+        IF AVAILABLE (country_mstr) THEN DO: 
+            ASSIGN  
+                v-country-ISO   = country_mstr.country_ISO
+			    v-country-disp  = country_mstr.country_display_name
+			    v-intl-prfx     = country_mstr.country_intl_prefix
+			    v-primary       = country_mstr.Country_Primary.        
+    
+            {CNTRYmaintU-form.i UPDATE NOTHING REQ REQUIRED}.
+        
+        END. /* if avail country_mstr */
+        
+        ELSE 
+            {&OUT}
+                "<form>" SKIP
+                "<DIV class='row'>" SKIP
+				"<DIV class='grid_3'> </DIV>" SKIP
+				"<DIV class='grid_6'>" SKIP    
+				"<H2>Unexpected Error: Contact Solsource.</H2>" SKIP
+				"</DIV>         <!-- end of grid_6 -->" SKIP
+				"<DIV class='grid_3'> </DIV>" SKIP  
+				"</DIV>     <!-- end of row -->" SKIP
+				"<BR>" SKIP
+				"<div class='row'>" SKIP
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP          				
+				"   <div class='grid_5'> </DIV>" SKIP
+				"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+				"   <div class='grid_5'> </DIV>" SKIP
+				"</div>" SKIP
+				"</form>" SKIP.
+    
+    END. /* edit */
+    
+    WHEN "UPDATE" THEN DO:
+    
+        IF whichrec = 0 THEN DO:    
+    
+	        FIND country_mstr WHERE country_mstr.country_ISO = v-country-iso AND 
+	                            country_mstr.country_display_name = v-country-disp AND 
+	                            country_mstr.country_deleted = ?
+	                            EXCLUSIVE-LOCK NO-ERROR.
+	       
+	        IF NOT AVAILABLE (country_mstr) THEN DO:
+		    
+		        CREATE country_mstr.
+		    
+		        ASSIGN 
+		            country_mstr.country_ISO            = v-country-iso
+		            country_mstr.country_display_name   = v-country-disp            
+		            country_mstr.country_create_date    = TODAY 
+		            country_mstr.country_created_by     = USERID ("General")   
+			        country_mstr.country_intl_prefix    = v-intl-prfx
+			        country_mstr.country_modified_date  = TODAY 
+			        country_mstr.country_modified_by    = USERID ("General")
+			        country_mstr.country_prog_name      = THIS-PROCEDURE:FILE-NAME           
+		            .  
+	        
+	           {CNTRYmaintU-form.i INITIAL DISABLED NOTHING NOTHING}.
+	           
+            END. /* if not avail country_mstr */ 
+            ELSE DO:  
+            
+                ASSIGN 
+                    whichrec = RECID(country_mstr).
+                    
+                {&OUT}
+                "<form>" SKIP
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP    
+                "<H2>This name already exists for " v-country-ISO ". Would you like to update it?</H2>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP  
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP
+                "<div class='row'>" SKIP
+			    "<INPUT type='hidden' name='h-whichrec' value='" whichrec "' />" SKIP
+			    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP          
+			    "<INPUT type='hidden' name='h-country-ISO' value='" v-country-ISO "' />" SKIP
+			    "   <div class='grid_3'> </DIV>" SKIP
+			    "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn'>YES</BUTTON></div>" SKIP
+			    "   <div class='grid_1'> </DIV>" SKIP
+			    "   <div class='grid_1'> </DIV>" SKIP
+			    "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>NO</BUTTON></div>" SKIP
+			    "   <div class='grid_3'> </DIV>" SKIP
+			    "</div>" SKIP   
+			    "</form>" SKIP.
+            
+            END.  /* else do... avail country_mstr */
+        END. /* if whichrec = 0 */    
+        ELSE DO: 
+            
+            FIND country_mstr WHERE RECID(country_mstr) = whichrec AND 
+                                    country_mstr.country_deleted = ?
+                                    EXCLUSIVE-LOCK NO-ERROR.
+            
+            IF AVAILABLE (country_mstr) THEN DO:    
+            
+                ASSIGN 
+		           country_mstr.country_display_name   = IF v-country-disp     <> "" THEN v-country-disp  ELSE country_mstr.country_display_name          
+		           country_mstr.country_intl_prefix    = IF v-intl-prfx        <> 0  THEN v-intl-prfx     ELSE country_mstr.country_intl_prefix    
+		           country_mstr.country_modified_date  = TODAY 
+		           country_mstr.country_modified_by    = USERID ("General")
+		           country_mstr.country_prog_name      = THIS-PROCEDURE:FILE-NAME           
+		          .  
+		    
+		      {CNTRYmaintU-form.i INITIAL DISABLED NOTHING NOTHING}.      
+            
+            END. /* if avail country_mstr */        
+            ELSE 
+            {&OUT}
+                "<form>" SKIP
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP    
+                "<H2>Unexpected Error: Contact Solsource.</H2>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP  
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP
+                "<div class='row'>" SKIP
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                          
+                "   <div class='grid_5'> </DIV>" SKIP
+                "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP.
+        END. /* else do whichrec = 0 */
+    
+    END. /* update */
+    
+    WHEN "DELETE" THEN DO:
+    
+        FIND country_mstr WHERE RECID(country_mstr) = whichrec EXCLUSIVE-LOCK NO-ERROR.
+        
+        IF AVAILABLE (country_mstr) THEN DO:
+        
+            DELETE country_mstr. 
+        
+            {&OUT} "<center><H3>ISO Group: " v-country-ISO " - Name: " v-country-disp " has been deleted.</H3></center>".
+        
+            {CNTRYmaintU-form.i INITIAL DISABLED NOTHING NOTHING}.      
+            
+        END. /* if avail country_mstr */        
+        ELSE 
+        {&OUT}
+            "<form>" SKIP
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP    
+            "<H2>Unexpected Error: Contact Solsource.</H2>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                          
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    
+    END. /* delete */
+END. /* case act */            
+</SCRIPT>
+</BODY>
+</HTML>

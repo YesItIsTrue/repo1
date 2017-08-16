@@ -1,0 +1,383 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>People Picker</TITLE>
+    <META NAME='AUTHOR' CONTENT='Jacob Luttrell'>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT='01/Dec/15'>
+    <META NAME='LAST_UPDATED' CONTENT='4/Apr/16'>    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+
+  /*********************************************************************
+   *
+   *  PEOPpickP.html - Jacob Luttrell - Version 1.0 - 01/Jan/16
+   *
+   *
+   *    Example of href from calling program:
+         "<a href='../../DataHub/rcode/PEOPpickP.r"
+                       "?h-prevproc=TKgeneralMaintU.r"                         /* Calling Procedure */
+                       "&h-pp-act=MAINTENANCE"                                 /* Calling Procedure's Act */
+                       "&h-pp-whattorun=" whatshouldrun                        /* Calling Procedure's Whattorun */
+                       "&h-PEOP-passBack-integer1=" v-people-id                /* Calling Procedure's Integer field 1 data to pass back. */
+                       "&h-PEOP-passBack-integer2=" people_mstr.people_id      /* Reserved for people_id searched for by PEOPpickP */
+                       "&h-PEOP-passBack-character1=DOC"                       /* Reserved for People Type for search */
+                       "&h-PEOP-passBack-character2=" v-lastname               /* Calling Procedure's Character field 2 data to pass back. */
+                      /* "&h-type=[patient,customer,client,contact,general]"     /* Type of ID to pass back */ ..................................do this one later /* 1dot2 */ */
+                       "&whattorun=" whatshouldrun                             /* Calling Procedure's Whattorun passed to PEOPpickP */
+                        "'>" VARIABLE "</a>
+   *  ------------------------------------------------------------------
+   *
+   *  Revision History:
+   *  -----------------
+   *  1.0 - Strongly based off of PATpickerR but revised for use with other 
+   *        programs besides TKgeneralmaintU.
+   *  1.1 - Written by Jacob Luttrell on 10Feb16 for v11.1 release.  Added 
+   *        Prefname.  Marked by 1dot1
+   *  1.2 - Written by Jacob Luttrell on 04/Apr/16.  Temporary fix to allow
+   *        search of the doctor or customer tables. Marked by 1dot2.
+   **********************************************************************/
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+   
+DEFINE VARIABLE v-people_ID         AS INTEGER  NO-UNDO.
+DEFINE VARIABLE v-firstname         LIKE people_mstr.people_firstname NO-UNDO. 
+DEFINE VARIABLE v-lastname          LIKE people_mstr.people_lastname NO-UNDO.
+DEFINE VARIABLE act                 AS CHARACTER NO-UNDO. 
+
+DEFINE VARIABLE pp-act              AS CHARACTER LABEL "Previous Procedure Act" NO-UNDO.
+DEFINE VARIABLE pp-whatshouldrun    AS CHARACTER LABEL "Previous Procedure whattorun" NO-UNDO.
+
+DEFINE VARIABLE pp-in               AS CHARACTER LABEL "Previous Procedure passed in with .html" NO-UNDO.                         
+DEFINE VARIABLE pp-out              AS CHARACTER LABEL "Previos Procedure passed back out with .r" NO-UNDO.       
+
+DEFINE VARIABLE pp-project          AS CHARACTER LABEL "Previous Procedure Project" NO-UNDO.
+
+DEFINE VARIABLE pp-passBack-char1   AS CHARACTER LABEL "Previous Procedure Character field 1 Data" NO-UNDO. 
+DEFINE VARIABLE pp-passBack-char2   AS CHARACTER LABEL "Previous Procedure Character field 2 Data" NO-UNDO.   
+DEFINE VARIABLE pp-passBack-int1    AS INTEGER   LABEL "Previous Procedure Integer field 1 Data" NO-UNDO.
+DEFINE VARIABLE pp-passBack-int2    AS INTEGER   LABEL "Previous Procedure Integer field 2 Data" NO-UNDO.   
+
+DEFINE VARIABLE itmessage       AS  LOGICAL INITIAL NO NO-UNDO.
+
+ASSIGN 
+    v-people_ID         = INTEGER(get-value("h-people_ID"))
+    v-firstname         = get-value("h-firstname")
+    v-lastname          = get-value("h-lastname")
+    act                 = get-value("h-act")
+    pp-act              = get-value("h-pp-act")
+    pp-in               = get-value("h-prevproc") 
+    pp-passBack-char1   = get-value("h-PEOP-passBack-character1")
+    pp-passBack-char2   = get-value("h-PEOP-passBack-character2")                               
+    pp-passBack-int1    = INTEGER(get-value("h-PEOP-passBack-integer1"))
+    pp-passBack-int2    = INTEGER(get-value("h-PEOP-passBack-integer2"))
+    .   
+
+
+ASSIGN                                                                                  
+    pp-in    = SUBSTRING(pp-in,1,INDEX(pp-in,".")).                                     
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                    {&OUT}
+                                                                                                                                        "ITmessage 1: assigning pp-in <BR>" SKIP
+                                                                                                                                        "pp-in = " pp-in "<BR>" SKIP.
+FIND FIRST menu_mstr WHERE menu_mstr.menu_exprog BEGINS pp-in NO-LOCK NO-ERROR.         
+
+    IF AVAILABLE (menu_mstr) THEN                                                       
+        ASSIGN                                                                          
+            pp-project = menu_mstr.menu_module.                                                     
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                    {&OUT}
+                                                                                                                                        "ITmessage 2: assigning pp-project <BR>" SKIP
+                                                                                                                                        "pp-project = " pp-project "<BR>" SKIP
+                                                                                                                                        "pp-in = " pp-in "<BR>" SKIP.                                                                                                                                            
+ASSIGN                                                                                                                                                               
+    pp-out    = pp-in + "r".                                                            
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                    {&OUT}
+                                                                                                                                        "ITmessage 2: assigning pp-project <BR>" SKIP
+                                                                                                                                        "pp-project = " pp-project "<BR>" SKIP
+                                                                                                                                        "pp-in = " pp-in "<BR>" SKIP
+                                                                                                                                        "pp-out = " pp-out "<BR>" SKIP.         
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL"
+        pp-whatshouldrun = get-value("h-pp-whattorun").
+    
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:
+      
+        IF v-people_ID <> 0 THEN DO:
+
+        /* saved area for future applications */
+
+        END.  /*** of if v-patient_ID <> 0 ***/
+
+        ELSE DO:
+    
+            {&OUT}
+                "<div class='row'>"                 SKIP
+                "<div class='grid_3'></div>"        SKIP
+                "<div class='grid_6'>"              SKIP
+                "<div class='table_col'>"          SKIP
+                "<form>"        SKIP
+                "   <table>"    SKIP
+                "       <tr>"   SKIP
+                "           <th colspan=2>Search Criteria</th>" SKIP
+                "       </tr>"  SKIP
+                "       <tr>"   SKIP
+                "           <td>First Name Begins With</td>" SKIP
+                "           <td><input type='text' name='h-firstname' value='" v-firstname "'/></td>" SKIP
+                "       </tr>" SKIP
+                "       <tr>"   SKIP
+                "           <td>Last Name Begins With</td>" SKIP
+                "           <td><input type='text' name='h-lastname' value='" v-lastname "'/></td>" SKIP
+                "       </tr>" SKIP
+                "   </table>"   SKIP
+                "</div>" SKIP                                                                                                      
+                "</div><!-- end of grid_6 -->" SKIP                                                                                
+                "<div class='grid_3'></div>" SKIP                                                                                      
+                "</div>" SKIP                                                                                                      
+                "<BR>" SKIP
+                "<div class='row'>" SKIP                                                                                           
+                "   <div class='grid_3'> </DIV>" SKIP                                                                                
+                "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                      
+                "       <input type='hidden' name='h-prevproc'  value='" pp-in "'/>"    SKIP
+                "       <input type='hidden' name='h-pp-act'  value='" pp-act "'/>"    SKIP
+                "       <input type='hidden' name='h-PEOP-passBack-character1'  value='" pp-passBack-char1 "'/>"    SKIP
+                "       <input type='hidden' name='h-PEOP-passBack-character2'  value='" pp-passBack-char2 "'/>"    SKIP           
+                "       <input type='hidden' name='h-PEOP-passBack-integer1'   value='" pp-passBack-int1 "'/>"     SKIP
+                "       <input type='hidden' name='h-PEOP-passBack-integer2'   value='" pp-passBack-int2 "'/>"     SKIP                                                                   
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP         
+                "   <div class='grid_2'> </DIV>" SKIP                                                                              
+                "   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP                                
+                "   <div class='grid_3'> </DIV>" SKIP                                                                              
+                "</div>" SKIP.                                                                                                      
+
+        END.  /** of else do --- patient_ID = 0 **/ 
+        
+    END.  /** of when initial **/
+    
+    WHEN "SEARCH" THEN DO: 
+        
+        {&OUT}
+            "<div class='row'>"                                 SKIP
+            "<div class='grid_12'>"                             SKIP
+            "<form>"                                            SKIP
+            "<div class='table_report_FromTo'>"                 SKIP
+            "   <table>"                                        SKIP
+            "       <thead>"                                    SKIP
+            "           <tr>"                                   SKIP
+            "               <th colspan=8>People Report</th>"   SKIP
+            "           </tr>"                                  SKIP
+            "           <tr>"                                   SKIP
+            "               <td>First Name Begins With</td>"    SKIP
+            "               <td colspan=7>" v-firstname "</td>" SKIP
+            "           </tr>"                                  SKIP
+            "           <tr>"                                   SKIP
+            "               <td>Last Name Begins With</td>"     SKIP
+            "               <td colspan=7>" v-lastname "</td>"  SKIP
+            "           </tr>"                                  SKIP        
+            "           <tr>"                                   SKIP
+            "               <th>Name</th>"                      SKIP
+            "               <Th>Preferred Name</th>"            SKIP                    /* 1dot1 */
+            "               <th>Date of Birth</th>"             SKIP            
+            "               <th>Email</th>"                     SKIP
+            "               <th>Address</th>"                   SKIP
+            "               <th>City</th>"                      SKIP
+            "               <th>State / Provence</th>"          SKIP
+            "               <th>Country</th>"                   SKIP
+            "           </tr>"                                  SKIP
+            "       </thead>"                                   SKIP.
+
+        /* 1dot2 --> */
+           IF pp-passBack-char1 = "CUST" THEN DO:                                                                             
+                FOR EACH people_mstr WHERE ((people_mstr.people_firstname BEGINS v-firstname) OR 
+                                            (v-firstname = "")) AND 
+                                            ((people_mstr.people_lastname BEGINS v-lastname) OR 
+                                            (v-lastname = "")) AND 
+                                            people_mstr.people_deleted = ?
+                                            NO-LOCK,
+                    EACH cust_mstr WHERE cust_mstr.cust_id = people_mstr.people_id AND 
+                                         cust_mstr.cust_deleted = ? NO-LOCK 
+                    BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname:                           
+                    
+                    FIND addr_mstr WHERE addr_mstr.addr_id = people_mstr.people_addr_id
+                                         NO-LOCK NO-ERROR.
+                      
+          {&OUT}
+            "  <tr>" SKIP
+            "       <td><a href='../../" pp-project "/rcode/" pp-out
+                            "?h-act=" pp-act 
+                            "&whattorun=" whatshouldrun 
+                            "&h-PEOP-passBack-integer1=" pp-passBack-int1                                                                
+                            "&h-PEOP-passBack-integer2=" people_mstr.people_id                                                
+                            "&h-PEOP-passBack-character1=" pp-passBack-char1 
+                            "&h-PEOP-passBack-character2=" pp-passBack-char2 "' >"                         
+                        people_mstr.people_lastname ", " people_mstr.people_firstname "</a></td>" SKIP
+            "       <td>" people_mstr.people_prefname "</td>" SKIP                      /* 1dot1 */
+            "       <td>" people_mstr.people_DOB "</td>"   SKIP
+            "       <td>" people_mstr.people_email "</td>"   SKIP.
+                    
+                    IF AVAILABLE (addr_mstr) THEN                                                               
+                    
+                        {&OUT}
+                        "       <td>" addr_mstr.addr_addr1 "</td>"   SKIP
+                        "       <td>" addr_mstr.addr_city  "</td>"   SKIP
+                        "       <td>" addr_mstr.addr_stateprov "</td>" SKIP
+                        "       <td>" addr_mstr.addr_country "</td>" SKIP
+                        "   </tr>" SKIP.
+                    
+                    ELSE                                                                                       
+                    
+                        {&OUT}                                                                                      
+                        "       <td></td>" SKIP                                                                    
+                        "       <td></td>" SKIP                                                                                                        
+                        "       <td></td>" SKIP                                                                  
+                        "       <td></td>" SKIP                                                            
+                        "   </tr>" SKIP.                                                                       
+                
+                END.  /* 4ea. people_mstr */  
+            /* 1dot4 --> */    
+            END. /* pp-passBack-char1 = "CUST" */                                                              
+            ELSE IF pp-passBack-char1 = "DOC" THEN DO:  
+                FOR EACH people_mstr WHERE ((people_mstr.people_firstname BEGINS v-firstname) OR 
+                                            (v-firstname = "")) AND 
+                                            ((people_mstr.people_lastname BEGINS v-lastname) OR 
+                                            (v-lastname = "")) AND 
+                                            people_mstr.people_deleted = ?
+                                            NO-LOCK,
+                    EACH doctor_mstr WHERE doctor_mstr.doctor_ID = people_mstr.people_id AND 
+                                           doctor_mstr.doctor_deleted = ? NO-LOCK 
+                    BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname:                             
+                    
+                    FIND addr_mstr WHERE addr_mstr.addr_id = people_mstr.people_addr_id
+                                         NO-LOCK NO-ERROR.
+                      
+          {&OUT}
+            "  <tr>" SKIP
+            "       <td><a href='../../" pp-project "/rcode/" pp-out
+                            "?h-act=" pp-act 
+                            "&whattorun=" whatshouldrun 
+                            "&h-PEOP-passBack-integer1=" pp-passBack-int1                                                                
+                            "&h-PEOP-passBack-integer2=" people_mstr.people_id                                                
+                            "&h-PEOP-passBack-character1=" pp-passBack-char1 
+                            "&h-PEOP-passBack-character2=" pp-passBack-char2 "' >"                         
+                        people_mstr.people_lastname ", " people_mstr.people_firstname "</a></td>" SKIP
+            "       <td>" people_mstr.people_prefname "</td>" SKIP                     
+            "       <td>" people_mstr.people_DOB "</td>"   SKIP
+            "       <td>" people_mstr.people_email "</td>"   SKIP.
+                    
+                    IF AVAILABLE (addr_mstr) THEN                                                     
+                    
+                        {&OUT}
+                        "       <td>" addr_mstr.addr_addr1 "</td>"   SKIP
+                        "       <td>" addr_mstr.addr_city  "</td>"   SKIP
+                        "       <td>" addr_mstr.addr_stateprov "</td>" SKIP
+                        "       <td>" addr_mstr.addr_country "</td>" SKIP
+                        "   </tr>" SKIP.
+                    
+                    ELSE                                                                                        
+                    
+                        {&OUT}                                                                                      
+                        "       <td></td>" SKIP                                                                     
+                        "       <td></td>" SKIP                                                                                                          
+                        "       <td></td>" SKIP                                                                     
+                        "       <td></td>" SKIP                                                                     
+                        "   </tr>" SKIP.                                                                            
+                
+                END.  /* 4ea. people_mstr */  
+            END. /* if pp-passBack-char1 = "DOC" */
+            /* <-- 1dot2 */
+            ELSE DO: 
+	            FOR EACH people_mstr WHERE ((people_mstr.people_firstname BEGINS v-firstname) OR 
+	                                        (v-firstname = "")) AND 
+	                                        ((people_mstr.people_lastname BEGINS v-lastname) OR 
+	                                        (v-lastname = "")) AND 
+	                                        people_mstr.people_deleted = ?
+	                                        NO-LOCK BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname:                           
+	                
+	                FIND addr_mstr WHERE addr_mstr.addr_id = people_mstr.people_addr_id
+	                                     NO-LOCK NO-ERROR.
+	                  
+	          {&OUT}
+	            "  <tr>" SKIP
+	            "       <td><a href='../../" pp-project "/rcode/" pp-out
+	                            "?h-act=" pp-act 
+	                            "&whattorun=" whatshouldrun 
+	                            "&h-PEOP-passBack-integer1=" pp-passBack-int1                                                                
+	                            "&h-PEOP-passBack-integer2=" people_mstr.people_id                                                
+	                            "&h-PEOP-passBack-character1=" pp-passBack-char1 
+	                            "&h-PEOP-passBack-character2=" pp-passBack-char2 "' >"                         
+	                        people_mstr.people_lastname ", " people_mstr.people_firstname "</a></td>" SKIP
+	            "       <td>" people_mstr.people_prefname "</td>" SKIP                      /* 1dot1 */
+	            "       <td>" people_mstr.people_DOB "</td>"   SKIP
+	            "       <td>" people_mstr.people_email "</td>"   SKIP.
+	            
+	            IF AVAILABLE (addr_mstr) THEN                                                               
+	            
+	            {&OUT}
+	            "       <td>" addr_mstr.addr_addr1 "</td>"   SKIP
+	            "       <td>" addr_mstr.addr_city  "</td>"   SKIP
+	            "       <td>" addr_mstr.addr_stateprov "</td>" SKIP
+	            "       <td>" addr_mstr.addr_country "</td>" SKIP
+	            "   </tr>" SKIP.
+	            
+	            ELSE                                                                                        
+	            
+	            {&OUT}                                                                                      
+	            "       <td></td>" SKIP                                                                     
+	            "       <td></td>" SKIP                                                                                                          
+	            "       <td></td>" SKIP                                                                     
+	            "       <td></td>" SKIP                                                                     
+	            "   </tr>" SKIP.                                                                            
+	            
+	            END.  /* 4ea. people_mstr */  
+            END. /* else do */
+            {&OUT}
+            "   <tfoot>" SKIP
+            "       <tr>"   SKIP
+            "               <td colspan=8>End of Report</td>" SKIP
+            "       </tr>"  SKIP
+            "   </tfoot>" SKIP
+            "   </table>"       SKIP
+            "</div> "       SKIP                                                                                                    
+            "</div><!-- of grid_12 -->" SKIP                                                                                        
+            "</div>" 
+            "<BR>" SKIP                                                                                                                   
+                                                                                                                                   
+            "<div class='row'>" SKIP                                                                                                            
+            "   <div class='grid_5'> </DIV>" SKIP                                                                                     
+            "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                       
+            "       <input type='hidden' name='h-prevproc'  value='" pp-in "'/>"    SKIP
+            "       <input type='hidden' name='h-pp-act'    value='" pp-act "'/>"    SKIP                                 
+            "       <input type='hidden' name='h-PEOP-passBack-character1'  value='" pp-passBack-char1 "'/>"    SKIP
+            "       <input type='hidden' name='h-PEOP-passBack-character2'  value='" pp-passBack-char2 "'/>"    SKIP           
+            "       <input type='hidden' name='h-PEOP-passBack-integer1'   value='" pp-passBack-int1 "'/>"     SKIP
+            "       <input type='hidden' name='h-PEOP-passBack-integer2'   value='" pp-passBack-int2 "'/>"     SKIP                                                                                             
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP        
+            "   <div class='grid_5'> </DIV>" SKIP                                                                                     
+            "</div>" SKIP.                                                                                                             
+                    
+    END.  /** of when SEARCH **/
+    
+END.  /*** of case act ***/
+    
+       
+   
+
+</SCRIPT>
+</BODY>
+</HTML>

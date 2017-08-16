@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+<TITLE>Project Hours Worked</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="17/Aug/16">
+    <META NAME='LAST_UPDATED' CONTENT="17/Aug/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Template Notes: 
+        This template is designed to be used with a simple search report.
+        It has a link designed to send the user to a more advanced (From
+        To) search. The validation act allows you to decide weather the 
+        criteria the user is inputting is valid for your table to search
+        by (outside date range for example).  Quoted areas are either
+        instuctions or place holders for your variables and fields. 
+    
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-client     LIKE Emp_Mstr.Emp_def_client        NO-UNDO.         
+DEFINE VARIABLE v-proj       LIKE Emp_Mstr.Emp_def_proj          NO-UNDO.          
+DEFINE VARIABLE v-clientabbv LIKE Client_Mstr.Client_abbv        NO-UNDO.
+DEFINE VARIABLE v-est-hrs    LIKE Proj_Mstr.Proj_est_hours       NO-UNDO.
+DEFINE VARIABLE tot-hrs      AS DECIMAL                          NO-UNDO.          
+DEFINE VARIABLE v-cliproj    AS CHARACTER                        NO-UNDO.              
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act             = html-encode(get-value("h-act"))
+    /* additional variables here */
+    v-cliproj       = html-encode(get-value("h-cliproj"))                                  
+    .
+
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+        
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip                                                                                  
+            "           <td>Client & Project</td>" skip                                                   
+            "               <td colspan='3'>" SKIP                                                                  
+            "                   <select name='h-cliproj'>" SKIP                                                     
+            "                       <option value='' />" SKIP.                                                      
+            
+            FOR EACH Proj_Mstr NO-LOCK,                                                                                         
+                EACH Client_Mstr WHERE Client_Mstr.Client_people_ID = Proj_Mstr.Proj_client_ID NO-LOCK                          
+                    BREAK BY Client_Mstr.Client_abbv BY Proj_Mstr.Proj_sort:                                                    
+         
+                            
+                {&OUT}                                                                                                                  
+            "                       <option name='h-cliproj' value='" Proj_Mstr.Proj_client_ID "/" Proj_Mstr.Proj_name "' />" Client_Mstr.Client_abbv ": " Proj_Mstr.Proj_name "</option>" SKIP.                   
+                    
+                    
+            END. /* 4ea. proj_mstr */                                                                                           
+            
+        {&OUT}
+            "               </SELECT>" SKIP                                                                        
+            "           </TD>" SKIP                                                                             
+            "       <tr>" skip   
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"</div>" SKIP
+			"</form>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        
+        ASSIGN 
+            v-client = INTEGER(SUBSTRING(v-cliproj,1,INDEX(v-cliproj,"/") - 1))        
+            v-proj   = SUBSTRING(v-cliproj,INDEX(v-cliproj,"/") + 1,LENGTH(v-cliproj)).  
+        
+        FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = v-client NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (Client_Mstr) THEN 
+        
+            ASSIGN 
+                v-clientabbv = Client_Mstr.Client_abbv. 
+        
+                FIND Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = v-client AND 
+                             Proj_Mstr.Proj_name = v-proj AND 
+                             Proj_Mstr.Proj_deleted = ?
+                             NO-LOCK NO-ERROR.
+                             
+        IF AVAILABLE (Proj_Mstr) THEN 
+            ASSIGN 
+                v-est-hrs = Proj_Mstr.Proj_est_hours.
+                
+         ELSE        
+            ASSIGN 
+                v-est-hrs = 0.
+                
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_4'></DIV>" SKIP
+            "<DIV class='grid_4'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='2'>Hours worked on " v-clientabbv ": " v-proj "</TH>" SKIP    
+            "            </TR>" SKIP         
+            "            <TR>" SKIP
+            "                <TD>Total Hours</TD>" SKIP
+            "                <TD>Estimated Project Hours</TD>" SKIP
+            "        </THEAD>" SKIP(1).
+
+            
+        FOR EACH Hours_Mstr WHERE Hours_Mstr.Hours_client_ID = v-client AND
+                                  Hours_Mstr.Hours_project_name = v-proj AND 
+                                  Hours_Mstr.Hours_deleted = ?
+                                          NO-LOCK:
+                                              
+            ASSIGN 
+                tot-hrs = tot-hrs + Hours_Mstr.Hours_amount.                                      
+
+
+        END. /* 4ea. */
+        
+        {&OUT}
+            "           <tr>" skip
+            "               <td>" tot-hrs "</td>" SKIP
+            "               <td>" v-est-hrs "</td>" skip    
+            "           </tr>" SKIP          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='2'>END OF REPORT</TD>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "<DIV class='grid_4'></DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+    OTHERWISE DO: 
+    
+        {&OUT}
+        	"<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<h2>Could not find act " act ".</h2>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</DIV>" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

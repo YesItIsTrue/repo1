@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Project Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="07/Jan/16">
+    <META NAME="MODIFIED_DATE" CONTENT="07/Jan/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           TSprojR.html
+    Description:    Project Report
+    Created:        Jacob Luttrell 
+    Version History:
+        1.0 - Created by Jacob Luttrell on 07/Jan/16.
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE from-proj     LIKE Proj_Mstr.Proj_prog_name       NO-UNDO.
+DEFINE VARIABLE to-proj       LIKE Proj_Mstr.Proj_name            NO-UNDO.
+DEFINE VARIABLE from-last     LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE clientname    AS CHARACTER                        NO-UNDO.
+
+DEFINE VARIABLE disp-start    AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE start-date    LIKE Proj_Mstr.Proj_start_date      NO-UNDO.
+DEFINE VARIABLE end-date      LIKE Proj_Mstr.Proj_end_date        NO-UNDO.
+DEFINE VARIABLE disp-end      AS CHARACTER                        NO-UNDO.
+
+DEFINE VARIABLE addrline      AS CHARACTER                        NO-UNDO.   
+
+DEFINE VARIABLE act           AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE itmessage     AS LOGICAL INITIAL NO               NO-UNDO.
+
+ASSIGN 
+    from-proj   = html-encode(get-value("h-from-proj"))
+    to-proj     = html-encode(get-value("h-to-proj"))
+    act         = html-encode(get-value("h-act"))
+    .
+    
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL".    
+
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_2col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=4>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Project</td>" skip
+            "           <td><input type='text' name='h-from-proj' value='" from-proj "' /></td>" skip
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-proj' value='" to-proj "' /></td>" skip            
+            "       </tr>" SKIP(1)
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan=14>Project List</TH>" SKIP    /* thead, tr, th makes the silver bar */
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD>Project Name</TD>" SKIP
+            "                <TD>Client Abbreviated Name</TD>" SKIP
+            "                <TD>Sort Order</TD>" SKIP            
+            "                <TD>Price Adjustment</TD>" SKIP
+            "                <TD>Dollar Adjustment</TD>" SKIP
+            "                <TD>Estimated Total Hours</TD>" SKIP
+            "                <TD>Estimated Total Cost</TD>" SKIP
+            "                <TD>Current Total Hours</TD>" SKIP
+            "                <TD>Current Total Cost</TD>" SKIP
+            "                <TD>Start Date</TD>" SKIP
+            "                <TD>End Date</TD>" SKIP
+            "                <TD>Developer Only</TD>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1).
+            
+        FOR EACH Proj_Mstr WHERE ((Proj_Mstr.Proj_name >= from-proj) OR 
+                                      (from-proj = "")) AND 
+                                   ((Proj_Mstr.Proj_name <= to-proj) OR 
+                                      (to-proj = "")) AND 
+                                   Proj_Mstr.Proj_deleted = ? NO-LOCK,          
+            EACH Client_Mstr WHERE Client_Mstr.Client_people_ID = Proj_Mstr.Proj_client_ID AND                                   
+                                   Client_Mstr.Client_deleted = ? NO-LOCK              
+                              BY Proj_Mstr.Proj_client_ID BY Proj_Mstr.Proj_sort:
+
+            {&OUT}
+                "       <TR>" SKIP
+                "           <TD><a href='../../TimeSheet/rcode/TSprojmaintU.r" 
+                                    "?h-clientid=" Proj_Mstr.Proj_client_ID
+                                    "&h-projname=" Proj_Mstr.Proj_name
+                                    "&h-act=MAINTENANCE"
+                                    "&whattorun=8.26"
+                "                   '>" Proj_Mstr.Proj_name "</a></td>" SKIP
+                "           <TD>" Client_Mstr.Client_abbv "</TD>" SKIP
+                "           <TD>" Proj_Mstr.Proj_sort "</TD>" SKIP 
+                "           <TD>" Proj_Mstr.Proj_price_adj FORMAT "->>>,>>>,>>9.99" "</TD>" SKIP
+                "           <TD>" Proj_Mstr.Proj_price_adj_dollar FORMAT "$->>>,>>>,>>9.99" "</TD>" SKIP
+                "           <TD>" Proj_Mstr.Proj_est_hours FORMAT "->>>,>>>,>>9.99" "</TD>" SKIP
+                "           <TD>" Proj_Mstr.Proj_est_total FORMAT "$->>>,>>>,>>9.99" "</TD>" SKIP
+                "           <TD>" Proj_Mstr.Proj_curr_hours FORMAT "->>>,>>>,>>9.99" "</TD>" SKIP
+                "           <TD>" Proj_Mstr.Proj_curr_total FORMAT "$->>>,>>>,>>9.99" "</TD>" SKIP
+                "           <TD>" Proj_Mstr.Proj_start_date "</TD>" SKIP
+                "           <TD>" Proj_Mstr.Proj_end_date "</TD>" SKIP
+                "           <TD>" Proj_Mstr.Proj_admin_only "</TD>" SKIP 
+                "       </TR>" SKIP. 
+        
+        END. /* 4ea. people, emp, emph */   
+        {&OUT}          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN=14>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+
+END CASE.         
+        
+         
+</SCRIPT>
+</BODY>
+</HTML>

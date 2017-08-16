@@ -1,0 +1,259 @@
+<style>
+.scanner-container {
+    position: relative;
+}
+
+.exit-scanner {
+    position: absolute;
+    color: red;
+    top: 5px;
+    font-size: 200%;
+    z-index: 99;
+    background: transparent;
+    border: transparent;
+}
+
+.overlay {
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.overlay__content {
+    top: 50%;
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-height: 90%;
+    max-width: 800px;
+}
+
+.overlay__close {
+    position: absolute;
+    right: 0;
+    padding: 0.5rem;
+    width: 2rem;
+    height: 2rem;
+    line-height: 2rem;
+    text-align: center;
+    background-color: white;
+    cursor: pointer;
+    border: 3px solid black;
+    font-size: 1.5rem;
+    margin: -1rem;
+    border-radius: 2rem;
+    z-index: 100;
+    box-sizing: content-box;
+}
+
+.overlay__content video {
+    width: 100%;
+    height: 100%;
+}
+
+.overlay__content canvas {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+}
+
+#interactive.viewport {
+    position: relative;
+}
+
+#interactive.viewport > canvas, #interactive.viewport > video {
+    max-width: 100%;
+    width: 100%;
+}
+
+canvas.drawing, canvas.drawingBuffer {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+</style>
+
+<span id="barcode-elements">
+	<script src="https://cdn.rawgit.com/serratus/quaggaJS/0420d5e0/dist/quagga.min.js"></script>
+	
+	<!-- Div to show the scanner -->
+	<div class="scanner-container" hidden></div>
+	<span class="scroll-target"></span>
+	
+	
+	<script>
+    var scannerIsRunning = false;
+    var cameraHeight;
+    var cameraWidth;
+    var currentInput;
+        
+    function startScanner(scannerContainer, selectedInput) {
+        currentInput = selectedInput;
+        cameraHeight = screen.height * .5;
+        cameraWidth = selectedInput.outerWidth();
+        
+        scrollTo(selectedInput);
+        
+        Quagga.init({
+	        inputStream: {
+	            name: "Live",
+		        type: "LiveStream",
+		        target: scannerContainer[0],
+	            constraints: {
+	                width: cameraWidth > cameraHeight ? cameraWidth : cameraHeight,
+	                height: cameraHeight < cameraWidth ? cameraHeight : cameraWidth,
+	                facingMode: "environment"
+	            },
+	        },
+	        decoder: {
+                readers: [
+                    //"code_128_reader",
+                    //"ean_reader",
+                    //"ean_8_reader",
+                    //"code_39_reader",
+                    //"code_39_vin_reader",
+                    //"codabar_reader",
+                    "upc_reader",
+                    //"upc_e_reader",
+                    //"i2of5_reader"
+                ],
+                debug: {
+                        showCanvas: true,
+                        showPatches: true,
+                        showFoundPatches: true,
+                        showSkeleton: true,
+                        showLabels: true,
+                        showPatchLabels: true,
+                        showRemainingPatchLabels: true,
+                        boxFromPatches: {
+                            showTransformed: true,
+                            showTransformedBox: true,
+                            showBB: true
+                        }
+                    }
+            },
+        }, function (err) {
+	           if (err) {
+	               console.log(err);
+	               return
+	           }
+	           
+	           console.log("Initialization finished. Ready to start");
+	           Quagga.start();
+	           scannerContainer.show();
+	           scannerContainer.append("<button class='exit-scanner' onClick='setFocus(currentInput)'>X</button>");
+	           $(".exit-scanner").css("left", $("video").innerWidth() - 40);
+	
+	           // Set flag to is running
+	           scannerIsRunning = true;
+        });
+
+        Quagga.onProcessed(function (result) {
+            var drawingCtx = Quagga.canvas.ctx.overlay,
+            drawingCanvas = Quagga.canvas.dom.overlay;
+
+            if (result) {
+                if (result.boxes) {
+                    drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+                    result.boxes.filter(function (box) {
+                        return box !== result.box;
+                    }).forEach(function (box) {
+                        Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: "green", lineWidth: 2 });
+                    });
+                }
+
+                if (result.box) {
+                    Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: "#00F", lineWidth: 2 });
+                }
+
+                if (result.codeResult && result.codeResult.code) {
+                    Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: 'red', lineWidth: 3 });
+                }
+            }
+        });
+        
+        Quagga.onDetected(function (result) {
+	        selectedInput.val(result.codeResult.code);
+	        hideScanners();
+	        setFocus(selectedInput.nextAll("input").first(), true);
+        });
+    }
+    
+    function setFocus(selectedInput, fireEvent) {
+        hideScanners();
+        if (fireEvent) {
+            toggleScanner(selectedInput);
+        }
+        else {
+            selectedInput.removeAttr("readonly");
+        }
+        selectedInput.focus();
+    }
+    
+    function scrollTo(element) {
+        console.log(element);
+        $('html, body').animate({
+            scrollTop: element.offset().top - 100
+        }, 0);
+    }
+    
+    function hideScanners() {
+        Quagga.offDetected();
+        Quagga.offProcessed();
+        Quagga.stop();
+        console.log("quagga stopped");
+        scannerIsRunning = false;
+        $(".scanner-container").hide();
+    };
+
+    function toggleScanner(element) {
+        var scannerContainer = element.next(".barcode-import").find(".scanner-container");
+        var selectedInput = element;
+		if (scannerIsRunning) {
+		    hideScanners();
+		    startScanner(scannerContainer, selectedInput);
+		} else {
+		    startScanner(scannerContainer, selectedInput);
+		}
+    }
+    
+    function mode(array){
+       if (array.length == 0)
+           return null;
+   
+       var modeMap = {},
+           maxEl = array[0],
+           maxCount = 1;
+   
+       for(var i = 0; i < array.length; i++)
+       {
+           var el = array[i];
+   
+           if (modeMap[el] == null)
+               modeMap[el] = 1;
+           else
+               modeMap[el]++;
+   
+           if (modeMap[el] > maxCount)
+           {
+               maxEl = el;
+               maxCount = modeMap[el];
+           }
+           else if (modeMap[el] == maxCount)
+           {
+               maxEl += '&' + el;
+               maxCount = modeMap[el];
+           }
+       }
+       return maxEl;
+    }
+	</script>
+</span>

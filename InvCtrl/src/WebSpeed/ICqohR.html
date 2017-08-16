@@ -1,0 +1,298 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<TITLE>Quantity on Hand Report</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="22/Aug/2016">
+    <META NAME='LAST_UPDATED' CONTENT="18/Oct/2016">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+    <script src='/depot/src/HTMLContent/javascript/fixed.js'></script>
+    <script src='/depot/src/HTMLContent/javascript/tablesorter.min.js'></script>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Template Notes: 
+        This template is designed to be used with a simple search report.
+        It has a link designed to send the user to a more advanced (From
+        To) search. The validation act allows you to decide weather the 
+        criteria the user is inputting is valid for your table to search
+        by (outside date range for example).  Quoted areas are either
+        instuctions or place holders for your variables and fields.     
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-from-site LIKE qoh_det.qoh_site NO-UNDO.
+DEFINE VARIABLE v-from-warehouse LIKE qoh_det.qoh_warehouse NO-UNDO.
+DEFINE VARIABLE v-from-item LIKE qoh_det.qoh_item_nbr NO-UNDO.
+DEFINE VARIABLE v-from-loc LIKE qoh_det.qoh_loc NO-UNDO.
+DEFINE VARIABLE v-from-lot LIKE qoh_det.qoh_lot NO-UNDO.
+DEFINE VARIABLE v-from-serial LIKE qoh_det.qoh_serial NO-UNDO.
+DEFINE VARIABLE v-from-status LIKE qoh_det.qoh_status NO-UNDO.
+DEFINE VARIABLE v-from-last-count LIKE qoh_det.qoh_last_count NO-UNDO.
+DEFINE VARIABLE v-html-from-last-count AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-to-site LIKE qoh_det.qoh_site NO-UNDO.
+DEFINE VARIABLE v-to-warehouse LIKE qoh_det.qoh_warehouse NO-UNDO.
+DEFINE VARIABLE v-to-item LIKE qoh_det.qoh_item_nbr NO-UNDO.
+DEFINE VARIABLE v-to-loc LIKE qoh_det.qoh_loc NO-UNDO.
+DEFINE VARIABLE v-to-lot LIKE qoh_det.qoh_lot NO-UNDO.
+DEFINE VARIABLE v-to-serial LIKE qoh_det.qoh_serial NO-UNDO.
+DEFINE VARIABLE v-to-status LIKE qoh_det.qoh_status NO-UNDO.
+DEFINE VARIABLE v-to-last-count LIKE qoh_det.qoh_last_count NO-UNDO.
+DEFINE VARIABLE v-html-to-last-count AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-shw-not-avails AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-shw-empties AS LOGICAL NO-UNDO.
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act                 = html-encode(get-value("h-act"))
+    
+    v-from-site          = html-encode(get-value("h-from-site"))
+    v-from-warehouse     = html-encode(get-value("h-from-warehouse"))
+    v-from-item          = html-encode(get-value("h-from-item"))
+    v-from-loc           = html-encode(get-value("h-from-loc"))
+    v-from-lot           = html-encode(get-value("h-from-lot"))
+    v-from-serial        = html-encode(get-value("h-from-serial"))
+    v-from-status        = html-encode(get-value("h-from-status"))
+    v-html-from-last-count    = (html-encode(get-value("h-from-last-count")))
+    
+    v-to-site          = html-encode(get-value("h-to-site"))
+    v-to-warehouse     = html-encode(get-value("h-to-warehouse"))
+    v-to-item          = html-encode(get-value("h-to-item"))
+    v-to-loc           = html-encode(get-value("h-to-loc"))
+    v-to-lot           = html-encode(get-value("h-to-lot"))
+    v-to-serial        = html-encode(get-value("h-to-serial"))
+    v-to-status        = html-encode(get-value("h-to-status"))
+    v-html-to-last-count    = html-encode(get-value("h-to-last-count"))
+    
+    v-shw-not-avails   = IF html-encode(get-value("h-shw-not-avails")) = "yes" THEN YES ELSE NO.
+    v-shw-empties   = IF html-encode(get-value("h-shw-empties")) = "yes" THEN YES ELSE NO.
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-from-last-count, OUTPUT v-from-last-count).
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-to-last-count, OUTPUT v-to-last-count).
+   
+IF act= "" THEN 
+    act = "INITIAL".
+        
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP
+            "<DIV class='grid_10'>" SKIP   
+            "<div class='table_2col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=4>Quantity on Hand Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Site</td>" skip
+            "           <td><input type='text' name='h-from-site' value='" v-from-site "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-site' value='" v-to-site "' /></td>" skip          
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Warehouse</td>" skip
+            "           <td><input type='text' name='h-from-warehouse' value='" v-from-warehouse "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-warehouse' value='" v-to-warehouse "' /></td>" skip          
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Location</td>" skip
+            "           <td><input type='text' name='h-from-loc' value='" v-from-loc "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-loc' value='" v-to-loc "' /></td>" skip          
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Item</td>" skip
+            "           <td><input type='text' name='h-from-item' value='" v-from-item "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-item' value='" v-to-item "' /></td>" skip          
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Lot</td>" skip
+            "           <td><input type='text' name='h-from-lot' value='" v-from-lot "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-lot' value='" v-to-lot "' /></td>" skip          
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Serial</td>" skip
+            "           <td><input type='text' name='h-from-serial' value='" v-from-serial "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-serial' value='" v-to-serial "' /></td>" skip          
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Status</td>" skip
+            "           <td><input type='text' name='h-from-status' value='" v-from-status "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-status' value='" v-to-status "' /></td>" skip          
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Last Count</td>" skip
+            "           <td><input type='date' name='h-from-last-count' value='" v-from-last-count "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='date' name='h-to-last-count' value='" v-to-last-count "' /></td>" skip          
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Show Unavailable Inventory</td>" SKIP
+            "           <td><input type='checkbox' name='h-shw-not-avails' value='YES'</td>" SKIP
+            "           <td>Show Empties</td>" SKIP
+            "           <td><input type='checkbox' name='h-shw-empties' value='YES'</td>" SKIP
+            "       </tr>" SKIP
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Search' class='btn'>Search</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+/*			"   <div class='grid_2'><BUTTON type='submit' formaction='../../" /* project */ "/rcode/" /* ADV-R */ ".r' class='btn'>Advanced Search</BUTTON></div>" SKIP*/
+/*			"   <div class='grid_2'> </DIV>" SKIP                                                                                                                      */
+			"</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        {&OUT}
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='11'>Quantity on Hand Report</TH>" SKIP    
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "               <td>Site</td>" SKIP
+            "               <td>Warehouse</td>" SKIP
+            "               <td>Location</td>" SKIP
+            "               <td>Item Number</td>" SKIP
+            "               <td>Lot Number</td>" SKIP
+            "               <td>Serial</td>" SKIP
+            "               <td>Last Count</td>" SKIP
+            "               <td>Status</td>" SKIP
+            "               <td>Quantity</td>" SKIP
+            "               <td>Available</td>" SKIP
+            "               <td>Expiration Date</td>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1).
+            
+        loop-qoh: FOR EACH QOH_det WHERE 
+            ((qoh_det.qoh_site >= v-from-site OR v-from-site = "") AND (qoh_det.qoh_site <= v-to-site OR v-to-site = "")) AND 
+            ((qoh_det.qoh_warehouse >= v-from-warehouse OR v-from-warehouse = "") AND (qoh_det.qoh_warehouse <= v-to-warehouse OR v-to-warehouse = "")) AND 
+            ((qoh_det.qoh_loc >= v-from-loc OR v-from-loc = "") AND (qoh_det.qoh_loc <= v-to-loc OR v-to-loc = "")) AND 
+            ((qoh_det.qoh_item_nbr >= v-from-item OR v-from-item = "") AND (qoh_det.qoh_item_nbr <= v-to-item OR v-to-item = "")) AND 
+            ((qoh_det.qoh_lot >= v-from-lot OR v-from-lot = "") AND (qoh_det.qoh_lot <= v-to-lot OR v-to-lot = "")) AND 
+            ((qoh_det.qoh_serial >= v-from-serial OR v-from-serial = "") AND (qoh_det.qoh_serial <= v-to-serial OR v-to-serial = "")) AND 
+            ((qoh_det.qoh_status >= v-from-status OR v-from-status = "") AND (qoh_det.qoh_status <= v-to-status OR v-to-serial = "")) AND 
+            ((qoh_det.qoh_last_count >= v-from-last-count OR v-from-last-count = ?) AND (qoh_det.qoh_last_count <= v-to-last-count OR v-to-last-count = ?)) AND 
+            qoh_det.qoh_deleted = ?
+                NO-LOCK BY qoh_det.qoh_site 
+                BY qoh_det.qoh_warehouse 
+                BY qoh_det.qoh_loc 
+                BY qoh_det.qoh_item_nbr
+                BY qoh_det.qoh_lot
+                BY qoh_det.qoh_serial
+                BY qoh_det.qoh_last_count:
+            
+           IF qoh_det.qoh_avail = NO AND v-shw-not-avails <> YES THEN NEXT loop-qoh.
+           
+           IF qoh_det.qoh_quantity = 0 AND v-shw-empties <> YES THEN NEXT loop-qoh.
+            
+            {&OUT}
+                "           <tr>" SKIP
+                "               <td style='text-align:center;'>" qoh_det.qoh_site "</td>" SKIP
+                "               <td style='text-align:center;'>" qoh_det.qoh_warehouse "</td>" SKIP
+                "               <td style='text-align:center;'>" qoh_det.qoh_loc "</td>" SKIP
+                "               <td>" qoh_det.qoh_item_nbr "</td>" SKIP
+                "               <td>" qoh_det.qoh_lot "</td>" SKIP
+                "               <td>" qoh_det.qoh_serial "</td>" SKIP
+                "               <td style='text-align:center;'>" qoh_det.qoh_last_count "</td>" SKIP
+                "               <td style='text-align:center;'>" qoh_det.qoh_status "</td>" SKIP
+                "               <td style='text-align:right;'>" qoh_det.qoh_quantity "</td>" SKIP
+                "               <td style='text-align:center;'>" qoh_det.qoh_avail "</td>" SKIP
+                "               <td style='text-align:center;'>" qoh_det.qoh_expire_date "</td>" SKIP
+                "           </tr>" SKIP.
+
+        END. /* 4ea. */
+        
+        {&OUT}          
+            "            <TR>" SKIP
+            "                <TH COLSPAN='11'><center>END OF REPORT</center></TH>" SKIP
+            "            </TR>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<h2>Could not find act " act ".</h2>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

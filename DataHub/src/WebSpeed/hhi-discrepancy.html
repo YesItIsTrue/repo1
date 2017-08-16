@@ -1,0 +1,186 @@
+<html>
+
+<head>
+    <title>Discrepancy </title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel='stylesheet' type='text/css' href='/DataHub/src/HTMLContent/stylesheets/discrepancy.css'>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <script>
+        $(document).ready(() => {
+            $("input[checked]").each(function() {
+                $(this).addClass("w3-theme");
+            });
+        
+            $(".option").click(function() {
+                var btn = $(this);
+                var otherBtn = btn.parent().siblings().find("input");
+                if (btn.attr("checked")) {
+	                btn.attr("checked", false);
+	                btn.removeClass("w3-theme");    
+                }
+                else {
+                    btn.attr("checked", true);
+                    btn.addClass("w3-theme");
+                }
+                otherBtn.attr("checked", false);
+                otherBtn.removeClass("w3-theme");
+            });
+        });
+        
+        function resetPage() {
+            window.location.replace('hhi-discrepancy.html');
+        }
+        
+        function stripUnselectedData() {
+            $("input:not([checked])").each(function() {
+                $(this).attr('name', '');
+            });
+        }
+        
+        function createNewRecord() {
+            stripUnselectedData();
+            $("#action").val("create");
+            $("#descrepancy_form").submit();   
+        }
+            
+        function mergeDiscrepancies() {
+            stripUnselectedData();
+            $("#action").val("mergeDiscrepancies");
+            $("#descrepancy_form").submit();
+        }
+        
+        function mergePatientRecords() {
+            stripUnselectedData();
+            $("#action").val("mergePatientRecords");
+            $("#descrepancy_form").submit();        
+        }
+
+    </script>
+</head>
+
+<body>
+
+<script language="SpeedScript">
+DEFINE VARIABLE recordPersonID LIKE people_mstr.people_id NO-UNDO.
+DEFINE VARIABLE discrepancyPersonID LIKE people_mstr.people_id NO-UNDO.
+DEFINE VARIABLE recordType AS CHARACTER INITIAL "" NO-UNDO.
+DEFINE VARIABLE mergePeople AS LOGICAL INITIAL NO NO-UNDO.
+
+DEFINE BUFFER people_mstr2 FOR people_mstr.
+DEFINE BUFFER addr_mstr2 FOR addr_mstr.
+
+ASSIGN recordType = get-value("h-act").
+
+IF (get-value("h-pp-passBack-char") = "yes") THEN
+    ASSIGN mergePeople = YES.
+
+IF (recordType = "onRecord") THEN DO:
+    ASSIGN 
+        recordPersonID = INT(get-value("h-patient_ID"))
+        discrepancyPersonID = INT(get-value("h-pp-passBack-integer")).
+END.
+ELSE IF (recordType = "discrepancy") THEN DO:
+    ASSIGN 
+        discrepancyPersonID = INT(get-value("h-patient_ID"))
+        recordPersonID = INT(get-value("h-pp-passBack-integer")).
+END.
+
+IF (recordPersonID = 0 AND discrepancyPersonID = 0) THEN DO: /* Find discrepancies */
+	FIND FIRST D_people_mstr WHERE D_people_mstr.D_people_Verify_Flag = FALSE NO-LOCK NO-ERROR.
+	IF AVAILABLE (D_people_mstr) THEN DO:
+	    ASSIGN discrepancyPersonID = D_people_mstr.D_people_id.
+	    FIND FIRST people_mstr WHERE people_mstr.people_ID = D_people_mstr.D_people_discrep_ID NO-LOCK NO-ERROR.
+	    IF AVAILABLE (people_mstr) THEN DO:
+	        ASSIGN recordPersonID = people_mstr.people_id.
+	        FIND FIRST pal_list WHERE pal_list.pal_people_ID = people_mstr.people_id AND pal_list.pal_type = "Primary" NO-LOCK NO-ERROR.
+	        IF AVAILABLE (pal_list) THEN DO:
+	            FIND FIRST addr_mstr WHERE addr_mstr.addr_id = pal_list.pal_addr_ID NO-LOCK NO-ERROR.
+	            IF AVAILABLE (addr_mstr) THEN
+	                FIND FIRST D_addr_mstr WHERE D_addr_mstr.D_addr_discr_ID = addr_mstr.addr_id AND D_addr_mstr.D_addr_Verify_Flag = FALSE NO-LOCK NO-ERROR.
+	        END.
+	    END.
+	END.
+	ELSE DO:
+	    FIND FIRST D_addr_mstr WHERE D_addr_mstr.D_addr_Verify_Flag = FALSE NO-LOCK NO-ERROR.
+	    IF AVAILABLE (D_addr_mstr) THEN DO:
+	        FIND FIRST addr_mstr WHERE addr_mstr.addr_ID = D_addr_mstr.D_addr_discr_ID NO-LOCK NO-ERROR.
+	        IF AVAILABLE (addr_mstr) THEN DO:
+	            FIND FIRST pal_list WHERE pal_list.pal_addr_ID = addr_mstr.addr_id AND pal_list.pal_type = "Primary" NO-LOCK NO-ERROR.
+	            IF AVAILABLE (pal_list) THEN DO:
+	                FIND FIRST people_mstr WHERE people_mstr.people_id = pal_list.pal_people_ID NO-LOCK NO-ERROR.
+	                IF AVAILABLE (people_mstr) THEN DO:
+	                    ASSIGN recordPersonID = people_mstr.people_id.
+	                    FIND FIRST D_people_mstr WHERE D_people_mstr.D_people_discrep_ID = people_mstr.people_id AND D_people_mstr.D_people_Verify_Flag = FALSE NO-LOCK NO-ERROR.
+	                    IF AVAILABLE (D_people_mstr) THEN
+	                       ASSIGN discrepancyPersonID = D_people_mstr.D_people_id.
+	                END.
+	            END.
+	        END.
+	    END.
+	END.
+	{hhi-discrepancy-records.i "D_people_mstr" "D_people" "D_addr_mstr" "D_addr"}
+END.
+ELSE DO:
+    FIND FIRST people_mstr WHERE people_mstr.people_id = recordPersonID NO-LOCK NO-ERROR.
+    IF AVAILABLE (people_mstr) THEN DO:
+        FIND FIRST pal_list WHERE pal_list.pal_people_ID = people_mstr.people_id AND pal_list.pal_type = "Primary" NO-LOCK NO-ERROR.
+        IF AVAILABLE (pal_list) THEN
+            FIND FIRST addr_mstr WHERE addr_mstr.addr_id = pal_list.pal_addr_ID NO-LOCK NO-ERROR.
+    END.
+
+    IF (mergePeople = YES) THEN DO:
+        FIND FIRST people_mstr2 WHERE people_mstr2.people_id = discrepancyPersonID NO-LOCK NO-ERROR.
+        IF AVAILABLE (people_mstr2) THEN DO:
+            FIND FIRST pal_list WHERE pal_list.pal_people_ID = people_mstr2.people_id AND pal_list.pal_type = "Primary" NO-LOCK NO-ERROR.
+            IF AVAILABLE (pal_list) THEN
+                FIND FIRST addr_mstr2 WHERE addr_mstr2.addr_id = pal_list.pal_addr_ID NO-LOCK NO-ERROR.
+        END.
+    END.
+    ELSE DO:
+        FIND FIRST D_people_mstr WHERE D_people_mstr.D_people_id = discrepancyPersonID NO-LOCK NO-ERROR.
+        IF AVAILABLE (D_people_mstr) THEN DO:
+            FIND FIRST pal_list WHERE pal_list.pal_people_ID = D_people_mstr.D_people_discrep_ID AND pal_list.pal_type = "Primary" NO-LOCK NO-ERROR.
+            IF AVAILABLE (pal_list) THEN DO:
+                FIND FIRST D_addr_mstr WHERE D_addr_mstr.D_addr_discr_id = pal_list.pal_addr_ID NO-LOCK NO-ERROR.
+            END.
+        END.
+    END.
+    
+    IF (mergePeople = YES) THEN DO:
+        {hhi-discrepancy-records.i "people_mstr2" "people" "addr_mstr2" "addr"}
+    END.
+    ELSE DO:
+        {&OUT} "<h1>hello</h1>".
+        {hhi-discrepancy-records.i "D_people_mstr" "D_people" "D_addr_mstr" "D_addr"}
+    END.
+END.
+
+</script>
+    <br>
+    <div class="center">
+        <a href="http://mysolsource.com/" target="_blank">Powered by Solsource</a>
+    </div>
+    <br>
+    
+    <!-- Modal -->
+    <div class="modal fade" id="createRecordModal" role="dialog">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-body">
+          <p>Are you sure you want to create a new record with the selected values?</p>
+        </div>
+        <div class="center">
+            <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+            <button type="button" class="btn btn-default" onclick="createNewRecord()">Yes</button>
+        </div>
+        <br>
+      </div>
+    </div>
+  </div>
+    
+</body>
+
+</html>

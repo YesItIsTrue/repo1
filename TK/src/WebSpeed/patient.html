@@ -1,0 +1,1359 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"><!-- <a href="patient_browse.html" target="_blank">YES</a> -->
+          <h3></h3>
+	 	                            
+<html> 
+<head>
+  
+    <title>Patient Update Procedure</title>
+    <META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.51"> 
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="25/Aug/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<script LANGUAGE="SpeedScript">
+
+ /*------------------------------------------------------------------
+ * File:patient.html (3.4 in HHI "The System")
+ * Description:  This procedure is used to Update a patient record. 
+ * Created:
+ *-------------------------------------------------------------------
+ * Revision History:    
+ * ---------------------
+ * 1.01 -  sort Dr. names by last name in drop-down menu. Being used in 1 drop downs.
+ *      -  Removed Condition field.
+ * 1.1  -  Made it possible to update a record that does not have an address associated with it.
+ *      -  Combined first name and last name in result field in Patient look up.
+ *      -  Added SKIPS.
+ *  1.3 - written by DOUG LUTTRELL on 07/Jul/15.  Mark redid the whole
+ *          thing to better support the RP stuff.  Turns out the DISABLED
+ *          setting on an input field prevents the form from submitting 
+ *          those values when you submit it.  Also some typos and things
+ *          with quotes were causing wonky behavior.  Not marked.
+ * 1.4 - written by Mark Jacobs on 09/23/15. Marked by 1dot4.
+ *          Added preferred name to the forms, and the necessary workaround block of code (This is located in the supporting procedure; patient_update4.html).
+ *          Added Patient ID to display in the form.
+ *          Added isselected Logic to state and country drop-down in forms and added an additional country lookup for states.   
+ * 1.5 - written by Jacob Luttrell on 11/Feb/16. Added dropdown.i files and changed state and country
+ *          field names to match v11.1 database and product release. 
+ *          Marked by 1dot5.
+ * 1.51 - written by Jacob Luttrell on 25/Aug/16. Rearranged first name / last name order. unmarked.
+ *-------------------------------------------------------------------- */
+
+</script>
+  
+<script type="text/javascript">
+// Popup window code
+function patientPopup(url) {
+    popupWindow = window.open(
+        url,'popUpWindow','height=500,width=400,left=100,top=100,resizable=yes,scrollbars=yes,toolbar=yes,menubar=no,location=no,directories=no,status=yes')
+}
+
+</script>
+</head>
+<body class='inside'>
+<!-- 
+<h1 style="text-align: center">
+        <br>TestKit Tracker <span style="COLOR: #0000FF;">Patient Create and Update</span><br>
+    </h1>
+    <hr style="width: 70%">
+ --> 
+<script LANGUAGE="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}. 
+
+
+    DEFINE VARIABLE isselected      AS CHARACTER                        NO-UNDO.    /* 1dot4 */
+	DEFINE VARIABLE patID LIKE patient_ID NO-UNDO.
+	DEFINE VARIABLE patfstn LIKE people_firstname NO-UNDO.
+	DEFINE VARIABLE patlstn LIKE people_lastname NO-UNDO.
+	DEFINE VARIABLE patmidn LIKE people_midname NO-UNDO.
+	DEFINE VARIABLE pattitle LIKE people_prefix NO-UNDO.
+	DEFINE VARIABLE patsuf LIKE people_suffix NO-UNDO.
+	DEFINE VARIABLE peop-contact LIKE people_contact NO-UNDO.
+	DEFINE VARIABLE prefname LIKE people_mstr.people_prefname NO-UNDO.     /* 1dot4 */
+	
+	
+	DEFINE VARIABLE o-pat-exist AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-pat-ran   AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-pat-error AS LOGICAL NO-UNDO.
+    
+    DEFINE VARIABLE o-patid LIKE patient_id NO-UNDO.
+    DEFINE VARIABLE o-pat-create AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-pat-updat AS LOGICAL NO-UNDO.
+  /*  DEFINE VARIABLE o-pat-error AS LOGICAL NO-UNDO. */ /* This variable is already being used */
+    DEFINE VARIABLE o-pat-success AS LOGICAL NO-UNDO.
+    
+    DEFINE VARIABLE o-peop-id LIKE people_id NO-UNDO.
+    DEFINE VARIABLE o-peop-addr-id LIKE addr_mstr.addr_id NO-UNDO.
+    DEFINE VARIABLE o-peop-crrate AS LOGICAL NO-UNDO. 
+    DEFINE VARIABLE o-peop-update AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-peop-avail AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-peop-success AS LOGICAL NO-UNDO.
+    
+    DEFINE VARIABLE o-addr-id LIKE addr_id NO-UNDO.
+    DEFINE VARIABLE o-addr-create AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-addr-update AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-addr-avail AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-addr-success AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-addr-error AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-addr-ran AS LOGICAL NO-UNDO.
+    
+    DEFINE VARIABLE o-fstate-disp-name AS CHARACTER NO-UNDO.        /* 1dot5 */
+    DEFINE VARIABLE o-fstate-disp-error AS LOGICAL NO-UNDO.         /* 1dot5 */
+	DEFINE VARIABLE o-fstate-ISO AS CHARACTER NO-UNDO.              /* 1dot5 */
+    DEFINE VARIABLE o-fstate-error AS LOGICAL NO-UNDO.              /* 1dot5 */
+    DEFINE VARIABLE o-fcountry-ISO AS CHARACTER NO-UNDO.            /* 1dot5 */
+    DEFINE VARIABLE o-fcountry-error AS LOGICAL NO-UNDO.            /* 1dot5 */
+	
+	
+	DEFINE VARIABLE add1 LIKE addr_addr1 NO-UNDO.
+	DEFINE VARIABLE add2 LIKE addr_addr2 NO-UNDO.
+	DEFINE VARIABLE add3 LIKE addr_addr3 NO-UNDO.
+	DEFINE VARIABLE city LIKE addr_city NO-UNDO.
+	DEFINE VARIABLE state-prov LIKE addr_stateprov NO-UNDO.
+	DEFINE VARIABLE patzip LIKE addr_zip NO-UNDO.
+	DEFINE VARIABLE county-type LIKE addr_mstr.addr_type NO-UNDO.
+	DEFINE VARIABLE second-addr LIKE people_mstr.people_second_addr_ID NO-UNDO.
+	
+	DEFINE VARIABLE h-phone LIKE people_homephone NO-UNDO.
+	DEFINE VARIABLE c-phone LIKE people_cellphone NO-UNDO.
+	DEFINE VARIABLE w-phone LIKE people_workphone NO-UNDO.	
+	DEFINE VARIABLE fax-phone LIKE people_fax NO-UNDO.
+	
+	DEFINE VARIABLE patgen LIKE people_gender NO-UNDO.
+	
+	DEFINE VARIABLE patdob LIKE people_DOB NO-UNDO.
+	DEFINE VARIABLE newdob LIKE people_mstr.people_DOB NO-UNDO. /*@@@@@@@@@@@@@@@@@@*/
+	
+	DEFINE VARIABLE patage AS INTEGER NO-UNDO. /* patient_age */ 
+	
+	DEFINE VARIABLE patcon LIKE patient_condition NO-UNDO.
+	DEFINE VARIABLE patcp LIKE patient_RP_ID NO-UNDO.  /* The needs to be made into a people record */
+	DEFINE VARIABLE patnotes LIKE patient_notes NO-UNDO.
+	
+	DEFINE VARIABLE patemail LIKE people_email NO-UNDO.
+	DEFINE VARIABLE patRPemail LIKE people_email NO-UNDO. /** @@@ This needs to be associated with the responsible party people record patient_RP_ID */
+	 
+	DEFINE VARIABLE patcomp LIKE people_company NO-UNDO.	
+	DEFINE VARIABLE patmpa AS LOGICAL  NO-UNDO. /* patient_MPACust */
+	DEFINE VARIABLE patdum AS LOGICAL NO-UNDO. /*patient_dummy1 */
+		
+	DEFINE VARIABLE country LIKE addr_country NO-UNDO.	
+	DEFINE VARIABLE patvflag AS LOGICAL  NO-UNDO. /* patient_verify_flag */
+			                 
+	DEFINE VARIABLE email LIKE people_email NO-UNDO.
+	DEFINE VARIABLE email-reen LIKE people_email NO-UNDO.
+	
+	DEFINE VARIABLE email2 LIKE people_email2 NO-UNDO.  
+	DEFINE VARIABLE email2-reen LIKE people_email2 NO-UNDO.
+	
+	DEFINE VARIABLE male-ck AS CHARACTER NO-UNDO.
+	DEFINE VARIABLE female-ck AS CHARACTER NO-UNDO.
+	
+	DEFINE VARIABLE doc	LIKE patient_doctor_id NO-UNDO.       /* @@@@@@ need to add this to the from  @@@@@ */
+	
+	DEFINE VARIABLE ddate LIKE patient_create_date NO-UNDO.
+	DEFINE VARIABLE moddate LIKE patient_modified_date NO-UNDO.
+	DEFINE VARIABLE cust-id LIKE cust_id NO-UNDO.   
+	/*********************************************************************************************/	
+	DEFINE VARIABLE act AS INTEGER NO-UNDO.
+	DEFINE VARIABLE deleteblock AS INTEGER NO-UNDO.
+	DEFINE VARIABLE un86 AS INTEGER NO-UNDO.
+	DEFINE VARIABLE edit AS INTEGER NO-UNDO.
+	DEFINE VARIABLE made AS INTEGER NO-UNDO.
+	DEFINE VARIABLE crt AS INTEGER NO-UNDO.
+	DEFINE VARIABLE sent-edit AS INTEGER NO-UNDO.
+	/*********************************************************************************************/
+	
+	/*---------------------- Responsible party variable definitions -----------------------------*/
+	DEFINE VARIABLE RP-peop-ID LIKE people_id NO-UNDO.
+	DEFINE VARIABLE RP-fstn    LIKE people_firstname NO-UNDO.
+    DEFINE VARIABLE RP-lstn    LIKE people_lastname NO-UNDO.
+    DEFINE VARIABLE RP-midn    LIKE people_midname NO-UNDO.
+    DEFINE VARIABLE RP-title   LIKE people_prefix NO-UNDO.
+    DEFINE VARIABLE RP-suf     LIKE people_suffix NO-UNDO.
+    
+    DEFINE VARIABLE RP-add1        LIKE addr_addr1 NO-UNDO.
+    DEFINE VARIABLE RP-add2        LIKE addr_addr2 NO-UNDO.
+    DEFINE VARIABLE RP-add3        LIKE addr_addr3 NO-UNDO.
+    DEFINE VARIABLE RP-city        LIKE addr_city NO-UNDO.
+    DEFINE VARIABLE RP-state-prov  LIKE addr_stateprov NO-UNDO.
+    DEFINE VARIABLE RP-zip         LIKE addr_zip NO-UNDO.
+    DEFINE VARIABLE RP-country     LIKE addr_country NO-UNDO.
+    DEFINE VARIABLE RP-second-addr LIKE people_mstr.people_second_addr_ID NO-UNDO.
+    
+    DEFINE VARIABLE RP-dob LIKE people_mstr.people_DOB NO-UNDO.
+    
+    DEFINE VARIABLE RP-h-phone LIKE people_homephone NO-UNDO.
+    DEFINE VARIABLE RP-c-phone LIKE people_cellphone NO-UNDO.
+    DEFINE VARIABLE RP-w-phone LIKE people_workphone NO-UNDO.  
+    DEFINE VARIABLE RP-fax-phone LIKE people_fax NO-UNDO.
+    DEFINE VARIABLE RP-email LIKE people_email NO-UNDO.
+    DEFINE VARIABLE RP-email2 LIKE people_email NO-UNDO.
+    DEFINE VARIABLE RP-add-id LIKE people_addr_id NO-UNDO.
+    
+    DEFINE VARIABLE RP-comp LIKE patient_condition NO-UNDO.
+    DEFINE VARIABLE RP-gen LIKE people_gender NO-UNDO.
+    DEFINE VARIABLE RP-peop-contact LIKE people_contact NO-UNDO.
+    DEFINE VARIABLE RP-patdob LIKE people_DOB NO-UNDO.
+    DEFINE VARIABLE RP-peop-addr-ID LIKE people_mstr.people_addr_id NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-id LIKE people_id NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-crrate AS LOGICAL NO-UNDO. 
+    DEFINE VARIABLE o-RP-peop-update AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-avail AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-success AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-addr-ID LIKE people_mstr.people_addr_id NO-UNDO.
+    
+    
+    DEFINE VARIABLE o-RP-addr-id LIKE addr_id NO-UNDO.
+    DEFINE VARIABLE o-RP-addr-create AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-addr-update AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-addr-avail AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-addr-success AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-addr-error AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-addr-ran AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-addr-succes AS LOGICAL NO-UNDO.
+    
+    
+    DEFINE VARIABLE RP-addr-ID LIKE addr_id NO-UNDO.
+    DEFINE VARIABLE RP-stname LIKE state_mstr.State_Display_Name NO-UNDO.
+    DEFINE VARIABLE RP-stabbv LIKE state_mstr.State_ISO NO-UNDO.
+    
+   /*-------------------- End of Responsible party variable definitions -----------------------*/
+   
+    DEFINE VARIABLE sent-back AS INTEGER NO-UNDO. /* Am I going to keep this ???? YES*/
+    DEFINE VARIABLE re-title AS INTEGER NO-UNDO.
+    DEFINE VARIABLE brows AS INTEGER NO-UNDO. 
+        
+    DEFINE VARIABLE coname LIKE country_mstr.Country_Display_Name NO-UNDO.          /* 1dot5 */
+    DEFINE VARIABLE coabbv LIKE country_mstr.Country_ISO NO-UNDO.                   /* 1dot5 */
+    
+    DEFINE VARIABLE stname LIKE state_mstr.State_Display_Name NO-UNDO.              /* 1dot5 */
+    DEFINE VARIABLE stabbv LIKE state_mstr.State_ISO NO-UNDO.                       /* 1dot5 */
+    
+   /******************************* For age calculation *****************/
+	DEFINE VARIABLE thisday AS DATE NO-UNDO.
+    DEFINE VARIABLE thatday AS DATE NO-UNDO.
+    DEFINE VARIABLE patientage AS DECIMAL FORMAT "->>.99"  NO-UNDO.
+    DEFINE VARIABLE cont AS INTEGER NO-UNDO.
+    DEFINE VARIABLE days AS INTEGER NO-UNDO.
+    DEFINE VARIABLE formdate AS DATE NO-UNDO.   
+  
+	/********************************************************************/
+	
+	DEFINE VARIABLE peop-ID     LIKE people_mstr.people_id NO-UNDO.
+    DEFINE VARIABLE peop-addr-ID LIKE people_mstr.people_addr_id NO-UNDO.
+    DEFINE VARIABLE pat-exist AS LOGICAL INITIAL NO NO-UNDO.
+    
+	DEFINE VARIABLE peeprec AS RECID NO-UNDO. /* this NEW to me, and cool */	
+	
+	DEFINE VARIABLE doc-fname LIKE people_mstr.people_firstname NO-UNDO.
+    DEFINE VARIABLE doc-lname LIKE people_mstr.people_lastname  NO-UNDO.  
+	DEFINE VARIABLE doc-id    LIKE doctor_mstr.doctor_ID NO-UNDO.
+	DEFINE VARIABLE patdoc      AS INTEGER  NO-UNDO. /* patient_doctorID */
+	DEFINE VARIABLE whattorun AS CHARACTER NO-UNDO.
+	   
+    DEFINE VARIABLE keep-going AS LOGICAL INITIAL NO  NO-UNDO.
+    DEFINE VARIABLE first-stop AS INTEGER  NO-UNDO.
+    
+	DEFINE VARIABLE verified LIKE patient_mstr.patient_verified NO-UNDO.
+	DEFINE VARIABLE new-rp     AS LOGICAL INITIAL NO NO-UNDO.
+	DEFINE VARIABLE rp-stop    AS LOGICAL NO-UNDO.
+	
+    DEFINE VARIABLE cout       AS INTEGER INITIAL 0  NO-UNDO.          /* added 2/5/15 */
+    
+    DEFINE VARIABLE show-me    AS LOGICAL INITIAL NO NO-UNDO.   
+    
+    /*------------------------------------------------------------*/
+    DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.    /*---< ITfeedback (YES or NO)  */
+    /* -----------------------------------------------------------*/   
+	
+	ASSIGN 
+	
+	keep-going      =   IF (get-value("h-keep-going")) = "YES" then 
+                                  yes
+                                  else
+                                  no  
+    First-stop      =   INTEGER (get-value ("h-first-stop"))
+    
+    new-rp          =  IF (get-value("h-new-rp")) = "YES" then 
+                                  yes
+                                  else
+                                  no  
+    
+	whattorun       =   get-value ("whattorun")
+	peop-ID         =   INTEGER (get-value ("pep-id"))
+    peop-addr-ID    =   INTEGER (get-value ("pep-addr"))
+    pat-exist       =   IF (get-value("pep-exist")) = "YES" then 
+                                  yes
+                                  else
+                                  no  
+    
+    sent-edit       =   INTEGER (get-value ("sentedit"))  
+    
+    o-peop-ID       =   INTEGER (get-value ("h-o-peop-id"))
+    o-peop-addr-ID  =   INTEGER (get-value ("h-o-peop-addr-id"))
+	
+    patID           = INTEGER (get-value ("ID"))
+    patfstn         = get-value ("fstn")
+    patlstn         = get-value ("lstn")
+    patmidn         = get-value ("midn")
+    pattitle        = get-value ("title")
+    patsuf          = get-value ("suffix")
+    prefname        = get-value ("h-prefname")     /* 1dot4 */
+    add1            = get-value ("addr1") 
+    add2            = get-value ("addr2")
+    add3            = get-value ("addr3")
+    city            = get-value ("patcity")
+    state-prov      = get-value ("state")
+    patzip          = get-value ("zip")
+    h-phone         = get-value ("home")
+    c-phone         = get-value ("cell")
+    w-phone         = get-value ("work")
+    fax-phone       = get-value ("fax")
+    
+    patgen          = IF (get-value("gender")) = "YES" then 
+                                  yes
+                                  else
+                                  no  
+    patdob      = DATE (get-value ("dob")) 
+    newdob      = DATE (get-value("h-newdob"))  
+    /*newdob      = patdob */          
+      
+    act         = INTEGER (get-value ("h-act"))     
+    patage      = INTEGER (get-value ("age"))  
+    patcon      = get-value ("condition")
+    patnotes    = get-value ("notes")
+    patcp       =  INTEGER (get-value ("contactperson"))
+    
+    email    = get-value ("e-mail")
+    email2   = get-value ("e-mail2")
+    
+    patRPemail  = get-value ("RPemail")
+    
+    patdoc      = INTEGER (get-value ("doctor"))   
+    patcomp     = get-value ("company")  
+    
+    country     = get-value ("count")
+  
+    
+    patvflag    = IF (get-value("flag")) = "YES" then 
+                                  yes
+                                  else
+                                  no  
+    
+    deleteblock = INTEGER (get-value("dblock"))
+    un86        = INTEGER (get-value("undorec"))
+    edit        = INTEGER (get-value("mod"))
+    thisday     = TODAY
+    
+    sent-back   = INTEGER (get-value("sent"))
+    re-title    = INTEGER (get-value("undoth"))
+    brows       = INTEGER (get-value("browse"))
+    sent-back   = 0
+    made        = INTEGER (get-value("h-made")) 
+    crt         = INTEGER (get-value("crt-rec"))
+  /*------------------------------------------------*/
+    RP-add-id      = INTEGER   (get-value("RP-addr"))          
+    RP-peop-id     = INTEGER   (get-value ("RP-id"))
+    RP-fstn        = TRIM(get-value ("rpfstn"))
+    RP-lstn        = TRIM(get-value ("rplstn"))
+    RP-midn        = TRIM(get-value ("rpmidn"))
+    RP-title       = TRIM(get-value ("rptitle"))
+    RP-suf         = get-value ("rpsuffix")
+    RP-add1        = get-value ("rpaddr1")
+    RP-add2        = get-value ("rpaddr2")
+    RP-add3        = get-value ("rpaddr3")
+    RP-city        = get-value ("rpcity")
+    RP-state-prov  = get-value ("rpstate")
+    RP-zip         = get-value ("rpzip")
+    RP-h-phone     = get-value ("rphome")
+    RP-c-phone     = get-value ("rpcell")
+    RP-w-phone     = get-value ("rpwork")
+    RP-fax-phone   = get-value ("rpfax")
+    RP-country     = get-value ("rpcount")
+    RP-email       = get-value ("rpemail")
+    RP-email2      = get-value  ("rpemail2")
+    
+    RP-dob         = DATE (get-value("h-RP-dob")).
+    
+    
+  
+                 
+                 IF first-stop < 1 THEN DO:  
+         
+
+ 
+/* ------------------------------------------------- Start of 1st form ---------------------------------------------------------------------- */
+{&OUT}
+	"<DIV class='row'>" SKIP
+	"<DIV class='grid_3'> </DIV>" SKIP
+	"<DIV class='grid_6'>" SKIP.
+
+</SCRIPT>
+<center>
+
+    <div class='table_2col'>
+            <form method="post">
+                <table > 
+                        <th colspan='2'>Patient Search Criteria</th>
+                        <tr>    
+                            <td>Last Name</td><td ><input type="text" name="lstn" value="`patlstn`" tabindex=2></td>
+                        </tr>                         
+                        <tr>
+                            <td>First Name</td><td ><input type="text" name="fstn" value="`patfstn`" autofocus tabindex=1></td>
+                        </tr>  
+                            <input type="hidden" name="whattorun" value="`whattorun`">
+                            <input type="hidden" name="h-keep-going" value="NO"> 
+                            <input type="hidden" name="h-first-stop" value=1>
+                </table>
+<script LANGUAGE="SpeedScript">                
+{&OUT}                
+    "</DIV>     <!-- end of grid_6 -->" SKIP
+    "<DIV class='grid_3'> </DIV>" SKIP
+    "</DIV>     <!-- end of row -->" SKIP 
+    "</div>" skip 
+    
+    "<div class='row'>" SKIP
+	"   <div class='grid_3'> </DIV>" SKIP
+	"   <div class='grid_2'><BUTTON type='submit' name='submit' value='Find Patient' class='btn'>Find Patient</BUTTON></div>" SKIP
+	"   <div class='grid_2'> </DIV>" SKIP
+	"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+	"   <div class='grid_3'> </DIV>" SKIP
+	"</div>" SKIP
+	"<BR>" SKIP.
+             
+ </SCRIPT>               
+     
+                        
+                        
+            </form>
+            
+          <!--  
+            <div align="center">
+                <h3>Use this form to locate a Patient Record to update.</h3>
+            </div>
+    
+   
+    
+    <div class='table_2col'>         
+         <form method="post">
+            <table >                       
+                   <!-- <th colspan="4">Patient Record   ( Form 1 Find a Patient Record )</th> -->           
+          <!--               <tr>
+                        <th colspan="2">Personal </th><th colspan="2">Address </th>            
+                        <tr>              
+                            <td>Prefix</td><td><input type="text" name="title" value="`pattitle`" tabindex=1 autofocus ></td>  
+                            <td>Address Line1</td><td><input type="text" name="addr1" value="`add1`" tabindex=8></td>
+                           
+                        </tr>                         
+                        <tr>
+                            <td>First Name</td><td ><input type="text" name="fstn" value="`patfstn`" tabindex=2></td>
+                            <td>Address Line2</td><td><input type="text" name="addr2" value="`add2`" tabindex=9></td>
+                            
+                        </tr>   
+                        <tr>
+                             <td>Middle Name</td><td><input type="text" name="midn" value="`patmidn`" tabindex=3></td>  
+                             <td>Address Line3</td><td><input type="text" name="addr3" value="`add3`" tabindex=10></td>
+                                                        
+                        </tr>
+                        <tr>
+                             <td>Last Name</td><td ><input type="text" name="lstn" value="`patlstn`" tabindex=4></td>                                
+                             <td>City</td><td ><input type="text" name="patcity" value="`city`" tabindex=11></td>  
+                                                  
+                        </tr>
+                        <tr>
+                              <td>Suffix</td><td><input type="text" name="suffix" value="`patsuf`" tabindex=5></td>
+                              <td>Zip Code</td><td><input type="text" name="zp" value="`patzip`" tabindex=12></td> 
+                               
+                        </tr>
+                        <tr>
+                              <td>Date of Birth</td>
+<SCRIPT LANGUAGE="SpeedScript"> 
+                                IF patdob = ? THEN
+                                {&OUT}
+                                    "<td ><input type='text' name='dob' value=''tabindex=6></td>". /* value='' << ?? if useing input='DATE'*/
+                                    ELSE
+</SCRIPT>                                                                  
+                              <td ><input type="text" name="dob" value=" `patdob`" tabindex=6></td>                            
+                             
+                              <td>State</td><td><select name="st" tabindex=12 >
+                              <option selected>`state-prov` </option>
+                              <option value=''></option>             
+<SCRIPT LANGUAGE="SpeedScript">  
+                            FOR EACH state_mstr NO-LOCK :
+                                ASSIGN
+                                    stname = State_Display_Name
+                                    stabbv = State_ISO.
+</SCRIPT>             
+                            <option Value="`stabbv`"> `stname`  </option>
+<SCRIPT LANGUAGE="SpeedScript">                
+                             END.  /* FOR EACH states_mstr */  
+</SCRIPT>
+                        </tr>
+                        <tr>
+                           <td>Gender</td><td>Male<input type="radio" name="gender" value="Male" `male-ck`>                            
+                                Female<input type="radio" name="gender" value="Female" tabindex=7 `female-ck`>       </td></td> 
+                            <td>Country</td><td><select name="co" tabindex=13 >
+                            <option selected>`country`  </option>
+                            <option value=''></option>     
+<SCRIPT LANGUAGE="SpeedScript">  
+                            FOR EACH country_mstr NO-LOCK :
+                                ASSIGN
+                                    coname = Country_Display_Name
+                                    coabbv = Country_ISO.
+</SCRIPT>             
+                            <option Value="`coabbv`"> `coname`  </option>
+<SCRIPT LANGUAGE="SpeedScript">                
+                             END.  /* FOR EACH county_mstr */                       
+</SCRIPT>
+                        <input type="hidden" name="whattorun" value="`whattorun`">
+                        <input type="hidden" name="h-keep-going" value="NO"> 
+                        <input type="hidden" name="h-first-stop" value=1>
+             </table>
+                   
+          </div> 
+         <br><input type="submit" name="submit" value="Get Patient" onclick="this.form.action='patient.r?sent=1'">
+    
+                  &nbsp;&nbsp;<button type="reset" name="submit" value="reset">Reset</button>     
+        </form>
+     </center>   <!-- ------------------------------------------------------ End of 1st form ------------------------------------------------------------------ -->  
+                 
+<script LANGUAGE="SpeedScript">
+
+/*    END.  /*  IF patfstn EQ "" */  */
+    
+    END. /* IF fname <> "" and lname <> "" THEN DO:*/
+    /*---------------------------------------------------------------------------------------------------------------------------------------------*/
+    
+    ELSE 
+    
+    IF  keep-going = NO THEN DO:   
+        										                         IF ITfeedback = YES THEN  
+												                                      {&OUT}  "<p>This is whattorun-- "whattorun skip
+												                                              "<br>patgen is -- " patgen skip
+												                                              "</p>" SKIP.
+	/*------------------------------------------------------------------------------------------------------------------------------*/
+	
+
+          {&OUT}
+                     "<div class='row'>" SKIP
+                     "<div class='grid_12'>" SKIP                     
+                     "<div class='table_report fixed_table'>" SKIP                     
+	                 "   <table>" SKIP
+	                 "     <thead>" SKIP
+	                 "       <tr>" SKIP
+	                 "           <th colspan='6'>Select the Patient ID that you would like to Update</th>" SKIP
+	                 "       </tr>" SKIP                       
+	                 "       <tr>" SKIP
+	                 "           <td>Patient ID </td>" SKIP
+	                 "           <td>Patient Name</td>" SKIP
+	                 "           <td>Date of Birth</td>" SKIP
+	                 "           <td>Email address</td>" SKIP
+	                 "           <td>Address</td>" SKIP
+	                 "           <td>State</td>" SKIP
+	                 "       </tr>" SKIP
+	                 "     </thead>" SKIP.
+            
+                FOR EACH patient_mstr WHERE patient_mstr.patient_deleted = ? NO-LOCK,
+             
+                    EACH people_mstr WHERE people_id = patient_id AND
+                                            people_firstname BEGINS patfstn AND /*BEGINS patfstn */
+                                            people_lastname  BEGINS patlstn AND /*BEGINS patlstn */
+                                            people_mstr.people_deleted = ?  NO-LOCK BREAK BY people_lastname BY people_firstname:
+                                              
+	                ASSIGN
+	                add1       = ""
+	                state-prov = "".                              
+	                                              
+	                FOR EACH addr_mstr WHERE  addr_id = people_addr_id AND
+	                                         addr_mstr.addr_deleted = ?  NO-LOCK: 
+		                                                        
+		                ASSIGN
+		                add1       = addr_mstr.addr_addr1
+		                state-prov = addr_mstr.addr_stateprov
+		                country    = addr_mstr.addr_country
+		                . 
+                    
+                    RUN VALUE(SEARCH("SUBcountry-findR.p")) (                                          /* 1dot5 */
+				        country,                                                                       /* 1dot5 */
+				        OUTPUT o-fcountry-ISO,                                                         /* 1dot5 */
+				        OUTPUT o-fcountry-error                                                        /* 1dot5 */
+				        ).                                                                             /* 1dot5 */
+					
+				    RUN VALUE(SEARCH("SUBstate-findR.p")) (                                            /* 1dot5 */
+				        o-fcountry-ISO,                                                                /* 1dot5 */
+				        state-prov,                                                                    /* 1dot5 */
+				        OUTPUT o-fstate-ISO,                                                           /* 1dot5 */
+				        OUTPUT o-fstate-error                                                          /* 1dot5 */
+				        ).                                                                             /* 1dot5 */
+                    
+                    
+                    RUN VALUE(SEARCH("SUBstate-disp-name-findR.p")) (                                  /* 1dot5 */
+                    o-fcountry-ISO,                                                                    /* 1dot5 */
+                    o-fstate-ISO,                                                                      /* 1dot5 */                    
+                    OUTPUT o-fstate-disp-name,                                                         /* 1dot5 */
+                    OUTPUT o-fstate-disp-error                                                         /* 1dot5 */
+                    ).                                                                                 /* 1dot5 */
+                    
+/*                    {&OUT} "<P>o-fstate-disp-error = " o-fstate-disp-error "</P>" SKIP.*/
+                    
+                    END.  /* FOR EACH addr_mstr WHERE  addr_id = people_addr_id AND */  
+                     cout = cout + 1.                                                         
+	                 IF avail (patient_mstr) THEN DO:                                   
+			   {&OUT}
+			         "       <tr>" SKIP
+			         "           <td> <a href=patient.r?e-mail=" people_email 
+			         "&fstn=" people_firstname 
+			         "&lstn=" people_lastname 
+			         "&whattorun=" whattorun  
+			         "&pep-id=" people_id 
+			         "&h-keep-going=YES&h-first-stop=1>" people_id 
+			         "</a></td>" SKIP 
+			         "           <td>" people_lastname ", "people_firstname "</td>" SKIP
+			         "           <td>" people_dob "</td>" SKIP
+			         "           <td>" people_email "</td>" SKIP
+			         "           <td>" add1 "</td>" SKIP
+/*			         "           <td>" state-prov "</td>" SKIP*/
+			         "           <td>" o-fstate-disp-name "</td>" SKIP                               /* 1dot5 */
+			         "       </tr>" SKIP.   
+			         
+			         o-fstate-disp-name = "".
+			         
+			                         
+	                END. /* IF avail (patient_mstr) THEN DO:  */   
+                END. /* FOR EACH people_mstr */           
+          
+           IF cout = 0 THEN DO: 
+                           
+	           {&OUT}
+	                 "       <tr>" SKIP
+	                 "           <td colspan='6'align='center'>No Patient found." SKIP	 
+	                 "           </td>" SKIP
+	                 "       </tr>" SKIP 
+	                 
+	                 "   <TFOOT>" SKIP
+                     "       <TR>" SKIP
+                     "           <TD COLSPAN=6>END OF REPORT </TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+                     "       </TR>" SKIP
+                     "   </TFOOT>" SKIP   
+                       
+	                 "   </table>" SKIP
+	                 "</div>" SKIP
+	                 "</div>" SKIP
+	                 "</div>" SKIP.
+	                 
+	           {&OUT} 
+	                 "<br>" skip
+	                 "<div class='row'>" SKIP
+					 "   <div class='grid_3'> </DIV>" SKIP
+					 "   <div class='grid_2'>" skip					
+					 "     <form method='post' ACTION='patient_update3.r'>" SKIP
+                     "       <input type='hidden' name='whattorun' value='3.1'>" SKIP
+                     "       <BUTTON type='submit' class='btn'>Click here to Create One</BUTTON>" SKIP
+                     "     </form>" SKIP
+                     "   </div>" SKIP                     
+					 "   <div class='grid_2'> </DIV>" SKIP
+					 "   <div class='grid_2'>" skip					
+					 "     <form method='post' ACTION='patient.r'>" SKIP 
+                     "       <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP                             
+                     "       <BUTTON type='submit' class='btn'>New Patient Update</BUTTON>" SKIP               
+                     "     </form>" SKIP                     
+					 "   <div class='grid_3'> </DIV>" SKIP
+					 "</div>" SKIP
+					 "<BR>" SKIP.	 
+
+	       END.  /*  IF cout = 0 THEN DO:  */   
+	       
+	       ELSE DO: 	       
+	       
+	          {&OUT}
+	          
+	                 "       <tr>" SKIP
+                     "             <td colspan='7'align='center'>" cout " Patient Records Found</td>" SKIP 
+                     "       </tr>" SKIP
+	                 
+	                 "   <TFOOT>" SKIP
+					 "       <TR>" SKIP
+					 "           <TD COLSPAN=6>END OF REPORT </TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+					 "       </TR>" SKIP
+					 "   </TFOOT>" SKIP                     
+                     
+                     "   </table>" SKIP                     
+                     "</div>" SKIP
+                     "</div>" SKIP
+                     "</div>" SKIP
+                     "<br>" SKIP.
+                                        
+              {&OUT}
+	                 "<div class='row'>" SKIP                  
+	                 "  <div class='grid_5'></div>" SKIP
+	                 "   <div class='grid_2'>" SKIP
+	                 "     <form method='post' ACTION='patient.r'>" SKIP 
+	                 "       <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP                             
+	                 "       <BUTTON type='submit' class='btn'>New Patient Update</BUTTON>" SKIP               
+	                 "     </form>" SKIP
+	                 "   </div>" SKIP
+	                 "  <div class='grid_5'> </DIV>" SKIP
+	                 "</div>" SKIP. 
+	                               
+           END. /* ELSE DO:  */
+                                        
+    END. /* IF  keep-going = NO THEN DO: */
+          
+    /*---------------------------------------------------------------------------------------------------------------------------------------------*/
+   
+    ELSE DO:
+
+         IF keep-going = YES THEN DO:
+           
+                      
+                         FIND FIRST people_mstr WHERE people_id = peop-ID AND  /* o-peop-ID */
+                                    people_mstr.people_deleted  = ? NO-LOCK NO-ERROR. 
+                                   
+                                    IF AVAILABLE (people_mstr) THEN DO:
+                                        
+							                                             IF ITfeedback = YES THEN     
+							                                                 {&OUT} "<p>I have a people id -- " people_id SKIP.
+                                                                                                                                                                 
+                                       ASSIGN
+                                            peop-ID      = people_id
+                                            patfstn      = people_firstname
+                                            patlstn      = people_lastname
+                                            patdob       = people_DOB                                              
+                                            patmidn      = people_midname
+                                            pattitle     = people_prefix
+                                            patsuf       = people_suffix
+                                            email        = people_email
+                                            email2       = people_email2
+                                            h-phone      = people_homephone
+                                            w-phone      = people_workphone
+                                            c-phone      = people_cellphone
+                                            fax-phone    = people_fax 
+                                            patgen       = people_gender 
+                                            peop-addr-ID = people_addr_id
+                                            prefname     = people_mstr.people_prefname.    /* 1dot4 */.                                                         
+                                                                              
+                                    END.  /** of if avail people_mstr */
+                                    
+                        
+                         FIND FIRST addr_mstr WHERE  /*FIRST*/                                                                  
+                                  addr_mstr.addr_id       = people_addr_id AND
+                                  addr_mstr.addr_deleted  = ? NO-LOCK NO-ERROR. 
+                            
+                                IF AVAILABLE (addr_mstr) THEN DO:
+                                     ASSIGN
+                                         add1            = addr_addr1
+                                         add2            = addr_addr2
+                                         add3            = addr_addr3
+                                         city            = addr_city
+                                         state-prov      = addr_stateprov
+                                         country         = addr_country
+                                         patzip          = addr_zip.
+                                        /* people_addr_id  = addr_id */.
+                                                                                
+                                END.  /** of if avail addr_mstr **/    
+                              
+										                                 IF ITfeedback = YES THEN     
+										                                          {&OUT} "<p>I'm at the end of Patient addr assign and my addr_id is ---" peop-addr-ID   "</p>" SKIP.
+                       
+                                    
+                                    
+/*-------------- This is the start of RP find ------------------------------------------------------------------ */               
+                                    
+                         FIND patient_mstr WHERE patient_id = people_id AND
+                              patient_mstr.patient_deleted  = ? NO-LOCK NO-ERROR.         
+                                
+                        
+                                        IF AVAILABLE (patient_mstr) THEN DO:  
+                                            ASSIGN
+                                            RP-peop-ID = patient_RP_ID.
+                                        END. /* IF AVAILABLE (patient_mstr) */
+                                        
+                                        IF RP-peop-ID > 0 THEN DO:
+                                             
+							                                              IF ITfeedback = YES THEN     
+							                                                   {&OUT} "<p>Found a RP-peop_ID and MY ID id is--" RP-peop-ID "</p>" SKIP. 
+                              
+                                            FIND people_mstr WHERE people_id = RP-peop-ID AND
+                                                 people_mstr.people_deleted  = ?  NO-LOCK NO-ERROR.
+                                                 
+                                                 IF AVAILABLE (people_mstr) THEN 
+                                                    ASSIGN
+                                                    RP-fstn         = people_firstname
+                                                    RP-lstn         = people_lastname
+                                                    RP-midn         = people_midname
+                                                    RP-title        = people_prefix
+                                                    RP-suf          = people_suffix
+                                                    RP-h-phone      = people_homephone
+                                                    RP-c-phone      = people_cellphone
+                                                    RP-w-phone      = people_workphone
+                                                    RP-fax-phone    = people_fax
+                                                    RP-add-id       = people_addr_id
+                                                    RP-email        = people_email
+                                                    RP-email2       = people_email2
+                                                    RP-dob          = people_dob.
+                                                    
+                                            FIND addr_mstr WHERE addr_id = RP-add-id AND
+                                                 addr_mstr.addr_deleted  = ? NO-LOCK NO-ERROR.
+                                            
+						                                                IF ITfeedback = YES THEN     
+						                                                   {&OUT} "<p>Found a RP add-id -- " RP-add-id "</p>". 
+                                                   
+                                                  IF AVAILABLE (addr_mstr) THEN
+                                                    ASSIGN
+                                                    RP-add1         = addr_addr1
+                                                    RP-add2         = addr_addr2
+                                                    RP-add3         = addr_addr3
+                                                    RP-city         = addr_city
+                                                    RP-state-prov   = addr_stateprov
+                                                    RP-zip          = addr_zip
+                                                    RP-country      = addr_country.
+                                                    
+                                                                                                                           
+                                        END. /* if RP-peop-ID > 0 */
+                         ELSE
+										                                IF ITfeedback = YES THEN     
+										                                      {&OUT} "<p>Did not find an RP"SKIP
+										                                             "<br>Pat DOB is--" newdob SKIP
+										                                             "<br>Act is -- " act "</p>".
+                             
+/* ------------- End of RP find ----------------------------------------------------------------------------------------*/  
+                     
+/*--------------- Start of Patient Rec. Find -----------------------------------------------------------------------------*/
+                  
+                         FIND FIRST patient_mstr WHERE patient_id = peop-ID AND
+                                    patient_mstr.patient_deleted  = ? NO-LOCK NO-ERROR.
+                            
+                                 IF  AVAILABLE (patient_mstr)THEN DO:
+                                     ASSIGN
+                                     patid    = patient_mstr.patient_id
+                                     patcon   = patient_mstr.patient_condition
+                                     patnotes = patient_mstr.patient_notes
+                                     patdoc   = patient_mstr.patient_doctor_ID.
+                                 END.  /* if available (patient_mstr)then  */
+                                 
+                         FIND people_mstr WHERE people_mstr.people_id = patdoc AND
+                                           people_mstr.people_deleted = ? NO-LOCK NO-ERROR.
+                                 IF AVAILABLE (people_mstr) THEN
+                                     ASSIGN
+                                     doc-fname = people_mstr.people_firstname 
+                                     doc-lname = people_mstr.people_lastname. 
+                                     
+/*--------------- End of Patient Rec. Find -----------------------------------------------------------------------------*/                                        
+                                                                                            
+   /****************************************************** Age calculation  ***************/ 
+                                    
+                     /* if patdob <> ? then */  DO:
+                                cont = thisday - patdob.
+                                IF cont >= 365 THEN DO:   
+                                    patientage = cont / 365.242.                    
+                                         days = cont - patientage * 365.242 . 
+                                                
+                                    END. /* of IF cont >= 365 */ 
+                                   ELSE 
+                                    days = cont. 
+                               END. /* if thatday <> ? then  DO:  */ 
+                        
+  /******************************************************** End age calculation **********/     
+                    ASSIGN   
+                    
+                    female-ck    =   IF patgen = FALSE THEN
+                                            "checked"
+                                                ELSE
+                                                ""            
+                     male-ck     =   IF patgen = TRUE THEN
+                                            "checked"
+                                                ELSE 
+                                                "" .
+                                                
+                                                
+                                            
+                 END. /* IF AVAIL patient_mst */ 
+                 
+ 
+                                                                            IF ITfeedback = YES THEN             
+                                                                             {&OUT} "<p>patdoc is -- " patdoc "</p>" SKIP.   
+     
+/*           {patient_update_form.i}.*/
+/**********************************************************************************************************************************/
+{&OUT}
+
+    " <div class='table_3col'>" SKIP
+    "            <form method='get' ACTION='patient_update4.r'>" SKIP
+    "                <center>" SKIP
+    "               <table >" SKIP 
+  
+    "                    <tr>" SKIP
+    "                    <th colspan='2'>Personal</th><th colspan='2'>Address</th><th colspan='2'>Contact</th>" SKIP
+    "                    <tr>" SKIP
+    "                        <td>Prefix</td><td><input type='text' name='title' tabindex=1 autofocus value=" pattitle "></td>" SKIP
+    "                        <td>Address Line1</td><td><input type='text' name='addr1' tabindex=6 value='" add1 "' ></td>" SKIP  
+    "                        <td>Home Number</td><td align='left'><input type='text' name='home' tabindex=13 value='" h-phone "'></td>" SKIP
+    "                    </tr>" SKIP
+    "                    <tr>" SKIP
+    "                        <td>First Name</td><td><input type='hidden' name='fstn' value='" patfstn "' />" patfstn "</td>" SKIP
+    "                        <td>Address Line2</td><td><input type='text' name='addr2' tabindex=7 value='" add2 "'></td>" SKIP
+    "                        <td>Work Number</td><td align='left'><input type='text' name='work' tabindex=14 value='" w-phone "'></td>" SKIP
+    "                    </tr>" SKIP
+    "                    <tr>" SKIP
+    "                         <td>Middle Name</td><td><input type='text' name='midn' tabindex=2 value='" patmidn "'></td>" SKIP
+    "                         <td>Address Line3</td><td><input type='text' name='addr3' tabindex=8 value='" add3 "'></td>" SKIP
+    "                         <td>Cell Number</td><td align='left'><input type='text' name='cell' tabindex=15 value='" c-phone "'></td>" SKIP
+    "                    </tr>" SKIP
+    "                    <tr>" SKIP
+    "                         <td>Last Name</td><td><input type='hidden' name='lstn' value='" patlstn "' />" patlstn "</td>" SKIP
+    "                         <td>City</td><td><input type='text' name='patcity' tabindex=9 value='" city "'></td>" SKIP
+    "                         <td>Fax Number</td><td align='left'><input type='text' name='fax' tabindex=16 value='" fax-phone "'></td>" SKIP
+    "                    </tr>" SKIP
+    "                    <tr>" SKIP
+    "                          <td>Suffix</td><td><input type='text' name='suffix' tabindex=3 value='" patsuf "'></td>" SKIP
+    
+    "                          <td>State</td>" skip
+    "                          <td><select name='state' tabindex=10 >" SKIP
+    "                              <option selected>" state-prov "</option>" SKIP /*  */
+    "                              <option value=''></option>" SKIP.
+
+    {../depot/src/WebSpeed/StateDropDown.i state-prov country}.                       /* 1dot5 */
+
+    
+/*								     FOR EACH state_mstr  WHERE                                                                                              */
+/*								              state_mstr.state_deleted = ? NO-LOCK:                                                                          */
+/*								                                                                                                                                     */
+/*								            IF state_mstr.State_ISO = state-prov AND      /* 1dot4 */                                                        */
+/*								                state_mstr.state_country = country THEN    /* 1dot4 */                                                       */
+/*								                isselected  = "SELECTED".                                                                                    */
+/*								            ELSE                                                                                                             */
+/*								                isselected  = "".                                                                                            */
+/*								                                                                                                                                     */
+/*								            {&OUT}                                                                                                           */
+/*								                "<option value=~"" state_mstr.State_ISO "~" " isselected " >" state_mstr.State_Display_Name "</option>" SKIP.*/
+/*								                                                                                                                                     */
+/*								        END.  /** of 4ea. state_mstr **/                                                                                     */
+{&OUT}
+    "                          <td>Email Address</td><td><input type='hidden' name='e-mail' tabindex=17 value='" email "' />" email "</td>" SKIP
+    "                    </tr>" SKIP
+    "                    <tr>" SKIP    
+    "                          <td>Preferred Name</td><td><input type'text' name='h-prefname' tabindex=4  value='" prefname "'></td>" SKIP    /* 1dot4 */
+    "                          <td>Zip Code</td><td><input type='text' name='zip' tabindex=11 value='" patzip "'></td>" SKIP
+    "                          <td>Second Email</td><td><input type='text' name='e-mail2' tabindex=18 value='" email2 "'></td>" SKIP
+    "                    </tr>" SKIP    
+    "                    <tr>" SKIP    
+    "                          <td>Date of Birth</td>" SKIP.
+                                IF patdob = ? THEN
+{&OUT}
+    "                          <td><input type='text' name='dob' tabindex=6 value=''></td>" SKIP.
+                                ELSE.
+{&OUT}
+    "                          <td><input type='hidden' name='dob' tabindex=6 value='" patdob "' />" patdob "</td>" SKIP
+    "                          <td>Country</td><td><select name='co' tabindex=12 >" SKIP
+    "                           <option selected>" country "</option>" SKIP
+    "                           <option value=''></option>" SKIP.
+
+
+    {../depot/src/WebSpeed/CountryDropDownList.i country}.                                   /* 1dot5 */
+
+							    
+/*								     FOR EACH country_mstr WHERE                                                                                                     */
+/*								                 country_mstr.country_deleted = ? NO-LOCK      /* 1dot4 */                                                           */
+/*								            BREAK BY country_mstr.Country_Display_Name:                /* 1dot4 */                                                   */
+/*								                                                                                                                                             */
+/*								            IF country_mstr.Country_ISO = country THEN                                                  /** I know **/               */
+/*								                isselected = "SELECTED".                                                                                             */
+/*								            ELSE                                                                                                                     */
+/*								                isselected = "".                                                                                                     */
+/*								                                                                                                                                             */
+/*								            {&OUT}                                                                                                                   */
+/*								                "<option value=~"" country_mstr.Country_ISO "~" " isselected " >" country_mstr.Country_Display_Name "</option>" SKIP.*/
+/*								                                                                                                                                             */
+/*								        END.  /* FOR EACH country_mstr */                                                                                            */
+
+{&OUT}    
+      "                        <td>Doctor</td><td><select name='doctor' tabindex=19 >" SKIP.
+
+                     IF patdoc  = 0 THEN DO: /* This keeps a (,) from displaying if Dr. field is blank */
+{&OUT}
+    "                          <option value='' selected></option>" SKIP.
+    
+                                FOR EACH doctor_mstr NO-LOCK,
+                                  EACH people_mstr WHERE people_mstr.people_id = doctor_mstr.doctor_id NO-LOCK
+                                  BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname:
+
+                                   ASSIGN
+                                    doc-lname = people_mstr.people_lastname
+                                    doc-fname = people_mstr.people_firstname
+                                    doc-id    = people_mstr.people_id.
+{&OUT}
+    "                                <option Value=" doc-id ">" doc-lname ", " doc-fname "</option>" SKIP.
+
+                                 END.  /* FOR EACH doctor_mstr, etc. */
+                     END. /* then DO: */
+
+                     ELSE
+{&OUT}
+    "                          <option value=" patdoc " selected>" doc-lname ", " doc-fname " </option>" SKIP
+    "                                 <option value=''></option>" SKIP.
+
+                            FOR EACH doctor_mstr NO-LOCK,
+                                EACH people_mstr WHERE people_mstr.people_id = doctor_mstr.doctor_id NO-LOCK
+                                BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname:
+
+
+                                   ASSIGN
+                                    doc-lname = people_mstr.people_lastname
+                                    doc-fname = people_mstr.people_firstname
+                                    doc-id    = people_mstr.people_id.
+{&OUT}
+    "                                <option Value=" doc-id ">" doc-lname ", " doc-fname "</option>" SKIP.
+
+                             END.  /* FOR EACH doctor_mstr, etc. #2 */
+{&OUT}   
+    "                    </tr>" SKIP
+    "                    <tr>" SKIP    
+    "                          <td>Gender</td><td>Male<input type='radio' name='gender' tabindex=5 value='true' " male-ck ">" SKIP
+    "                                           Female<input type='radio' name='gender' tabindex=5 value='false' " female-ck "></td>" SKIP
+    "                          <td colspan='4'></td>" SKIP
+    "                    </tr>" SKIP
+    "                    <tr>" SKIP    
+    "                          <td>Patient ID</td><td>" patID "</td>" SKIP            /* 1dot4 */
+    "                          <td colspan='4'></td>" SKIP 
+    "                         </td>" SKIP
+    "                    </tr>" SKIP
+    "                    <tr>" SKIP
+    "                       <th colspan='6'>Comments</th></tr>" SKIP
+    "                    <tr>" SKIP
+    "                        <td>Notes</td><td colspan='3'><textarea rows='2' cols='60' NAME='notes' VALUE=~"" patnotes 
+    "~" tabindex=23>" patnotes  
+    "</textarea></td></td><td colspan='2'</td>" SKIP
+    "                    </tr>" SKIP.
+    
+/**********************************************************************************************************************************/           
+           
+        
+           
+                                            
+{&OUT}
+                 "       <input type='hidden' name='RP-id' value='" RP-peop-id "'>" SKIP                        
+                 "       <input type='hidden' name='RP-addr' value='" RP-add-ID "'>" SKIP 
+                 "       <input type='hidden' name='pep-id' value='" peop-id "'>" SKIP 
+                 "       <input type='hidden' name='pep-addr' value='" peop-addr-id "'>" SKIP 
+                 "       <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP   
+                 "       <input type='hidden' name='mod' value='1'>" SKIP
+                 "       <input type='hidden' name='h-rp-stop' value='1'>" SKIP
+                 "       <input type='hidden' name='h-pat-update' value='" YES "'>" SKIP 
+                 "   </table>" SKIP 
+                 "</div>" SKIP.              
+                  
+         /*--------------------------------------------- 2 Button Block for Patient Update ------------------------------------------------------------------------------------------------*/  
+{&OUT}  
+/*                 "<div class='grid_12'>" SKIP*/
+                 "  <div class='row'>" SKIP
+				 "      <div class='grid_3'> </DIV>" SKIP
+				 "      <div class='grid_2'> <BUTTON type='submit' class='btn' name='edit' value='Update Patient Record'>Save Changes</BUTTON></div>" SKIP
+				                    
+				 "      <div class='grid_2'> </DIV>" SKIP
+				 "      <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+				 "      <div class='grid_3'> </DIV>" SKIP
+				 "  </div>" SKIP
+				 "</div>" SKIP
+				 "</form>" SKIP
+				 "</center>" SKIP.	      
+                
+            IF RP-peop-id = 0 THEN  DO:  
+                     
+{&OUT}               
+                 " <br>" SKIP
+/*                "<div class='grid_12'>" SKIP*/
+                "<div class='row'>" SKIP
+                "<div class='grid_3'></div>" SKIP
+                " <div class='grid_6'>" SKIP
+                "    <div class='print_label'>" SKIP 
+                "      <h3 align='center'>There is no Responsible Person Record assigned to this Patient Record</h3>" SKIP 
+                "    </div>" SKIP
+                " </div>" SKIP
+                "<div class='grid_3'></div>" SKIP
+                "</div>" SKIP
+                "<br>" SKIP
+                "</div" SKIP.    
+   /*------------------------------------------------------------------------------------------------------------------------------*/
+   
+    {&OUT}
+                "<div class='grid_12'>" SKIP
+                "<div class='row'>" SKIP
+                "  <div class='grid_2'></div>" SKIP
+                "       <div class='grid_8'>" SKIP
+                "          <form method='post' ACTION='patient_update4.r'>" SKIP
+                "            <div class='table_2col'>" SKIP
+                "               <table >" SKIP
+                "                  <thead>" SKIP
+                "                  <tr>" SKIP
+                "                    <th colspan='4'>Change Responsible Person</th>" SKIP
+                "                  </tr>" SKIP
+                "                  </thead>" SKIP
+                "                  <tr>" SKIP
+                "                    <td>Last Name</td><td><INPUT TYPE='text' NAME='rplstn' VALUE='' required ></td>" SKIP                
+                "                    <td>First Name</td><td><INPUT TYPE='text' NAME='rpfstn' VALUE='' required ></td>" SKIP
+                "                  </tr>" SKIP
+                "               </table>" SKIP
+                "            </div>" SKIP
+                "       </div>" SKIP
+                "  <div class='grid_2'></div>" SKIP
+                "</div>" SKIP
+                "</div>" SKIP.
+ {&OUT}
+/*                 "<div class='grid_12'>" SKIP*/
+                 "<div class='row'>" SKIP
+                 " <div class='grid_2-5'></div>" SKIP /* 3 */
+                 "   <div class='grid_2'>" SKIP
+                 "      <input type='hidden' name='h-new-rp' value='YES'>" SKIP
+                 "      <input type='hidden' name='h-rp-stop' value='YES'>" SKIP
+                 "      <input type='hidden' name='RP-id' value='" RP-peop-id "'>" SKIP
+                 "      <input type='hidden' name='RP-addr' value='" RP-add-ID "'>" SKIP
+                 "      <input type='hidden' name='pep-id' value='" peop-id "'>" SKIP
+                 "      <input type='hidden' name='pep-addr' value='" peop-addr-id "'>" SKIP
+                 "      <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP
+                 "      <input type='hidden' name='mod' value='1'>" SKIP
+                 "      <input type='hidden' name='h-RP-update' value='YES'>" SKIP
+                 "      <input type='hidden' name='notes' value='" patnotes "'>" SKIP
+                 "      <input type='hidden' name='doctor' value='" patdoc "'>" SKIP
+                 
+                 "      <input type='hidden' name='h-prefname' value='" prefname "'>" SKIP     /* 1dot4 */  
+                 
+                 "      <BUTTON type='submit' class='btn'>Change RP Person</BUTTON>" SKIP
+                 "    </div>" SKIP
+                 "      <div class='grid_-5'></DIV>" SKIP /* 2 */
+                 "      <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+                 "      <div class='grid_-5'></DIV>" SKIP /* 3 */
+                 "         </form>" SKIP
+/*                 "</div>" SKIP*/
+/*                 "</div>" SKIP.             */
+/*{&OUT}                                      */
+/*                "<br>" skip                 */
+/*                "<div class='grid_12'>" SKIP*/
+/*                "<div class='row'>" SKIP    */
+                "   <div class='grid_2'>" SKIP /* 3 */
+/*                "   <div class='grid_2'>" SKIP*/
+                "     <form method='post' ACTION='patient_RP_add.r'>" SKIP
+                "       <input type='hidden' name='mod' value='1' >" SKIP
+                "       <input type='hidden' name='h-keep-going' value='YES' >" SKIP
+                "       <input type='hidden' name='h-first-stop'   value='1' >" SKIP
+                "       <input type='hidden' name='pep-id' value='" peop-id "'>" SKIP
+                "       <input type='hidden' name='pep-addr' value='" peop-addr-id "'>" SKIP
+                "       <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP
+                "       <BUTTON type='submit' class='btn'>Create RP Record</BUTTON></div>" SKIP
+                "     </form>" SKIP
+                "   <div class='grid_2-5'> </DIV>" SKIP /* 7 */
+                "</div>" SKIP
+/*                "</div" SKIP*/
+               "<BR>" SKIP.
+                              
+            END. /*IF RP-peop-id = 0 THEN DO: */
+                
+            ELSE 
+ 
+ 
+            IF  peop-ID = RP-peop-id THEN  DO:
+                                                                        IF ITfeedback = YES THEN
+                                                                              {&OUT} "<p>peop-ID = RP-peop_id
+                                                                                      </p>" SKIP.
+{&OUT}               
+                " <br>" SKIP
+/*                "<div class='grid_12'>" SKIP*/
+                "<div class='row'>" SKIP
+                "<div class='grid_3'></div>" SKIP
+                " <div class='grid_6'>" SKIP
+                "    <div class='print_label'>" SKIP 
+                "      <h3 align='center'>The Responsible Person Record is the Same as the Patient Record</h3>" SKIP 
+                "    </div>" SKIP
+                " </div>" SKIP
+                "<div class='grid_3'></div>" SKIP
+                "</div>" SKIP
+                "<br>" SKIP
+                "</div" SKIP.
+                
+       /*-------------------------------------------------------------------------------------------------------------------------------*/
+                 {&OUT}
+                "<div class='grid_12'>" SKIP
+                "<div class='row'>" SKIP
+                "  <div class='grid_2'></div>" SKIP
+                "       <div class='grid_8'>" SKIP
+                "          <form method='post' ACTION='patient_update4.r'>" SKIP
+                "            <div class='table_2col'>" SKIP
+                "               <table >" SKIP 
+                "                  <thead>" SKIP
+                "                  <tr>" SKIP              
+                "                    <th colspan='4'>Change Responsible Person</th>" SKIP
+                "                  </tr>" SKIP
+                "                  </thead>" SKIP
+                "                  <tr>" SKIP
+                "                    <td>Last Name</td><td><INPUT TYPE='text' NAME='rplstn' VALUE='' required ></td>" SKIP 
+                "                    <td>First Name</td><td><INPUT TYPE='text' NAME='rpfstn' VALUE='' required ></td>" SKIP
+                "                  </tr>" SKIP 
+                "               </table>" SKIP
+                "            </div>" SKIP
+                "       </div>" SKIP
+                "  <div class='grid_2'></div>" SKIP
+                "</div>" SKIP
+                "</div>" SKIP.       
+
+
+      /*-----------------------------------------------------------------------------------------------------------------------------------*/
+{&OUT}
+                 "<div class='row'>" SKIP
+                 " <div class='grid_2-5'></div>" SKIP /* 3 */
+                 "   <div class='grid_2'>" SKIP
+                 "      <input type='hidden' name='h-new-rp' value='YES'>" SKIP
+                 "      <input type='hidden' name='h-rp-stop' value='YES'>" SKIP
+                 "      <input type='hidden' name='RP-id' value='" RP-peop-id "'>" SKIP
+                 "      <input type='hidden' name='RP-addr' value='" RP-add-ID "'>" SKIP
+                 "      <input type='hidden' name='pep-id' value='" peop-id "'>" SKIP
+                 "      <input type='hidden' name='pep-addr' value='" peop-addr-id "'>" SKIP
+                 "      <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP
+                 "      <input type='hidden' name='mod' value='1'>" SKIP
+                 "      <input type='hidden' name='h-RP-update' value='YES'>" SKIP
+                 "      <input type='hidden' name='notes' value='" patnotes "'>" SKIP
+                 "      <input type='hidden' name='doctor' value='" patdoc "'>" SKIP
+                 "      <BUTTON type='submit' class='btn'>Change RP Person</BUTTON>" SKIP
+                 "    </div>" SKIP
+                 "      <div class='grid_-5'></DIV>" SKIP /* 2 */
+                 "      <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+                 "      <div class='grid_-5'></DIV>" SKIP /* 3 */
+                 "         </form>" SKIP
+                "   <div class='grid_2'>" SKIP /* 3 */
+                "     <form method='post' ACTION='patient_RP_add.r'>" SKIP
+                "       <input type='hidden' name='mod' value='1' >" SKIP
+                "       <input type='hidden' name='h-keep-going' value='YES' >" SKIP
+                "       <input type='hidden' name='h-first-stop'   value='1' >" SKIP
+                "       <input type='hidden' name='pep-id' value='" peop-id "'>" SKIP
+                "       <input type='hidden' name='pep-addr' value='" peop-addr-id "'>" SKIP
+                "       <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP
+                "       <BUTTON type='submit' class='btn'>Create RP Record</BUTTON></div>" SKIP
+                "     </form>" SKIP
+                "   <div class='grid_2-5'> </DIV>" SKIP /* 7 */
+                "</div>" SKIP
+/*                "</div" SKIP*/
+               "<BR>" SKIP.
+       /*--------------------------------------------------------------------------------------------------------------------------------*/                         
+               
+
+            END.    /* IF people_mstr people_id = RP-peop_id THEN DO: */      
+
+            ELSE 
+                
+                 IF  peop-ID > 0 AND
+                     peop-id <> RP-peop-id THEN  DO:
+                
+{&OUT}
+                  " <br>" SKIP.                
+                
+                {RP-rec-display.i}.          
+                
+                
+                      
+           /*------------------------------------  Edit RP Record Button (Start of 2 Button) NOW this is ONE Button --------------------------------------------------------------*/  
+{&OUT}   
+/*                "<div class='grid_12'>" SKIP*/
+                "<div class='row'>" SKIP
+                "   <div class='grid_3'> </div>" SKIP
+                "   <div class='grid_2'>" SKIP
+                "     <form method='post' ACTION='RP_edit.r'>" SKIP 
+                "       <input type='hidden' name='mod' value='1' >" SKIP
+                "       <input type='hidden' name='h-keep-going' value='YES' >" SKIP
+                "       <input type='hidden' name='h-first-stop'   value='1' >" SKIP                
+                "       <input type='hidden' name='pep-id' value='" peop-id "'>" SKIP 
+                "       <input type='hidden' name='pep-addr' value='" peop-addr-id "'>" SKIP 
+                "       <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP               
+                "       <BUTTON type='submit' class='btn' value=''>Edit Responsible Person</div>" SKIP
+                "     </form>" SKIP  
+                "   <div class='grid_2'></DIV>" SKIP             
+                
+/*------------------------------------------------------------------------------------------------------*/
+            
+                "   <div class='grid_2'>" SKIP                                                
+                "     <form method='post' ACTION='patient_RP_add.r'>" SKIP
+                "       <input type='hidden' name='mod' value='1' >" SKIP
+                "       <input type='hidden' name='h-keep-going' value='YES' >" SKIP
+                "       <input type='hidden' name='h-first-stop'   value='1' >" SKIP
+                "       <input type='hidden' name='pep-id' value='" peop-id "'>" SKIP
+                "       <input type='hidden' name='pep-addr' value='" peop-addr-id "'>" SKIP
+                "       <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP
+                "       <BUTTON type='submit' class='btn'>Create RP Record</BUTTON></div>" SKIP
+                "     </form>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "</div>" SKIP.
+
+/*-----------------------------------------------------------------------------------------------------*/
+
+ 
+        
+              
+                                                                
+   /*------------------------------------- New RP update from and button ---------------------------------------------------------*/
+ 
+ {&OUT}
+                "<div class='row'>" SKIP
+                "  <div class='grid_2'></div>" SKIP
+	            "       <div class='grid_8'>" SKIP
+	            "          <form method='post' ACTION='patient_update4.r'>" SKIP
+	            "            <div class='table_2col'>" SKIP
+	            "               <table >" SKIP 
+	            "                  <thead>" SKIP
+	            "                  <tr>" SKIP              
+	            "                    <th colspan='4'>Change Responsible Person</th>" SKIP
+	            "                  </tr>" SKIP
+	            "                  </thead>" SKIP
+	            "                  <tr>" SKIP
+                "                    <td>Last Name</td><td><INPUT TYPE='text' NAME='rplstn' VALUE='' required ></td>" SKIP	            
+	            "                    <td>First Name</td><td><INPUT TYPE='text' NAME='rpfstn' VALUE='' required ></td>" SKIP 
+	            "                  </tr>" SKIP 
+	            "               </table>" SKIP
+	            "            </div>" SKIP
+	            "       </div>" SKIP
+                "  <div class='grid_2'></div>" SKIP
+
+                "</div>" SKIP.       
+ {&OUT}   
+                 "<div class='row'>" SKIP
+                 " <div class='grid_2'></div>" SKIP
+                 "   <div class='grid_2'>" SKIP
+                 "      <input type='hidden' name='h-new-rp' value='YES'>" SKIP               
+                 "      <input type='hidden' name='h-rp-stop' value='YES'>" SKIP  
+                 "      <input type='hidden' name='RP-id' value='" RP-peop-id "'>" SKIP                        
+                 "      <input type='hidden' name='RP-addr' value='" RP-add-ID "'>" SKIP                  
+                 "      <input type='hidden' name='pep-id' value='" peop-id "'>" SKIP 
+                 "      <input type='hidden' name='pep-addr' value='" peop-addr-id "'>" SKIP 
+                 "      <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP   
+                 "      <input type='hidden' name='mod' value='1'>" SKIP                 
+                 "      <input type='hidden' name='h-RP-update' value='YES'>" SKIP                  
+                 "      <input type='hidden' name='notes' value='" patnotes "'>" SKIP 
+                 "      <input type='hidden' name='doctor' value='" patdoc "'>" SKIP                  
+                 "      <input type='hidden' name='h-prefname' value='" prefname "'>" SKIP     /* 1dot4 */                        
+                 "      <BUTTON type='submit' class='btn'>Change RP Person</BUTTON>" SKIP
+                 "    </div>" SKIP                
+                 "      <div class='grid_1'> </DIV>" SKIP
+                 "      <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+                 "         </form>" SKIP
+                "  <div class='grid_1'></div>" SKIP
+                "    <div class='grid_2'>" SKIP
+                "      <form method='post' ACTION='patient.r'>" SKIP 
+                "        <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP                             
+                "        <BUTTON type='submit' class='btn'>New Patient Update</BUTTON>" SKIP               
+                "      </form>" SKIP
+                "   </div>" SKIP
+                "  <div class='grid_2'></DIV>" SKIP
+                "</div>" SKIP
+                "</div>" SKIP.             
+
+   END. /* ELSE  DO:  */ 
+        
+ END. /* IF keep-going = YES THEN DO: */ 
+
+/*-------------------------------------------------------------------------------------------------------------------------------------*/
+
+
+
+
+    
+ </SCRIPT>            
+</BODY>      
+</HTML>

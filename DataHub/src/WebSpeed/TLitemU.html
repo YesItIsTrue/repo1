@@ -1,0 +1,397 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.5">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="26/Sep/14">
+    <META NAME="LAST_UPDATED" CONTENT="17/Mar/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' /> 
+    <TITLE>Item / Marker Maintenance</TITLE>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure. 
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */   
+CREATE WIDGET-POOL.   
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+/**********************************************************************************
+ *
+ *  TKitemU.html   -   Version 1.3
+ *
+ *  This program is designed to provide basic maintenance for the Items that could
+ *  be used on a testkit (MPA or BioMed).  It is not intended to update which tests
+ *  have those items on them, only that they exist to be chosen from.  Updates the
+ *  marker_list table in the HHI database.
+ *
+ *  ----------------------------------------------------------------------------
+ *
+ *  Revision History:
+ *  -----------------
+ *  1.0 - written by Doug Luttrell on 26/Sep/14.  Original Version.
+ *  1.1 - written by DOUG LUTTRELL on 25/Oct/14.  Bug when updating a record after
+ *          a create has been done holding the create data in the variables.  Also
+ *          dropping the menu name as it moves through.  Marked by 1dot1.
+ *  1.2 - written by DOUG LUTTRELL on 19/Nov/14.  Modified the creation of new records
+ *          to use a button instead of a drop-down per Danielle's request.  Marked by 1dot2.
+ *  1.3 - written by DOUG LUTTRELL on 27/Jan/15.  Included new grid css commands.
+ *  1.4 - written by Jacob Luttrell on 05/Oct/15.  corrected div's on for PROMPT act and buttons
+ *          Marked by 1dot4. 
+ *  1.41 - written by DOUG LUTTRELL On 09/Oct/15.  Removed a little excess code and changed
+ *          the button to not say anything about Supplements (since this isn't a Supplement
+ *          maintenance screen).  Not marked.
+ *  1.42 - written by Jacob Luttrell on 15/Oct/15. Fixed issues with creating a new marker.
+ *          marked by 1dot42.
+ *  1.5 - written by Jacob Luttrell on 18/Mar/16. Added this-procedure:file-name. Marked by 1dot5.
+ ***********************************************************************************/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/  
+
+/***************************  Variable Definition Section  *************************/
+ DEFINE VARIABLE markid     LIKE marker_list.marker_ID      NO-UNDO. 
+ DEFINE VARIABLE markitem   LIKE marker_list.marker_item    NO-UNDO.
+ DEFINE VARIABLE markdesc   LIKE marker_list.marker_desc    NO-UNDO. 
+ DEFINE VARIABLE markdisp   LIKE marker_list.marker_display NO-UNDO. 
+ 
+ 
+ DEFINE VARIABLE act        AS CHARACTER                    NO-UNDO. 
+ DEFINE VARIABLE ITshowmsg  AS LOGICAL INITIAL NO           NO-UNDO.
+ 
+ DEFINE VARIABLE thismarker AS CHARACTER                    NO-UNDO. 
+ DEFINE VARIABLE textcontents   LIKE marker_list.marker_desc    NO-UNDO. 
+ 
+
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre get-value</P>" skip
+                                                                                       "<P>Act = " act "</P>" skip
+                                                                                       "<P>markid = " markid "</P>" skip    
+                                                                                       "<P>markitem = " markitem "</P>" skip
+                                                                                       "<P>markdesc = " markdesc "</P>" skip
+                                                                                       "<P>markdisp = " markdisp "</P>" SKIP
+                                                                                       "<P>prepull id = " get-value('h-markid') "</P>" SKIP  
+                                                                                       "<hr width=90%>" skip.																				       
+        
+        
+ ASSIGN 
+    act         = get-value('h-act')
+    markid      = IF substring(get-value('h-markid'),1,4) = "null" THEN         /* 1dot2 */
+                    0                                                           /* 1dot2 */
+                  ELSE                                                          /* 1dot2 */
+                    integer(get-value('h-markid'))                              /* 1dot2 */
+    markitem    = get-value('h-markitem') 
+    markdesc    = get-value('h-markdesc')
+    markdisp    = get-value('h-markdisp').
+    
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Post get-value</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>markid = " markid "</P>" skip    
+																				       "<P>markitem = " markitem "</P>" skip
+																				       "<P>markdesc = " markdesc "</P>" skip
+                                                                                       "<P>markdisp = " markdisp "</P>" SKIP
+																				       "<hr width=90%>" skip.
+        
+ IF act = "" THEN 
+    act = "INITIAL".
+
+/* **** removed in 1dot42 ****     
+ ELSE IF markid = 0 THEN
+    act = "PROMPT".
+    ****    end of removeal **** */     
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre Case</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>markid = " markid "</P>" skip   
+																				       "<P>markitem = " markitem "</P>" skip
+																				       "<P>markdesc = " markdesc "</P>" skip
+																				       "<hr width=90%>" skip.
+        
+/********************************  Main Program  ***********************************/
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:
+        
+        {TLitemU-form.i "FIND ITEM" "NOTHING" "DISABLED" "NOTHING" "Maintenance"}.  
+         
+    END.  /** of act = "INITIAL" **/
+    
+    WHEN "FIND ITEM" THEN DO:
+        
+        IF markid = 0 THEN DO:                                                                                                      /* 1dot42 */
+                
+            {&OUT}                                                                                                                  /* 1dot42 */
+                "<DIV class='row'>" SKIP                                                                                            /* 1dot42 */
+				"<DIV class='grid_4'> </DIV>" SKIP                                                                                  /* 1dot42 */
+				"<DIV class='grid_4'>" SKIP				                                                                            /* 1dot42 */
+				"<h2 align='center'>Please enter an Item / Marker or select the Add New Item / Marker button.</h2>" SKIP            /* 1dot42 */
+				"</DIV>     <!-- end of grid_4 -->" SKIP                                                                            /* 1dot42 */
+				"<DIV class='grid_4'> </DIV>" SKIP                                                                                  /* 1dot42 */
+				"</DIV>     <!-- end of row -->" SKIP                                                                               /* 1dot42 */
+                "<BR>" SKIP                                                                                                         /* 1dot42 */
+                "<form>" SKIP                                                                                                       /* 1dot42 */
+                "<div class='row'>" SKIP                                                                                            /* 1dot42 */
+				"   <div class='grid_5'> </DIV>" SKIP                                                                               /* 1dot42 */
+				            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                      /* 1dot42 */   
+				"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Back</BUTTON></div>" SKIP    /* 1dot42 */
+				"   <div class='grid_5'> </DIV>" SKIP                                                                               /* 1dot42 */
+				"</div>" SKIP                                                                                                       /* 1dot42 */
+				"</form>" SKIP.                                                                                                     /* 1dot42 */
+
+        END.
+        ELSE DO:     
+	        FIND marker_list WHERE marker_list.marker_id = markid NO-LOCK NO-ERROR.
+	        IF AVAILABLE marker_list THEN 
+	            ASSIGN 
+	                markitem    = marker_list.marker_item
+	                markdesc    = marker_list.marker_desc
+	                markdisp    = marker_list.marker_display. 
+	   
+	        {TLitemU-form.i "UPDATE" "DISABLED" "NOTHING" "NOTHING" "Maintenance"}.    
+	                
+																					IF ITshowmsg = YES THEN 
+																					    {&OUT}
+																					        "<P>Post FIND</P>" skip  
+																					        "<P>Act = " act "</P>" skip
+																					        "<P>markid = " markid "</P>" skip   
+																					        "<P>markitem = " markitem "</P>" skip
+																					        "<P>markdesc = " markdesc "</P>" skip
+																					        "<hr width=90%>" skip.
+        END. /* else do */ 
+    END.  /** of act = "FIND ITEM" **/
+    
+    WHEN "UPDATE" THEN DO:
+        
+																		        IF ITshowmsg = YES THEN 
+																		            {&OUT} 
+																		                "<P>Inside Update</P>" skip
+																		                "<P>Act = " act "</P>" skip
+																		                "<P>markid = " markid "</P>" skip   
+																		                "<P>markitem = " markitem "</P>" skip
+																		                "<P>markdesc = " markdesc "</P>" skip
+																		                "<P>markdisp = " markdisp "</P>" skip
+																		                "<hr width=90%>" skip.
+        
+        FIND marker_list WHERE marker_list.marker_id = markid EXCLUSIVE-LOCK NO-ERROR.
+        IF AVAILABLE marker_list THEN 
+            ASSIGN 
+                marker_list.marker_desc             = markdesc
+                marker_list.marker_display          = markdisp
+                marker_list.marker_modified_date    = TODAY 
+                marker_list.marker_modified_by      = USERID("HHI")
+                marker_list.marker_prog_name        = THIS-PROCEDURE:FILE-NAME.             /* 1dot5 */
+        ELSE 
+            {&OUT} "<P>ERROR - marker_list not found for marker = " markid ".</P>" skip.
+ 
+  
+        markid  = ?.                                                            /* 1dot1 */
+        
+        {TLitemU-form.i "INITIAL" "DISABLED" "DISABLED" "NOTHING" "Maintenance"}.                
+        
+    END.  /** of act = "UPDATE" **/
+    
+    WHEN "PROMPT" THEN DO:
+        
+																		        IF ITshowmsg = YES THEN 
+																			        {&OUT}
+																			            "<P>Inside Prompt</P>" skip
+																			            "<P>Act = " act "</P>" skip
+																			            "<P>markid = " markid "</P>" skip   
+																			            "<P>markitem = " markitem "</P>" skip
+																			            "<P>markdesc = " markdesc "</P>" skip
+																			            "<hr width=90%>" skip.
+        
+		{&OUT}
+		    "<FORM method='post' id='TLitemU-form'>" SKIP 
+		    "<DIV class='row'>" SKIP                                                                              /* 1dot4 */
+			"<DIV class='grid_2'> </DIV>" SKIP                                                                    /* 1dot4 */
+			"<DIV class='grid_8'>" SKIP                                                                           /* 1dot4 */
+		    "<DIV class='table_col'>" SKIP
+		    "<TABLE>" SKIP 
+		    "   <TR>" SKIP
+		    "       <TH colspan=4>Item (Marker) Maintenance</TH>" SKIP
+		    "   <TR>" SKIP
+		    "       <TD>Item / Marker</TD>" SKIP 
+		    "       <TD class='REQ'>" SKIP
+		    "         <input type='text' name='h-markitem' value='" markitem "' size=40 required>" skip                   /* 1dot42 */
+		    "       </TD>" SKIP
+		    "   </TR>" skip 
+		    "   <TR>" skip
+		    "       <TD>Item Display</TD>" SKIP 
+		    "       <TD>" SKIP
+            "           <input type='text' name='h-markdisp' value='" markdisp "' size=18>" SKIP                 /* 1dot42 */
+            "       </TD>" SKIP
+            "   </TR>" SKIP
+		    "   <TR>" SKIP
+		    "       <TD>Item / Marker Description</TD>" SKIP
+		    "       <TD>" SKIP
+		    "           <textarea rows=4 cols=50 name='h-markdesc' value='" markdesc "' ></textarea>" SKIP        /* 1dot42 */
+		    "       </TD>" SKIP
+		    "   </TR>" SKIP
+		    "</TABLE>" SKIP
+		    "</DIV>" SKIP                                                                                         /* 1dot4 */  
+		    "</DIV>         <!-- end of grid_8 -->" SKIP                                                          /* 1dot4 */
+			"<DIV class='grid_2'> </DIV>" SKIP                                                                    /* 1dot4 */
+			"</DIV>     <!-- end of row -->" SKIP                                                                 /* 1dot4 */ 
+			"<BR>" SKIP                                                                                           /* 1dot4 */
+			"<div class='row'>" SKIP                                                                              /* 1dot4 */
+			"   <div class='grid_5'> </DIV>" SKIP                                                                 /* 1dot4 */ 
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                    /* 1dot4 */ 			
+			"   <div class='grid_2'><button type='submit' name='h-act' value='CREATE' class='btn'>Create Record</BUTTON></div>" SKIP /* 1dot4 */
+			"   <div class='grid_5'> </DIV>" SKIP                                                                 /* 1dot4 */
+			"</div>" SKIP                                                                                         /* 1dot4 */
+			
+    /* *** removed in 1dot4 ***			              
+		    "<center><INPUT type='hidden' name='h-act' value='CREATE' />" SKIP
+		    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                    /* 1dot1 */ 
+		    "<INPUT type='submit' name='Submit' value='Create Record' /></center>" SKIP		    
+		    "</DIV>" SKIP
+        *** end of removal *** */		    
+		    
+		    "</FORM>" SKIP.  
+        
+    END.  /** of act = "PROMPT" **/
+    
+    WHEN "CREATE" THEN DO:
+        
+																		        IF ITshowmsg = YES THEN 
+																			        {&OUT}
+																			            "<P>Inside Create</P>" skip
+																			            "<P>Act = " act "</P>" skip
+																			            "<P>markid = " markid "</P>" skip   
+																			            "<P>markitem = " markitem "</P>" skip
+																			            "<P>markdesc = " markdesc "</P>" skip
+																			            "<hr width=90%>" skip.
+	            
+        FIND FIRST marker_list WHERE marker_list.marker_item = markitem NO-LOCK NO-ERROR.
+        IF AVAILABLE marker_list THEN DO: 
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Avail marker_list</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>markid = " markid "</P>" skip   
+                                                                                        "<P>markitem = " markitem "</P>" skip
+                                                                                        "<P>markdesc = " markdesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.
+            {&OUT}
+				"<DIV class='row'>" SKIP                                                                                                        /* 1dot4 */
+				"<DIV class='grid_3'> </DIV>" SKIP                                                                                              /* 1dot4 */
+				"<DIV class='grid_6'>" SKIP                                                                                                     /* 1dot4 */
+                "<CENTER><P class='errmsg'>ERROR! Item " markitem " already exists.  Would you like to update the existing record?</P>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP                                                                                    /* 1dot4 */
+				"<DIV class='grid_3'> </DIV>" SKIP                                                                                              /* 1dot4 */
+				"</DIV>     <!-- end of row -->" SKIP                                                                                           /* 1dot4 */
+				"<BR>" SKIP                                                                                                                     /* 1dot4 */
+                "<FORM>" SKIP
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                      /* 1dot42 */                   
+                "<div class='row'>" SKIP                                                                                                        /* 1dot4 */
+				"   <div class='grid_3'> </DIV>" SKIP                                                                                           /* 1dot4 */
+				"   <div class='grid_2'><BUTTON type='submit' name='h-markid' value=" marker_list.marker_ID " class='btn'>Yes</BUTTON></div>" SKIP /* 1dot4*/
+				"   <div class='grid_2'> </DIV>" SKIP                                                                                           /* 1dot4 */
+				"   <div class='grid_2'><BUTTON type='submit' name='h-markid' value=0 class='btn'>No</BUTTON></div>" SKIP                       /* 1dot4 */
+				"   <div class='grid_3'> </DIV>" SKIP                                                                                           /* 1dot4 */
+				"</div>" SKIP
+    /* *** removed in 1dot4 ***                
+                "<button name='h-markid' value=" marker_list.marker_ID " type='submit'>Yes</button>" SKIP 
+                "<button name='h-markid' value=0 type='submit'>No</button>" SKIP
+        *** end of removal *** */
+                "</FORM></CENTER>" SKIP.
+                                                                                                    
+            act = "ITEM EXISTS".    /* not actually used.  Was originally going to be tied to the OTHERWISE condition in the email */
+        
+        END.  /** of if avail marker_list **/
+        
+        ELSE DO:
+            
+																	            IF ITshowmsg = YES THEN 
+																	                {&OUT}
+																	                    "<P>Inside Not Avail marker_list</P>" skip
+																	                    "<P>Act = " act "</P>" skip
+																	                    "<P>markid = " markid "</P>" skip   
+																	                    "<P>markitem = " markitem "</P>" skip
+																	                    "<P>markdesc = " markdesc "</P>" skip
+																	                    "<hr width=90%>" skip.
+                    
+            FIND LAST marker_list NO-LOCK NO-ERROR.       /** need to remove this find last and if avail assign once seq-markid is created **/
+            IF AVAILABLE marker_list THEN 
+                markid = marker_list.marker_ID.
+	                
+            CREATE marker_list.
+            ASSIGN 
+                markid                              = markid + 1    /** need to replace with a next-value(seq-markid) once that's created **/
+                marker_list.marker_ID               = markid    
+                marker_list.marker_item             = markitem
+                marker_list.marker_desc             = markdesc 
+                marker_list.marker_display          = markdisp
+                marker_list.marker_created_by       = USERID("HHI")
+                marker_list.marker_create_date      = TODAY 
+                marker_list.marker_modified_by      = USERID("HHI") 
+                marker_list.marker_modified_date    = TODAY
+                marker_list.marker_prog_name        = THIS-PROCEDURE:FILE-NAME.             /* 1dot5 */
+                
+            {TLitemU-form.i "INITIAL" "DISABLED" "DISABLED" "NOTHING" "Maintenance"}.     
+                
+        END.  /** of else do **/
+        
+    END.  /** of act = "CREATE" **/
+      
+    OTHERWISE DO: 
+                       
+																		        IF ITshowmsg = YES THEN 
+																		            {&OUT}
+																		                "<P>Inside Otherwise Do</P>" skip
+																		                "<P>Act = " act "</P>" skip
+																		                "<P>markid = " markid "</P>" skip   
+																		                "<P>markitem = " markitem "</P>" skip
+																		                "<P>markdesc = " markdesc "</P>" skip
+																		                "<hr width=90%>" skip.
+                                           
+        {&OUT}  
+            "<DIV class='row'>" SKIP                                                                                                    /* 1dot4 */
+			"<DIV class='grid_3'> </DIV>" SKIP                                                                                          /* 1dot4 */ 
+			"<DIV class='grid_6'>" SKIP                                                                                                 /* 1dot4 */ 
+            "<center>" SKIP                                                                                                             /* 1dot4 */
+            "<P class='errmsg'>Unexpected Condition!  Please contact <a href='mailto:hhi.techsupport@mysolsource.com?subject=Error with TKitemU.html -- " act "'>Solsource</a> immediately.</P>" SKIP
+            "</center>" SKIP                                                                                                            /* 1dot4 */
+                         
+            "<FORM method='post'>" skip
+            "<BR>" SKIP                                                                                                                 /* 1dot4 */
+            "<div class='row'>" SKIP                                                                                                    /* 1dot4 */
+ 			"   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 1dot4 */
+			"<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                          /* 1dot4 */ 
+			"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Menu</BUTTON></div>" SKIP  /* 1dot4 */ 
+			"   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 1dot4 */
+			"</div>" SKIP                                                                                                               /* 1dot4 */
+	/* *** removed in 1dot4 ***
+            "<center><INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP 
+            "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP 
+        *** end of removeal *** */
+            "</FORM>" skip.     
+        
+    END.  /** of otherwise **/
+    
+END CASE.  /*** case of act ***/
+
+																				IF ITshowmsg = YES THEN 
+																				    {&OUT}
+																				        "<P>Inside Otherwise Do</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>markid = " markid "</P>" skip   
+                                                                                        "<P>markitem = " markitem "</P>" skip
+                                                                                        "<P>markdesc = " markdesc "</P>" skip
+                                                                                        "<hr width=90%>" skip. 
+																				        "<P>End OF LINE.</P>".
+
+/*******************************  End of Program  **********************************/
+</SCRIPT>
+</BODY>
+</HTML>

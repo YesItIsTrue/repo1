@@ -1,0 +1,203 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Security Control Maintenance</TITLE>
+    <META name="AUTHOR" content="Jacob Luttrell">
+    <META name="VERSION" content="1.0">
+    <META name="COPYRIGHT" content="Solsource">
+    <META name="CREATE_DATE" content="24/May/16">
+    <META name="MODIFIED_DATE" content="24/May/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT language="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           SECctrlU.html
+    Description:    Maintenance screen for sec_ctrl table
+    Created:        Jacob Luttrell 
+    Version History:
+        1.0 - Created by Jacob Luttrell on 24/May/16. 
+        1.1 - written by DOUG LUTTRELL on 11/Aug/17.  Part of the change to the CMC database structure 
+                (aka - Version 12).  Not really checking logic, just checking compilation ability.  
+                Removing fields that don't exist in the new system.  Marked by 1dot1.
+                
+  -------------------------------------------------------------------*/
+/*DEFINE VARIABLE v-c-dom     LIKE sec_ctrl.sec_cookie_domain     NO-UNDO.                    /* 1dot1 */*/
+DEFINE VARIABLE v-c-exp     LIKE sec_ctrl.sec_cookie_exp        NO-UNDO.
+/*DEFINE VARIABLE v-c-path    LIKE sec_ctrl.sec_cookie_path       NO-UNDO.                    /* 1dot1 */*/
+/*DEFINE VARIABLE v-c-sec     LIKE sec_ctrl.sec_cookie_sec        NO-UNDO.                    /* 1dot1 */*/
+DEFINE VARIABLE v-p-exp     LIKE sec_ctrl.sec_password_exp      NO-UNDO.
+DEFINE VARIABLE v-p-grace   LIKE sec_ctrl.sec_password_grace    NO-UNDO.
+DEFINE VARIABLE v-p-warn    LIKE sec_ctrl.sec_password_warn     NO-UNDO.
+DEFINE VARIABLE act         AS   CHARACTER                      NO-UNDO.
+
+ASSIGN 
+/*    v-c-dom     = get-value("h-c-dom")                                                      /* 1dot1 */*/
+    v-c-exp     = INTEGER(get-value("h-c-exp"))
+/*    v-c-path    = get-value("h-c-path")                                                     /* 1dot1 */*/
+/*    v-c-sec     = get-value("h-c-sec")                                                      /* 1dot1 */*/
+    v-p-exp     = INTEGER(get-value("h-p-exp"))
+    v-p-grace   = INTEGER(get-value("h-p-grace"))
+    v-p-warn    = INTEGER(get-value("h-p-warn"))
+    act         = get-value("h-act").
+    
+IF act = "" THEN 
+    act = "INITIAL".
+    
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO: 
+        
+        FIND FIRST sec_ctrl NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (sec_ctrl) THEN 
+            ASSIGN 
+/*				v-c-dom     = sec_ctrl.sec_cookie_domain                                        /* 1dot1 */*/
+				v-c-exp     = sec_ctrl.sec_cookie_exp
+/*				v-c-path    = sec_ctrl.sec_cookie_path                                          /* 1dot1 */*/
+/*				v-c-sec     = sec_ctrl.sec_cookie_sec                                           /* 1dot1 */*/
+				v-p-exp     = sec_ctrl.sec_password_exp
+				v-p-grace   = sec_ctrl.sec_password_grace
+				v-p-warn    = sec_ctrl.sec_password_warn.
+                     
+      {&OUT}
+        "<form>" SKIP 
+        "<div class='row'>" skip
+        "   <div class='grid_2'></div>" skip
+        "       <div class='grid_8'>" skip             
+        "               <div class='table_3col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='6'>Security Control Maintenance</th>" skip
+        "                       </tr>" skip      
+        "                       <tr>" skip
+        "                           <td>Password Warning Period</td>" skip
+        "                           <td><input type='number' name='h-p-warn' value='" v-p-warn "'></td>" skip
+        "                           <td>Password Expiration Period</td>" skip
+        "                           <td><input type='number' name='h-p-exp' value='" v-p-exp "'></td>" skip
+        "                           <td>Password Grace Period</td>" skip
+        "                           <td><input type='number' name='h-p-grace' value='" v-p-grace "'></td>" skip
+        "                       </tr>" skip  
+        
+        /***** This entire row was removed from the database in version 1dot1 *************
+        "                       <tr>" skip
+        "                           <td>Cookie Domain</td>" skip
+        "                           <td><input type='text' name='h-c-dom' value='" v-c-dom "'></td>" skip
+        "                           <td>Cookie Security Parameter</td>" skip
+        "                           <td><input type='text' name='h-c-sec' value='" v-c-sec "'></td>" skip
+        "                           <td>Cookie Experation</td>" skip
+        "                           <td><input type='number' name='h-c-exp' value='" v-c-exp "'></td>" skip
+        "                       </tr>" skip 
+
+        
+        "                       <tr>" skip
+        "                           <td>Cookie Path</td>" skip
+        "                           <td colspan='5'><input type='text' size='64' name='h-c-path' value='" v-c-path "'></td>" skip
+        "                       </tr>" skip    
+        
+        ******************  end of 1dot1 **************************************************/
+        
+        "                       <tr>" skip
+        "                           <td>Cookie Experation</td>" skip
+        "                           <td><input type='number' name='h-c-exp' value='" v-c-exp "'></td>" skip
+        "                       </tr>" skip 
+        
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_2'></div>" skip
+        "</div>" skip  
+        "<BR>" SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn'>Update Controls</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</div>" SKIP.
+        
+    END. /* initial */
+    WHEN "UPDATE" THEN DO: 
+        
+        FIND FIRST sec_ctrl EXCLUSIVE-LOCK NO-ERROR.
+        
+        IF NOT AVAILABLE (sec_ctrl) THEN 
+        
+        CREATE sec_ctrl.
+        
+        ASSIGN 
+/*            sec_ctrl.sec_cookie_domain  = v-c-dom                                       /* 1dot1 */*/
+            sec_ctrl.sec_cookie_exp     = v-c-exp
+/*            sec_ctrl.sec_cookie_path    = v-c-path                                      /* 1dot1 */*/
+/*            sec_ctrl.sec_cookie_sec     = v-c-sec                                       /* 1dot1 */*/
+            sec_ctrl.sec_password_exp   = v-p-exp 
+            sec_ctrl.sec_password_grace = v-p-grace
+            sec_ctrl.sec_password_warn  = v-p-warn.
+        
+       {&OUT}
+        "<form>" SKIP 
+        "<div class='row'>" skip
+        "   <div class='grid_2'></div>" skip
+        "       <div class='grid_8'>" skip             
+        "               <div class='table_3col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='6'>Security Control Maintenance</th>" skip
+        "                       </tr>" skip      
+        "                       <tr>" skip
+        "                           <td>Password Warning Period</td>" skip
+        "                           <td>" sec_ctrl.sec_password_warn "</td>" skip
+        "                           <td>Password Expiration Period</td>" skip
+        "                           <td>" sec_ctrl.sec_password_exp "</td>" skip
+        "                           <td>Password Grace Period</td>" skip
+        "                           <td>" sec_ctrl.sec_password_grace "</td>" skip
+        "                       </tr>" skip  
+        
+        /***************  Removed during 1dot1 *********************
+        "                       <tr>" skip
+        "                           <td>Cookie Domain</td>" skip
+        "                           <td>" sec_ctrl.sec_cookie_domain "</td>" skip
+        "                           <td>Cookie Security Parameter</td>" skip
+        "                           <td>" sec_ctrl.sec_cookie_sec "</td>" skip
+
+        "                       </tr>" skip 
+        "                       <tr>" skip
+        "                           <td>Cookie Path</td>" skip
+        "                           <td colspan='5'>" sec_ctrl.sec_cookie_path "</td>" skip
+        "                       </tr>" skip    
+        ****************  end of 1dot1 *********************/
+
+        "                       <tr>" skip
+        "                           <td>Cookie Experation</td>" skip
+        "                           <td>" sec_ctrl.sec_cookie_exp "</td>" skip
+        "                       </tr>" skip         
+          
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_2'></div>" skip
+        "</div>" skip  
+        "<BR>" SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Change Controls</BUTTON></div>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "</div>" SKIP. 
+            
+    END. /* update */    
+END CASE.  
+</SCRIPT>
+</BODY>
+</HTML>

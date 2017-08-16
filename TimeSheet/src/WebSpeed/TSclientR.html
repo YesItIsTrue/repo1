@@ -1,0 +1,249 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Client Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="06/Jan/16">
+    <META NAME="MODIFIED_DATE" CONTENT="06/Jan/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           TSclientR.html
+    Description:    Client Report
+    Created:        Jacob Luttrell 
+    Version History:
+        1.0 - Created by Jacob Luttrell on 06/Jan/16.
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE from-first    LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE to-first      LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE from-last     LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE to-last       LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE from-abbv     LIKE Client_Mstr.Client_abbv        NO-UNDO.
+DEFINE VARIABLE to-abbv       LIKE Client_Mstr.Client_abbv        NO-UNDO.
+DEFINE VARIABLE from-comp     LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE to-comp       LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE from-city     LIKE addr_mstr.addr_city            NO-UNDO.
+DEFINE VARIABLE to-city       LIKE addr_mstr.addr_city            NO-UNDO.
+DEFINE VARIABLE clientname    AS CHARACTER                        NO-UNDO.
+
+DEFINE VARIABLE disp-start    AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE start-date    LIKE Client_Mstr.Client_start_date  NO-UNDO.
+DEFINE VARIABLE end-date      LIKE Client_Mstr.Client_end_date    NO-UNDO.
+DEFINE VARIABLE disp-end      AS CHARACTER                        NO-UNDO.
+
+DEFINE VARIABLE addrline      AS CHARACTER                        NO-UNDO.   
+
+DEFINE VARIABLE act           AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE itmessage     AS LOGICAL INITIAL NO               NO-UNDO.
+
+ASSIGN 
+    from-first  = html-encode(get-value("h-from-first"))
+    to-first    = html-encode(get-value("h-to-first"))
+    from-last   = html-encode(get-value("h-from-last"))
+    to-last     = html-encode(get-value("h-to-last"))
+    act         = html-encode(get-value("h-act"))
+    from-abbv   = html-encode(get-value("h-from-abbv"))
+    to-abbv     = html-encode(get-value("h-to-abbv"))
+    from-comp   = html-encode(get-value("h-from-comp"))
+    to-comp     = html-encode(get-value("h-to-comp"))
+    from-city   = html-encode(get-value("h-from-city"))
+    to-city     = html-encode(get-value("h-to-city")).
+    
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL".    
+
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_2col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=4>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Client Abbreviation</td>" skip
+            "           <td><input type='text' name='h-from-abbv' value='" from-abbv "' /></td>" skip
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-abbv' value='" to-abbv "' /></td>" skip            
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From City</td>" skip
+            "           <td><input type='text' name='h-from-city' value='" from-city "' /></td>" skip
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-city' value='" to-city "' /></td>" skip            
+            "       </tr>" SKIP(1)            
+            "       <tr class='break'>" SKIP
+            "           <td colspan=4></td>" SKIP
+            "       </tr>"  SKIP
+            "       <tr>" SKIP            
+            "           <td>From Last Name</td>" skip
+            "           <td><input type='text' name='h-from-last' value='" from-last "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-last' value='" to-last "' /></td>" skip             
+            "       </tr>" skip
+            "       <tr>" skip
+            "           <td>From First Name</td>" skip
+            "           <td><input type='text' name='h-from-first' value='" from-first "' /></td>" skip
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-first' value='" to-first "' /></td>" skip            
+            "       </tr>" SKIP(1)            
+            "       <tr>" SKIP            
+            "           <td colspan=4><center>- OR -</center></td>" skip            
+            "       </tr>" skip   
+            "       <tr>" SKIP            
+            "           <td>From Client Company Name</td>" skip
+            "           <td><input type='text' name='h-from-comp' value='" from-comp "' /></td>" skip 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-comp' value='" to-comp "' /></td>" skip             
+            "       </tr>" skip
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan=14>Client List</TH>" SKIP    /* thead, tr, th makes the silver bar */
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD>Abbreviated Name</TD>" SKIP
+            "                <TD>Name</TD>" SKIP          /* thead, tr, td makes the blue bar */
+            "                <TD>Address</TD>" SKIP
+            "                <TD>Email</TD>" SKIP
+            "                <TD>Phone Number</TD>" SKIP            
+            "                <TD>Price Adjustment</TD>" SKIP
+            "                <TD>Zone</TD>" SKIP
+            "                <TD>LDS?</TD>" SKIP
+            "                <TD>Special Discount</TD>" SKIP
+            "                <TD>Special Discount Notes</TD>" SKIP
+            "                <TD>Translation Default</TD>" SKIP
+            "                <TD>Default Profit Margin</TD>" SKIP
+            "                <TD>Start Date</TD>" SKIP
+            "                <TD>End Date</TD>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1).
+            
+        FOR EACH Client_Mstr WHERE ((Client_Mstr.Client_abbv >= from-abbv) OR 
+                                      (from-abbv = "")) AND 
+                                   ((Client_Mstr.Client_abbv <= to-abbv) OR 
+                                      (to-abbv = "")) AND 
+                                   Client_Mstr.Client_deleted = ? NO-LOCK,          
+            EACH people_mstr WHERE people_mstr.people_id = Client_Mstr.Client_people_ID AND 
+                                   ((people_mstr.people_firstname >= from-first) OR 
+                                      (from-first = "")) AND 
+                                   ((people_mstr.people_firstname <= to-first) OR 
+                                      (to-first = "")) AND 
+                                   ((people_mstr.people_lastname >= from-last) OR 
+                                      (from-last = "")) AND 
+                                   ((people_mstr.people_lastname <= to-last) OR 
+                                      (to-last = "")) AND
+                                   ((people_mstr.people_lastname >= from-comp) OR
+                                      (from-comp = "")) AND 
+                                   ((people_mstr.people_lastname <= to-comp) OR 
+                                      (to-comp = "")) AND 
+                                   people_mstr.people_deleted = ? NO-LOCK,
+             EACH addr_mstr WHERE  addr_mstr.addr_id = people_mstr.people_addr_id AND 
+                                   ((addr_mstr.addr_city >= from-city) OR 
+                                    (from-city = "")) AND 
+                                   ((addr_mstr.addr_city <= to-city) OR 
+                                    (to-city = "")) AND 
+                                   addr_mstr.addr_deleted = ? NO-LOCK                     
+                              BY people_mstr.people_lastname BY people_mstr.people_firstname:
+ 
+                
+              
+                     ASSIGN 
+                         addrline = addr_mstr.addr_addr1 + " " + addr_mstr.addr_addr2 + " " + addr_mstr.addr_addr3 + " " + addr_mstr.addr_city + " " + addr_mstr.addr_stateprov + ", " + addr_mstr.addr_zip + " " + addr_mstr.addr_country.
+   
+            ASSIGN 
+                clientname = IF people_mstr.people_firstname <> "" THEN people_mstr.people_lastname + ", " + people_mstr.people_firstname ELSE people_mstr.people_lastname.                                                                                               
+        
+            {&OUT}
+                "       <TR>" SKIP
+                "           <TD><a href='../../TimeSheet/rcode/TSclientmaintU.r" 
+                                    "?h-pp-passBack-peopid=" Client_Mstr.Client_people_ID
+                                    "&h-pp-passBack-addrid=" addr_mstr.addr_id
+                                    "&h-act=MAINTENANCE"
+                                    "&whattorun=8.23"
+                "                   '>" Client_Mstr.Client_abbv "</a></td>" SKIP
+                "           <TD>" clientname "</TD>" SKIP
+                "           <TD>" addrline "</TD>" SKIP
+                "           <TD>" people_mstr.people_email "</TD>" SKIP
+                "           <TD>" people_mstr.people_workphone "</TD>" SKIP
+                "           <TD>" Client_Mstr.Client_price_adj FORMAT "->>>,>>>,>>9.99" "</TD>" SKIP
+                "           <TD>" Client_Mstr.Client_zone FORMAT "->>>,>>>,>>9.99" "</TD>" SKIP
+                "           <TD>" Client_Mstr.Client_LDS "</TD>" SKIP
+                "           <TD>" Client_Mstr.Client_spec_disc FORMAT "$->>>,>>>,>>9.99" "</TD>" SKIP
+                "           <TD>" Client_Mstr.Client_spec_disc_notes "</TD>" SKIP
+                "           <TD>" Client_Mstr.Client_trans_def "</TD>" SKIP
+                "           <TD>" Client_Mstr.Client_def_profit_margin "</TD>" SKIP
+                "           <TD>" Client_Mstr.Client_start_date "</TD>" SKIP
+                "           <TD>" Client_Mstr.Client_end_date "</TD>" SKIP
+                "       </TR>" SKIP. 
+        
+        END. /* 4ea. people, emp, emph */   
+        {&OUT}          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN=14>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+
+END CASE.         
+        
+         
+</SCRIPT>
+</BODY>
+</HTML>

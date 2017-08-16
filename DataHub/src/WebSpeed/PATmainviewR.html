@@ -1,0 +1,842 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Patient Main Viewer</TITLE> 
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="2.11">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="28/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="25/Aug/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<script src='/depot/src/HTMLContent/buttons.js'></script>
+
+<script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+
+<script TYPE="text/javascript">       
+$(document).ready(function() {
+
+                // Get an array of all element heights
+
+                var elementHeights = $('.btn').map(function() {
+                    return $(this).height();
+                }).get();
+
+                // Math.max takes a variable number of arguments
+
+                var maxHeight = Math.max.apply(null, elementHeights);
+
+                // Set each height to the max height
+
+                $('.btn').height(maxHeight);
+            });
+</script>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+/*------------------------------------------------------------------------
+    File        : people-layout-form.i
+    Purpose     : 
+
+    Syntax      :
+
+    Description : 
+
+    Author(s)   : Doug Luttrell
+    Created     : Wed Oct 29 10:53:42 EDT 2014
+    Notes       :
+         
+ *
+ *  ---------------------------------------------------------------------
+ *
+ *  Revision History:
+ *  -----------------
+ *  1.0 - written by DOUG LUTTRELL on 28/Oct/14.  Original Version.
+ *  1.1 - written by DOUG LUTTRELL on 19/Nov/14.  Based on the people_layout_form
+ *          code, this allows the selection of a Patient, and incorporates 
+ *          several other programs to produce the various sections.  Not marked.
+ *  1.2 - written by DOUG LUTTRELL on 19/Jan/15.  Adjusted CSS, changed the way 
+ *          the program works with the subprograms.  Not marked.
+ *  1.21 - written by DOUG LUTTRELL on 02/Oct/15.  Adjusted the table to use
+ *          the new blue END OF REPORT line.  Marked by 1dot21.
+ *
+ *  1.22 - written by DOUG LUTTRELL on 05/Oct/15.  Forgot to add in the whattorun.
+ *          Also fixed some .i pathing.  Changed the grid stuff.  Marked by 1dot22.
+ *
+ *  1.23 - written by Jacob Luttrell on 03/Nov/15. Added in whattorun for "Edit Patient's
+ *          Conditions". Marked by 1dot23.  
+ *  
+ *  1.3 - written by Jacob Luttrell on 18/Nov/15. Added code to handle search by dates better.
+ *          Marked by 1dot3.
+ *
+ *  1.31 - written by DOUG LUTTRELL on 23/Nov/15.  Added in the display of the Patient ID
+ *          as a display only field.  Also added in the Doctor_ID since I had space.  Marked by 131.
+ *
+ *  1.4 - written by Jacob Luttrell on 04/Mar/16. Changed state and country display to display the
+ *
+ *  2.0 - By Harold Luttrell on 25/May/16.
+ *         Added code to display either the stateprov or country values if they are not = spaces and
+ *         the ISO SUB routines returned the value "Not Found" for their display names.
+ *        Identified by /* 2dot0 */
+ *
+ *  2.1 - written by DOUG LUTTRELL on 14/Jun/16.  Changed the order of the lastname and firstname
+ *          prompts during the user interface for the search criteria.  Marked by 2dot1.
+ *
+ *  2.11 - Written by Jacob Luttrell on 25/Aug/16. corrected spelling on first page. Unmarked.
+  ----------------------------------------------------------------------*/
+
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/  
+
+
+/* ***************************  Definitions  ************************** */
+DEFINE VARIABLE ITshowmsg AS LOGICAL INITIAL NO NO-UNDO.                       /* YES for messages, NO for running */
+
+DEFINE VARIABLE act AS CHARACTER NO-UNDO.                                       /* program flow control */
+
+DEFINE VARIABLE v-fromfirst     AS CHARACTER    NO-UNDO.
+DEFINE VARIABLE v-tofirst       AS CHARACTER    NO-UNDO.
+DEFINE VARIABLE v-fromlast      AS CHARACTER    NO-UNDO.
+DEFINE VARIABLE v-tolast        AS CHARACTER    NO-UNDO.
+DEFINE VARIABLE v-fromdob       AS DATE         NO-UNDO.
+DEFINE VARIABLE v-todob         AS DATE         NO-UNDO.
+DEFINE VARIABLE v-peopleid      AS INTEGER      NO-UNDO.
+
+DEFINE VARIABLE ischecked       AS CHARACTER    NO-UNDO.
+DEFINE VARIABLE testcount       AS INTEGER      NO-UNDO.
+
+/*******************  Uncomment to see the layout without another program **********************/
+DEFINE VARIABLE v-prefix        AS CHARACTER    INITIAL "Mr."                               NO-UNDO.
+DEFINE VARIABLE v-firstname     AS CHARACTER    INITIAL "Harold"                            NO-UNDO.
+DEFINE VARIABLE v-midname       AS CHARACTER    INITIAL "Douglas"                           NO-UNDO.
+DEFINE VARIABLE v-lastname      AS CHARACTER    INITIAL "Luttrell"                          NO-UNDO.
+DEFINE VARIABLE v-suffix        AS CHARACTER    INITIAL "Jr."                               NO-UNDO.
+DEFINE VARIABLE v-dob           AS DATE         INITIAL 12/28/69                            NO-UNDO.
+DEFINE VARIABLE v-picturepath   AS CHARACTER    INITIAL "/depot/src/HTMLContent/images/cut_shirt.gif" NO-UNDO.
+DEFINE VARIABLE v-gender        AS LOGICAL      INITIAL YES                                 FORMAT "Male/Female" NO-UNDO.   /* Male = YES */
+DEFINE VARIABLE v-company       AS CHARACTER    INITIAL "Solsource"                         NO-UNDO.
+DEFINE VARIABLE v-contact       AS CHARACTER    INITIAL "Bobbi Luttrell"                    NO-UNDO.
+DEFINE VARIABLE v-pri-email     AS CHARACTER    INITIAL "Doug.Luttrell@mysolsource.com"     NO-UNDO.
+DEFINE VARIABLE v-sec-email     AS CHARACTER    INITIAL "Doug.Luttrell@gmail.com"           NO-UNDO.
+DEFINE VARIABLE v-notes         AS CHARACTER    INITIAL "Sassy"                             NO-UNDO.
+
+DEFINE VARIABLE ismale AS CHARACTER NO-UNDO.        /** value gets set to "CHECKED" **/
+DEFINE VARIABLE isfemale AS CHARACTER NO-UNDO.      /** value gets set to "CHECKED" **/
+
+DEFINE VARIABLE v-addr1         AS CHARACTER    INITIAL "114 Hawkes Road"                   NO-UNDO.
+DEFINE VARIABLE v-addr2         AS CHARACTER    INITIAL ""                                  NO-UNDO.
+DEFINE VARIABLE v-addr3         AS CHARACTER    INITIAL ""                                  NO-UNDO.
+DEFINE VARIABLE v-city          AS CHARACTER    INITIAL "Sebago"                            NO-UNDO.
+DEFINE VARIABLE v-state         AS CHARACTER    INITIAL "ME"                                NO-UNDO.
+DEFINE VARIABLE v-zip           AS CHARACTER    INITIAL "04029"                             NO-UNDO.
+DEFINE VARIABLE v-country       AS CHARACTER    INITIAL "USA"                               NO-UNDO.
+
+DEFINE VARIABLE v-home          AS CHARACTER    INITIAL "(207) 787 - 4108"                  NO-UNDO.
+DEFINE VARIABLE v-work          AS CHARACTER    INITIAL "(207) 787 - 4108"                  NO-UNDO.
+DEFINE VARIABLE v-cell          AS CHARACTER    INITIAL "(207) 595 - 7065"                  NO-UNDO.
+DEFINE VARIABLE v-fax           AS CHARACTER    INITIAL ""                                  NO-UNDO.
+
+DEFINE VARIABLE disp-start  AS CHARACTER                 NO-UNDO.                   /* 1dot3 */
+DEFINE VARIABLE disp-end    AS CHARACTER                 NO-UNDO.                   /* 1dot3 */
+DEFINE VARIABLE out-start   AS CHARACTER                 NO-UNDO.                   /* 1dot3 */
+DEFINE VARIABLE out-end     AS CHARACTER                 NO-UNDO.                   /* 1dot3 */
+DEFINE VARIABLE starteff    AS DATE                      NO-UNDO.                   /* 1dot3 */
+DEFINE VARIABLE endeff      AS DATE                      NO-UNDO.                   /* 1dot3 */
+
+DEFINE VARIABLE o-fstate-disp-name AS CHARACTER NO-UNDO.                                    /* 1dot4 */
+DEFINE VARIABLE o-fstate-disp-error AS LOGICAL NO-UNDO.                                     /* 1dot4 */
+DEFINE VARIABLE o-fcountry-disp-name AS CHARACTER NO-UNDO.                                  /* 1dot4 */
+DEFINE VARIABLE o-fcountry-disp-error AS LOGICAL NO-UNDO.                                   /* 1dot4 */
+DEFINE VARIABLE o-fstate-ISO AS CHARACTER NO-UNDO.                                          /* 1dot4 */
+DEFINE VARIABLE o-fstate-error AS LOGICAL NO-UNDO.                                          /* 1dot4 */
+DEFINE VARIABLE o-fcountry-ISO AS CHARACTER NO-UNDO.                                        /* 1dot4 */
+DEFINE VARIABLE o-fcountry-error AS LOGICAL NO-UNDO.                                        /* 1dot4 */
+
+IF get-value('h-gender') = "MALE" THEN 
+    ASSIGN 
+        v-gender        = YES 
+        ismale          = "CHECKED"
+        isfemale        = ""
+        v-picturepath   = "/depot/src/HTMLContent/images/blue-parrot-shirt.jpg".
+ELSE IF get-value('h-gender') = "FEMALE" THEN 
+    ASSIGN 
+        v-gender        = NO 
+        ismale          = ""
+        isfemale        = "CHECKED"
+        v-picturepath   = "/depot/src/HTMLContent/images/cut_shirt.gif".
+ELSE
+    ASSIGN 
+        v-gender        = ? 
+        ismale          = ""
+        isfemale        = ""
+        v-picturepath   = "/depot/src/HTMLContent/images/HHI_logo.png".
+
+ASSIGN 
+    act         = get-value('h-act')
+    v-fromfirst = get-value('h-fromfirst')
+    v-tofirst   = get-value('h-tofirst')
+    v-fromlast  = get-value('h-fromlast')
+    v-tolast    = get-value('h-tolast')
+    v-fromdob   = DATE(get-value('h-fromdob'))
+    v-todob     = DATE(get-value('h-todob'))
+    v-peopleid  = IF get-value('h-peopleid') <> "" THEN 
+                    INTEGER(get-value('h-peopleid'))
+                  ELSE 
+                    0.
+
+ASSIGN 
+    disp-start  = get-value('html5-start')                                              /* 1dot3 */
+    disp-end    = get-value('html5-end').                                               /* 1dot3 */
+    
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                            /* 1dot3 */
+            disp-start,                                                                 /* 1dot3 */
+            OUTPUT starteff                                                             /* 1dot3 */    
+            ).                                                                          /* 1dot3 */
+        
+        RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                        /* 1dot3 */
+            disp-end,                                                                   /* 1dot3 */
+            OUTPUT endeff                                                               /* 1dot3 */
+            ).                                                                          /* 1dot3 */
+    
+IF whatshouldrun = "" THEN 
+    whatshouldrun = "3.11". 
+    
+/***********************************************************************************************/
+
+
+
+/* ********************  Preprocessor Definitions  ******************** */
+
+
+/* ***************************  Main Block  *************************** */
+IF act = "" THEN 
+    act = "INITIAL".
+    
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>    <!-- grid_3 spacer -->" SKIP                                  /** grid_3 spacer **/
+            "<DIV class='grid_6'>" SKIP
+            "<FORM>" SKIP 
+            "<input type='hidden' name='whattorun' value=" whatshouldrun " />" SKIP                                 /* 1dot22 */
+            "<DIV class='table_2col'>" SKIP
+		    "   <TABLE>" SKIP
+		    
+		    "       <TR>" SKIP
+		    "           <TH colspan=4>Search Criteria</TH>" SKIP
+		    "       </TR>" SKIP
+		    
+		    "       <TR>" SKIP                                                          /** Row 1 **/             /* 2dot1 */
+            "           <TD>From Last Name</TD>" SKIP
+            "           <TD><input type='text' name='h-fromlast' value='" v-fromlast "' /></TD>" SKIP
+            "           <TD>To</TD>" SKIP
+            "           <TD><input type='text' name='h-tolast' value='" v-tolast "' /></TD>" SKIP
+            "       </TR>" SKIP
+            
+		    "       <TR>" SKIP                                                          /** Row 2 **/             /* 2dot1 */
+		    "           <TD>From First Name</TD>" SKIP
+            "           <TD><input type='text' name='h-fromfirst' value='" v-fromfirst "' /></TD>" SKIP
+            "           <TD>To</TD>" SKIP
+            "           <TD><input type='text' name='h-tofirst' value='" v-tofirst "' /></TD>" SKIP
+            "       </TR>" SKIP        
+
+            "       <TR>" SKIP                                                          /** Row 3 **/
+            "           <TD>From Date of Birth</TD>" SKIP
+/*            "           <TD><input type='date' name='h-fromdob' /></TD>" SKIP*/
+            "       <TD><input type='date' name='html5-start' value='" disp-start "'/></TD>" SKIP                                    /* 1dot3 */
+            "           <TD>To</TD>" SKIP
+/*            "           <TD><input type='date' name='h-todob' /></TD>" SKIP*/
+            "       <TD><input type='date' name='html5-end' value='" disp-end "'/></TD>" SKIP                                        /* 1dot3 */
+            "       </TR>" SKIP		    
+            
+		    "   </TABLE>" SKIP
+		    "</DIV>       <!-- end of table_2col -->" SKIP                                                       /* table_2col */    
+            "</DIV>       <!-- end of grid_6 -->" SKIP                                                       /** grid_6 **/
+            "<DIV class='grid_3'> </DIV>          <!-- grid_3 spacer -->" SKIP                                  /** grid_3 spacer **/
+            "</DIV>           <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP                                                                           /* begin 1dot22 */
+			"   <div class='grid_5'> </DIV>" SKIP
+			"   <div class='grid_2'><button type='submit' name='h-act' value='SEARCH' class='btn'>SEARCH</BUTTON></div>" SKIP
+			"   <div class='grid_5'> </DIV>" SKIP
+			"</div>" SKIP
+			"<BR>" SKIP                                                                                        /* end 1dot22 */
+		    "</FORM>" SKIP
+		    .                                                      			    
+            
+    
+    END.  /** of when act = initial **/
+    
+    WHEN "SEARCH" THEN DO: 
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_1'> </DIV>        <!-- grid_1 spacer -->" SKIP
+            "<DIV class='grid_10'>" SKIP
+	        "<DIV class='table_report'>" SKIP
+	        "   <TABLE>" SKIP
+	        "       <THEAD>" SKIP 
+	        "          <TR>" SKIP
+	        "              <TH colspan=4>Patient List</TH>" SKIP                                                       /* 1dot22 */
+	        "          </TR>" SKIP	        
+	        "          <TR>" SKIP
+	        "              <TD>Lastname</TD>" SKIP
+	        "              <TD>Firstname</TD>" SKIP
+	        "              <TD>Date of Birth</TD>" SKIP
+	        "              <TD>Email</TD>" SKIP                                                                        /* 1dot22 */
+	        "          </TR>" SKIP 
+	        "      </THEAD>" SKIP.
+        
+        
+        
+        FOR EACH people_mstr WHERE 
+	            (people_mstr.people_id = v-peopleid OR 
+	             v-peopleid = 0) AND 
+	            (people_mstr.people_lastname >= v-fromlast OR 
+	             v-fromlast = "") AND 
+	            (people_mstr.people_lastname <= v-tolast OR 
+	             v-tolast = "") AND 
+	            (people_mstr.people_firstname >= v-fromfirst OR 
+	             v-fromfirst = "") AND 
+	            (people_mstr.people_firstname <= v-tofirst OR 
+	             v-tofirst = "") AND 
+	            (people_mstr.people_DOB >= /* v-fromdob */ starteff OR                                /* 1dot3 */ 
+	             /* v-fromdob */ starteff = ?) AND                                                    /* 1dot3 */ 
+	            (people_mstr.people_DOB <= /* v-todob */ endeff OR                                    /* 1dot3 */
+	             /*v-todob */ endeff = ?) AND                                                         /* 1dot3 */ 
+	            people_mstr.people_deleted = ? NO-LOCK,
+            FIRST patient_mstr WHERE patient_mstr.patient_ID = people_mstr.people_id AND 
+                    patient_mstr.patient_deleted = ? NO-LOCK 
+                BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname BY people_mstr.people_DOB:
+                         
+                    
+            {&OUT}
+                "<TR>" SKIP
+                "   <TD><a href=~"PATmainviewR.r?h-act=SELECTED&h-peopleid=" people_mstr.people_id "&whattorun=" whatshouldrun "~" >" people_mstr.people_lastname "</a></TD>" SKIP
+                "   <TD>" people_mstr.people_firstname "</TD>" SKIP
+                "   <TD>" people_mstr.people_DOB "</TD>" SKIP
+                "   <TD>" people_mstr.people_email "</TD>" SKIP                                                         /* 1dot22 */
+                "</TR>" SKIP.
+                
+        END. /** of 4ea. people_mstr, etc. **/
+        
+        {&OUT}
+            "   <TFOOT>" SKIP                                                                           /* 1dot21 */
+            "       <TR>" SKIP
+            "           <TD COLSPAN=4>END OF REPORT</TD>" SKIP                                          /* 1dot22 */
+            "       </TR>" SKIP
+            "   </TFOOT>" SKIP                                                                          /* 1dot21 */
+            "   </TABLE>" SKIP
+            "</DIV>                 <!-- end of table_report -->" SKIP
+            "</DIV>             <!-- end of grid_10 -->" SKIP
+            "<DIV class='grid_1'> </DIV>        <!-- grid 1 spacer -->" SKIP
+            "</DIV>         <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<FORM action='PATmainviewR.r'>" SKIP                                                                /* begin 1dot3 */
+            "<input type='hidden' name='h-peopleid' value='" people_mstr.people_ID "' />" SKIP
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP       
+            
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</FORM>" SKIP                                                                                       /* end 1dot3 */
+            "<BR>" SKIP
+            .
+            
+                
+    
+    END.  /** of act = search **/
+    
+    WHEN "SELECTED" THEN DO:
+        
+        FIND people_mstr WHERE people_mstr.people_id = v-peopleid NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (people_mstr) THEN DO: 
+            
+            FIND patient_mstr WHERE patient_mstr.patient_ID = people_mstr.people_id NO-LOCK NO-ERROR.
+            
+            IF AVAILABLE (patient_mstr) THEN 
+                v-notes = patient_mstr.patient_notes.
+            
+			IF people_mstr.people_gender = YES THEN 
+			    ASSIGN 
+			        v-gender        = YES 
+			        ismale          = "CHECKED"
+			        isfemale        = ""
+			        v-picturepath   = "/depot/src/HTMLContent/images/blue-parrot-shirt.jpg".
+			ELSE IF people_mstr.people_gender = NO THEN 
+			    ASSIGN 
+			        v-gender        = NO 
+			        ismale          = ""
+			        isfemale        = "CHECKED"
+			        v-picturepath   = "/depot/src/HTMLContent/images/cut_shirt.gif".
+			ELSE
+			    ASSIGN 
+			        v-gender        = ? 
+			        ismale          = ""
+			        isfemale        = ""
+			        v-picturepath   = "/depot/src/HTMLContent/images/HHI_logo.png".            
+            
+	        {&OUT}
+	           "<DIV class='row'>" SKIP
+	           "<DIV class='grid_12'>" SKIP
+			    "<DIV class='table_2col'>" SKIP
+			    "   <TABLE>" SKIP
+			    "       <TR>" SKIP
+			    "           <TH colspan=5>Personal Information</TH>" SKIP
+			    "       </TR>" SKIP
+			    "       <TR>" SKIP                                                          /** Row 1 **/
+			    "           <TD>Prefix</TD>" SKIP
+			    "           <TD>" people_mstr.people_prefix "</TD>" SKIP
+			    "           <TD>DOB</TD>" SKIP
+			    "           <TD>" people_mstr.people_dob "</TD>" SKIP
+			    "           <TD rowspan=8><CENTER><img src='" v-picturepath "' /></CENTER></TD>" SKIP
+			    "       </TR>" SKIP
+			    "       <TR>" SKIP                                                          /** Row 2 **/
+			    "           <TD>First Name</TD>" SKIP
+			    "           <TD>" people_mstr.people_firstname "</TD>" SKIP
+			    "           <TD>Age</TD>" SKIP
+			    "           <TD>" ((TODAY - people_mstr.people_dob) / 365) FORMAT "->>9.9"  "</TD>" SKIP
+			    "       </TR>" SKIP
+			    "       <TR>" SKIP                                                          /** Row 3 **/
+			    "           <TD>Middle Name</TD>" SKIP
+			    "           <TD>" people_mstr.people_midname "</TD>" SKIP
+			    "           <TD>Gender</TD>" SKIP
+			    "           <TD nowrap>" SKIP
+			    "               <INPUT TYPE='radio' name='h-gender' value='MALE' " ismale " DISABLED /> Male " SKIP
+			    "               <input type='radio' name='h-gender' value='FEMALE' " isfemale " DISABLED /> Female " SKIP
+			    "           </TD>" SKIP
+			    "       </TR>" SKIP
+			    "       <TR>" SKIP                                                          /** Row 4 **/
+			    "           <TD>Last Name</TD>" SKIP
+			    "           <TD>" people_mstr.people_lastname "</TD>" SKIP
+			    "           <TD>Company</TD>" SKIP
+			    "           <TD>" people_mstr.people_company "</TD>" SKIP
+			    "       </TR>" SKIP
+			    "       <TR>" SKIP                                                          /** Row 5 **/
+			    "           <TD>Suffix</TD>" SKIP
+			    "           <TD>" people_mstr.people_suffix "</TD>" SKIP
+			    "           <TD>Contact</TD>" SKIP
+			    "           <TD>" people_mstr.people_contact "</TD>" SKIP
+			    "       </TR>" SKIP
+			    "       <TR>" SKIP                                                          /** Row 6 **/
+			    "           <TD>Email</TD>" SKIP
+			    "           <TD><a href='mailto:" people_mstr.people_email "' >" people_mstr.people_email "</a></TD>" SKIP
+			    "           <TD>Email 2</TD>" SKIP
+			    "           <TD><a href='mailto:" people_mstr.people_email2 "' >" people_mstr.people_email2 "</a></TD>" SKIP
+			    "       </TR>" SKIP
+			    "       <TR>" SKIP                                                          /** Row 7 **/
+			    "           <TD>Notes</TD>" SKIP
+			    "           <TD colspan=3>" v-notes "</TD>" SKIP
+			    "       </TR>" SKIP
+			    "        <TR>" SKIP                                                          /* Row 8 */     /* 131 */
+			    "            <TD>Patient ID</TD>" SKIP                                                       /* 131 */
+			    "            <TD>" people_mstr.people_id "</TD>" SKIP                                        /* 131 */
+			    "            <TD>Doctor ID</TD>" SKIP                                                        /* 131 */
+			    "            <TD>" patient_mstr.patient_doctor_ID "</TD>"                                    /* 131 */
+			    "        </TR>" SKIP                                                                         /* 131 */
+			    "        <TFOOT>" SKIP
+			    "            <TR>" SKIP                                                          /** Row 9 **/
+			    "                <TD colspan=4>"
+			                            "<a href='../../DataHub/rcode/PEOPmaintU.r?"                                      /* 1dot4 */
+										"h-people_id=" people_mstr.people_id                                              /* 1dot4 */
+										"&h-act=EDIT"                                                                     /* 1dot4 */
+										"&whattorun=35.99'>"                                                              /* 1dot4 */
+/*			                             "<a href=~"../../TK/rcode/patient.r?email=" people_mstr.people_email*/
+/*			                             "&fstn=" people_mstr.people_firstname                               */
+/*			                             "&lstn=" people_mstr.people_lastname			                             */
+/*			                             "&h-keep-going=YES&h-first-stop=1&pep-id=" people_mstr.people_ID    */
+/*			                             "&whattorun=3.4~" >"                                                */
+			                             "<DIV class='button'>Edit this patient</DIV></a></TD>" SKIP
+			    "                <TD>Change Patient's MAIN_PHOTO</TD>" SKIP
+			    "            </TR>" SKIP
+			    "        </TFOOT>" SKIP
+			    "   </TABLE>" SKIP
+			    "</DIV>                      <!-- end of table_2col -->" SKIP
+			    "</DIV>                  <!-- end of grid_12 -->" SKIP
+			    "</DIV>              <!-- end of row -->" SKIP.
+		
+		    /******** * * * JAVASCRIPT TIME * * * ***********/
+            </script>
+
+            <script TYPE='text/javascript'>
+
+            // made by Quinton Schaffer on May 14 2015
+            // lets you highlight and click on entire rows to trigger a selection box in it.
+
+            $(document).ready(function() {
+               //change .table to the table class being used.
+                $('.table_report tr').click(function(event) {
+                    if (event.target.type !== 'radio') {
+                        $(':radio', this).trigger('click');
+                    }
+                });
+            });
+
+            </script>
+
+            <SCRIPT language='SpeedScript'>
+            /******** * * * END OF JAVA * * * * **************/
+	
+            /***********  Address Section ************/
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "   <DIV class='grid_12'>" SKIP
+				"<DIV class='pancake"  
+/*				" clickable"*/
+				"'>" SKIP
+				"   <TABLE>" SKIP
+				"       <THEAD>" SKIP
+				"           <TH colspan=7>Address Information</TH>" SKIP
+				"       </THEAD>" SKIP
+				"       <TR>" SKIP                                                          
+				"           <TD>Address 1</TD>" SKIP
+				"           <TD>Address 2</TD>" SKIP
+				"           <TD>Address 3</TD>" SKIP
+				"           <TD>City</TD>" SKIP
+				"           <TD>State / Province</TD>" SKIP
+				"           <TD>Zip / Postal Code</TD>" SKIP
+				"           <TD>Country</TD>" SKIP
+				"       </TR>" SKIP.                		
+		
+            FIND addr_mstr WHERE addr_mstr.addr_id = people_mstr.people_addr_id NO-LOCK NO-ERROR.
+            
+            IF AVAILABLE (addr_mstr) THEN DO:
+            
+            RUN VALUE(SEARCH("SUBcountry-findR.r")) (                                              /* 1dot4 */
+		        addr_mstr.addr_country,                                                            /* 1dot4 */
+		        OUTPUT o-fcountry-ISO,                                                             /* 1dot4 */
+		        OUTPUT o-fcountry-error                                                            /* 1dot4 */
+		        ).                                                                                 /* 1dot4 */
+		
+		    RUN VALUE(SEARCH("SUBstate-findR.r")) (                                                /* 1dot4 */
+		        o-fcountry-ISO,                                                                    /* 1dot4 */
+		        addr_mstr.addr_stateprov,                                                          /* 1dot4 */
+		        OUTPUT o-fstate-ISO,                                                               /* 1dot4 */
+		        OUTPUT o-fstate-error                                                              /* 1dot4 */
+		        ).                                                                                 /* 1dot4 */
+		
+		    RUN VALUE(SEARCH("SUBcountry-disp-name-findR.r")) (                                    /* 1dot4 */
+		        o-fcountry-ISO,                                                                    /* 1dot4 */
+		        OUTPUT o-fcountry-disp-name,                                                       /* 1dot4 */
+		        OUTPUT o-fcountry-disp-error                                                       /* 1dot4 */
+		        ).                                                                                 /* 1dot4 */
+		       
+		    RUN VALUE(SEARCH("SUBstate-disp-name-findR.r")) (                                      /* 1dot4 */
+		        o-fcountry-ISO,                                                                    /* 1dot4 */
+		        o-fstate-ISO,                                                                      /* 1dot4 */                    
+		        OUTPUT o-fstate-disp-name,                                                         /* 1dot4 */ 
+		        OUTPUT o-fstate-disp-error                                                         /* 1dot4 */
+		        ).                                                                                 /* 1dot4 */                                 
+            
+            IF  o-fstate-disp-name        = "Not Found" AND                     /* 2dot0 */
+                addr_mstr.addr_stateprov <> ""  THEN                            /* 2dot0 */
+                ASSIGN o-fstate-disp-name = addr_mstr.addr_stateprov.           /* 2dot0 */        
+            
+            IF  o-fcountry-disp-name      = "Not Found" AND                     /* 2dot0 */
+                addr_mstr.addr_country <> ""  THEN                              /* 2dot0 */
+                ASSIGN o-fcountry-disp-name = addr_mstr.addr_country.           /* 2dot0 */        
+                                           
+				{&OUT}
+				    "       <TR>" SKIP                                                          
+				    "           <TD>" addr_mstr.addr_addr1 "</TD>" SKIP
+				    "           <TD>" addr_mstr.addr_addr2 "</TD>" SKIP
+				    "           <TD>" addr_mstr.addr_addr3 "</TD>" SKIP
+				    "           <TD>" addr_mstr.addr_city "</TD>" SKIP
+				    "           <TD>" o-fstate-disp-name "</TD>" SKIP                               /* 1dot4 */
+/*				    "           <TD>" addr_mstr.addr_state "</TD>" SKIP*/
+				    "           <TD>" addr_mstr.addr_zip "</TD>" SKIP
+				   "           <TD>" o-fcountry-disp-name "</TD>" SKIP                              /* 1dot4 */
+/*				    "           <TD>" addr_mstr.addr_country "</TD>" SKIP*/
+				    "       </TR>" SKIP.
+			
+			END. /* if avail addr_mstr - 1dot4 */			
+			ELSE 
+                {&OUT}
+                    "       <TR>" SKIP                                                          
+                    "           <TD colspan=7>NO PRIMARY ADDRESS FOUND</TD>" SKIP
+                    "       </TR>" SKIP.
+            
+            FIND addr_mstr WHERE addr_mstr.addr_id = people_mstr.people_second_addr_ID NO-LOCK NO-ERROR.
+            
+            IF AVAILABLE (addr_mstr) THEN DO:
+            
+            RUN VALUE(SEARCH("SUBcountry-findR.r")) (                                              /* 1dot4 */
+                addr_mstr.addr_country,                                                            /* 1dot4 */
+                OUTPUT o-fcountry-ISO,                                                             /* 1dot4 */
+                OUTPUT o-fcountry-error                                                            /* 1dot4 */
+                ).                                                                                 /* 1dot4 */
+        
+            RUN VALUE(SEARCH("SUBstate-findR.r")) (                                                /* 1dot4 */
+                o-fcountry-ISO,                                                                    /* 1dot4 */
+                addr_mstr.addr_stateprov,                                                          /* 1dot4 */
+                OUTPUT o-fstate-ISO,                                                               /* 1dot4 */
+                OUTPUT o-fstate-error                                                              /* 1dot4 */
+                ).                                                                                 /* 1dot4 */
+        
+            RUN VALUE(SEARCH("SUBcountry-disp-name-findR.r")) (                                    /* 1dot4 */
+                o-fcountry-ISO,                                                                    /* 1dot4 */
+                OUTPUT o-fcountry-disp-name,                                                       /* 1dot4 */
+                OUTPUT o-fcountry-disp-error                                                       /* 1dot4 */
+                ).                                                                                 /* 1dot4 */
+               
+            RUN VALUE(SEARCH("SUBstate-disp-name-findR.r")) (                                      /* 1dot4 */
+                o-fcountry-ISO,                                                                    /* 1dot4 */
+                o-fstate-ISO,                                                                      /* 1dot4 */                    
+                OUTPUT o-fstate-disp-name,                                                         /* 1dot4 */ 
+                OUTPUT o-fstate-disp-error                                                         /* 1dot4 */
+                ).                                                                                 /* 1dot4 */                                 
+                        
+            IF  o-fstate-disp-name        = "Not Found" AND                     /* 2dot0 */
+                addr_mstr.addr_stateprov <> ""  THEN                            /* 2dot0 */
+                ASSIGN o-fstate-disp-name = addr_mstr.addr_stateprov.           /* 2dot0 */        
+            
+            IF  o-fcountry-disp-name      = "Not Found" AND                     /* 2dot0 */
+                addr_mstr.addr_country <> ""  THEN                              /* 2dot0 */
+                ASSIGN o-fcountry-disp-name = addr_mstr.addr_country.           /* 2dot0 */         
+                            
+                {&OUT}
+                    "       <TR>" SKIP                                                          
+                    "           <TD>" addr_mstr.addr_addr1 "</TD>" SKIP
+                    "           <TD>" addr_mstr.addr_addr2 "</TD>" SKIP
+                    "           <TD>" addr_mstr.addr_addr3 "</TD>" SKIP
+                    "           <TD>" addr_mstr.addr_city "</TD>" SKIP
+                    "           <TD>" o-fstate-disp-name "</TD>" SKIP                               /* 1dot4 */
+/*                  "           <TD>" addr_mstr.addr_state "</TD>" SKIP*/
+                    "           <TD>" addr_mstr.addr_zip "</TD>" SKIP
+                   "           <TD>" o-fcountry-disp-name "</TD>" SKIP                              /* 1dot4 */
+/*                  "           <TD>" addr_mstr.addr_country "</TD>" SKIP*/
+                    "       </TR>" SKIP.
+
+            END. /* if avail addr_mstr - 1dot4 */             
+            ELSE 
+                {&OUT}
+                    "       <TR>" SKIP                                                          
+                    "           <TD colspan=7>NO SECONDARY ADDRESS FOUND</TD>" SKIP
+                    "       </TR>" SKIP.
+	    
+            {&OUT}
+                "           </TABLE>" SKIP
+                "       </DIV>" SKIP                                            /* of div pancake */
+                "   </DIV>" SKIP                                                /* of div grid_12 */
+                "</DIV>" SKIP.                                                  /* of div row --- for address info */
+                    
+	        /**************  Phone Information ****************/
+            {&OUT}
+                "<div class='row'>" SKIP
+			    "    <div class='grid_12'>" SKIP
+			    "        <DIV class='pancake'>" SKIP
+			    "            <TABLE>" SKIP
+			    "                <THEAD>" SKIP
+			    "                    <TH colspan=4>Phone Information</TH>" SKIP
+			    "                </THEAD>" SKIP
+			    "                <TR>" SKIP                                                          
+			    "                    <TD>Home Phone</TD>" SKIP
+			    "                    <TD>Work Phone</TD>" SKIP
+			    "                    <TD>Cell Phone</TD>" SKIP
+			    "                    <TD>Fax Number</TD>" SKIP
+			    "                </TR>" SKIP
+			    "                <TR>" SKIP                                                          
+			    "                    <TD>" people_mstr.people_homephone "</TD>" SKIP
+			    "                    <TD>" people_mstr.people_workphone "</TD>" SKIP
+			    "                    <TD>" people_mstr.people_cellphone "</TD>" SKIP
+			    "                    <TD>" people_mstr.people_fax "</TD>" SKIP
+			    "                </TR>" SKIP    
+			    "            </TABLE>" SKIP
+			    "        </DIV>" SKIP                                                   /* end of div pancake */
+			    "    </div>" SKIP                                                   /* end of div grid_12 */
+			    "</div>" SKIP.                                                  /* end of div row --- for phone info */
+			    
+			    /*************  End of phone info ************/
+			    
+			    
+			    
+			{&OUT}
+			     "<div class='row'>" SKIP                                       /* start the row for the lower table divs */
+			     "<div class='grid_1'> </DIV>" SKIP.
+			         
+			/*************************  Condition Chart ***************************/    		    
+			{&OUT}
+			    "   <div class='grid_3'>" SKIP
+                "       <DIV class='pancake'>" SKIP			     
+	            "          <TABLE>" SKIP
+	            "              <THEAD>" SKIP
+	            "                  <TH colspan=2>Conditions</TH>" SKIP
+	            "              </THEAD>" SKIP
+	            "              <TR>" SKIP
+	            "                  <TD>Condition</TD>" SKIP
+	            "                  <TD>Description</TD>" SKIP
+	            "              </TR>" SKIP.       
+	        
+	        /** changed per Danielle to only show the things they have **    
+	        
+	        FOR EACH condition_mstr WHERE condition_mstr.condition_deleted = ? NO-LOCK 
+	            BREAK BY condition_mstr.condition_name BY condition_mstr.condition_ID:
+	                
+	            FIND pcl_det WHERE pcl_det.pcl_patient_id = patient_mstr.patient_ID AND 
+	                pcl_det.pcl_cond_id = condition_mstr.condition_ID AND 
+	                pcl_det.pcl_deleted = ? 
+	                    NO-LOCK NO-ERROR.     
+	                
+	            IF AVAILABLE (pcl_det) THEN 
+	                ischecked = "CHECKED".
+	            ELSE 
+	                ischecked = "".
+	                
+	            {&OUT}
+	                "<TR>" SKIP
+	                "   <TD width='30%'><input type='checkbox' name='h-cond' value='" condition_mstr.condition_ID "' " ischecked " DISABLED />" 
+	                        condition_mstr.condition_name "</TD>" SKIP
+	                "   <TD>" condition_mstr.condition_desc "</TD>" SKIP
+	                "</TR>" SKIP.
+	                
+	        END.  /* of 4ea. condition_mstr */                        
+	            
+	            **/
+	            
+	        FOR EACH condition_mstr WHERE condition_mstr.condition_deleted = ? NO-LOCK,
+	           FIRST pcl_det WHERE pcl_det.pcl_patient_id = patient_mstr.patient_ID AND 
+                    pcl_det.pcl_cond_id = condition_mstr.condition_ID AND 
+                    pcl_det.pcl_deleted = ? NO-LOCK
+                BREAK BY condition_mstr.condition_common DESCENDING BY condition_mstr.condition_name BY condition_mstr.condition_ID:  
+                    
+                    IF FIRST-OF(condition_mstr.condition_common) THEN DO:  
+                      
+                      {&OUT}
+                          "<TR class='break'>" SKIP.
+                          
+                      IF  condition_mstr.condition_common = YES THEN 
+                          {&OUT}
+                              "   <TD colspan=2>Common Conditions</TD>" SKIP.
+                      ELSE 
+                          {&OUT}
+                              "   <TD colspan=2>Uncommon Conditions</TD>" SKIP.
+                              
+                      {&OUT}
+                          "</TR>" SKIP. 
+                    END.  /** of if first-of condition_common **/   
+                    
+                IF AVAILABLE (pcl_det) THEN 
+                    ischecked = "CHECKED".
+                ELSE 
+                    ischecked = "".
+                    
+                {&OUT}
+                    "<TR>" SKIP
+                    "   <TD no-wrap><input type='checkbox' name='h-cond' value='" condition_mstr.condition_ID "' " ischecked " DISABLED />" 
+                            condition_mstr.condition_name "</TD>" SKIP
+                    "   <TD>" condition_mstr.condition_desc "</TD>" SKIP
+                    "</TR>" SKIP.
+                    
+            END.  /* of 4ea. condition_mstr */                        
+	            
+	        {&OUT}
+	           "           <TFOOT>" SKIP
+	           "               <TR>" SKIP
+	           "                   <TD colspan=2><a href=~"CONDpatU.r?h-patid=" patient_mstr.patient_ID 
+	           "&whattorun=3.11""~"><div class='button'>Edit Patient's Conditions</div></a>" SKIP                                      /* 1dot23 */
+	           "                   </TD>" SKIP
+	           "               </TR>" SKIP
+	           "           </TFOOT>" SKIP
+	           "      </TABLE>" SKIP
+	           "  </DIV>" SKIP                                                 /* end of div pancake */
+	           "</DIV>" SKIP.                                                  /* end of div grid_3 ---  for condition chart  */    			 
+		    
+
+		    
+		    
+		    /***************************  List of Tests w/ Qty *****************************/
+		    {&OUT}                
+                "<div class='grid_3'>" SKIP
+                "<DIV class='pancake'>" SKIP  
+                "   <TABLE>" SKIP
+                "       <THEAD>" SKIP
+                "           <TH colspan=2>Testkits</TH>" SKIP  
+                "       </THEAD>" SKIP
+                "       <TR>" SKIP
+                "           <TD>Test Type</TD>" SKIP
+                "           <TD>Qty</TD>" SKIP
+                "       </TR>" SKIP. 
+		                                                                                     
+		                                                                        IF ITshowmsg = YES THEN 
+		                                                                              {&OUT} "<P>After Conditions, Before Tests</P>" skip
+		                                                                                      "<P>Patient ID = " patient_mstr.patient_ID "</P>" SKIP.
+		                                                                                      
+		                                                                              
+		                                                                              
+		                                                                              
+			FOR EACH TK_mstr WHERE TK_mstr.TK_patient_ID = patient_mstr.patient_ID AND 
+			        TK_mstr.TK_deleted = ? 
+/*			        AND                                                                                                          */
+/*			        TK_mstr.tk_test_seq = 1                                           /** I'm tired but this seems incorrect? **/*/
+                    NO-LOCK
+			    BREAK BY TK_mstr.TK_test_type BY TK_mstr.TK_ID:
+
+			    testcount = testcount + 1.
+			    
+			    IF LAST-OF(TK_mstr.tk_test_type) THEN DO:
+			        
+			        {&OUT}
+			            "<TR>" SKIP
+			            "   <TD><a href='PATtestlistdetR.r?h-patid=" patient_mstr.patient_ID 
+			            "&whattorun=3.10"                                                                            /* 1dot22 */                                                                      
+			            "&h-testtype=" TK_mstr.TK_test_type "'>" TK_mstr.TK_test_type "</a></TD>" SKIP
+			            "   <TD>" testcount "</TD>" SKIP
+			            "</TR>" SKIP.
+			            
+			        testcount = 0.
+			         
+			    END.  /** of if last-of tk_testtype **/     
+			    
+			END.  /*** of 4ea. TK_mstr ***/
+			
+			{&OUT}    
+	            "  </TABLE>" SKIP
+	            "</DIV>" SKIP                                                   /* end of div pancake */
+	            "</DIV>" SKIP.		                                           	/* end of div grid_3 --- for test qty table */    
+	            
+            /********************  List of Attached Files  ************************/	            
+	         {&OUT}
+                "<div class='grid_4'>" SKIP. 
+
+             {SUBpat-attR.i patient_mstr.patient_id}.                                                           /* 1dot22 */
+
+            {&OUT}
+                "</DIV>" SKIP.                                                  /** end of attached files **/
+                
+            {&OUT}
+                "</row>" SKIP.                                                  /** end of row that had 3 tables in it **/
+                         
+        
+        END.  /** of if avail people_mstr **/
+        
+    END.  /*** of act = selected ***/
+    
+    OTHERWISE DO:
+        
+        
+    END.  /** of otherwise do **/
+    
+END CASE.  /*** case of act ***/
+
+
+
+
+</SCRIPT>
+</BODY>
+</HTML>

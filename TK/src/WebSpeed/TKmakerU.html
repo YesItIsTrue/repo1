@@ -1,0 +1,403 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Sara Luttrell">
+<META NAME="VERSION" CONTENT="1.2">
+<META NAME="COPYRIGHT" CONTENT="Solsource">
+<META NAME="CREATE_DATE" CONTENT="10/Aug/14">
+<META NAME="LAST_UPDATED" CONTENT="11/Mar/16">
+
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+ 
+<TITLE>Test Kits Creation</TITLE>
+
+<SCRIPT LANGUAGE="SpeedScript">
+/************************************************************
+*
+*     ** Documentation goes here
+*   Title – version and  history
+*
+*   Version 1.1 - Written by Jacob Luttrell 23Feb16.
+*                   Updated TK_testtype to TK_test_type (unmarked).
+*                   Updated SUBtkmstrRSTPucU and SUBtrh-ucU to be in line 
+*                   with the new v11.1 updates.  Marked by 1dot1. 
+*   Version 1.2 - Written by Jacob Luttrell 11/Mar/16 marked by 1dot2
+*                   added SUBtrh-findR.p and changed what trh_date is updated by.
+************************************************************/
+
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */  
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+</HEAD>
+
+<BODY class='inside'>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+ 
+{../depot/src/WebSpeed/menuname.i}. 
+
+/***********************************************************************************************/ 
+
+	DEFINE VARIABLE v-testtype   LIKE TK_mstr.TK_test_type                NO-UNDO.
+	DEFINE VARIABLE v-domestic   LIKE TK_mstr.TK_domestic                NO-UNDO.                              
+	DEFINE VARIABLE v-prof       LIKE TK_mstr.TK_prof                    NO-UNDO.
+	DEFINE VARIABLE v-qty        AS INTEGER LABEL "Quantity Activating"  NO-UNDO. 
+	DEFINE VARIABLE v-activated  AS INTEGER LABEL "Test Kits Activated?" NO-UNDO. 
+	DEFINE VARIABLE v-amount     AS INTEGER                              NO-UNDO.
+    DEFINE VARIABLE v-typ-abb    LIKE TK_mstr.TK_test_type                NO-UNDO.                                      
+	DEFINE VARIABLE v-testID     LIKE TK_mstr.TK_ID                      NO-UNDO.
+	DEFINE VARIABLE v-teststatus Like TK_mstr.TK_status                  NO-UNDO.
+	DEFINE VARIABLE v-act        AS INTEGER                              NO-UNDO.
+    DEFINE VARIABLE v-prefix     AS CHARACTER                            NO-UNDO. 
+    
+    DEFINE VARIABLE v-custID     LIKE TK_mstr.TK_cust_ID                 NO-UNDO.
+    DEFINE VARIABLE v-patientID  LIKE TK_mstr.TK_patient_ID              NO-UNDO.
+    DEFINE VARIABLE v-labsampleID LIKE TK_mstr.TK_lab_sample_ID          NO-UNDO.
+    DEFINE VARIABLE v-lab_seq    LIKE TK_mstr.TK_lab_seq                 NO-UNDO.
+    DEFINE VARIABLE v-testage    LIKE TK_mstr.TK_test_age                NO-UNDO.
+    DEFINE VARIABLE v-labID      LIKE TK_mstr.TK_lab_ID                  NO-UNDO.
+    DEFINE VARIABLE v-comments   LIKE TK_mstr.TK_comments                NO-UNDO.
+    DEFINE VARIABLE v-notes      LIKE TK_mstr.TK_notes                   NO-UNDO.
+    DEFINE VARIABLE v-test_seq   LIKE TK_mstr.TK_test_seq                NO-UNDO.
+    DEFINE VARIABLE v-testID2    LIKE TK_mstr.TK_ID                      NO-UNDO.      
+    
+    DEFINE VARIABLE v-create     AS LOGICAL INITIAL NO                   NO-UNDO.
+    DEFINE VARIABLE v-update     AS LOGICAL INITIAL NO                   NO-UNDO.
+    DEFINE VARIABLE v-avail      AS LOGICAL INITIAL YES                  NO-UNDO.
+    DEFINE VARIABLE v-successful AS LOGICAL INITIAL NO                   NO-UNDO. 
+    DEFINE VARIABLE X            AS INTEGER                              NO-UNDO.
+    DEFINE VARIABLE v-error      AS LOGICAL                              NO-UNDO.  
+
+    DEFINE VARIABLE v-showmsg    AS LOGICAL INITIAL NO                  NO-UNDO.     /** set to YES for messages **/
+    
+    DEFINE VARIABLE v-trhid     AS INTEGER                  NO-UNDO.             /* 1dot9 */ 
+    DEFINE VARIABLE v-trhfound  AS LOG INITIAL NO           NO-UNDO.             /* 1dot9 */
+      
+    ASSIGN
+        v-testtype  = GET-value                 ("h-type")         
+        v-domestic  = LOGICAL (GET-value        ("h-domestic"))                   
+        v-prof      = IF (LOGICAL (GET-value    ("h-prof"))) = YES 
+                            THEN
+	                             true
+	                        ELSE
+	                             false	  
+        v-test_seq  = INTEGER(get-value         ("h-test_seq"))
+        v-qty       = INTEGER(GET-value         ("h-qty"))
+        v-act       = INTEGER(GET-value         ("h-act"))
+        v-prefix    = GET-value                 ("h-prefix")
+        v-testID    = GET-value                 ("h-testID").
+        
+    IF v-act = 0 THEN 
+        ASSIGN 
+            v-domestic  = YES
+            v-prof      = YES.
+                              
+    IF v-prof = ? THEN 
+        v-prof = NO.     
+        
+    IF v-showmsg = YES THEN 
+        {&OUT} 
+            "<P>Beginning program</P>" SKIP
+            "<P>Act = " v-act "</P>" SKIP
+            "<P>Prof = " v-prof "</P>" SKIP
+            "<P>HTML Prof = " get-value("h-prof") "</P>" SKIP 
+            "<P>Qty = " v-qty "</P>" SKIP
+            "<P>Prefix = " v-prefix "</P>" SKIP(1).
+                
+ 
+/************************************ Validation: act 99 *************************************/       
+   
+IF v-act = 99 THEN DO: 
+                    
+    ASSIGN v-act = 1.
+        
+    IF v-qty < 1 THEN DO:
+        
+        {&OUT}  "<center><H2>Invalid amount. You must select at least 1. </h2></center>".
+        
+        v-act = 0. 
+            
+    END. /** invalid test amount **/ 
+
+    IF v-testtype = "" THEN DO:
+        
+        {&OUT} "<center><H2>Please select a test type. </h2></center>".
+        
+        v-act = 0.  
+        
+    END.  /** of invalid testtype **/ 
+    
+
+END. /*** of ACT 99 ***/
+        
+/******************************* start of main table - Act 0 ***********************************/
+
+IF v-act = 0 THEN DO:			   
+			   	
+	{&OUT}
+	"<form method='post'>	 
+	    <div class='table_col'>		   
+	        <TABLE>		                                           "/* Start of table */"
+				<tr>
+				    <td>Test Kit Type:</td>
+				    <td class='req'><select name='h-type' required>".
+               
+	IF v-testtype = "" THEN  
+	   {&OUT}
+	        "<option value='" v-testtype "' selected>Select Type</option>" SKIP.
+	        
+	ELSE 
+	   {&OUT}
+	        "<option value='" v-testtype "' selected>" v-testtype "</option>" SKIP.
+	        
+	 
+	FOR EACH test_mstr NO-LOCK:                                                                  
+	   {&OUT}
+	        "<option Value='" test_mstr.test_type "'>" test_mstr.test_type "</option>" SKIP.
+
+    END.  /* FOR EACH TEST_MSTR */ 
+
+   
+    {&OUT}
+        "</td></tr>" SKIP
+        "<tr>" SKIP
+        "    <td> Test Sequence Number </td><td class='req'><input type='number' name='h-test_seq' value='" v-test_seq "' min='1'></td>" SKIP
+        "</tr>" SKIP
+        "<tr>" SKIP
+        "    <td> Destination </td>" SKIP.    
+        
+IF v-domestic = YES THEN 
+    {&OUT}    
+        "    <td><input type='radio' name='h-domestic' value='Yes' checked> Domestic" SKIP
+        "    <br><input type='radio' name='h-domestic' value='No'> International </td>"		           
+        "<tr>" SKIP.
+ELSE 
+    {&OUT}    
+        "    <td><input type='radio' name='h-domestic' value='Yes'> Domestic" SKIP
+        "    <br><input type='radio' name='h-domestic' value='No' checked> International </td>"                
+        "<tr>" SKIP.
+        
+                 
+IF v-prof = YES THEN 
+   {&OUT}        
+		"    <td> Professional </td><td><input type='checkbox'  name='h-prof' value=YES checked></td>" SKIP.
+ELSE         
+   {&OUT}        
+        "    <td> Professional </td><td><input type='checkbox'  name='h-prof' value=NO></td>" SKIP.
+
+{&OUT}
+	"</tr>" SKIP
+	"<tr>" SKIP
+	"    <td> Quantity </td><td class='req'><input type='number' name='h-qty' value='" v-qty "' min='1'></td>" SKIP
+	"</tr>" SKIP
+	"</tr></TABLE>".                                                  
+                                                                /* end of table */               
+{&OUT}       
+    "</div>
+    
+    <br>    
+<center>
+<table>
+    <tr>
+        <td>            
+                <input type='hidden' name='h-act' value=99>" SKIP
+            "<button type='submit' name='submit' value='submit'>Create</button></td>
+</form>" SKIP
+"<form>
+        <td>
+                <input type='hidden' name='h-act' value=0>" SKIP 
+            "<button type='submit' name='submit' value='submit'>Reset</button></td>" SKIP
+    "</tr>
+</table></center>
+                               
+</form>" SKIP.
+
+END. /***  of act = 0  ***/
+	    
+IF v-act = 1 THEN DO:
+    
+        /*** IF MPA test is selected ***/   
+    IF v-testtype = "MAP" THEN DO:      /*** change before Production ***/
+            
+        ASSIGN v-prefix = "M".
+        
+        IF v-domestic = YES THEN 
+            ASSIGN v-prefix = v-prefix + "D".
+        ELSE 
+            ASSIGN v-prefix = v-prefix + "I".
+        
+        IF v-prof = YES THEN
+            ASSIGN v-prefix = v-prefix + "P".
+            
+    END. /* MPA code string */
+    
+    ELSE 
+        v-prefix   = CAPS(v-testtype).
+
+    {&OUT} 
+        "<h2 align=center> Are you sure you want to create " v-qty " " v-prefix " test kits? </h2> 
+    <table align=center>
+        <tr>
+            <td>
+                <form method='post'>" SKIP 
+            "        <input type='hidden' name='h-act'       value=2 />"                SKIP 
+            "        <input type='hidden' name='h-type'      value='" v-testtype "' />" SKIP
+            "        <input type='hidden' name='h-domestic'  value='" v-domestic "' />" SKIP
+            "        <input type='hidden' name='h-prof'      value='" v-prof "' />"     SKIP
+            "        <input type='hidden' name='h-qty'       value='" v-qty "' />"      SKIP
+            "        <input type='hidden' name='h-prefix'    value='" v-prefix "' />"   SKIP
+            "        <input type='hidden' name='h-testID'    value='" v-testID "' />"   SKIP 
+            "        <input type='hidden' name='h-test_seq'  value='" v-test_seq "'/>"  SKIP                                               
+            "        <button type='submit'   name='submit' value='submit'>Yes, continue</button>"                                                               
+            "    </form>" SKIP
+            "</td>" SKIP
+            "<td>" SKIP
+            "    <form method='post' >" SKIP
+            "       <input type='hidden' name='h-act'       value=0 />"                 SKIP
+            "       <input type='hidden' name='h-type'      value='" v-testtype "' />"   SKIP
+            "       <input type='hidden' name='h-domestic'  value='" v-domestic "' />"   SKIP
+            "       <input type='hidden' name='h-prof'      value='" v-prof "' />"       SKIP
+            "       <input type='hidden' name='h-qty'       value='" v-qty "' />"        SKIP
+            "       <input type='hidden' name='h-prefix'    value='" v-prefix "' />"    SKIP
+            "       <input type='hidden' name='h-testID'    value='" v-testID "' />"    SKIP
+            "       <input type='hidden' name='h-test_seq'  value='" v-test_seq "'/>"    SKIP                                                                     
+            "       <button type='submit' name='submit' value='submit'>Try Again</button>                        
+                </form>
+            </td>
+        </tr>
+    </table>".      
+
+
+END. /*************************** end of act 1 (submit message)***********************************/ 
+
+IF v-act = 2 THEN DO:
+    
+    DEFINE STREAM barcode.
+      
+    OUTPUT STREAM barcode TO C:\progress\wrk\test_barcode.txt.
+
+    DO v-amount = 1 TO v-qty:
+          RUN VALUE(SEARCH("SUBtkmstrRSTPucU.r"))  	           /* 1dot2 */         
+/*        RUN "../depot/rcode/SUBtkmstrRSTPucU.r"*/
+            (v-testID,
+             v-testtype, 
+             v-prof, 
+             v-test_seq,
+             v-domestic, 
+             v-custID, 
+             v-patientID, 
+             v-labsampleID, 
+             v-lab_seq, 
+             v-testage, 
+             v-labID,
+             v-teststatus,          /* created */
+             v-comments, 
+             v-notes, 
+             ?,
+             ?,
+             ?,
+             "",                    /* i-uctkm-mage_order */    /* 1dot1 */
+             ?,                     /* i-uctkm-cust_pd_date */  /* 1dot1 */
+             
+             OUTPUT v-testID2, 
+             OUTPUT v-create, 
+             OUTPUT v-update, 
+             OUTPUT v-avail, 
+             OUTPUT v-successful ). 
+                          
+/*        IF v-showmsg = YES THEN                                                     */
+/*          {&OUT} "<P> Just After SUBtkmstrRSTPucU v-successful = " v-successful "</p>".*/
+/*                                                                                    */
+        IF v-successful = YES THEN DO:  
+            
+            IF v-showmsg = YES THEN
+            {&OUT}
+            "<table><tr><td>" v-testID2 "</td><td>" v-test_seq "</td></tr></table>".
+                                  
+	        FIND TK_mstr WHERE
+	        TK_mstr.TK_ID = v-testID2 AND 
+	        TK_mstr.TK_test_seq = v-test_seq
+	        EXCLUSIVE-LOCK NO-ERROR. 
+	        
+	        IF AVAILABLE (TK_mstr) THEN DO:
+	
+																        IF v-showmsg = YES THEN 
+																            {&OUT} "<P>Inside Find TK_mstr.TK_ID = " TK_mstr.TK_ID " </p>".
+	        
+		        PUT STREAM barcode UNFORMATTED TK_mstr.TK_ID.
+		            
+		        IF v-amount < v-qty THEN PUT STREAM barcode UNFORMATTED ",".
+		        
+		        IF v-amount = v-qty THEN PUT STREAM barcode UNFORMATTED "". 
+		
+			    RUN VALUE(SEARCH("SUBtrh-findR.r"))                                 /* 1dot2 */
+	                (TK_mstr.tk_test_type,                                          /* 1dot2 */
+	                 TK_mstr.TK_status,                                             /* 1dot2 */
+	                 TK_mstr.TK_ID,                                                 /* 1dot2 */
+	                 TK_mstr.TK_test_seq,                                           /* 1dot2 */
+	                 OUTPUT v-trhid,                                                /* 1dot2 */
+	                 OUTPUT v-trhfound).                                            /* 1dot2 */
+		
+		        RUN VALUE(SEARCH("SUBtrh-ucU.r"))                                   /* 1dot2 - corrected run statememt */
+                    (v-trhid,                                                       /* 1dot2 */  
+                    TK_mstr.TK_test_type,
+                    "LAB_RCVD",
+                    1,
+                    "",
+                    "",
+                    TK_mstr.tk_ID,
+                    "",
+                    TK_mstr.TK_test_seq,
+                    
+                 /* 1dot1 --> */     
+	                 "",                            /*i-ctrh-comments*/
+	                 TK_mstr.TK_magento_order,      /*i-ctrh-other   */
+	                 TK_mstr.Tk_cust_id,            /*i-ctrh-people  */
+                     STRING("WO-" + STRING(YEAR(TODAY))  
+                            + "-" + STRING(MONTH(TODAY))
+                            + "-" + STRING(DAY(TODAY))), /*i-ctrh-order   */
+	                 TODAY,                         /*i-ctrh-date    */
+	                 STRING(TIME,"HH:MM:SS"),       /*i-ctrh-time    */
+	                 (TK_mstr.TK_lab_sample_ID + " / " + STRING(TK_mstr.TK_lab_seq)),      /*i-ctrh-ref     */
+	             /* <-- 1dot1 */    
+	                   "", /* warehouse */        
+                    OUTPUT X,
+                    OUTPUT v-error). 
+		                    
+	            IF v-showmsg = YES THEN 
+	                {&OUT} "<p> trh_hist.trh_ID = " x "</p>".
+	                
+            END. /*** OF if avail tk_mstr ***/
+            
+            ELSE 
+            {&OUT}
+                "<center><h1>An Error happened while creating the Test Kits</h1></center>".
+    
+        END. /** if v-successful = yes the DO: **/
+         
+    END.
+           
+        {&OUT} 
+            "<h2 align=center> Tests have been submitted. Click OK to start the next order.</h2>"  SKIP  
+            "<form>" SKIP            
+            "    <center>" SKIP 
+            "       <input type='hidden' name='h-act' value=0 />" SKIP                                                        
+            "       <button type='submit' name='submit' value='submit'>OK</button>" SKIP
+            "    </center>" SKIP
+            "</form>".        
+    
+    OUTPUT STREAM barcode CLOSE.
+                    
+ END. /************************** end of act 2 (complete and back to main form) ********************/
+       
+{&OUT} 
+    "</table></div>".
+        
+   
+</SCRIPT>
+</BODY>
+</HTML>

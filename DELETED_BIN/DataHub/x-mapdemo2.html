@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+	<META NAME="AUTHOR" CONTENT="Doug Luttrell">
+	<META NAME="VERSION" CONTENT="0.1">
+	<META NAME="COPYRIGHT" CONTENT="Solsource">
+	<META NAME="CREATE_DATE" CONTENT="28/Aug/14">
+	<LINK rel='stylesheet' type='text/css' href='../../depot/src/HTMLContent/stylesheets/core.css' />
+	<LINK rel='stylesheet' type='text/css' href='../../depot/src/HTMLContent/stylesheets/table.css' />
+	<LINK rel='stylesheet' type='text/css' href='../../depot/src/HTMLContent/stylesheets/quinton2.css' />
+	<TITLE>MAP Reconstruction Demo 1</TITLE>
+	
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+DEFINE VARIABLE testkit LIKE TK_mstr.TK_ID INITIAL "MAP-19000" NO-UNDO.
+DEFINE VARIABLE tkseq LIKE TK_mstr.TK_test_seq INITIAL 1 NO-UNDO.
+DEFINE VARIABLE startdate AS DATE NO-UNDO.
+DEFINE VARIABLE enddate AS DATE NO-UNDO.
+
+{&OUT}
+        "<div class='table_report'>" SKIP
+        "   <table>"    SKIP
+        "       <thead>"    SKIP
+        "           <tr>"   SKIP
+        "               <td colspan=6>MAP Demo 2</td>" SKIP
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <th>Marker</th>"  SKIP
+        "               <th>Lab Result</th>"SKIP
+        "               <th>Reference Range</th>" SKIP
+        "               <th>Section</th>"   SKIP
+        "               <th>Line Order</th>"   SKIP
+        "               <th>Percentage Bar</TH>" skip 
+        "           </tr>"  SKIP
+        "       </thead>"   SKIP.
+        
+FOR EACH TK_mstr WHERE TK_mstr.TK_ID = testkit AND 
+        TK_mstr.TK_test_seq = tkseq NO-LOCK,
+    EACH TKR_det WHERE TKR_det.TKR_ID = TK_mstr.TK_ID AND 
+        TKR_det.TKR_test_seq = TK_mstr.TK_test_seq NO-LOCK,
+    EACH tl_mstr WHERE tl_mstr.tl_testtype = TK_mstr.TK_testtype AND 
+        (tl_mstr.tl_start_eff <= startdate OR startdate = ?) AND 
+        (tl_mstr.tl_end_eff >= enddate OR enddate = ?) NO-LOCK,
+    EACH tld_det WHERE tld_det.tld_id = tl_mstr.tl_id AND 
+        tld_det.tld_item = TKR_det.TKR_item AND 
+        (tld_det.tld_start_eff <= startdate OR startdate = ?) AND 
+        (tld_det.tld_end_eff >= enddate OR enddate = ?) NO-LOCK 
+    BREAK BY tl_mstr.tl_order BY tld_det.tld_order: 
+        
+    IF FIRST-OF (tl_mstr.tl_order) THEN DO:
+        
+        {&OUT}           
+            "<div class='table_report'>" SKIP
+            "   <table>"   SKIP
+            "       <tr>"   SKIP
+	        "          <th colspan=5>" tl_mstr.tl_section_desc "</th>" SKIP
+	        "       </tr>"  SKIP
+	        "       <tr>"   SKIP
+	        "          <th>Marker</th>"  SKIP
+	        "          <th>Lab Result</th>"SKIP
+	        "          <th>Reference Range</th>" SKIP
+	        "          <th>Section</th>"   SKIP
+	        "          <th>Line Order</th>"   SKIP
+	        "          <TH>Percentage Bar</TH>" SKIP 
+	        "       </tr>"  SKIP.
+        
+    END.  /** of first-of tl_order **/
+    
+    {&OUT} 
+        "<TR>" SKIP
+        "   <TD>" TKR_det.TKR_item "</TD>" SKIP 
+        "   <TD>" TKR_det.TKR_lab_resval "</TD>" SKIP 
+        "   <TD>" TKR_det.TKR_lab_ref "</TD>" SKIP 
+        "   <TD>" tl_mstr.tl_order "</TD>" SKIP 
+        "   <TD>" tld_det.tld_order "</TD>" SKIP
+        "   <td class='leftToRightBar'><div id='bar-" tl_mstr.tl_order "-" tld_det.tld_order 
+        "'><div class='slider-bar'><div class='slider-slider' style='width: " TKR_det.TKR_lab_resval "%;'>"
+        "<div class='slider-toggle'></div></div></div></div></td>" SKIP                 
+        "</TR>" SKIP. 
+        
+    IF LAST-OF (tl_mstr.tl_order) THEN 
+        {&OUT}
+            "</TABLE>" skip 
+            "</DIV>" skip.    
+    
+    
+END.    /** of 4ea. tk_mstr, etc. **/
+
+{&OUT}
+    "<TR>" skip 
+    "   <TD colspan=5>End of Report</TD>" skip 
+    "</TR>" skip.
+    
+</SCRIPT>
+</BODY>
+</HTML>

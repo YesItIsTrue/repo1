@@ -1,0 +1,153 @@
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DDIV HTML//EN">
+<HTML>
+<HEAD> 
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<TITLE>Inventory Receipt (version 2)</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="28/Nov/2016">
+    <META NAME='LAST_UPDATED' CONTENT="28/Nov/2016">  
+    <link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" href="http://www.w3schools.com/lib/w3-theme-light-green.css">
+
+<!--  <style>
+
+.w3-theme-l5 {color:#000 !important; background-color:#eff8fe !important}
+.w3-theme-l4 {color:#000 !important; background-color:#cae8fd !important}
+.w3-theme-l3 {color:#000 !important; background-color:#95d0fb !important}
+.w3-theme-l2 {color:#000 !important; background-color:#60b9f8 !important}
+.w3-theme-l1 {color:#fff !important; background-color:#2ba2f6 !important}
+.w3-theme-d1 {color:#fff !important; background-color:#087acb !important}
+.w3-theme-d2 {color:#fff !important; background-color:#086cb4 !important}
+.w3-theme-d3 {color:#fff !important; background-color:#075f9e !important}
+.w3-theme-d4 {color:#fff !important; background-color:#065187 !important}
+.w3-theme-d5 {color:#fff !important; background-color:#054471 !important}
+
+.w3-theme-light {color:#000 !important; background-color:#eff8fe !important}
+.w3-theme-dark {color:#fff !important; background-color:#054471 !important}
+.w3-theme-action {color:#fff !important; background-color:#054471 !important}
+
+.w3-theme {color:#fff !important; background-color:#0987e0 !important}
+.w3-text-theme {color:#0987e0 !important}
+.w3-border-theme {border-color:#0987e0 !important}
+
+.w3-hover-theme:hover {color:#fff !important; background-color:#0987e0 !important}
+.w3-hover-text-theme {color:#0987e0 !important}
+.w3-hover-border-theme:hover {border-color:#0987e0 !important}
+
+</style>
+ -->
+<style>
+
+.w3-yellow,.w3-hover-yellow:hover{color:#000!important;background-color:#FFEF6C!important}
+
+</style>
+
+</HEAD>
+
+<BODY class='w3-light-grey'>
+        <form>
+           <input type='hidden' name='h-site' value='279 Walkers Mills'/>
+           <input type='hidden' name='h-warehouse' value='Shipping'/>
+           <INPUT type='hidden' name='whattorun' value='' />             
+            
+            <DIV class='w3-row-padding w3-container w3-theme-dark w3-margin-bottom'><h2 class=''>Mobile Inventory Receipt</h2></TH></div>
+
+            <div class='w3-card-4 w3-content w3-white' style='max-width:1700px;'>
+                
+                <div class='w3-row-padding'>  
+                    <DIV class='w3-col l6  w3-margin-top'>
+                        <label class='w3-text-theme'><b>Site</b></label>
+                        <input class='w3-input w3-border w3-round' type='text' placeholder='279 Walkers Mills' disabled></input>
+                    </DIV>
+                    <DIV class='w3-col l6  w3-margin-top'>
+                        <label class='w3-text-theme'><b>Warehouse</b></label>
+                        <input class='w3-input w3-border w3-round' type='text' placeholder='Shipping' disabled></input>
+                    </DIV>
+                </div>      
+                
+                <div class='w3-row-padding'>      
+                    <DIV class='w3-col l6'>
+                        <label class='w3-text-theme'><b>Location</b></label>
+                        <select name='h-loc' class='w3-border w3-round w3-select w3-yellow' required>
+                            <option value'.TEST'>.TEST</option>
+                            <option value'A.1'>A.1</option>
+                            <option value'A.2'>A.2</option>
+                            <option value'A.3'>A.3</option>
+                            <option value'A.4'>A.4</option>
+                            <option value'A.5'>A.5</option>
+                            <option value'B.1'>B.1</option>
+                            <option value'B.2'>B.2</option>
+                            <option value'B.3'>B.3</option>
+                            <option value'B.4'>B.4</option>
+                            <option value'B.5'>B.5</option>
+                            <option value'C.1'>C.1</option>
+                            <option value'C.2'>C.2</option>
+                            <option value'C.3'>C.3</option>
+                            <option value'C.4'>C.4</option>
+                            <option value'C.5'>C.5</option>
+                            <option value'C.6'>C.6</option>
+                            <option value'C.7'>C.7</option>
+                            <option value'Z.1'>Z.1</option>
+                            <option value'Z.2'>Z.2</option>
+                            <option value'Z.3'>Z.3</option>
+                            <option value'Z.4'>Z.4</option>
+                            <option value'Z.5'>Z.5</option>
+                            <option value'Z.6'>Z.6</option>
+                            <option value'Z.7'>Z.7</option>
+                            <option value'Z.8'>Z.8</option>
+                            <option value'Z.9'>Z.9</option>
+                        </select>
+                    </div>
+                    <DIV class='w3-col l6'>
+                        <label class='w3-text-theme'><b>Item Number</b></label>
+                        <INPUT class='w3-input w3-yellow w3-border w3-round' type='TEXT' name='h-item_nbr' value='' required ></input>
+                    </div>
+                </DIV>
+            
+            <div class='w3-row-padding'>
+                <DIV class='w3-col l6'>
+                    <label class='w3-text-theme'><b>Quantity</b></label>
+                    <INPUT class='w3-input w3-yellow w3-border w3-round' type='NUMBER' name='h-quantity' value='0' required min='1'/>
+                </div>
+                <DIV class='w3-col l6'>
+                    <label class='w3-text-theme w3-col l6'><b>Lot Number</b></label>
+                    <INPUT class='w3-input w3-border w3-round' type='TEXT' name='h-lot' value='' />
+                </DIV>
+            </div>
+            
+            <div class='w3-row-padding'>
+                <DIV class='w3-col l6'>
+                    <label class='w3-text-theme'><b>Expiration Date</b></label>
+                    <INPUT class='w3-input w3-border w3-round' type='DATE' name='h-expire_date' value='?' />
+                </DIV>
+                <DIV class='w3-col l6'>
+                    <label class='w3-text-theme'><b>Serial</b></label>
+                    <INPUT class='w3-input w3-border w3-round' type='TEXT' name='h-serial' value='' />
+                </DIV>
+            </div>
+                
+            <div class='w3-row-padding '>
+                <DIV class='w3-col l6'>
+                    <label class='w3-text-theme'><b>PO Number</b></label>
+                    <INPUT class='w3-input w3-border w3-round' type='TEXT' name='h-po_nbr' value='' />
+                </DIV>
+                <DIV class='w3-col l6'>
+                    <DIV class='w3-text-theme'><b>Notes</b></DIV>
+                    <textarea class='w3-input w3-border w3-round w3-margin-bottom' name='h-notes' value=''></textarea>
+                </div>
+            </div>    
+        
+    </DIV>         <!-- end of grid_10-->
+    <DIV class=''></DIV>
+    </DIV>     <!-- end of row -->
+    <br></br>
+    <div class='w3-row-padding'>
+       <div class='w3-center w3-col s12'>
+        <button type='submit' name='h-act' value='Validation' class='w3-btn w3-ripple w3-theme-l2 w3-round-large w3-margin'><b>Submit</b></BUTTON>
+        <button type='submit' name='h-act' value='site' class='w3-btn w3-ripple w3-theme-l2 w3-round-large w3-margin'><b>Search Again</b></BUTTON>
+       </div>
+    </div>
+    </form>
+    </BODY>

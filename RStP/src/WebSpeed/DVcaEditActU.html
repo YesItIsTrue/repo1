@@ -1,0 +1,1251 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+ 
+    <TITLE>Catch All Table Maintenance</TITLE>
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <META NAME="VERSION" CONTENT="3.6">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="23/Feb/16">
+    <META NAME="LAST_UPDATED" CONTENT="15/Apr/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+/************************  Variable Definitions  *********************/
+DEFINE VARIABLE v-itmessages    AS LOGICAL INITIAL NO               NO-UNDO.  /*** debugging yes/no ****/
+DEFINE VARIABLE v-act           AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-treeflag      AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-TK_ID         LIKE TK_mstr.TK_ID                  NO-UNDO.
+DEFINE VARIABLE v-TK_test_seq   LIKE TK_mstr.TK_test_seq INITIAL 0  NO-UNDO.
+DEFINE VARIABLE v-test_type     LIKE TK_mstr.tk_test_type           NO-UNDO.
+DEFINE VARIABLE v-lab_sample_id LIKE TK_mstr.TK_lab_sample_ID       NO-UNDO.
+DEFINE VARIABLE v-lab_seq       AS INTEGER INITIAL 0                NO-UNDO.
+DEFINE VARIABLE v-firstname     LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE v-lastname      LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE vfrom-firstname LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE vfrom-lastname  LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE vto-firstname   LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE vto-lastname    LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-html-dob      AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-dob           LIKE people_mstr.people_DOB         NO-UNDO.
+DEFINE VARIABLE ip-checked-recid AS CHARACTER                       NO-UNDO.  /*** This is sometimes an integer and sometimes a comma delimited list of integers, thus a character ***/
+DEFINE VARIABLE c-deleted       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE c-created       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE c-updated       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE x               AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE v-catch_ID      LIKE catch_all.catch_id         NO-UNDO.
+DEFINE VARIABLE v-error-number  LIKE catch_all.catch_orig_error NO-UNDO.
+/*DEFINE VARIABLE v-people_ID     LIKE people_mstr.people_id          NO-UNDO.*/
+DEFINE VARIABLE v-addr_ID       LIKE people_mstr.people_addr_id     NO-UNDO.
+DEFINE VARIABLE TKisCrap        AS LOGICAL INITIAL NO NO-UNDO. /**** logical flag to catch tk_mstr error messages ***/
+DEFINE VARIABLE PeopleIsCrap    AS LOGICAL INITIAL NO NO-UNDO. /**** logical flag to catch people error messages  ***/
+DEFINE VARIABLE updateanyways   AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-TK_ID-holder  AS CHARACTER NO-UNDO.
+/*** external people find/updated ***/
+DEFINE VARIABLE i-ucpeople-id        LIKE people_mstr.people_id          NO-UNDO.
+DEFINE VARIABLE i-ucpeople-firstname LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE i-ucpeople-midname   LIKE people_mstr.people_midname     NO-UNDO.
+DEFINE VARIABLE i-ucpeople-lastname  LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE i-ucpeople-prefix    LIKE people_mstr.people_prefix      NO-UNDO.
+DEFINE VARIABLE i-ucpeople-suffix    LIKE people_mstr.people_suffix      NO-UNDO.
+DEFINE VARIABLE i-ucpeople-company   LIKE people_mstr.people_company     NO-UNDO.
+DEFINE VARIABLE i-ucpeople-gender    LIKE people_mstr.people_gender      NO-UNDO.
+DEFINE VARIABLE i-ucpeople-homephone LIKE people_mstr.people_homephone   NO-UNDO.
+DEFINE VARIABLE i-ucpeople-workphone LIKE people_mstr.people_workphone   NO-UNDO.
+DEFINE VARIABLE i-ucpeople-cellphone LIKE people_mstr.people_cellphone   NO-UNDO.
+DEFINE VARIABLE i-ucpeople-fax       LIKE people_mstr.people_fax         NO-UNDO.
+DEFINE VARIABLE i-ucpeople-email     LIKE people_mstr.people_email       NO-UNDO.
+DEFINE VARIABLE i-ucpeople-email2    LIKE people_mstr.people_email2      NO-UNDO.
+DEFINE VARIABLE i-ucpeople-addr_id   LIKE people_mstr.people_addr_id     NO-UNDO.
+DEFINE VARIABLE i-ucpeople-contact   LIKE people_mstr.people_contact     NO-UNDO.
+DEFINE VARIABLE i-ucpeople-DOB       LIKE people_mstr.people_DOB         NO-UNDO.
+DEFINE VARIABLE i-ucpeople-second_addr_ID LIKE people_mstr.people_second_addr_ID NO-UNDO.
+DEFINE VARIABLE i-ucpeople-prefname  LIKE people_mstr.people_prefname    NO-UNDO.
+DEFINE VARIABLE v-peop-find-error AS LOGICAL                        NO-UNDO.
+DEFINE VARIABLE v-peop-find-ran AS LOGICAL                          NO-UNDO. 
+DEFINE VARIABLE v-peop-created  AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE v-peop-updated  AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE v-peop-avail    AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE v-peop-success  AS LOGICAL                          NO-UNDO. 
+/*** external TK_mstr ***/                        
+DEFINE VARIABLE o-uctkm-id          LIKE TK_mstr.TK_id              NO-UNDO.
+DEFINE VARIABLE o-uctkm-create      AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-uctkm-update      AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-uctkm-avail       AS LOGICAL INITIAL YES          NO-UNDO.
+DEFINE VARIABLE o-uctkm-successful  AS LOGICAL INITIAL NO           NO-UNDO.
+
+DEFINE VARIABLE whatshouldrun AS CHARACTER NO-UNDO.
+DEFINE VARIABLE fileloc-4ea-holder AS CHARACTER NO-UNDO.
+                    DEFINE VARIABLE v-pat-exists AS LOGICAL NO-UNDO.
+
+
+/*** TRH include stuff ***/
+DEFINE VARIABLE v-error AS LOGICAL NO-UNDO.
+DEFINE VARIABLE err-number AS INTEGER NO-UNDO.
+DEFINE VARIABLE err-message AS CHARACTER NO-UNDO.
+DEFINE VARIABLE iAMpatient AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE v-create-date AS DATE NO-UNDO.
+DEFINE VARIABLE v-mod-date AS DATE NO-UNDO.  
+DEFINE VARIABLE v-TKstat AS CHARACTER NO-UNDO. 
+DEFINE VARIABLE lazydate AS DATE NO-UNDO. 
+DEFINE VARIABLE v-trhid AS INTEGER NO-UNDO. 
+DEFINE VARIABLE v-trhfound AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-trhid-new AS LOGICAL NO-UNDO.
+DEFINE VARIABLE statlist AS CHARACTER 
+    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,COMPLETE,PAID_BY_CUST,VEND_PAID,DELETED,VOID" NO-UNDO.
+    
+/***************************  Other Assignments  ***************************/
+
+ASSIGN 
+    v-act               = get-value("h-act")
+    v-TK_ID             = get-value("h-TK_ID")
+    v-TK_test_seq       = INTEGER(get-value("h-TK_seq"))
+    v-test_type          = get-value("h-test_type")
+    v-lab_sample_id     = get-value("h-lab-sample-id")     
+    v-lab_seq           = INTEGER(get-value("h-lab-seq"))
+    v-firstname         = get-value("h-firstname")
+    vfrom-firstname     = get-value("hfrom-firstname")
+    vto-firstname       = get-value("hto-firstname")
+    v-lastname          = get-value("h-lastname")
+    vfrom-lastname      = get-value("hfrom-lastname")
+    vto-lastname        = get-value("hto-lastname")
+    v-html-dob          = get-value("h-dob")
+    ip-checked-recid    = get-value ("h-checked")
+    v-catch_ID          = INTEGER(get-value ("h-catch_ID"))
+    v-error-number      = INTEGER(get-value ("h-error-number"))
+    whatshouldrun       = get-value('whattorun')
+    . 
+    
+IF v-html-dob <> "" THEN DO:
+/*    {&OUT}                         */
+/*    "Pre-RUN" SKIP                 */
+/*    "v-html-dob = " v-html-dob SKIP*/
+/*    " v-dob = "  v-dob SKIP.       */
+/*                                   */
+/*    RUN VALUE(SEARCH("subr_CCYY_to_YY.p")) (v-html-dob, OUTPUT v-dob). /*for the server*/*/
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (v-html-dob, OUTPUT v-dob).
+/*{&OUT}                             */
+/*    "Post-RUN" SKIP                */
+/*    "v-html-dob = " v-html-dob SKIP*/
+/*    " v-dob = "  v-dob SKIP.       */
+END. /*** <> "" DOB **/  
+
+IF vfrom-firstname  = "" THEN ASSIGN vfrom-firstname    = v-firstname.
+IF vto-firstname    = "" THEN ASSIGN vto-firstname      = v-firstname.
+IF vfrom-lastname   = "" THEN ASSIGN vfrom-lastname     = v-lastname.
+IF vto-lastname     = "" THEN ASSIGN vto-lastname       = v-lastname.
+
+/******************************  Main Program  **********************************/
+
+IF v-act = "EmptyPage" THEN {&OUT}
+    "<form name='editid' id='editid'>"                                                  SKIP
+    "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                  SKIP
+    "<DIV class='row'>"                                                                 SKIP
+    "<DIV class='grid_12'>"                                                             SKIP
+    "   <center>"                                                                       SKIP
+    "       <h1> Please Select a Patient Name above to edit that record. </h1>"         SKIP   
+    "   </center>"                                                                      SKIP
+    "</DIV> <!-- of gird_12 -->"                                                        SKIP
+    "</DIV> <!-- of row -->"                                                            SKIP
+    "<br>"                                                                              SKIP
+    "<div class='row'>"                                                                 SKIP
+    "<div class='grid_5'></div>"                                                        SKIP
+    "<div class='grid_2'>"                                                              SKIP
+    "   <BUTTON type='submit' formtarget='_parent' formaction='DVcaInitialPageR.html' name='h-act' value='Initial' class='btn'>New Search</BUTTON>" SKIP
+    "</div>"                                                                            SKIP
+    "<div class='grid_5'></div>"                                                        SKIP
+    "</div> <!-- of row -->"                                                            SKIP
+    "</form>"                                                                           SKIP
+    .
+    
+IF v-act = "MassDelete" THEN DO:
+
+    ASSIGN c-deleted = 0.
+
+    IF v-itmessages = YES THEN DO:
+    
+        {&OUT} "<br> IP-checked-recid = " ip-checked-recid "." SKIP
+            "c-deleted =" c-deleted ". <br>" SKIP.
+        
+    END. /*** of the IT message ***/
+
+    DO x = 1 TO NUM-ENTRIES(ip-checked-recid): 
+
+        FIND catch_all 
+            WHERE   RECID(catch_all)  =   INTEGER(ENTRY(x, ip-checked-recid))
+                EXCLUSIVE-LOCK NO-ERROR.
+       
+        IF AVAILABLE (catch_all) THEN DO:
+            
+            DELETE catch_all.                        
+
+            ASSIGN c-deleted = c-deleted + 1.
+                   
+        END.    /**  IF AVAILABLE (catch_all)  **/
+          
+    END.    /**  DO x = 1 TO NUM-ENTRIES(ip-checked-recid)  **/ 
+
+    {&OUT}
+        "<form>" SKIP
+        "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                          SKIP 
+        "<input type='hidden' name='h-firstname' value='" v-firstname "'>"                          SKIP
+        "<input type='hidden' name='h-lastname' value='" v-lastname "'>"                            SKIP
+        "<input type='hidden' name='h-dob' value='" v-DOB "'>"                                      SKIP
+        "<input type='hidden' name='h-TK_ID' value='" v-TK_ID "'>"                                  SKIP
+        "<input type='hidden' name='h-TK_seq' value='" v-TK_test_seq "'>"                           SKIP
+        "<input type='hidden' name='h-test_type' value='" v-test_type "'>"                          SKIP
+        "<input type='hidden' name='h-lab-sample-id' value='" v-lab_sample_id "'>"                  SKIP
+        "<input type='hidden' name='h-lab-seq' value='" v-lab_seq "'>"                              SKIP
+        "<input type='hidden' name='h-treeflag' value='" v-treeflag "'>"                            SKIP   
+        "<div class='row'>"                                                                         SKIP
+        "   <div class='grid_2'></div>" SKIP
+        "   <div class='grid_8'>" SKIP
+        "       <center><h2>You've just deleted " c-deleted " records from the Catch All table.</h2></center>" SKIP
+        "   </div> <!--- grid_8 --->" SKIP
+        "   <div class='grid_2'></div>" SKIP
+        "</div><!--- row --->" SKIP
+        "<BR>" SKIP    
+        "<div class='row'>"                                                                                         SKIP
+        "   <div class='grid_5'> </DIV>"                                                                            SKIP
+        "   <div class='grid_2'>" SKIP
+        "       <BUTTON type='submit' formtarget='listpage' onClick='parent.history.go(0)' class='btn'>Refresh Results</BUTTON>" SKIP
+        "   </div>" SKIP
+        "   <div class='grid_5'> </DIV>"    SKIP                                                                         SKIP
+        "</div>" SKIP       
+        "<BR>" SKIP           
+        "</form>"  SKIP.
+    
+END. /*** of v-act = MassDelete ***/
+
+IF v-act = "Edit" THEN DO: /**************************************************** EDIT ACT ******************************************/
+
+    IF v-itmessages = YES THEN   
+        {&OUT} 
+        "<br> Catch ID = " v-catch_id "<br>".
+
+    IF v-catch_ID = 0 THEN DO:
+        
+        {&OUT} 
+        "<form>" SKIP 
+        "<input type='hidden' name='whattorun' value='" whatshouldrun "'>" SKIP 
+        "<input type='hidden' name='h-firstname' value='" v-firstname "'>"                          SKIP
+        "<input type='hidden' name='h-lastname' value='" v-lastname "'>"                            SKIP
+        "<input type='hidden' name='h-dob' value='" v-DOB "'>"                                      SKIP
+        "<input type='hidden' name='h-TK_ID' value='" v-TK_ID "'>"                                  SKIP
+        "<input type='hidden' name='h-TK_seq' value='" v-TK_test_seq "'>"                           SKIP
+        "<input type='hidden' name='h-test_type' value='" v-test_type "'>"                            SKIP
+        "<input type='hidden' name='h-lab-sample-id' value='" v-lab_sample_id "'>"                  SKIP
+        "<input type='hidden' name='h-lab-seq' value='" v-lab_seq "'>"                              SKIP  
+        "<div class='row'>" SKIP
+        "   <div class='grid_2'></div>" SKIP
+        "   <div class='grid_8'>" SKIP
+        "       <center><h2>Sorry, there has been an error.</h2></center>" SKIP
+        "   </div> <!--- grid_8 --->" SKIP
+        "   <div class='grid_2'></div>" SKIP
+        "</div><!--- row --->" SKIP
+        "<BR>" SKIP           
+        "<div class='row'>"                                                                                         SKIP
+        "   <div class='grid_5'> </DIV>"                                                                            SKIP
+        "   <div class='grid_2'>" SKIP
+        "       <BUTTON type='submit' formtarget='listpage' onClick='parent.history.go(0)' class='btn'>Refresh Results</BUTTON>" SKIP
+        "   </div>" SKIP
+        "   <div class='grid_5'> </DIV>"    SKIP                                                                         SKIP
+        "</div>" SKIP 
+        "<BR>" SKIP           
+        "</form>"  SKIP.
+
+    END. /*** of catch_ID = 0 ***/
+
+    ELSE DO:
+
+        FIND catch_all WHERE 
+            catch_all.catch_id = v-catch_ID 
+            NO-LOCK NO-ERROR. 
+            
+        IF AVAILABLE (catch_all) THEN DO:
+
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (catch_all.catch_people_DOB, OUTPUT v-html-dob).
+        
+            {&OUT}
+            "<DIV class='row'>"                                                             SKIP
+            "<DIV class='grid_12'>"                                                          SKIP
+            "<FORM>"                                                                        SKIP
+            "<DIV class='table_2col'>"                                                       SKIP
+            "   <TABLE>"                                                                        SKIP
+            "       <TR>"                                                                           SKIP
+            "           <TH colspan=4>Editing</TH>"                                             SKIP
+            "       </TR>"                                                                                  SKIP
+            "       <TR>"                                                                                       SKIP 
+            "           <TD>First Name</TD>"                                                                        SKIP     
+            "           <TD><input type='text' name='h-firstname' value='" catch_all.catch_people_firstname "'/></TD>"  SKIP
+            "           <TD>Last Name</TD>"                                                                             SKIP        
+            "           <TD><input type='text' name='h-lastname' value='" catch_all.catch_people_lastname "'/></TD>"    SKIP
+            "       </TR>"                                                                                              SKIP       
+            "       <TR>"                                                                                               SKIP 
+            "           <TD>Date of Birth</TD>"                                                                         SKIP        
+            "           <TD colspan='3'><input type='date' name='h-dob' value='" v-html-dob "'/></TD>"  SKIP /**** dropped ****/
+            "       </TR>"                                                                                              SKIP
+            "       <TR>"                                                                                               SKIP 
+            "           <TD>Test Kit ID</TD>"                                                                           SKIP       
+            "           <TD><input type='text' name='h-TK_ID' value='" catch_all.catch_TK_ID "'/></TD>"                 SKIP
+            "           <TD>Test Kit Sequence</TD>"                                                                     SKIP       
+            "           <TD><input type='number' name='h-TK_seq' value='" catch_all.catch_TK_seq "'/></TD>"             SKIP
+            "       </TR>"                                                                                              SKIP
+            "       <TR>"                                                                                               SKIP 
+            "           <TD>Test Kit Type</TD>"                                                                     SKIP  
+            "               <td colspan='3'><select name='h-test_type'>" SKIP
+            "               <option Value='" catch_all.catch_TK_testtype "'>" catch_all.catch_TK_testtype "</option>" SKIP.
+            
+            FOR EACH test_mstr NO-LOCK:           
+               {&OUT} "                       <option Value='" test_mstr.test_type "'>" test_mstr.test_type "</option>" SKIP.
+            END. /*** test_mstr 4ea ***/
+           
+        {&OUT}
+            "                   </td>" SKIP
+            "       </TR>" 
+            "       <TR>"                                                                                               SKIP 
+            "           <TD>Lab Sample ID</TD>"                                                                         SKIP       
+            "           <TD><input type='text' name='h-lab-sample-id' value='" catch_all.catch_tk_lab_sample_id "'/></TD>"      SKIP
+            "           <TD>Lab Sequence</TD>"                                                                          SKIP       
+            "           <TD><input type='number' name='h-lab-seq' value='" catch_all.catch_TK_lab_seq "'/></TD>"        SKIP
+            "       </TR>"                                                                                              SKIP
+            "   </TABLE>"                                                                                               SKIP
+            "</DIV>       <!-- end of table_col -->"                                                                    SKIP         
+            "<BR>"                                                                                                      SKIP
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                                              SKIP
+            "<input type='hidden' name='h-catch_ID' value='" v-catch_ID "'>"                                                SKIP
+            "<input type='hidden' name='h-checked' value='" RECID(catch_all) "'>"                                           SKIP            
+            "</DIV>                                 <!-- end of grid_6 -->"                                                 SKIP                                                    
+            "</DIV>                                 <!-- end of row -->"                                                    SKIP
+            "<div class='row'>"                                                                                             SKIP
+            "   <div class='grid_1'> </DIV>"                                                                                SKIP
+            "   <div class='grid_2'> </DIV>"                                                                                SKIP
+            "   <div class='grid_2'> </DIV>"        SKIP 
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Update' class='btn'>Update</BUTTON></div>"    SKIP             
+/*            "   <div class='grid_2'> </DIV>"*/
+            "   <div class='grid_2'>" SKIP
+/*            "       <BUTTON type='submit' formtarget='listpage' onClick='parent.history.go(0)' class='btn'>Refresh Results</BUTTON>" SKIP*/
+            "   </div>" SKIP 
+            "   <div class='grid_2'> </DIV>"                                                                                SKIP
+            "   <div class='grid_1'> </DIV>"                                                                                SKIP
+            "</div>" SKIP
+            "<BR>"  SKIP
+            "</FORM>".
+
+        RELEASE catch_all.
+            
+        END. /*** catch_all available ***/
+        
+        ELSE DO:
+        
+            {&OUT} 
+            "<form>" SKIP 
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>" SKIP  
+            "<input type='hidden' name='h-firstname' value='" v-firstname "'>"                          SKIP
+            "<input type='hidden' name='h-lastname' value='" v-lastname "'>"                            SKIP
+            "<input type='hidden' name='h-dob' value='" v-DOB "'>"                                      SKIP
+            "<input type='hidden' name='h-TK_ID' value='" v-TK_ID "'>"                                  SKIP
+            "<input type='hidden' name='h-TK_seq' value='" v-TK_test_seq "'>"                           SKIP
+            "<input type='hidden' name='h-test_type' value='" v-test_type "'>"                            SKIP
+            "<input type='hidden' name='h-lab-sample-id' value='" v-lab_sample_id "'>"                  SKIP
+            "<input type='hidden' name='h-lab-seq' value='" v-lab_seq "'>"                              SKIP 
+            "<div class='row'>" SKIP
+            "   <div class='grid_2'></div>" SKIP
+            "   <div class='grid_8'>" SKIP
+            "       <center><h2>Sorry, there has been an error.</h2></center>" SKIP
+            "   </div> <!--- grid_8 --->" SKIP
+            "   <div class='grid_2'></div>" SKIP
+            "</div><!--- row --->" SKIP
+            "<BR>" SKIP           
+            "<div class='row'>"                                                                                         SKIP
+            "   <div class='grid_5'> </DIV>"                                                                            SKIP
+            "   <div class='grid_2'>" SKIP
+            "       <BUTTON type='submit' formtarget='listpage' onClick='parent.history.go(0)' class='btn'>Refresh Results</BUTTON>" SKIP
+            "   </div>" SKIP
+            "   <div class='grid_5'> </DIV>"    SKIP                                                                         SKIP
+            "</div>" SKIP                                                                                                         
+            "<BR>" SKIP           
+            "</form>"  SKIP.
+            
+        END. /*** catch_all NOT available ***/
+
+    END. /*** of v-catch_ID <> 0 ***/
+
+END. /*** of v-act = Edit ***/
+
+IF v-act = "Update" THEN DO:
+    
+    FIND catch_all WHERE 
+        catch_all.catch_id = v-catch_id
+        NO-LOCK NO-ERROR.
+        
+    IF AVAILABLE (catch_all) THEN DO:
+    
+        IF ip-checked-recid = "" THEN ASSIGN ip-checked-recid = STRING(RECID(catch_all)).
+    
+        ASSIGN fileloc-4ea-holder = catch_all.catch_file_location.
+
+        RELEASE catch_all.
+        
+        FOR EACH catch_all WHERE 
+            catch_all.catch_file_location = fileloc-4ea-holder 
+            EXCLUSIVE-LOCK:
+    
+            ASSIGN 
+                catch_all.catch_people_firstname    = IF v-firstname <> ""      THEN v-firstname        ELSE catch_all.catch_people_firstname
+                catch_all.catch_people_lastname     = IF v-lastname <> ""       THEN v-lastname         ELSE catch_all.catch_people_lastname
+                catch_all.catch_TK_ID               = IF v-TK_ID <> ""          THEN v-TK_ID            ELSE catch_all.catch_TK_ID
+                catch_all.catch_TK_seq              = IF v-TK_test_seq <> 0     THEN v-TK_test_seq      ELSE catch_all.catch_TK_seq
+                catch_all.catch_TK_testtype         = IF v-test_type <> ""      THEN v-test_type        ELSE catch_all.catch_TK_testtype
+                catch_all.catch_tk_lab_sample_id    = IF v-lab_sample_ID <> ""  THEN v-lab_sample_ID    ELSE catch_all.catch_tk_lab_sample_id  
+                catch_all.catch_people_DOB          = IF v-dob <> ?             THEN v-dob              ELSE catch_all.catch_people_DOB
+                v-act = "Submit".
+        
+        END. 
+
+        ASSIGN fileloc-4ea-holder = "".
+        
+    END. /*** available catch_all to update ***/
+    
+    ELSE DO:
+    
+    {&OUT} 
+        "<form>" SKIP
+        "<input type='hidden' name='whattorun' value='" whatshouldrun "'>" SKIP
+        "<input type='hidden' name='h-firstname' value='" v-firstname "'>"                          SKIP
+        "<input type='hidden' name='h-lastname' value='" v-lastname "'>"                            SKIP
+        "<input type='hidden' name='h-dob' value='" v-DOB "'>"                                      SKIP
+        "<input type='hidden' name='h-TK_ID' value='" v-TK_ID "'>"                                  SKIP
+        "<input type='hidden' name='h-TK_seq' value='" v-TK_test_seq "'>"                           SKIP
+        "<input type='hidden' name='h-test_type' value='" v-test_type "'>"                          SKIP
+        "<input type='hidden' name='h-lab-sample-id' value='" v-lab_sample_id "'>"                  SKIP
+        "<input type='hidden' name='h-lab-seq' value='" v-lab_seq "'>"                              SKIP   
+        "<div class='row'>" SKIP
+        "   <div class='grid_2'></div>" SKIP
+        "   <div class='grid_8'>" SKIP
+        "       <center><h2>Sorry, there has been an error updating the catch_all table.</h2></center>" SKIP
+        "   </div> <!--- grid_8 --->" SKIP
+        "   <div class='grid_2'></div>" SKIP
+        "</div><!--- row --->" SKIP
+        "<BR>" SKIP           
+        "<div class='row'>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "   <div class='grid_2'>" SKIP
+        "       <BUTTON type='submit' formtarget='listpage' onClick='parent.history.go(0)' class='btn'>Refresh Results</BUTTON>" SKIP
+        "   </div>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP 
+        "</div>" SKIP 
+        "<BR>" SKIP           
+        "</form>"  SKIP.
+        
+    END. /*** not available catch_all update ***/
+    
+END. /*** of v-act = Update ***/
+    
+IF v-act = "Submit" THEN DO:
+
+    IF ip-checked-recid = "" THEN DO:
+        
+        {&OUT} 
+            "<form>"                            SKIP 
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                          SKIP 
+            "<input type='hidden' name='h-firstname' value='" v-firstname "'>"                          SKIP
+            "<input type='hidden' name='h-lastname' value='" v-lastname "'>"                            SKIP
+            "<input type='hidden' name='h-dob' value='" v-DOB "'>"                                      SKIP
+            "<input type='hidden' name='h-TK_ID' value='" v-TK_ID "'>"                                  SKIP
+            "<input type='hidden' name='h-TK_seq' value='" v-TK_test_seq "'>"                           SKIP
+            "<input type='hidden' name='h-test_type' value='" v-test_type "'>"                          SKIP
+            "<input type='hidden' name='h-lab-sample-id' value='" v-lab_sample_id "'>"                  SKIP
+            "<input type='hidden' name='h-lab-seq' value='" v-lab_seq "'>"                              SKIP 
+            "<div class='row'>"                 SKIP
+            "   <div class='grid_2'></div>"     SKIP
+            "   <div class='grid_8'>"           SKIP
+            "       <center><h2>Sorry, there has been an error submiting this catch_all record for approval.</h2></center>" SKIP
+            "   </div> <!--- grid_8 --->"       SKIP
+            "   <div class='grid_2'></div>"     SKIP
+            "</div><!--- row --->"              SKIP
+            "<BR>"                              SKIP           
+            "<div class='row'>"                 SKIP
+            "   <div class='grid_5'> </DIV>"    SKIP
+            "   <div class='grid_2'>"           SKIP
+            "       <BUTTON type='submit' formtarget='listpage' onClick='parent.history.go(0)' class='btn'>Refresh Results</BUTTON>" SKIP
+            "   </div>"                         SKIP
+            "   <div class='grid_5'> </DIV>"    SKIP                                                                         
+            "</div>"                            SKIP 
+            "<BR>"                              SKIP           
+            "</form>"                           SKIP.    
+            
+    END.   
+
+    ELSE DO:
+
+        {&OUT}
+            "<DIV class='row'>"                                     SKIP
+            "<DIV class='grid_12'>"                                 SKIP
+            "<FORM>"                                                SKIP
+/*            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>" SKIP*/
+            "<DIV class='table_report'>"                            SKIP
+            "   <TABLE>"                                            SKIP
+            "       <thead>"                                        SKIP
+            "       <TR>"                                           SKIP
+            "           <TH colspan=7>Submission Review "  "</TH>"   SKIP
+            "       </TR>"                                          SKIP
+            "       <tr>"                                           SKIP
+            "           <td>Effect</td>"                            SKIP
+            "           <td>Table</td>"                             SKIP
+            "           <td>Name</td>"                              SKIP
+            "           <td>DOB</td>"                               SKIP
+            "           <td>Test Type </td>"                        SKIP
+            "           <td>Test Kit ID/ Seq</td>"                  SKIP
+            "           <td>Lab Sample ID/ Seq</td>"                SKIP
+            "       </tr>"                                          SKIP
+            "       </thead>"                                       SKIP.
+    
+        {&OUT}
+            "                                                                       <!-- This is an IT message I can leave in! -->" SKIP
+            "                                                                       <!-- the NUM-ENTRIES(ip-checked-recid) = " NUM-ENTRIES(ip-checked-recid) " --->" SKIP(1).   
+    
+        DO x = 1 TO NUM-ENTRIES(ip-checked-recid):  
+        
+            ASSIGN 
+                updateanyways = NO
+                PeopleIsCrap = NO
+                TKisCrap = NO.
+    
+            FIND catch_all
+                WHERE RECID(catch_all) = INTEGER(ENTRY(x, ip-checked-recid))
+                    EXCLUSIVE-LOCK NO-ERROR.
+           
+            IF AVAILABLE (catch_all) THEN DO:
+                
+                ASSIGN v-catch_id = catch_all.catch_id.
+                
+                IF catch_all.catch_TK_ID = "" THEN ASSIGN v-TK_ID-holder = "Unknown". ELSE ASSIGN v-TK_ID-holder = catch_all.catch_TK_ID.
+                
+                    RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (catch_all.catch_people_DOB, OUTPUT v-html-dob).
+/*                RUN VALUE(SEARCH("subr_YY_to_CCYY.p")) (catch_all.catch_people_DOB, OUTPUT v-html-dob). /* for the server */*/
+    
+                IF catch_all.catch_people_DOB = ? THEN DO:
+                
+                    PeopleIsCrap = YES.
+                
+                    {&OUT}   
+                        "       <TR>"                                                                                   SKIP
+                        "           <TD>Error - no DOB</TD>"                                                            SKIP
+                        "           <td>Catch All</td>"                                                                 SKIP                                                                                           
+                        "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                        "           <TD>" catch_all.catch_people_DOB "</TD>"                                                            SKIP           
+                        "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                        "           <td><a href=~"../../RStP/rcode/DVcaEditActU.html"                    
+                        "?h-checked=" RECID(catch_all)
+                        "&h-firstname=" catch_all.catch_people_firstname 
+                        "&h-lastname=" catch_all.catch_people_lastname
+                        "&h-dob=" catch_all.catch_people_DOB
+                        "&h-TK_ID=" catch_all.catch_TK_ID                                                           
+                        "&h-TK_test_seq=" catch_all.catch_tk_seq                                                    
+                        "&h-test_type=" catch_all.catch_TK_testtype
+                        "&h-lab-sample-id=" catch_all.catch_tk_lab_sample_id
+                        "&h-lab-seq=" catch_all.catch_TK_lab_seq
+                        "&h-catch_ID=" v-catch_ID
+                        "&whattorun=" whatshouldrun                                 
+                        "&h-act=EDIT~">" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"           SKIP  
+                        "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                        "       </TR>"                                                                                  SKIP.
+                
+                END. /*** of the DOB = ? ***/
+                
+                IF catch_all.catch_people_firstname = "" THEN DO:
+                
+                    PeopleIsCrap = YES.
+                
+                    {&OUT}   
+                        "       <TR>"                                                                                   SKIP
+                        "           <TD>Error - no first name</TD>"                                                     SKIP 
+                        "           <td>Catch All</td>"                                                                 SKIP                                                                                          
+                        "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                        "           <TD>" catch_all.catch_people_DOB  "</TD>"                                                            SKIP           
+                        "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                        "           <td><a href=~"../../RStP/rcode/DVcaEditActU.html"                    
+                        "?h-checked=" RECID(catch_all)
+                        "&h-firstname=" catch_all.catch_people_firstname 
+                        "&h-lastname=" catch_all.catch_people_lastname
+                        "&h-dob=" catch_all.catch_people_DOB
+                        "&h-TK_ID=" catch_all.catch_TK_ID                                                           
+                        "&h-TK_test_seq=" catch_all.catch_tk_seq                                                    
+                        "&h-test_type=" catch_all.catch_TK_testtype
+                        "&h-lab-sample-id=" catch_all.catch_tk_lab_sample_id
+                        "&h-lab-seq=" catch_all.catch_TK_lab_seq
+                        "&h-catch_ID=" v-catch_ID
+                        "&whattorun=" whatshouldrun  /* linking to itself in a different act */                                 
+                        "&h-act=EDIT~">" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"           SKIP   
+                        "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                        "       </TR>"                                                                                  SKIP.    
+     
+                END. /*** of no first name ***/
+                
+                IF catch_all.catch_people_lastname = "" THEN DO:
+                
+                    PeopleIsCrap = YES.
+                
+                    {&OUT}   
+                        "       <TR>" SKIP
+                        "           <TD>Error - no last name</TD>"                                                           SKIP
+                        "           <td>Catch All</td>" SKIP                                                                                           
+                        "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                        "           <TD>" catch_all.catch_people_DOB "</TD>"                                                            SKIP           
+                        "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                        "           <td><a href=~"../../RStP/rcode/DVcaEditActU.html"                    
+                        "?h-checked=" RECID(catch_all)
+                        "&h-firstname=" catch_all.catch_people_firstname 
+                        "&h-lastname=" catch_all.catch_people_lastname
+                        "&h-dob=" catch_all.catch_people_DOB
+                        "&h-TK_ID=" catch_all.catch_TK_ID                                                           
+                        "&h-TK_test_seq=" catch_all.catch_tk_seq                                                    
+                        "&h-test_type=" catch_all.catch_TK_testtype
+                        "&h-lab-sample-id=" catch_all.catch_tk_lab_sample_id
+                        "&h-lab-seq=" catch_all.catch_TK_lab_seq
+                        "&h-catch_ID=" v-catch_ID
+                        "&whattorun=" whatshouldrun  /* linking to itself in a different act */                                 
+                        "&h-act=EDIT~">" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"           SKIP   
+                        "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                        "       </TR>"                                                                                  SKIP.
+                    
+                END.    /*** of no last name ***/               
+                
+                IF PeopleIsCrap = NO THEN DO: /**** start of people mstr creation/update ****/
+                
+                    RUN VALUE(Search("SUBpat-findR.r")) 
+                        ("",    /** prefix **/
+                        catch_all.catch_people_firstname, 
+                        "",     /** Middle Name **/
+                        catch_all.catch_people_lastname, 
+                        "",     /** suffix **/
+                        catch_all.catch_people_DOB,
+                        OUTPUT catch_all.catch_people_ID, 
+                        OUTPUT v-addr_ID, 
+                        OUTPUT v-pat-exists,
+                        OUTPUT v-peop-find-ran,
+                        OUTPUT v-peop-find-error).
+                    
+                    {&OUT}
+                        "                                                                       <!-- Just after Initial Pat Find Run. --->" SKIP
+                        "                                                                       <!-- v-pat-exists = " v-pat-exists " --->" SKIP
+                        "                                                                       <!-- v-peop-find-ran = " v-peop-find-ran " --->" SKIP
+                        "                                                                       <!-- v-peop-find-error = " v-peop-find-error " --->" SKIP(1).
+                    
+                    IF v-pat-exists = YES THEN DO:
+                    
+                        ASSIGN catch_all.catch_patient = YES. 
+                    
+                        FIND people_mstr WHERE people_mstr.people_id = catch_all.catch_people_ID EXCLUSIVE-LOCK NO-ERROR.     
+                            
+                        IF AVAILABLE (people_mstr) THEN DO:
+                        
+                          /*  ASSIGN catch_all.catch_people_ID = people_mstr.people_id.*/
+                        
+                            IF  people_mstr.people_firstname = catch_all.catch_people_firstname AND 
+                                people_mstr.people_lastname = catch_all.catch_people_lastname AND 
+                                people_mstr.people_DOB = catch_all.catch_people_DOB THEN 
+                                {&OUT}   
+                                "       <TR>"                                                                                   SKIP
+                                "           <TD>Already Correct</TD>"                                                           SKIP 
+                                "           <td>Patient Master</td>"                                                            SKIP                                                                                          
+                                "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                                "           <TD>" catch_all.catch_people_DOB "</TD>"                                            SKIP           
+                                "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                                "           <td>" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"                       SKIP  
+                                "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                                "       </TR>"   SKIP.                             
+
+                            ELSE ASSIGN updateanyways = YES.
+                            
+                        END. /*** People_mstr available ***/
+                            
+                    END. /*** of patient exists ***/
+                    
+                     {&OUT}
+                        "                                                                       <!-- Just before people update/create path --->" SKIP
+                        "                                                                       <!-- v-pat-exists = " v-pat-exists " --->" SKIP
+                        "                                                                       <!-- updateanyways = " updateanyways " --->" SKIP(1).
+                    
+                    IF v-pat-exists = NO OR updateanyways = YES THEN DO:
+
+                        IF catch_all.catch_people_ID <> 0 THEN FIND people_mstr WHERE people_mstr.people_id = catch_all.catch_people_ID NO-LOCK.
+
+                        IF AVAILABLE (people_mstr) THEN ASSIGN 
+                            i-ucpeople-id        = people_mstr.people_id
+                            i-ucpeople-firstname = people_mstr.people_firstname
+                            i-ucpeople-midname   = people_mstr.people_midname  
+                            i-ucpeople-lastname  = people_mstr.people_lastname  
+                            i-ucpeople-prefix    = people_mstr.people_prefix 
+                            i-ucpeople-suffix    = people_mstr.people_suffix     
+                            i-ucpeople-company   = people_mstr.people_company   
+                            i-ucpeople-gender    = people_mstr.people_gender 
+                            i-ucpeople-homephone = people_mstr.people_homephone 
+                            i-ucpeople-workphone = people_mstr.people_workphone 
+                            i-ucpeople-cellphone = people_mstr.people_cellphone
+                            i-ucpeople-fax       = people_mstr.people_fax 
+                            i-ucpeople-email     = people_mstr.people_email    
+                            i-ucpeople-email2    = people_mstr.people_email2     
+                            i-ucpeople-addr_id   = people_mstr.people_addr_id    
+                            i-ucpeople-contact   = people_mstr.people_contact    
+                            i-ucpeople-DOB       = people_mstr.people_DOB      
+                            i-ucpeople-second_addr_ID = people_mstr.people_second_addr_ID
+                            i-ucpeople-prefname  = people_mstr.people_prefname. 
+
+                        {&OUT}
+                            "                                                                       <!-- Just Before People Upcreate --->" SKIP
+                            "                                                                       <!-- v-pat-exists = " v-pat-exists " --->" SKIP
+                            "                                                                       <!-- updateanyways = " updateanyways " --->" SKIP
+                            "                                                                       <!-- catch_all.catch_people_ID = " catch_all.catch_people_ID " -->" SKIP
+                            "                                                                       <!-- catch_all.catch_people_firstname = " catch_all.catch_people_firstname " -->" SKIP
+                            "                                                                       <!-- catch_all.catch_people_lastname = " catch_all.catch_people_lastname " -->" SKIP
+                            "                                                                       <!-- v-addr_ID = " v-addr_ID " -->" SKIP
+                            "                                                                       <!-- catch_all.catch_people_DOB = " catch_all.catch_people_DOB " -->" SKIP(1).                                   
+
+                        RUN VALUE(SEARCH("SUBpeop-ucU.r")) 
+                            (catch_all.catch_people_ID,
+                            catch_all.catch_people_firstname,
+                            i-ucpeople-midname, /** middle name **/
+                            catch_all.catch_people_lastname,
+                            i-ucpeople-prefix, /** prefix **/
+                            i-ucpeople-suffix, /** suffix **/
+                            i-ucpeople-company, /** company **/
+                            i-ucpeople-gender, /** gender **/
+                            i-ucpeople-homephone, /** homephone **/
+                            i-ucpeople-workphone, /** workphone **/ 
+                            i-ucpeople-cellphone, /** cell phone **/
+                            i-ucpeople-fax, /** fax **/
+                            i-ucpeople-email, /** email **/
+                            i-ucpeople-email2, /** email2 **/
+                            v-addr_ID,
+                            i-ucpeople-contact, /** contact **/
+                            catch_all.catch_people_DOB,
+                            i-ucpeople-second_addr_ID, /** second addr **/
+                            i-ucpeople-prefname,  
+                            "",                     /* title */
+                            OUTPUT catch_all.catch_people_ID,
+                            OUTPUT v-peop-created,
+                            OUTPUT v-peop-updated,
+                            OUTPUT v-peop-avail,
+                            OUTPUT v-peop-success).
+                        
+                        {&OUT}
+                            "                                                                       <!-- Just After People Upcreate --->" SKIP
+                            "                                                                       <!-- v-peop-success = " v-peop-success " --->" SKIP
+                            "                                                                       <!-- catch_all.catch_people_ID = " catch_all.catch_people_ID " --->" SKIP(1).
+                        
+                        IF v-peop-success = YES THEN DO:
+                            
+                            FIND people_mstr WHERE people_mstr.people_id = catch_all.catch_people_ID NO-LOCK NO-ERROR.
+                    
+                            IF AVAILABLE (people_mstr) THEN ASSIGN catch_all.catch_people_ID = people_mstr.people_id.
+                            
+                            FIND patient_mstr WHERE
+                                patient_mstr.patient_id       = catch_all.catch_people_ID AND
+                                patient_mstr.patient_deleted  = ?
+                                EXCLUSIVE-LOCK NO-ERROR.
+                            
+                            IF NOT AVAILABLE patient_mstr THEN DO:
+                                
+                                CREATE patient_mstr.
+                                
+                                ASSIGN
+                                    patient_mstr.patient_id             = catch_all.catch_people_ID
+                                    patient_mstr.patient_create_date    = TODAY
+                                    patient_mstr.patient_created_by     = USERID ("HHI")
+                                    patient_mstr.patient_modified_date  = TODAY
+                                    patient_mstr.patient_modified_by    = USERID ("HHI")
+                                    catch_all.catch_patient             = YES.
+
+                                {&OUT}   
+                                    "       <TR>"                                                                                   SKIP
+                                    "           <TD>Creation</TD>"                                                                  SKIP 
+                                    "           <td>Patient Master</td>"                                                            SKIP                                                                                          
+                                    "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                                    "           <TD>"  catch_all.catch_people_DOB "</TD>"                                           SKIP           
+                                    "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                                    "           <td>" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"                SKIP  
+                                    "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                                    "       </TR>"   SKIP.                             
+                            
+                            END. /*** of not avail patient_mstr: patient creation ***/
+                            
+                            IF v-peop-updated = YES THEN {&OUT}   
+                                "       <TR>"                                                                                   SKIP
+                                "           <TD>Update</TD>"                                                                    SKIP 
+                                "           <td>People Master</td>"                                                             SKIP                                                                                          
+                                "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                                "           <TD>" catch_all.catch_people_DOB "</TD>"                                            SKIP           
+                                "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                                "           <td>" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"                SKIP  
+                                "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                                "       </TR>"      SKIP.
+  
+                            IF v-peop-created = YES THEN {&OUT}   
+                                "       <TR>" 
+                                "           <TD>Creation</TD>"                                                                  SKIP 
+                                "           <td>People Master</td>" SKIP                                                                                          
+                                "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                                "           <TD>" catch_all.catch_people_DOB "</TD>"                                                            SKIP           
+                                "           <TD>" catch_all.catch_TK_testtype "</TD>"                                          SKIP      
+                                "           <td>" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"                SKIP  
+                                "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                                "       </TR>" SKIP.                             
+  
+                        END. /*** v-peop-success = YES ***/
+                    
+                    END. /*** (v-pat-exists = NO) OR updateanyways = YES ***/ 
+                 
+/*                    ELSE DO:       /** there isn't anything for this the ELSE off of! **/                                                                                                             */
+/*                                                                                                                                                */
+/*                        {&OUT}                                                                                                                  */
+/*                            "       <TR>"                                                                                   SKIP                */
+/*                            "           <TD>Error - Unexpected</TD>"                                                        SKIP                */
+/*                            "           <td>People Master</td>"                                                             SKIP                */
+/*                            "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP                */
+/*                            "           <TD>" catch_all.catch_people_DOB "</TD>"                                                            SKIP*/
+/*                            "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP                */
+/*                            "           <td><a href=~"../../RStP/rcode/DVcaEditActU.html"                                                       */
+/*                            "?h-checked=" RECID(catch_all)                                                                                      */
+/*                            "&h-firstname=" catch_all.catch_people_firstname                                                                    */
+/*                            "&h-lastname=" catch_all.catch_people_lastname                                                                      */
+/*                            "&h-dob=" catch_all.catch_people_DOB                                                                                */
+/*                            "&h-TK_ID=" catch_all.catch_TK_ID                                                                                   */
+/*                            "&h-TK_test_seq=" catch_all.catch_tk_seq                                                                            */
+/*                            "&h-test_type=" catch_all.catch_TK_testtype                                                                         */
+/*                            "&h-lab-sample-id=" catch_all.catch_tk_lab_sample_id                                                                */
+/*                            "&h-lab-seq=" catch_all.catch_TK_lab_seq                                                                            */
+/*                            "&h-catch_ID=" v-catch_ID                                                                                           */
+/*                            "&whattorun=" whatshouldrun   /* linking to itself in a different act */                                            */
+/*                            "&h-act=EDIT~">" catch_all.catch_TK_ID ' / ' catch_all.catch_tk_seq "</a></td>"           SKIP                      */
+/*                            "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                */
+/*                            "       </TR>"                                                                                  SKIP.               */
+/*                                                                                                                                                */
+/*                    END. /*** unexpected ***/                                                                                                   */
+                        
+                END.    /**  the people mstr creation / update part ***/
+                    
+                /**** TK_mstr stuff goes here ****/
+    
+                IF catch_all.catch_TK_ID = "" THEN DO:
+                
+                    TKisCrap = YES.
+                
+                    {&OUT}   
+                        "       <TR>" 
+                        "           <TD>Error - no TK ID</TD>"                                                            SKIP 
+                        "           <td>Catch All</td>" SKIP                                                                                          
+                        "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                        "           <TD>" catch_all.catch_people_DOB "</TD>"                                                            SKIP           
+                        "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                        "           <td><a href=~"../../RStP/rcode/DVcaEditActU.html"                    
+                        "?h-checked=" RECID(catch_all)
+                        "&h-firstname=" catch_all.catch_people_firstname 
+                        "&h-lastname=" catch_all.catch_people_lastname
+                        "&h-dob=" catch_all.catch_people_DOB
+                        "&h-TK_ID=" catch_all.catch_TK_ID                                                           
+                        "&h-TK_test_seq=" catch_all.catch_tk_seq                                                    
+                        "&h-test_type=" catch_all.catch_TK_testtype
+                        "&h-lab-sample-id=" catch_all.catch_tk_lab_sample_id
+                        "&h-lab-seq=" catch_all.catch_TK_lab_seq
+                        "&h-catch_ID=" v-catch_ID
+                        "&whattorun=" whatshouldrun  /* linking to itself in a different act */                                 
+                        "&h-act=EDIT~">" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"           SKIP   
+                        "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                        "       </TR>"                                                                                  SKIP.
+                        
+                END. /*** end of no TK_ID ***/
+                    
+                IF catch_all.catch_TK_seq = 0 THEN DO:
+                    
+                    IF v-itmessages = YES THEN 
+                        {&OUt}
+                        "<ul><p><b>Inside TK is good</b></p>"
+                        "<li>Catch TK ID = " catch_all.catch_TK_ID "</li>" SKIP
+                        "<li>Catch TK seq = " catch_all.catch_TK_seq "</li>" SKIP
+                        "<li>TK seq variable = " v-TK_test_seq "</li>"
+                        "</ul>".
+                    
+                    TKisCrap = YES.
+                    
+                    {&OUT}   
+                        "       <TR>" 
+                        "           <TD>Error - no TK sequence</TD>"                                                                     SKIP 
+                        "           <td>Catch All</td>" SKIP                                                                                          
+                        "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                        "           <TD>" catch_all.catch_people_DOB "</TD>"                                                            SKIP           
+                        "           <TD>" catch_all.catch_TK_testtype "</TD>"                                          SKIP      
+                        "           <td><a href=~"../../RStP/rcode/DVcaEditActU.html"                    
+                        "?h-checked=" RECID(catch_all)
+                        "&h-firstname=" catch_all.catch_people_firstname 
+                        "&h-lastname=" catch_all.catch_people_lastname
+                        "&h-dob=" catch_all.catch_people_DOB
+                        "&h-TK_ID=" catch_all.catch_TK_ID                                                           
+                        "&h-TK_test_seq=" catch_all.catch_tk_seq                                                    
+                        "&h-test_type=" catch_all.catch_TK_testtype
+                        "&h-lab-sample-id=" catch_all.catch_tk_lab_sample_id
+                        "&h-lab-seq=" catch_all.catch_TK_lab_seq
+                        "&h-catch_ID=" v-catch_ID
+                        "&whattorun=" whatshouldrun  /* linking to itself in a different act */                                 
+                        "&h-act=EDIT~">" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"           SKIP  
+                        "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                        "       </TR>"                                                                                  SKIP.    
+                     
+                END. /*** end of no TK_ID ***/
+                
+                IF NOT CAN-FIND(FIRST test_mstr WHERE test_mstr.test_type = catch_all.catch_TK_testtype AND 
+                    test_mstr.test_deleted = ? NO-LOCK) THEN DO:
+                    
+                    TKisCrap = YES.
+                    
+                    {&OUT}   
+                        "       <TR>" 
+                        "           <TD>Error - Invalid Test Type </TD>"                                                SKIP 
+                        "           <td>Catch All</td>"                                                                 SKIP                                                                                          
+                        "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                        "           <TD>" catch_all.catch_people_DOB "</TD>"                                            SKIP           
+                        "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                        "           <td><a href=~"../../RStP/rcode/DVcaEditActU.html"                    
+                        "?h-checked=" RECID(catch_all)
+                        "&h-firstname=" catch_all.catch_people_firstname 
+                        "&h-lastname=" catch_all.catch_people_lastname
+                        "&h-dob=" catch_all.catch_people_DOB
+                        "&h-TK_ID=" catch_all.catch_TK_ID                                                           
+                        "&h-TK_test_seq=" catch_all.catch_tk_seq                                                    
+                        "&h-test_type=" catch_all.catch_TK_testtype
+                        "&h-lab-sample-id=" catch_all.catch_tk_lab_sample_id
+                        "&h-lab-seq=" catch_all.catch_TK_lab_seq
+                        "&h-catch_ID=" v-catch_ID
+                        "&whattorun=" whatshouldrun  /* linking to itself in a different act */                                 
+                        "&h-act=EDIT~">" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"           SKIP  
+                        "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                        "       </TR>"                                                                                  SKIP.    
+                    
+                END. /*** end of no TK_ID ***/
+                
+                IF TKisCrap = NO THEN DO: /*** TK data is good, start creation/ update ***/
+                
+                    IF v-itmessages = YES THEN 
+                        {&OUt}
+                        "<ul><p><b>Inside TK is good</b></p>"
+                        "<li>Catch TK ID = " catch_all.catch_TK_ID "</li>" SKIP
+                        "<li>Catch TK seq = " catch_all.catch_TK_seq "</li>"
+                        "</ul>".
+                
+                    FIND TK_mstr WHERE 
+                        TK_mstr.TK_ID = catch_all.catch_TK_ID AND 
+                        TK_mstr.TK_test_seq = catch_all.catch_TK_seq AND 
+                        TK_mstr.TK_deleted = ? 
+                        EXCLUSIVE-LOCK NO-ERROR.
+                         
+                    IF AVAILABLE (tk_mstr) THEN DO: 
+                    
+                        IF v-itmessages = YES THEN 
+                        {&OUt}
+                        "<ul><p><b>Inside TK available</b></p>"  
+                        "<li>Catch TK ID = " catch_all.catch_TK_ID "</li>" SKIP
+                        "<li>Catch TK seq = " catch_all.catch_TK_seq "</li>"
+                        "</ul>".
+                      
+                        ASSIGN 
+                            catch_all.catch_TK_ID = TK_mstr.TK_ID 
+                            catch_all.catch_TK_seq = TK_mstr.TK_test_seq.
+                    
+                        IF (TK_mstr.TK_test_type = catch_all.catch_TK_testtype OR catch_all.catch_TK_testtype = "") AND  
+                        (TK_mstr.TK_lab_sample_ID = catch_all.catch_tk_lab_sample_id  OR catch_all.catch_tk_lab_sample_id = "") AND
+                        (TK_mstr.TK_lab_seq = catch_all.catch_TK_lab_seq OR catch_all.catch_TK_lab_seq = 0) AND 
+                        (TK_mstr.TK_test_age = catch_all.catch_TK_test_age OR catch_all.catch_TK_test_age = 0) THEN DO:
+                        
+                            IF v-itmessages = YES THEN 
+                                {&OUt}
+                                "<ul><p><b>     TK_mstr matches Catch ALL</b></p>"  
+/*                                "<li>Catch TK ID = " catch_all.catch_TK_ID "</li>" SKIP*/
+/*                                "<li>Catch TK seq = " catch_all.catch_TK_seq "</li>"   */
+                                "</ul>".
+                         
+                            {DVcaTRHstatusU.i}. 
+                         
+                            IF v-itmessages = YES THEN 
+                                {&OUt}
+                                "<ul><p><b>     After Include file</b></p>"  
+/*                                "<li>Catch TK ID = " catch_all.catch_TK_ID "</li>" SKIP*/
+/*                                "<li>Catch TK seq = " catch_all.catch_TK_seq "</li>"   */
+                                "</ul>".
+                         
+                            {&OUT}    
+                                "       <TR>"                                                                                   SKIP
+                                "           <TD>Already Correct</TD>"                                                           SKIP 
+                                "           <td>Test Kit Master</td>"                                                           SKIP                                                                                          
+                                "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                                "           <TD>" catch_all.catch_people_DOB "</TD>"                                           SKIP           
+                                "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                                "           <td>" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"                SKIP  
+                                "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                                "       </TR>"                                       SKIP.                                   
+ 
+                        END. /*** tk stuff match catch_all stuff already ****/                    
+                        
+                        ELSE DO: /**** TK stuff doesn't match ***/
+                        
+                            IF v-itmessages = YES THEN 
+                                {&OUt}
+                                "<ul><p><b>     TK_mstr does NOT matches Catch ALL</b></p>"  
+/*                                "<li>Catch TK ID = " catch_all.catch_TK_ID "</li>" SKIP*/
+/*                                "<li>Catch TK seq = " catch_all.catch_TK_seq "</li>"   */
+                                "</ul>".
+                        
+                            RUN VALUE(SEARCH("SUBtkmstrRSTPucU.r"))
+                                (catch_all.catch_TK_ID, /*char*/
+                                catch_all.catch_TK_testtype, /*char*/
+                                ?, /** prof **/
+                                catch_all.catch_TK_seq, /*int*/
+                                ?, /** domestic **/
+                                0, /** cust ID **/
+                                catch_all.catch_people_ID, /** patient_ID **/
+                                catch_all.catch_tk_lab_sample_ID, /*char*/
+                                catch_all.catch_tk_lab_seq, /*int*/
+                                catch_all.catch_tk_test_age, /*dec*/
+                                "", /** lab ID **/
+                                "", /** status **/
+                                "", /** comments **/
+                                "", /** notes **/
+                                ?, /** cust paid **/
+                                ?, /** lable print date **/
+                                ?, /** lab paid date **/
+                                "", /*** Magento Order Number ***/
+                                ?, /*** cust paid date ***/ 
+                                OUTPUT o-uctkm-id,/** TK ID **/
+                                OUTPUT o-uctkm-create,
+                                OUTPUT o-uctkm-update,
+                                OUTPUT o-uctkm-avail, 
+                                OUTPUT o-uctkm-successful).
+                            
+                            IF v-itmessages = YES THEN 
+                                {&OUt}
+                                "<ul><p><b>         After Run</b></p>"  
+                                "<li>o-uctkm-id = " o-uctkm-id "</li>" SKIP
+                                "<li>o-uctkm-successful = " o-uctkm-successful "</li>"
+                                "</ul>".
+                            
+                            IF o-uctkm-successful = YES THEN DO: 
+                            
+                                {DVcaTRHstatusU.i}.
+                            
+                                IF v-itmessages = YES THEN 
+                                    {&OUt}
+                                    "<ul><p><b>     After Include File</b></p>"  
+    /*                                "<li>Catch TK ID = " catch_all.catch_TK_ID "</li>" SKIP*/
+    /*                                "<li>Catch TK seq = " catch_all.catch_TK_seq "</li>"   */
+                                    "</ul>".
+                            
+                                ASSIGN 
+                                    catch_all.catch_TK_ID = TK_mstr.TK_ID 
+                                    catch_all.catch_TK_seq = TK_mstr.TK_test_seq.
+                            
+                            END. /** if o-uctkm-successful = YES **/
+                            
+                            IF o-uctkm-successful = YES AND o-uctkm-update = YES THEN DO:
+                                
+                                {&OUT}   
+                                    "       <TR>" 
+                                    "           <TD>Update</TD>"                                                                    SKIP 
+                                    "           <td>Test Kit Master</td>"                                                           SKIP                                                                                          
+                                    "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                                    "           <TD>" catch_all.catch_people_DOB "</TD>"                                                            SKIP           
+                                    "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                                    "           <td>" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</td>"                    SKIP  
+                                    "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                                    "       </TR>"                                                                                  SKIP.
+    
+                            END. /*** of update successfull ***/
+                            
+                            ELSE IF o-uctkm-successful = YES AND o-uctkm-create = YES THEN DO:
+    
+                                {&OUT}   
+                                    "       <TR>" 
+                                    "           <TD>Create</TD>"                                                                    SKIP 
+                                    "           <td>Test Kit Master</td>"                                                           SKIP                                                                                          
+                                    "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                                    "           <TD>"  catch_all.catch_people_DOB  "</TD>"                                                            SKIP           
+                                    "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                                    "           <td>" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</td>"                    SKIP  
+                                    "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                                    "       </TR>"                                                                                  SKIP.   
+                            
+                            END. /*** creation successful **/
+                        
+                            ELSE DO:
+                                
+                                {&OUT}   
+                                    "       <TR>" 
+                                    "           <TD>Error - Unexpected</TD>"                                                  SKIP 
+                                    "           <td>Catch All</td>" SKIP                                                                                          
+                                    "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                                    "           <TD>"  catch_all.catch_people_DOB "</TD>"                                                            SKIP           
+                                    "           <TD>" catch_all.catch_TK_testtype "</TD>"                                          SKIP      
+                                    "           <td><a href=~"../../RStP/rcode/DVcaEditActU.html"                    
+                                    "?h-checked=" RECID(catch_all)
+                                    "&h-firstname=" catch_all.catch_people_firstname 
+                                    "&h-lastname=" catch_all.catch_people_lastname
+                                    "&h-dob=" catch_all.catch_people_DOB
+                                    "&h-TK_ID=" catch_all.catch_TK_ID                                                           
+                                    "&h-TK_test_seq=" catch_all.catch_tk_seq                                                    
+                                    "&h-test_type=" catch_all.catch_TK_testtype
+                                    "&h-lab-sample-id=" catch_all.catch_tk_lab_sample_id
+                                    "&h-lab-seq=" catch_all.catch_TK_lab_seq
+                                    "&h-catch_ID=" v-catch_ID
+                                    "&whattorun=" whatshouldrun  /* linking to itself in a different act */                                 
+                                    "&h-act=EDIT~">" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</a></td>"           SKIP  
+                                    "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                                    "       </TR>" SKIP . 
+                                
+                            END. /*** of the unexpected error ***/
+                        
+                        END. /*** TK stuff doesn't match (ELSE) **/
+                        
+                    END. /*** of TK_mstr avail ***/  
+                    
+                    ELSE DO:
+                        
+                        ASSIGN 
+                            o-uctkm-successful = NO 
+                                o-uctkm-create = NO.
+                        
+                        CREATE TK_mstr.
+    
+                        ASSIGN
+                            TK_mstr.TK_id               = catch_all.catch_TK_ID
+                            TK_mstr.TK_test_type         = catch_all.catch_TK_testtype
+                            TK_mstr.TK_test_seq         = catch_all.catch_tk_seq
+                            TK_mstr.TK_patient_ID       = catch_all.catch_people_ID
+                            TK_mstr.TK_lab_sample_ID    = catch_all.catch_tk_lab_sample_id
+                            TK_mstr.TK_lab_seq          = catch_all.catch_TK_lab_seq
+                            TK_mstr.TK_test_age         = catch_all.catch_TK_test_age
+                            TK_mstr.TK_create_date      = TODAY
+                            TK_mstr.TK_created_by       = USERID ("HHI")
+                            TK_mstr.TK_modified_date    = TODAY
+                            TK_mstr.TK_modified_by      = USERID ("HHI")
+                            o-uctkm-create              = YES 
+                            o-uctkm-successful          = YES
+                            o-uctkm-id                  = TK_mstr.TK_id
+                            .         
+                       
+                        {DVcaTRHstatusU.i}. 
+                                       
+                        IF o-uctkm-successful = YES AND o-uctkm-create = YES THEN DO:
+                        
+                            {&OUT}   
+                                "       <TR>"                                                                                   SKIP
+                                "           <TD>Creation</TD>"                                                                  SKIP 
+                                "           <td>Test Kit Master</td>"                                                           SKIP                                                                                          
+                                "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                                "           <TD>" catch_all.catch_people_DOB "</TD>"                                            SKIP           
+                                "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                                "           <td>" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</td>"                    SKIP  
+                                "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                                "       </TR>" SKIP.
+                        
+                        END. /*** creation successful **/
+                        
+                        ELSE DO:
+                            
+                            {&OUT}   
+                                "       <TR>"                                                                                   SKIP
+                                "           <TD>Error - Unexpected </TD>"                                                          SKIP 
+                                "           <td>Test Kit Master</td>"                                                           SKIP                                                                                          
+                                "           <TD>" catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</TD>" SKIP       
+                                "           <TD>" catch_all.catch_people_DOB "</TD>"                                                            SKIP           
+                                "           <TD>" catch_all.catch_TK_testtype "</TD>"                                           SKIP      
+                                "           <td>" v-TK_ID-holder ' / ' catch_all.catch_tk_seq "</td>"                    SKIP  
+                                "           <TD>" catch_all.catch_tk_lab_sample_id "/ " catch_all.catch_TK_lab_seq "</TD>"      SKIP                    
+                                "       </TR>"                                                                                  SKIP.
+                           
+                        END. /*** creation successful ***/                 
+     
+                    END. /** ELSE: TK_mstr not available ***/          
+    
+                END. /*** TK data is good, creation update ***/
+            
+                /**** this is where the submitted yes/no check goes ****/
+                
+                FIND people_mstr WHERE 
+                    people_mstr.people_id = catch_all.catch_people_ID AND 
+                    people_mstr.people_deleted = ? AND 
+                    people_mstr.people_firstname = catch_all.catch_people_firstname AND 
+                    people_mstr.people_lastname = catch_all.catch_people_lastname AND 
+                    people_mstr.people_DOB = catch_all.catch_people_DOB
+                    NO-LOCK NO-ERROR.
+                
+                IF AVAILABLE (people_mstr) THEN DO:
+                        
+                    FIND TK_mstr WHERE 
+                        TK_mstr.TK_ID = catch_all.catch_TK_ID AND 
+                        TK_mstr.TK_test_seq = catch_all.catch_TK_seq AND  
+                        TK_mstr.TK_deleted = ? AND 
+                        (TK_mstr.TK_test_type = catch_all.catch_TK_testtype OR catch_all.catch_TK_testtype = "") AND  
+                        (TK_mstr.TK_lab_sample_ID = catch_all.catch_tk_lab_sample_id OR catch_all.catch_tk_lab_sample_id = "") AND
+                        (TK_mstr.TK_lab_seq = catch_all.catch_TK_lab_seq OR catch_all.catch_TK_lab_seq = 0) AND 
+                        (TK_mstr.TK_test_age = catch_all.catch_TK_test_age OR catch_all.catch_TK_test_age = 0) 
+                        NO-LOCK NO-ERROR.
+                        
+                    IF AVAILABLE (TK_mstr)THEN ASSIGN catch_all.catch_submited = YES. 
+                    
+                END. /*** avail people_mstr (submission check) ***/
+                    
+            END.    /**  IF AVAILABLE (catch_all)  **/
+              
+        END.    /**  DO x = 1 TO NUM-ENTRIES(ip-checked-recid)  **/     
+        
+        {&OUT}
+            "   </TABLE>"                                                                                               SKIP
+            "</DIV>                                 <!-- end of table_col -->"                                          SKIP         
+            "</DIV>                                 <!-- end of grid_6 -->"                                             SKIP                                                    
+            "</DIV>                                 <!-- end of row -->"                                                SKIP
+            "<div class='row'>"
+            "<div class='grid_12'>"                                                                                      SKIP
+            "   <center><i><p>Click on the hyperlinks to address any errors in the Catch All Table.</p></i></center>"    SKIP
+            "</div>" SKIP
+            "</div>  <!-- end of row div --->" SKIP
+            "<br>" SKIP
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                                          SKIP
+/*            "<input type='hidden' name='h-catch_ID' value='" v-catch_ID "'>"                                            SKIP*/
+/*            "<input type='hidden' name='h-checked' value='" RECID(catch_all) "' />"                                     SKIP*/
+            "<input type='hidden' name='h-firstname' value='" v-firstname "'>"                          SKIP
+            "<input type='hidden' name='h-lastname' value='" v-lastname "'>"                            SKIP
+            "<input type='hidden' name='h-dob' value='" v-DOB "'>"                                      SKIP
+            "<input type='hidden' name='h-TK_ID' value='" v-TK_ID "'>"                                  SKIP
+            "<input type='hidden' name='h-TK_seq' value='" v-TK_test_seq "'>"                           SKIP
+            "<input type='hidden' name='h-test_type' value='" v-test_type "'>"                            SKIP
+            "<input type='hidden' name='h-lab-sample-id' value='" v-lab_sample_id "'>"                  SKIP
+            "<input type='hidden' name='h-lab-seq' value='" v-lab_seq "'>"                              SKIP
+            "<div class='row'>"                                                                                         SKIP
+            "   <div class='grid_5'> </DIV>"                                                                            SKIP
+            "   <div class='grid_2'>" SKIP
+            "       <BUTTON type='submit' formtarget='listpage' onClick='parent.history.go(0)' class='btn'>Refresh Results</BUTTON>" SKIP
+            "   </div>" SKIP
+            "</FORM>"
+            "   <div class='grid_5'> </DIV>"    SKIP
+            "</div>" SKIP
+            "<BR>"  SKIP
+            "".
+    
+    END. /*** of the ELSE DO: off the rec-id is blank ***/    
+  
+END.    /*** of v-act case = Submit ***/
+
+</SCRIPT>
+</BODY>
+</HTML>

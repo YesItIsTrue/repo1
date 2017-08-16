@@ -1,0 +1,346 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>      
+<HEAD>
+    
+    <TITLE>Billing IP SABRE Screen</TITLE>
+    
+    <META NAME="AUTHOR" CONTENT="Harold Luttrell, Sr.">
+    <META NAME="VERSION" CONTENT="1.4">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="3/Apr/14">
+    <META NAME="LAST_UPDATED" CONTENT="25/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+ 
+<SCRIPT LANGUAGE="SpeedScript">
+    /*----------------------------------------------------------------------
+      Sub-program   : Billing-Input-(lab name)-Screen.html.
+      Description   : This is a sub-program for entering the 
+                    :     billing/Invoices for this Labs for payment.
+                  
+      Sub-programs  : Billing-CREATE-bip-bill-input-Record.html.
+                    : 
+      Description   : This program creates the 
+                    :     record using the data that was entered
+                    :     on the input screen. 
+             
+      - - Version History - -
+      
+          1.0 - April 3, 2014 - Original code.
+
+          1.1 - June 16, 2014.  Modified previous code to reference/access the 
+                new Progress Databases: General and 
+                
+          1.2 - July 8, 2014.  Modified previous code to reference/access the 
+                new Progress Databases: General and HHI tables and apply the
+                RStP find-patient.p code. 
+
+          1.3 - August 26, 2014.  Added CSS commands to the screen displays.
+                Added code to display different screen formats to try and
+                match the invoice format from each lab.  
+                Also set up a free form invoice format incase we need one.
+          
+          1.4 - Oct 25, 2014 - removed all '../..' from the html code and 
+                                    changed '.html' to '.r' and
+                                    added the META & css.
+                                                 
+  ----------------------------------------------------------------------*/ 
+   
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+</HEAD> 
+      
+<BODY class="inside">
+<SCRIPT LANGUAGE="SpeedScript">
+/* Include code. */
+
+{../depot/src/WebSpeed/menuname.i}.       /*** menu name assignment ***/
+ 
+/* Define Variables. */
+DEFINE VARIABLE act                 AS INTEGER                                  NO-UNDO .
+/*  
+    act values: 86 = free form invoice format.
+                1 = DDI format.
+                2 = GENOVA format.
+                3 = NS format.
+                4 = SABRE format. 
+*/
+DEFINE VARIABLE ip-lab-name         LIKE lab_mstr.lab_name                    NO-UNDO. 
+/*  Following is the header info from the bill.  */
+DEFINE VARIABLE ip-lab-id           LIKE lab_mstr.lab_id                      NO-UNDO.  
+DEFINE VARIABLE ip-Account-Nbr      LIKE bip_bill_input.bip_Account_Nbr       NO-UNDO.
+DEFINE VARIABLE ip-Invoice-Date     AS CHARACTER FORMAT "x(10)"                   NO-UNDO.
+DEFINE VARIABLE ip-Invoice-Nbr      LIKE bip_bill_input.bip_Invoice_Nbr       NO-UNDO.
+DEFINE VARIABLE ip-Total-Amt-Due    AS DECIMAL FORMAT "->>>,>>9.99"               NO-UNDO.  
+DEFINE VARIABLE ip-Pay-Term         LIKE bip_bill_input.bip_Payment_Term      NO-UNDO.
+DEFINE VARIABLE ip-Bill-Due-Date    AS CHARACTER FORMAT "x(10)"                   NO-UNDO.
+/*  Following is the line item from the bill.  */
+DEFINE VARIABLE ip-Sample-ID        LIKE bip_bill_input.bip_Sample_ID         NO-UNDO.
+DEFINE VARIABLE ip-Activity-Date    AS CHARACTER FORMAT "x(10)"                   NO-UNDO.
+DEFINE VARIABLE ip-Pat-First-Name   LIKE bip_bill_input.bip_Person_First_Name NO-UNDO.  
+DEFINE VARIABLE ip-Pat-Mid-Name     LIKE bip_bill_input.bip_Person_Mid_Name   NO-UNDO.  
+DEFINE VARIABLE ip-Pat-Last-Name    LIKE bip_bill_input.bip_Person_Last_Name  NO-UNDO.
+DEFINE VARIABLE ip-Pat-Suffix       LIKE bip_bill_input.bip_Person_Suffix     NO-UNDO.
+DEFINE VARIABLE ip-Test-Type        LIKE bip_bill_input.bip_Test_Type         NO-UNDO.  
+DEFINE VARIABLE ip-Amount           AS DECIMAL FORMAT "->>>,>>9.99"               NO-UNDO. 
+/*  End if the input bill/invoice data fields.  */
+
+DEFINE VARIABLE op-lab-name         LIKE lab_mstr.lab_name                    NO-UNDO.
+
+DEFINE VARIABLE look4it             AS CHARACTER                                  NO-UNDO.
+DEFINE VARIABLE displayreset        AS CHARACTER                                  NO-UNDO.
+DEFINE VARIABLE Found-Rcd           AS INTEGER                                    NO-UNDO.
+DEFINE VARIABLE display-mess        AS INTEGER                                    NO-UNDO.
+DEFINE VARIABLE showmsg             AS LOGICAL INITIAL  NO      NO-UNDO.            /** change to yes for debug messages **/
+
+DEFINE VARIABLE Error-flag          AS CHARACTER  FORMAT "x(3)"                   NO-UNDO.
+DEFINE VARIABLE override-error      AS CHARACTER  FORMAT "x(8)"                   NO-UNDO.
+DEFINE VARIABLE hold-string-unmatch-reason      AS CHARACTER  FORMAT "x(200)"     NO-UNDO.
+DEFINE VARIABLE enter-line-item     AS CHARACTER  FORMAT "x(9)"                   NO-UNDO.
+
+DEFINE VARIABLE labname             LIKE lab_mstr.lab_name                    NO-UNDO.  /* DROP-DOWN BOX. */
+DEFINE VARIABLE lababbv             LIKE lab_mstr.lab_ID                      NO-UNDO.  /* DROP-DOWN BOX. */
+DEFINE VARIABLE h-lab-id            LIKE lab_mstr.lab_ID                      NO-UNDO.  /* DROP-DOWN BOX. */
+DEFINE VARIABLE whattorun           AS CHARACTER                                  NO-UNDO.   /* to get the menu title */
+
+/* Assign Values to Variable statements. */
+ASSIGN  
+
+/* Logical variables. */ 
+/*        showmsg             = LOGICAL(get-field("s-showmsg")) */
+                 
+/* Date variables. */ 
+  
+/* Integer variables. */        
+        act                 = INTEGER(get-value("h-act"))
+        ip-Total-Amt-Due    = DECIMAL(get-value("s-Total-Amt-Due"))
+        ip-Amount           = DECIMAL(get-value("s-Amount"))
+        Found-Rcd           = 0
+             
+/* Character variables. */
+        whattorun           = get-value("whattorun")                 /* to get the menu title */
+        h-lab-id            = TRIM(get-field("h-lab-id"))          /* DROP-DOWN BOX. */
+        ip-lab-id           = TRIM(get-field("s-LabID"))
+        ip-Account-Nbr      = TRIM(get-field("s-Account-Nbr"))
+        ip-Invoice-Nbr      = TRIM(get-field("s-Invoice-Nbr"))     
+        ip-Pay-Term         = TRIM(get-field("s-Pay-Term"))
+        ip-Sample-ID        = TRIM(get-field("s-Sample-ID"))
+        ip-Pat-First-Name   = TRIM(get-field("s-Pat-First-Name"))
+        ip-Pat-Mid-Name     = TRIM(get-field("s-Pat-Mid-Name"))
+        ip-Pat-Last-Name    = TRIM(get-field("s-Pat-Last-Name"))
+        ip-Pat-Suffix       = TRIM(get-field("s-Pat-Suffix"))      
+        ip-Test-Type        = TRIM(get-field("s-Test-Type"))
+        ip-Invoice-Date     = TRIM(get-field("s-Invoice-Date"))
+        ip-Activity-Date    = TRIM(get-field("s-Activity-Date"))
+        ip-Bill-Due-Date    = TRIM(get-field("s-Bill-Due-Date"))
+        
+        hold-string-unmatch-reason = get-field("s-hold-string-unmatch-reason") 
+
+        look4it             = get-field("s-Submit")
+        displayreset        = get-field("s-Reset"). 
+    
+/*          MESSAGE showmsg VIEW-AS ALERT-BOX BUTTONS OK.       */
+/*    
+    {&OUT}   "<H2 class='webpagetitle' >" SKIP           
+             "<P STYLE='text-align: center'> Bill/Invoice from LAB(s) </H2>" SKIP. 
+*/            
+    ASSIGN Error-flag           = get-value("s-Error-flag")
+           override-error       = get-field("s-override-error")
+           hold-string-unmatch-reason = get-field("s-hold-string-unmatch-reason")
+           ip-lab-id            = get-field("s-LabID")
+           look4it              = get-field("s-Submit")
+           act                  = 4. 
+                
+	IF showmsg = YES THEN DO:
+	    {&OUT}    "<TR>" 'Start 1. Error-flag = '  "<TD>" Error-flag   "</TR><BR>" SKIP
+	              "<TR>" 'override-error = ' "<TD>" override-error   "</TR><BR>" SKIP
+	              "<TR>" 'hold-string-unmatch-reason = ' "<TD>" hold-string-unmatch-reason   "</TR><BR>" SKIP.  
+	END.
+
+    ASSIGN enter-line-item = "".
+    IF override-error = "lineitem" THEN
+        ASSIGN  enter-line-item             = override-error
+                ip-Pat-First-Name           = ""
+                ip-Pat-Mid-Name             = ""
+                ip-Pat-Last-Name            = ""
+                ip-Pat-Suffix               = ""
+                ip-Sample-ID                = ""
+                ip-Activity-Date            = ""
+                ip-Test-Type                = ""
+                ip-Amount                   = 0
+                h-lab-id                    = ip-lab-id
+                .
+    
+    IF Error-flag = "yes" AND h-lab-id = "" THEN
+        ASSIGN h-lab-id = ip-lab-id.
+            
+    IF Error-flag = "no" OR Error-flag = "" THEN
+	    ASSIGN override-error = ""
+	           hold-string-unmatch-reason = "".       
+	
+	ASSIGN  look4it = "Select". 
+                           
+    IF look4it = "Select" THEN DO:  
+        
+        ASSIGN  h-lab-id  = TRIM(get-field("h-lab-id")).          /* DROP-DOWN BOX. */
+        
+        IF  h-lab-id = "" THEN 
+                ASSIGN  h-lab-id = ip-lab-id.
+        ELSE 
+                ASSIGN  ip-lab-id = h-lab-id.
+           
+        FIND lab_mstr WHERE lab_mstr.lab_id = ip-lab-id NO-LOCK NO-ERROR.
+               
+    END.   /**  IF look4it = "Select" **/                                 
+    
+    IF AVAILABLE (lab_mstr) THEN DO:        
+         
+        IF ip-lab-id = lab_mstr.lab_ID THEN DO: 
+            
+          {&OUT} "<form ACTION='Billing-CREATE-bip-bill-input-Record.r'  method='get' >" SKIP
+                    "<input type='hidden' name='whattorun'              value='" whattorun "' >" SKIP            /* to get the menu title */      
+                    "<input type='hidden' name='h-act'                  value='" act "' >" SKIP 
+                    "<input type='hidden' name='s-Error-flag'           value='" Error-flag "' >" SKIP
+                    "<input type='hidden' name='s-override-error'       value='" override-error "' >"  SKIP
+                    "<input type='hidden' name='s-hold-string-unmatch-reason' value='" hold-string-unmatch-reason "' >" SKIP
+                    "<input type='hidden' name='s-showmsg'              value='" showmsg "' >"  SKIP
+                    "<input type='hidden' name='s-LabID'                value='" ip-lab-id "' >" SKIP
+                    "<input type='hidden' name='s-Account-Nbr'          value='" lab_mstr.lab_acct_nbr "' >" SKIP
+                    "<input type='hidden' name='s-Pay-Term'             value='" lab_mstr.lab_payterm "' >" SKIP
+                     
+                    "<div class='table_2col'>" SKIP               
+                     "<table>" SKIP
+                        "<tr>" SKIP
+                            "<th colspan=4><center>&nbsp;&nbsp; " lab_mstr.lab_ID "</B>&nbsp;&nbsp;<B>(" lab_mstr.lab_name ")</B>
+                                &nbsp; - &nbsp; Invoice  </th>" SKIP
+                        "</tr>" SKIP                       
+                        "<tr>" SKIP
+                            "<td>Date</td>" SKIP
+                            "<td><input type='date' name='s-Invoice-Date' value='" ip-Invoice-Date "' autofocus tabindex=1 </td>" SKIP
+                            "<td>S.O. No.</td>" SKIP
+                            "<td><input type='text' name='s-Invoice-Nbr' value='" ip-Invoice-Nbr "' tabindex=2 </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP                              
+                            "<td>Terms</td>" SKIP
+                            "<td><input type='text' name='s-Pay-Term' value='" lab_mstr.lab_payterm "' disabled </td>"
+                            "<td>Rep</td>" SKIP
+                            "<td><input type='text' name='s-blank' value='' tabindex=3 </td>" SKIP
+/*  >>>                          "<td><input type='text' name='s-rep' value='" ip-rep "' tabindex=6 </td>"  SKIP       */ 
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Ship Via</td>" SKIP
+                            "<td><input type='text' name='s-blank' value='' tabindex=4 </td>" SKIP
+/*  >>>                            "<td><input type='text' name='s-ship-via' value='" ip-ship-via "' tabindex=6 </td>"  SKIP    */
+                            "<td>Account Nbr</td>" SKIP
+                            "<td><input type='text' name='s-Account-Nbr' value='" lab_mstr.lab_acct_nbr "' disabled </td>"  SKIP 
+                        "</tr>" SKIP
+
+                        "<tr>" SKIP
+                            "<th colspan=4><center> Description / Ordered / Rate / Amount </th>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+ /*
+                            "<td>First Name</td>" SKIP
+                            "<td><input type='text' name='s-Pat-First-Name' value='" ip-Pat-First-Name "' tabindex=7 </td>" SKIP
+                            "<td>Sample ID</td>" SKIP
+                            "<td>" "<input type='text' name='s-Sample-ID' value='" ip-Sample-ID "' tabindex=20 </td>"  SKIP
+ */
+                            "<td>Description</td>" SKIP
+                            "<td><input type='text' name='s-blank' value='' tabindex=5 </td>" SKIP
+/*  >>>                            "<td><input type='text' name='s-description' value='" ip-description "' tabindex=7 </td>" SKIP       */
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+/*
+                            "<td>Middle Name</td>" SKIP
+                            "<td>" "<input type='text' name='s-Pat-Mid-Name' value='" ip-Pat-Mid-Name "' tabindex=8 </td>" SKIP
+                            "<td>Activity Date</td>" SKIP
+                            "<td>" "<input type='date' name='s-Activity-Date' value='" ip-Activity-Date "' tabindex=21 </td>" SKIP
+*/
+                            "<td>Ordered</td>" SKIP
+                            "<td><input type='text' name='s-blank' value='' tabindex=6 </td>" SKIP
+/*  >>>                            "<td><input type='text' name='s-ordered' value='" ip-ordered "' tabindex=7 </td>" SKIP   */
+                            "<td>Rate</td>" SKIP
+                            "<td><input type='text' name='s-blank' value='' tabindex=7 </td>" SKIP
+/*  >>>                            "<td><input type='text' name='s-rate' value='" ip-rate "' tabindex=7 </td>" SKIP     */
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+/*
+                            "<td>Last Name</td>" SKIP
+                            "<td>" "<input type='text' name='s-Pat-Last-Name' value='" ip-Pat-Last-Name "' tabindex=9 </td>" SKIP 
+                            "<td>Test Type</td>" SKIP
+                            "<td>" "<input type='text' name='s-Test-Type' value='" ip-Test-Type "' tabindex=22 </td>" SKIP
+*/
+/* >>>  calcu the amount  */                                                           
+                            "<td>Amount</td>" SKIP
+                            "<td>" "<input type='text' name='s-Amount' value='" ip-Amount "' tabindex=23 </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+
+                            "<td>Balance due Billed today</td>" SKIP
+                            "<td><input type='date' name='s-Bill-Due-Date' value='" ip-Bill-Due-Date "' tabindex=24 </td>" SKIP
+                            "<td>Balance due Billed today Amount</td>" SKIP
+                            "<td>" "<input type='text' name='s-Amount' value='" ip-Amount "' tabindex=23 </td>" SKIP
+
+                        "</tr>" SKIP 
+                        "<tr>" SKIP
+                            "<td></td>" SKIP
+                            "<td><input type='text' name='s-blank' value='' disabled </td>" SKIP
+                            "<td>TOTAL</td>" SKIP
+                            "<td><input type='text' name='s-Total-Amt-Due' value='" ip-Total-Amt-Due "' tabindex=30 </td>" SKIP
+                        "</tr>" SKIP
+                    "</table>"  SKIP 
+                   "</div>" SKIP
+                   "<br> </br>" SKIP   
+                   "<td>" "<center><input type='image' src='/depot/src/HTMLContent/images/submit_image.gif'  
+                                alt='Submit' name='s-Submit'>" "</td>"  SKIP.                                                                         
+                "</form>".   
+        END.  /**  IF ip-lab-id = "SABRE"  **/
+                     
+	    IF showmsg = YES THEN DO: 
+	        {&OUT}   "<TR>" '3. Error-flag = '  "<TD>" Error-flag   "</TR><BR>" SKIP 
+	                 "<TR>" 'override-error = ' "<TD>" override-error   "</TR><BR>" SKIP
+	                 "<TR>" 'hold-string-unmatch-reason = ' "<TD>" hold-string-unmatch-reason   "</TR><BR>" SKIP.  
+	    END.    
+	                                            
+        IF override-error = "notfound" THEN DO: 
+
+            ASSIGN  override-error = "".     
+            {&OUT}   
+                     '<TR><BR>' SKIP
+                     '<TD>' 'Person is NOT found in the database.'  '</TD><BR><BR>' SKIP
+                     '<TD>' 'Do you want to '  '</TD>' SKIP
+                     '<TD>' '<input type="Submit" style="COLOR: #FF0000;" value="Override" name="s-override-error">'  '</TD>' SKIP
+                     '<TD>' ' the edit error and keep the input data for later processing?'  '</TD>' SKIP
+                     '</TR>' SKIP.
+            {&OUT}   
+                     '<TR><BR>' SKIP
+                     '<TD>' 'Or do you want to '  '</TD>' SKIP
+                     '<TD>' '<input type="Submit" style="COLOR: #FF0000;" value="Bypass" name="s-override-error">'  '</TD>' SKIP
+                     '<TD>' ' enterning this person''s input data?'  '</TD>' SKIP 
+                     '</TR>' SKIP.  
+                     
+            ASSIGN  override-error  = get-field("s-override-error")
+                    Error-flag      = get-value("s-Error-flag")
+                    hold-string-unmatch-reason = get-field("s-hold-string-unmatch-reason").        
+
+		    IF showmsg = YES THEN DO:           
+		        {&OUT}   "<TR>" '4. Error-flag = '  "<TD>" Error-flag   "</TR><BR>" SKIP
+		                 "<TR>" 'override-error = ' "<TD>" override-error   "</TR><BR>" SKIP
+		                 "<TR>" 'hold-string-unmatch-reason = ' "<TD>" hold-string-unmatch-reason   "</TR><BR>" SKIP.
+		    END.  
+		
+        END.   /**   IF override-error = 'notfound'  **/         
+            
+	    IF showmsg = YES THEN DO:
+	        {&OUT}   "<TR>" 'End. Error-flag = '  "<TD>" Error-flag   "</TR><BR>" SKIP
+	                 "<TR>" 'override-error = ' "<TD>" override-error   "</TR><BR>" SKIP
+	                 "<TR>" 'hold-string-unmatch-reason = ' "<TD>" hold-string-unmatch-reason   "</TR><BR>" SKIP.   
+	    END.    
+        
+   END.   /**  AVAILABLE (lab_mstr)  **/
+  
+</SCRIPT>      
+</BODY>
+</HTML>

@@ -1,0 +1,268 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+	<TITLE>Individual Testkit Search</TITLE>
+	<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+	<META name="VERSION" content="3.71">
+	<META name="COPYRIGHT" content="Solsource">
+	<META name="CREATE_DATE" content="24/Dec/14">
+	<META NAME="LAST_UPDATED" CONTENT="25/Aug/16">
+
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+
+<script src='/depot/src/HTMLContent/javascript/fixed.js'></script>
+<script src='/depot/src/HTMLContent/javascript/tablesorter.min.js'></script>
+
+<script>$(document).ready(function() 
+    { 
+        // $("td").wrapInner("<div class='printfix'></div>");
+        $('.table_report table').tablesorter(); //this selects the tables that will be sortable, it has to target a 'table' specifically and not the surrounding class
+    } 
+); </script>
+
+
+
+<SCRIPT LANGUAGE="SpeedScript">
+
+CREATE WIDGET-POOL.
+
+{&OUT}
+	"</HEAD>" SKIP
+	"<BODY class='inside'>" SKIP.
+
+  /*------------------------------------------------------------------
+    File: TKtestSearchT.html
+    Description: The is the search screen that comes (for the users) before 
+    the TKtestresR.html report. 
+    Created: May 04 2015
+    Updated: May 04 2015
+
+    Version 2.0 - written by Harold Luttrell on 07/Oct/15.
+    Changed the http://loccalhost:3333/  code to ../../ and
+    fixed headings. 
+    Marked by /* 2dot0 */. 
+
+    Version 2.1 - written by Jacob Luttrell on 3/Nov/15.
+    Added tfoot to report and changed buttons to standard 
+    button style. Marked by 2dot1.
+    
+    Version 2.2 - Written by Jacob Luttrell on 4/Mar/16.
+    Updated 4ea to include effective dates and displayed new fields for
+    v11.1 release. Marked by 2dot2.
+    
+    Version 3.6 - written by DOUG LUTTRELL on 22/Mar/16.  Syncing version 
+        numbers with calling program - TKtestresR.html.  Implemented the 
+        new CSS changes from Quinton.  Marked by 3dot6.
+        
+    Version 3.7 - written by TRAE LUTTRELL on 04/Jun/16.
+        a) fixing the hyperlink to the TKtestresR.html from the
+    
+    Version 3.71 - written by Jacob Luttrell on 25/Aug/16.
+        Rearranged first name last name order. Unmarked.    
+  -------------------------------------------------------------------*/
+  
+{../depot/src/WebSpeed/menuname.i}.
+  
+/***************************  Variables  ******************************/ 
+ 
+DEFINE VARIABLE act     AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-first LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE v-last  LIKE people_mstr.people_lastname    NO-UNDO. 
+DEFINE VARIABLE x       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE v-green AS CHARACTER                        NO-UNDO.
+
+/***************************  Prologue  *******************************/
+
+/*********  HTML Get-Values  ***********/
+ASSIGN 
+    v-first = get-value("h-first")
+    v-last  = get-value("h-last")
+    act     = get-value("h-act").
+
+/******** Other Prologuedom  ***********/
+IF act = "" THEN 
+    act = "INITIAL".
+      
+/*************************  Main Program  *****************************/
+    
+CASE act:
+
+    WHEN "INITIAL" THEN DO:
+
+        {&OUT}
+            "<DIV class='row'>"                                                             SKIP
+            "<DIV class='grid_3'> </DIV>    <!-- grid_3 spacer -->"                         SKIP   
+            "<DIV class='grid_6'>"                                                          SKIP
+            "<FORM>"                                                                        SKIP
+            "<DIV class='table_col'>"                                                       SKIP
+            "   <TABLE>"                                                                    SKIP
+            "       <TR>"                                                                   SKIP
+            "           <TH colspan=2>Search Criteria</TH>"                                 SKIP
+            "       </TR>"                                                                  SKIP
+            "       <TR>"                                                                   SKIP           /** Row 1 **/
+            "           <TD>Last Name Begins with:</TD>"                                    SKIP
+            "           <TD><input type='text' name='h-last' value='" v-last "' /></TD>"    SKIP
+            "       </TR>"                                                                  SKIP
+            "       <TR>"                                                                   SKIP           /** Row 2 **/
+            "           <TD>First Name Begins with:</TD>"                                   SKIP
+            "           <TD><input type='text' name='h-first' value='" v-first "' /></TD>"  SKIP
+            "       </TR>"                                                                  SKIP
+            "   </TABLE>"                                                                   SKIP
+            "</DIV>       <!-- end of table_2col -->"                                       SKIP         
+/*            "<BR>"                                                                          SKIP*/
+/*            "<CENTER>"                                                                      SKIP*/
+/*            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"              SKIP*/
+/*                                                                                                */
+/*            "<button type='submit' name='h-act' value='SEARCH'>Search</button>"             SKIP*/
+/*            "<INPUT type='reset' name='reset' value='Reset'/>"                              SKIP*/
+/*                                                                                                */
+/*            "</CENTER>"                                                                     SKIP*/
+/*            "</FORM>"                                                                       SKIP*/
+            "</DIV>       <!-- end of grid_6 -->"                                           SKIP                                                    
+            "<DIV class='grid_3'> </DIV>          <!-- grid_3 spacer -->"                   SKIP                                
+            "</DIV>           <!-- end of row -->"                                          SKIP
+            "<BR>" SKIP                                                                                                         /* 2dot1 */
+            "<div class='row'>" SKIP                                                                                            /* 2dot1 */
+			"   <div class='grid_3'> </DIV>" SKIP                                                                               /* 2dot1 */
+			"    <input type='hidden' name='whattorun' value='" whatshouldrun "'>" SKIP                                         /* 2dot1 */
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP   /* 2dot1 */
+			"   <div class='grid_2'> </DIV>" SKIP                                                                               /* 2dot1 */
+			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP                                 /* 2dot1 */
+			"   <div class='grid_3'> </DIV>" SKIP                                                                               /* 2dot1 */
+			"</div>" SKIP                                                                                                       /* 2dot1 */
+			"</FORM>"SKIP                                                                                                       /* 2dot1 */
+            .                                             
+
+    END.  /** of when act = initial **/
+
+    WHEN "SEARCH" THEN DO:
+
+        {&OUT}
+            "<DIV class='row'>"                                         SKIP
+            "<DIV class='grid_1'> </DIV>        <!-- grid_1 spacer -->" SKIP
+            "<DIV class='grid_10'>"                                     SKIP
+            "<DIV class='table_report fixed_table'>"                   SKIP                         /* 3dot6 */
+            "   <TABLE>"                                                SKIP
+            "       <THEAD>"                                            SKIP
+            "           <TR>"                                           SKIP
+            "               <TH colspan=2>Patients' Testkits</TH>"      SKIP                        /* 2dot0 */
+            "           </TR>"                                          SKIP
+            "           <TR>"                                           SKIP
+            "               <TH>Patient Name</TH>"                      SKIP
+            "               <tH class='inner'>"                         SKIP
+            "                   <table>" SKIP
+            "                       <thead>" SKIP                                                   /* 3dot6 */
+            "                           <tr>"                            SKIP
+            "                               <Th style='width:30%;'>Testkit / Seq</Th>"    SKIP              /* 2dot0 */
+            "                               <Th>Testkit Type</Th>"              SKIP                        /* 2dot0 */
+            "                               <th>Date Modified</th>"             SKIP
+            "                           </tr>" SKIP
+            "                       </thead>" SKIP                                                  /* 3dot6 */ 
+            "                   </table>" SKIP 
+            "               </TH>"                                          SKIP
+            "           </TR>" SKIP                                                                 /* 3dot6 */
+            "       </THEAD>"                                           SKIP
+            "       <TBODY>" SKIP.                                                                  /* 3dot6 */
+ 
+        FOR EACH people_mstr WHERE
+                (people_mstr.people_lastname BEGINS v-last OR
+                 v-last = "") AND
+                (people_mstr.people_firstname BEGINS v-first OR
+                 v-first = "") AND
+                people_mstr.people_deleted = ? NO-LOCK,
+            EACH TK_mstr WHERE TK_mstr.TK_patient_ID = people_mstr.people_id AND
+                    TK_mstr.TK_deleted = ? NO-LOCK
+                BREAK 
+                BY people_mstr.people_lastname 
+                BY people_mstr.people_firstname 
+                BY people_mstr.people_midname
+                BY people_mstr.people_suffix
+                BY people_mstr.people_id            /* actually usefull */
+                BY TK_mstr.TK_test_type 
+                BY TK_mstr.TK_ID                    /* possibly usefull */
+                BY TK_mstr.tk_test_seq:
+
+            IF FIRST-OF (people_mstr.people_id) THEN DO:
+    
+	            {&OUT}
+	                "<TR>" SKIP
+	                "   <TD>" people_mstr.people_lastname ", " people_mstr.people_firstname "</TD>" SKIP
+	                "   <TD class='inner'>" SKIP 
+	                "      <table>" SKIP.
+	            
+	            x = x + 1.
+                    
+                IF x MODULO 2 = 0 THEN 
+                    ASSIGN v-green = " class='green' ".
+                    
+                    ELSE ASSIGN v-green = "".    
+            
+            END. /*** of first-of people_mstr.people_id ***/          
+                 
+            {&OUT}
+                "       <tr>" SKIP
+                "           <td " v-green " style='width:30%;'>" SKIP(1) 
+                
+                "<a href='../../DataHub/rcode/TKtestresR.r"      /* 2dot0 */
+                "?h-tk_id=" TK_mstr.TK_ID 
+                "&h-tk_test_seq=" TK_mstr.TK_test_seq       /* 3dot7 */
+                "&h-testtype=" TK_mstr.TK_test_type         /* 3dot7 */
+                "&h-patient_ID=" people_mstr.people_id
+                "&h-act=Report&whattorun=14.5&submit=Submit'>" TK_mstr.TK_ID " / " TK_mstr.tk_test_seq "</a>" SKIP(1)
+                
+                "           </td>" SKIP
+                "           <td " v-green ">" TK_mstr.TK_test_type "</td>" SKIP
+                "           <td " v-green ">" TK_mstr.TK_modified_date "</td>" SKIP
+                "       </tr>" SKIP.
+            
+            IF LAST-OF (people_mstr.people_id) THEN 
+                  
+            {&OUT}      
+                "       </table>" SKIP 
+                "   </TD>" SKIP
+                "</TR>" SKIP.
+ 
+        END. /** of 4ea. people_mstr, etc. **/
+
+        {&OUT}
+/*            "   <tfoot>" SKIP                                                                                                           /* 2dot1 */*/
+            "       <TR>" SKIP
+            "           <TH COLSPAN=2><center>END OF REPORT</center</TH>" SKIP
+            "       </TR>" SKIP
+/*            "   </tfoot>" SKIP                                                                                                          /* 2dot1 */*/
+            "   </TABLE>" SKIP
+            "</DIV>                 <!-- end of table_report -->" SKIP
+            "</DIV>             <!-- end of grid_10 -->" SKIP
+            "<DIV class='grid_1'> </DIV>        <!-- grid 1 spacer -->" SKIP
+            "</DIV>         <!-- end of row -->" SKIP
+            "<br>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP                                                                                                    /* 2dot1 */
+			"   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 2dot1 */
+			"    <input type='hidden' name='whattorun' value='" get-value('whattorun') "' >" SKIP                                       /* 2dot1 */
+			"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP    /* 2dot1 */
+			"   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 2dot1 */
+			"</div>" SKIP.                                                                                                              /* 2dot1 */
+/*            "<center><button type='submit' name='h-act' value='INITIAL'>Search Again</button></center></form>" SKIP*/
+/*            "</DIV>             <!-- end of grid_10 -->" SKIP                                                      */
+/*            "<DIV class='grid_1'> </DIV>        <!-- grid 1 spacer -->" SKIP                                       */
+/*            "</DIV>         <!-- end of row -->" SKIP.                                                             */
+
+    END.  /** of act = search **/
+    
+    OTHERWISE DO:
+
+        {&OUT} "<center><h2> An error has occured.  Please notify the IT Dept. </h2><br><p>TKtestSearchR.html[148]</p></center> ".     /* 2dot0 */
+
+    END.
+    
+END CASE.    
+
+/*** END OF LINE ***/ 
+
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,693 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML> 
+<HEAD>
+<TITLE>Project Hours Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="07/Jan/16">
+    <META NAME="MODIFIED_DATE" CONTENT="07/Jan/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           TSstatR.html
+    Description:    Time Sheet Report
+    Created:        Jacob Luttrell
+    Version History:
+        1.0 - Created by Jacob Luttrell on 07/Jan/16.
+        Need to come back and touch this up to work with logins see 
+        commented out variables and TSentryU.
+  -------------------------------------------------------------------*/
+/*DEFINE VARIABLE empid        LIKE Hours_Mstr.Hours_employee_ID NO-UNDO.*/
+DEFINE VARIABLE empid       AS INTEGER NO-UNDO.
+DEFINE VARIABLE clientid    AS INTEGER NO-UNDO.
+DEFINE VARIABLE clientabbv  LIKE Client_Mstr.Client_abbv NO-UNDO.
+DEFINE VARIABLE empname     AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE x           AS INTEGER INITIAL 3 NO-UNDO.
+
+DEFINE VARIABLE raw-week    AS CHARACTER                       NO-UNDO.
+DEFINE VARIABLE yr          AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE week        AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE days        AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE jan1        AS DATE                            NO-UNDO.
+DEFINE VARIABLE disp-wkdate AS CHARACTER                       NO-UNDO.
+DEFINE VARIABLE dayadj      AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE itdate      AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE dateind     AS CHARACTER                       NO-UNDO.
+
+DEFINE VARIABLE mondate     AS DATE                            NO-UNDO.
+DEFINE VARIABLE sundate     AS DATE                            NO-UNDO.
+     
+DEFINE VARIABLE disp-date    AS CHARACTER                      NO-UNDO.
+
+DEFINE VARIABLE act           AS CHARACTER                     NO-UNDO.
+DEFINE VARIABLE itmessage     AS LOGICAL INITIAL NO            NO-UNDO.
+
+DEFINE VARIABLE v-hour        AS DECIMAL                          NO-UNDO.
+DEFINE VARIABLE v-time        AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE c-time        AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE subtot        AS DECIMAL                          NO-UNDO.
+DEFINE VARIABLE v-in          LIKE Hours_Mstr.hours_time          NO-UNDO.
+DEFINE VARIABLE v-out         LIKE Hours_Mstr.hours_time          NO-UNDO.
+DEFINE VARIABLE v-type        AS CHARACTER                        NO-UNDO. /* the "IN" or "OUT" of time_desc */
+DEFINE VARIABLE v-htot        AS DECIMAL                          NO-UNDO.
+DEFINE VARIABLE overtime      AS DECIMAL                          NO-UNDO.
+
+DEFINE VARIABLE non-sal-hrs   LIKE  Hours_Mstr.Hours_amount NO-UNDO.
+
+DEFINE TEMP-TABLE disp-table
+        FIELD t-proj-name   LIKE Hours_Mstr.Hours_project_name
+        FIELD t-emp-id      LIKE Hours_Mstr.Hours_employee_ID
+        FIELD t-emp-name    AS   CHARACTER 
+        FIELD t-tot-hours   AS   DECIMAL 
+        FIELD t-salary      LIKE Emp_Mstr.Emp_type 
+        FIELD t-sort        LIKE Proj_Mstr.Proj_sort
+            INDEX disp-main-idx AS PRIMARY UNIQUE 
+                            t-emp-id
+                            t-proj-name.
+
+DEFINE TEMP-TABLE tot-table
+        FIELD tot-proj      LIKE Hours_Mstr.Hours_project_name
+        FIELD tot-hours     AS   DECIMAL
+        FIELD tot-overtime  AS   DECIMAL
+        FIELD tot-sort      LIKE Proj_Mstr.Proj_sort
+            INDEX tot-main-idx AS PRIMARY UNIQUE 
+                            tot-proj.
+
+DEFINE TEMP-TABLE ot-table
+        FIELD ot-proj       LIKE Hours_Mstr.Hours_project_name
+        FIELD ot-emp        LIKE Hours_Mstr.Hours_employee_ID
+        FIELD ot-overtime   AS   DECIMAL 
+        FIELD ot-tot-notes  AS   CHARACTER 
+            INDEX ot-main-idx AS PRIMARY UNIQUE 
+                            ot-emp
+                            ot-proj.
+
+DEFINE BUFFER dtbuff FOR disp-table. 
+DEFINE BUFFER ttbuff FOR tot-table.
+
+ASSIGN 
+    clientid    = INTEGER(html-encode(get-value("h-clientid")))
+    raw-week    = html-encode(get-value("html5-week"))
+    act         = html-encode(get-value("h-act"))
+    .
+
+FIND TSC_ctrl NO-LOCK NO-ERROR.
+    
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL".    
+
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_2col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan='2'>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Select a Client</td>" skip
+            "           <td><select name='h-clientid' Required >" skip.
+
+
+        FOR EACH Client_Mstr  WHERE                  
+            Client_Mstr.Client_deleted = ? NO-LOCK:  
+                               
+            ASSIGN 
+                clientid = Client_Mstr.Client_people_ID. 
+                
+            {&OUT}
+            "<option value='" clientid "' >" Client_Mstr.Client_abbv "</option>" SKIP.
+                
+        END.  /** of 4ea. client_mstr **/
+
+
+        {&OUT} 
+            "           </SELECT></td>" SKIP 
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Select a Week</td>" skip
+            "           <td><input type='week' name='html5-week' value='" raw-week "' Required/></td>" skip
+            "       </tr>" SKIP(1)
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        
+        ASSIGN
+            yr = INTEGER(SUBSTRING(raw-week,1,4))
+            week = INTEGER(SUBSTRING(raw-week,INDEX(raw-week,"-w") + 2,2))
+            jan1 = DATE(1, 1, yr).
+            
+        IF WEEKDAY(jan1) > 5 THEN
+           ASSIGN 
+            itdate = WEEKDAY(jan1)
+            dateind = "First"       
+            days = (week * 7) + (2 - WEEKDAY(jan1)).
+        ELSE 
+           ASSIGN
+             itdate = WEEKDAY(jan1) 
+             dateind = "Second"      
+             days = (week * 7) - (5 + WEEKDAY(jan1)).  
+        
+        ASSIGN 
+            mondate = jan1 + days
+            sundate = mondate + 6.      
+         
+        FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (Client_Mstr) THEN
+            ASSIGN clientabbv = Client_Mstr.Client_abbv.                                                                                       
+        
+        FOR EACH Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid AND 
+                                 Proj_Mstr.Proj_deleted = ? NO-LOCK:
+            
+            CREATE tot-table.
+            
+            ASSIGN 
+                tot-proj = Proj_Mstr.Proj_name
+                tot-sort = Proj_Mstr.Proj_sort.
+            
+            x = x + 1.
+        
+            FOR EACH Emp_Mstr WHERE Emp_Mstr.Emp_deleted = ? NO-LOCK: 
+                
+                CREATE disp-table.
+                
+                ASSIGN 
+                    t-proj-name = Proj_Mstr.Proj_name
+                    t-emp-id = Emp_Mstr.Emp_ID
+                    t-salary = Emp_Mstr.Emp_type
+                    t-sort = Proj_Mstr.Proj_sort.
+                
+                IF t-proj-name = "Regular / Salary" AND Emp_Mstr.Emp_type = "SALARY" THEN DO:
+
+                    ASSIGN
+                       t-tot-hours = TSC_ctrl.TSC_salary.
+
+                END.
+                                                                           
+                
+            END.
+            
+        END. 
+        FOR EACH Emp_Mstr WHERE Emp_Mstr.Emp_deleted = ? NO-LOCK:
+            
+            CREATE ot-table.
+                
+            ASSIGN 
+                ot-proj = "Overtime"
+                ot-emp  = Emp_Mstr.Emp_ID.
+         
+         END.
+                    
+            
+                                                                                                      
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='" x "'>Client: " clientabbv " - Week of: Monday " mondate " - Sunday " sundate "</TH>" SKIP    /* thead, tr, th makes the silver bar */
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD>Employees</TD>" SKIP.
+        
+        FOR EACH Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid NO-LOCK BREAK BY Proj_Mstr.Proj_sort: 
+            
+            {&OUT}   
+            "                <TD>" Proj_Mstr.Proj_name "</TD>" SKIP.
+        
+        END.
+            
+           {&OUT} 
+            "                <TD>Overtime</td>" SKIP
+            "                <TD>Notes</TD>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1)
+            "        <tbody>" SKIP.
+        
+        FOR EACH disp-table WHERE disp-table.t-salary = "HOURLY" EXCLUSIVE-LOCK,
+            EACH tot-table WHERE tot-table.tot-proj = disp-table.t-proj-name exclusive-lock,
+            EACH ot-table WHERE ot-table.ot-emp = disp-table.t-emp-id 
+            EXCLUSIVE-LOCK BREAK BY t-emp-id BY t-sort BY t-proj-name: 
+            
+            
+                IF FIRST-OF (t-emp-id) THEN DO:
+    
+                    FIND people_mstr WHERE people_mstr.people_id = t-emp-id AND
+                                           people_mstr.people_deleted = ?
+                                        NO-LOCK NO-ERROR.
+    
+                    IF AVAILABLE (people_mstr) THEN
+                        ASSIGN
+                            t-emp-name = people_mstr.people_lastname + ", " + people_mstr.people_firstname + " " + STRING(people_mstr.people_id).
+                    ELSE
+                        ASSIGN t-emp-name = STRING(Emp_Mstr.Emp_ID).
+        
+                    ASSIGN 
+                        overtime = 0.
+    
+                END. /* first-of emp_id */    
+                
+                
+                IF FIRST-OF (t-proj-name) THEN DO:
+                    ASSIGN                      
+                        v-htot = 0
+                        v-hour = 0
+                        v-in = ?
+                        v-out = ?.
+                END.  
+            
+                FOR EACH Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid AND 
+                                         Proj_Mstr.Proj_name = t-proj-name NO-LOCK,
+                    EACH Hours_Mstr WHERE Hours_Mstr.Hours_client_ID = clientid AND 
+                                      Hours_Mstr.Hours_project_name = t-proj-name AND 
+                                      Hours_Mstr.Hours_employee_ID = t-emp-id AND 
+                                      Hours_Mstr.Hours_date >= mondate AND 
+                                      Hours_Mstr.Hours_date <= sundate AND 
+                                      Hours_Mstr.Hours_deleted = ? NO-LOCK BREAK BY Hours_Mstr.Hours_employee_ID 
+                                      BY Proj_Mstr.Proj_sort BY Hours_Mstr.Hours_project_name BY Hours_Mstr.Hours_date BY Hours_Mstr.Hours_time:                 
+    
+                    ASSIGN 
+                        v-type = SUBSTRING(Hours_Mstr.Hours_time_desc,INDEX(Hours_Mstr.Hours_time_desc,"_") + 1,LENGTH(Hours_Mstr.Hours_time_desc)).
+                    
+                    IF Hours_Mstr.Hours_description <> "" THEN
+                        ASSIGN 
+                            ot-tot-notes = STRING(Hours_Mstr.Hours_date) + " - " + Hours_Mstr.Hours_description +  "<BR>" + ot-tot-notes.                                
+                    
+                    
+                    IF t-proj-name = "Regular / Salary" THEN DO:
+	                    IF v-type = "IN" THEN DO:
+	                        IF v-in = ? THEN DO: 
+	                            ASSIGN 
+	                            v-in = Hours_Mstr.Hours_time
+	                            c-time = STRING(Hours_Mstr.Hours_time)
+	                            v-time = IF c-time <> ? THEN SUBSTRING(c-time,index(c-time," ") + 1,5) ELSE "".
+	                           
+	                        END.                 
+	                    
+	                    END. /* v-type = in */
+	                    ELSE IF v-type = "OUT" THEN DO:
+	                        IF v-out = ? THEN DO: 
+	                            ASSIGN 
+	                                v-out = Hours_Mstr.Hours_time
+	                                c-time = STRING(Hours_Mstr.Hours_time)
+	                                v-time = IF c-time <> ? THEN SUBSTRING(c-time,index(c-time," ") + 1,5) ELSE "".
+	                                                                                                                                                                               
+	                        END. /* v-out = ? */
+	                    
+	                    END. /* else if v-type = out */
+	                    
+	                    IF v-in = ? AND v-out <> ? THEN DO: 
+	                        
+	                        ASSIGN 
+	                            v-in = DATETIME-TZ(Hours_Mstr.Hours_date).
+	                    
+	                    END.
+	                    
+	                    IF v-in <> ? AND v-out <> ? THEN DO:
+	                        
+	                        IF TSC_ctrl.TSC_rounding_point = "PER_ENTRY" THEN DO:
+	                            
+	                            IF TSC_ctrl.TSC_rounding_value = .25 THEN 
+	                                ASSIGN 
+	                                    subtot = ROUND((MTIME(v-out) - MTIME(v-in)) / (60 * 60 * 1000), 2) /* changes for millisec to hrs */
+	                                    subtot = ROUND(((subtot * 4) + .249),0) / 4.
+	                            
+	                            ELSE IF TSC_ctrl.TSC_rounding_value = .5 THEN 
+	                                
+	                                ASSIGN 
+	                                    subtot = ROUND((MTIME(v-out) - MTIME(v-in)) / (60 * 60 * 1000), 2) /* changes for millisec to hrs */   
+	                                    subtot = ROUND(((subtot * 2) + .499),0) / 2.
+	                            
+	                            ELSE /* TSC_ctrl.TSC_rounding_value = 0 */
+	                                ASSIGN 
+	                                    subtot = ROUND((MTIME(v-out) - MTIME(v-in)) / (60 * 60 * 1000), 2). /* changes for millisec to hrs */
+	                        
+	                        END. /* if rounding point = per_entry */
+	                        ELSE /* if TSC_rounding_point <> "PER_ENTRY" */
+	                        
+	                            subtot = ROUND((MTIME(v-out) - MTIME(v-in)) / (60 * 60 * 1000), 2). /* changes for millisec to hrs */
+	                        
+	                        
+	                        IF TSC_ctrl.TSC_overtime_point = "DAILY" AND 
+	                           subtot > 8 AND 
+	                           t-salary = "HOURLY" THEN
+	                       
+	                               ASSIGN 
+	                                   ot-overtime = ot-overtime + subtot - 8
+	                                   subtot = 8.
+	                            
+	                        IF TSC_ctrl.TSC_rounding_point = "DAILY" THEN DO:    
+	                            
+	                            IF TSC_ctrl.TSC_rounding_value = .25 THEN 
+	                            
+	                                v-hour = v-hour + (ROUND(((subtot * 4) + .249),0) / 4).
+	                            
+	                            ELSE IF TSC_ctrl.TSC_rounding_value = .5 THEN 
+	                            
+	                                v-hour = v-hour + (ROUND(((subtot * 2) + .499),0) / 2).
+	                                
+	                            ELSE if TSC_ctrl.TSC_rounding_value = 0 THEN 
+	                                
+	                                v-hour = v-hour + subtot.
+	                        
+	                        END. /* if rounding_point = daily */
+	                        ELSE /* if TSC_rounding_point <> "DAILY" */
+	                        
+	                            v-hour = v-hour + subtot.                                                      
+	                                                        
+	                        ASSIGN  
+	                            v-in = ?
+	                            v-out = ?.
+	                        
+	                    END. /* v-in <> ? and v-out <> ? */                                                                                                 
+                    END. /* t-proj-name = "regular / salary" */
+                    ELSE DO:
+                        IF Hours_Mstr.Hours_amount > 0 THEN
+    
+                            v-hour = v-hour + Hours_Mstr.Hours_amount.
+               
+                    END. /* else do t-proj-name */
+                                           
+                    IF LAST-OF (Hours_Mstr.Hours_project_name) THEN DO:
+                    
+                        IF v-in <> ? AND v-out = ? THEN DO:
+                            ASSIGN
+                                subtot = ROUND((MTIME(NOW) - MTIME(v-in)) / (60 * 60 * 1000), 2) /* changes for millisec to hrs */
+                                v-hour = v-hour + subtot
+                                v-in = ?
+                                v-out = ?.
+                        END. /* v-in <> ? and v-out = ? */              
+    
+                        IF TSC_ctrl.TSC_rounding_point = "WEEKLY" OR TSC_ctrl.TSC_rounding_point = "PER_PERIOD" AND 
+                           TSC_ctrl.TSC_pay_period = "WEEKLY" THEN DO:
+                         
+                            IF TSC_ctrl.TSC_rounding_value = .25 THEN  
+                              
+                                t-tot-hours = t-tot-hours + (ROUND(((v-hour * 4) + .249),0) / 4).
+                             
+                            ELSE IF TSC_ctrl.TSC_rounding_value = .5 THEN 
+                             
+                                t-tot-hours = t-tot-hours + (ROUND(((v-hour * 2) + .499),0) / 2).    
+                             
+                            ELSE /* TSC_ctrl.TSC_rounding_value = 0 */ 
+                             
+                                t-tot-hours = t-tot-hours + v-hour.
+                        END.        
+                        ELSE /* if TSC_rounding_point <> "WEEKLY" */
+                         
+                            t-tot-hours = t-tot-hours + v-hour.  
+                        
+                        IF TSC_ctrl.TSC_overtime_point = "WEEKLY" AND 
+                              t-proj-name = "Regular / Salary" AND 
+                              t-tot-hours > 40 AND 
+                              t-salary = "HOURLY" THEN DO: 
+                            
+                            ASSIGN 
+                                ot-overtime = ot-overtime + (t-tot-hours - 40) 
+                                t-tot-hours = 40.        
+                        END.                                  
+                        ASSIGN 
+                            tot-overtime = tot-overtime + ot-overtime
+                            tot-hours = tot-hours + t-tot-hours.
+                        
+                               
+                    END. /* last-of proj_mstr.proj_name */
+                    
+       
+                END. /* 4ea hours_mstr */     
+
+        END. /* 4ea. disp-table */
+        
+/*{&OUT}                 */
+/*    "</TABLE>" SKIP(1).*/
+        
+        FOR EACH disp-table WHERE disp-table.t-salary = "SALARY" EXCLUSIVE-LOCK,
+            EACH tot-table WHERE tot-table.tot-proj = disp-table.t-proj-name EXCLUSIVE-LOCK,
+            EACH ot-table WHERE ot-table.ot-emp = disp-table.t-emp-id
+            EXCLUSIVE-LOCK BREAK BY t-emp-id BY t-sort BY t-proj-name:
+
+
+
+    
+    
+/*{&OUT}                                       */
+/*    "<TABLE>" SKIP                           */
+/*    "   <TR>" SKIP                           */
+/*    "       <TH colspan=4>ot-table</TH>" SKIP*/
+/*    "   </TR>" SKIP                          */
+/*    "   <TR>" SKIP                           */
+/*    "       <TH>ot-proj</TH>" SKIP           */
+/*    "       <TH>ot-emp</TH>" SKIP            */
+/*    "       <TH>ot-overtime</TH>" SKIP       */
+/*    "       <TH>ot-tot-notes</TH>" SKIP      */
+/*    "   </TR>" SKIP                          */
+/*    "   <TR>" SKIP                           */
+/*    "       <Td>" ot-proj "</Td>" SKIP       */
+/*    "       <Td>" ot-emp "</Td>" SKIP        */
+/*    "       <Td>" ot-overtime "</Td>" SKIP   */
+/*    "       <Td>" ot-tot-notes "</Td>" SKIP  */
+/*    "   </TR>" SKIP                          */
+/*    "</TABLE><BR><BR>" SKIP(1).              */
+    
+
+
+
+    
+
+
+            IF FIRST-OF (t-emp-id) THEN DO:
+
+                         FIND people_mstr WHERE people_mstr.people_id = t-emp-id AND
+                                                people_mstr.people_deleted = ?
+                                             NO-LOCK NO-ERROR.
+
+                         IF AVAILABLE (people_mstr) THEN
+                             ASSIGN
+                                 t-emp-name = people_mstr.people_lastname + ", " + people_mstr.people_firstname + " " + STRING(people_mstr.people_id).
+                         ELSE
+                             ASSIGN t-emp-name = STRING(Emp_Mstr.Emp_ID).
+
+                         ASSIGN
+                             overtime = 0.
+                      
+            END. /* first-of emp_id */
+
+
+/*                     IF FIRST-OF (t-proj-name) THEN DO:*/
+/*                         ASSIGN                        */
+/*                             v-htot = 0                */
+/*                             v-hour = 0                */
+/*                             v-in = ?                  */
+/*                             v-out = ?.                */
+/*                     END.                              */
+
+/*                     IF t-proj-name = "Regular / Salary" THEN DO:*/
+/*                                                                 */
+/*                         ASSIGN                                  */
+/*                            t-tot-hours = TSC_ctrl.TSC_salary.   */
+/*                                                                 */
+/*                     END.                                        */
+
+
+                     FOR EACH Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid AND
+                                              Proj_Mstr.Proj_name = t-proj-name NO-LOCK,
+                         EACH Hours_Mstr WHERE Hours_Mstr.Hours_client_ID = clientid AND
+                                           Hours_Mstr.Hours_project_name = t-proj-name AND
+                                           Hours_Mstr.Hours_employee_ID = t-emp-id AND
+                                           Hours_Mstr.Hours_date >= mondate AND
+                                           Hours_Mstr.Hours_date <= sundate AND
+                                           Hours_Mstr.Hours_deleted = ? NO-LOCK BREAK BY Hours_Mstr.Hours_employee_ID
+                                           BY Proj_Mstr.Proj_sort BY Hours_Mstr.Hours_project_name BY Hours_Mstr.Hours_date BY Hours_Mstr.Hours_time:
+
+ 
+                        
+                         ASSIGN
+                              t-tot-hours = t-tot-hours + Hours_Mstr.Hours_amount
+                              non-sal-hrs = non-sal-hrs + Hours_Mstr.hours_amount
+                              tot-hours   = tot-hours   + Hours_Mstr.Hours_amount.
+                                  
+                                  
+                         
+
+                         IF Hours_Mstr.Hours_description <> "" THEN
+                             ASSIGN
+                                 ot-tot-notes = STRING(Hours_Mstr.Hours_date) + " - " + Hours_Mstr.Hours_description + "<BR>" + ot-tot-notes.
+
+                        
+
+                     END. /* 4ea. proj_mstr... hours_mstr */
+
+/*                    ASSIGN                                   */
+/*                         tot-hours = tot-hours + t-tot-hours.*/
+
+/*{&OUT}                                         */
+/*    "<TABLE>" SKIP                             */
+/*    "   <TR>" SKIP                             */
+/*    "       <TH colspan=6>disp-table</TH>" SKIP*/
+/*    "   </TR>" SKIP                            */
+/*    "   <TR>" SKIP                             */
+/*    "       <TH>t-proj-name</TH>" SKIP         */
+/*    "       <TH>t-emp-id</TH>" SKIP            */
+/*    "       <TH>t-emp-name</TH>" SKIP          */
+/*    "       <TH>t-tot-hours</TH>" SKIP         */
+/*    "       <th>t-salary</TH>" SKIP            */
+/*    "       <TH>t-sort</TH>" SKIP              */
+/*    "   </TR>" SKIP                            */
+/*    "   <TR>" SKIP                             */
+/*    "       <Td>" t-proj-name "</Td>" SKIP     */
+/*    "       <Td>" t-emp-id "</Td>" SKIP        */
+/*    "       <Td>" t-emp-name "</Td>" SKIP      */
+/*    "       <Td>" t-tot-hours "</Td>" SKIP     */
+/*    "       <td>" t-salary "</Td>" SKIP        */
+/*    "       <Td>" t-sort "</Td>" SKIP          */
+/*    "   </TR>" SKIP                            */
+/*    "</TABLE><BR><BR>" SKIP(1).                */
+
+            IF LAST-OF (t-emp-id) THEN DO: 
+                
+/*                IF Emp_Mstr.Emp_type = "SALARY" THEN DO:*/
+                    
+	                FIND dtbuff WHERE dtbuff.t-emp-id = disp-table.t-emp-id AND 
+	                    dtbuff.t-proj-name = "Regular / Salary"	                    
+	                        EXCLUSIVE-LOCK NO-ERROR.
+	                
+	                IF NOT AVAILABLE (dtbuff) THEN DO:
+	                    CREATE dtbuff.
+	                    ASSIGN 
+	                        dtbuff.t-emp-id     = disp-table.t-emp-id
+	                        dtbuff.t-proj-name  = "Regular / Salary"
+	                        dtbuff.t-emp-name   = disp-table.t-emp-name
+	                        dtbuff.t-tot-hours  = TSC_ctrl.TSC_salary
+	                        dtbuff.t-salary     = disp-table.t-salary.
+	                END.    /** of if not avail dtbuff **/
+	                
+	                ASSIGN 
+	                    dtbuff.t-tot-hours  = dtbuff.t-tot-hours - non-sal-hrs
+	                    non-sal-hrs         = 0.	                    
+	                    
+	                FIND ttbuff WHERE ttbuff.tot-proj = "Regular / Salary"
+	                    EXCLUSIVE-LOCK NO-ERROR.
+	                    
+	                IF NOT AVAILABLE (ttbuff) THEN DO:
+	                    CREATE ttbuff.
+	                    ASSIGN 
+	                        ttbuff.tot-proj = "Regular / Salary".
+	                END.  /** of if not avail ttbuff **/
+	                
+	                ttbuff.tot-hours    = ttbuff.tot-hours + dtbuff.t-tot-hours.
+            
+/*                END.  /** of if emp_type = salary **/*/
+                    
+            END.  /** of if last-of t-emp-id **/
+
+
+
+        END. /* 4ea. disp-table... SALARY */
+  
+        FOR EACH disp-table EXCLUSIVE-LOCK,
+            EACH ot-table WHERE ot-table.ot-emp = disp-table.t-emp-id
+            EXCLUSIVE-LOCK BREAK BY t-emp-id BY t-sort BY t-proj-name:
+      
+            IF FIRST-OF (t-emp-id) THEN DO:
+                {&OUT}
+                "           <tr class='cell_right'>" SKIP
+                "               <td>" t-emp-name "</td>" SKIP.
+            END. /* first-of emp_id */
+      
+            {&OUT}
+                  "<td>" t-tot-hours "</td>" SKIP.
+                  
+            IF LAST-OF (t-emp-id) THEN DO:  
+                    
+               {&OUT}
+                   "<td>" ot-overtime "</td>" skip
+                   "<td>"  ot-tot-notes "</td></tr>" SKIP.
+    
+            END. /* last-of emp_mstr.emp_id */                  
+      
+      
+      END. /* 4ea disp-table... {&OUT} */
+        
+            {&OUT}       
+                "        </tbody>" SKIP   
+                "        <TFOOT>" SKIP
+                "            <TR>" SKIP
+                "                <TD>Total Hours:</TD>" SKIP.
+    
+        FOR EACH tot-table NO-LOCK BREAK BY tot-sort BY tot-proj: 
+            
+            {&OUT}
+            "               <td>" tot-table.tot-hours  "</td>" SKIP.
+                 
+        END. /* 4ea. tot-table */
+
+        {&OUT}
+            "               <td>" tot-overtime "</td><td></td>" Skip
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN=" x ">END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+
+END CASE.         
+        
+         
+</SCRIPT>
+</BODY>
+</HTML>
+</SCRIPT>
+</BODY>
+</HTML>

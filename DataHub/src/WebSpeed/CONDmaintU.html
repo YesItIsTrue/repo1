@@ -1,0 +1,376 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Condition Maintenance</TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.4">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="06/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="03/Nov/15">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />  
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and 
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL. 
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+/**********************************************************************************
+ *
+ *  CONDmaintU.html   -   Version 1.2
+ *
+ *  This program is designed to provide basic maintenance for the Conditions that could
+ *  be tied to a Patient.  Updates the condition_mstr table in the HHI database.
+ *
+ *  ----------------------------------------------------------------------------
+ *
+ *  Revision History:
+ *  -----------------
+ *  1.0 - written by Doug Luttrell on 06/Oct/14.  Original Version.
+ *  1.1 - written by DOUG LUTTRELL on 26/Oct/14.  Fixed the title problem.  Change
+ *          language of button from UPDATE to SAVE for clarity for user?  Marked
+ *          by 1dot1.
+ *  1.2 - written by DOUG LUTTRELL on 19/Nov/14.  Changed the creation of a new
+ *          condition to be driven by a button instead of the drop-down per Danielle's 
+ *          request.  Marked by 1dot2.
+ *  1.3 - written by Jacob Luttrell on 02/Oct/15. Added more div tags to control page better           
+ *          and corrected buttons. Marked by 1dot3.
+ *  1.4 - written by Jacob Luttrell on 03/Nov/15. Corrected error screen.
+ *          marked by 1dot4.
+ *  1.5 - written by Jacob Luttrell on 14/Mar/16. Added prog_name to the updating section.
+ *          Marked by 1dot5.
+ ***********************************************************************************/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/  
+ 
+/***************************  Variable Definition Section  *************************/
+ DEFINE VARIABLE condid     LIKE condition_mstr.condition_ID        NO-UNDO.   
+ DEFINE VARIABLE condname   LIKE condition_mstr.condition_name      NO-UNDO.
+ DEFINE VARIABLE conddesc   LIKE condition_mstr.condition_desc      NO-UNDO.
+ DEFINE VARIABLE iscommon   LIKE condition_mstr.condition_common    NO-UNDO. 
+ 
+
+ DEFINE VARIABLE act        AS CHARACTER                    NO-UNDO. 
+ DEFINE VARIABLE ITshowmsg  AS LOG INITIAL NO               NO-UNDO.  
+ 
+ DEFINE VARIABLE thiscondition AS CHARACTER                    NO-UNDO.  
+ 
+
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre get-value</P>" skip
+                                                                                       "<P>Act = " act "</P>" skip
+                                                                                       "<P>Pre GET condid = " get-value('h-condid') "</P>" SKIP
+                                                                                       "<P>condid = " condid "</P>" skip    
+                                                                                       "<P>condname = " condname "</P>" skip
+                                                                                       "<P>conddesc = " conddesc "</P>" skip
+                                                                                       "<P>iscommon = " iscommon "</P>" skip
+                                                                                       "<P>h-iscommon = " get-value('h-iscommon') "</P>" skip
+                                                                                       "<hr width=90%>" skip.																				       
+        
+ ASSIGN 
+    act         = get-value('h-act')
+    condid      = IF SUBSTRING(get-value('h-condid'),1,4) = "null" THEN         /* 1dot2 */
+                    0                                                           /* 1dot2 */
+                  ELSE                                                          /* 1dot2 */
+                    integer(get-value('h-condid'))                              /* 1dot2 */
+    condname    = get-value('h-condname')
+    conddesc    = get-value('h-conddesc')
+    iscommon    = IF LOGICAL(get-value('h-iscommon')) = YES THEN 
+                        YES
+                  ELSE 
+                        NO.
+    
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Post get-value</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>Pre GET condid = " get-value('h-condid') "</P>" SKIP
+																				       "<P>condid = " condid "</P>" skip    
+																				       "<P>condname = " condname "</P>" skip
+																				       "<P>conddesc = " conddesc "</P>" skip
+																				       "<P>iscommon = " iscommon "</P>" skip
+																				       "<P>h-iscommon = " get-value('h-iscommon') "</P>" skip
+																				       "<hr width=90%>" skip.
+        
+ IF act = "" THEN 
+    act = "INITIAL".
+    
+/* ELSE IF act = "CREATE" THEN*/
+/*    act = "CREATE".         */
+/*                                                                                           */
+/* ELSE IF act = "SAVE CHANGES" THEN                                              /* 1dot1 */*/
+/*    act = "SAVE CHANGES".                                                       /* 1dot1 */*/
+      
+/* ELSE IF condid = 0 THEN*/
+/*    act = "PROMPT".     */
+     
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre Case</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>condid = " condid "</P>" skip   
+																				       "<P>condname = " condname "</P>" skip
+																				       "<P>conddesc = " conddesc "</P>" skip
+																				       "<hr width=90%>" skip.
+        
+/********************************  Main Program  ***********************************/
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:
+        
+        {CONDmaintU-form.i "FIND CONDITION" "NOTHING" "DISABLED" "NOTHING"}. 
+         
+    END.  /** of act = "INITIAL" **/
+    
+    WHEN "FIND CONDITION" THEN DO:
+        
+        FIND condition_mstr WHERE condition_mstr.condition_ID = condid AND  
+            condition_mstr.condition_deleted = ?
+                NO-LOCK NO-ERROR.
+        IF AVAILABLE condition_mstr THEN 
+            ASSIGN 
+                condname    = condition_mstr.condition_name
+                conddesc    = condition_mstr.condition_desc
+                iscommon    = condition_mstr.condition_common. 
+ 
+        {CONDmaintU-form.i "SAVE CHANGES" "DISABLED" "NOTHING" "NOTHING"}.                          /* 1dot1 */
+                
+																				IF ITshowmsg = YES THEN 
+																				    {&OUT}
+																				        "<P>Post FIND</P>" skip  
+																				        "<P>Act = " act "</P>" skip
+																				        "<P>condid = " condid "</P>" skip   
+																				        "<P>condname = " condname "</P>" skip
+																				        "<P>conddesc = " conddesc "</P>" skip
+																				        "<hr width=90%>" skip.
+         
+    END.  /** of act = "FIND" **/ 
+    
+    WHEN "SAVE CHANGES" THEN DO:                                                /* 1dot1 */
+        
+																		        IF ITshowmsg = YES THEN 
+ 																		            {&OUT}
+																		                "<P>Inside Update</P>" skip
+																		                "<P>Act = " act "</P>" skip
+																		                "<P>condid = " condid "</P>" skip   
+																		                "<P>condname = " condname "</P>" skip
+																		                "<P>conddesc = " conddesc "</P>" skip
+																		                "<hr width=90%>" skip.
+        
+        FIND condition_mstr WHERE condition_mstr.condition_ID = condid AND 
+            condition_mstr.condition_deleted = ? 
+                EXCLUSIVE-LOCK NO-ERROR.
+        IF AVAILABLE condition_mstr THEN 
+            ASSIGN  
+                condition_mstr.condition_desc           = conddesc
+                condition_mstr.condition_common         = iscommon
+                condition_mstr.condition_modified_date  = TODAY 
+                condition_mstr.condition_modified_by    = USERID("HHI")
+                condition_mstr.condition_prog_name      = THIS-PROCEDURE:FILE-NAME                          /* 1dot5 */
+                . 
+        ELSE 
+            {&OUT} "<P>ERROR - condition_mstr not found for condition = " condid ".</P>" skip.
+ 
+        {CONDmaintU-form.i "INITIAL" "DISABLED" "DISABLED" "NOTHING"}.                
+        
+    END.  /** of act = "UPDATE" **/
+    
+    WHEN "PROMPT" THEN DO:
+        
+																		        IF ITshowmsg = YES THEN 
+																			        {&OUT}
+																			            "<P>Inside Prompt</P>" skip
+																			            "<P>Act = " act "</P>" skip
+																			            "<P>condid = " condid "</P>" skip   
+																			            "<P>condname = " condname "</P>" skip
+																			            "<P>conddesc = " conddesc "</P>" skip
+																			            "<hr width=90%>" skip.
+        
+		{&OUT}
+		    "<FORM method='get' id='CONDmaintU-form'>" SKIP 
+		    "<DIV class='row'>" SKIP                                                                          /* 1dot3 */
+			"<DIV class='grid_2'> </DIV>" SKIP                                                                /* 1dot3 */
+			"<DIV class='grid_8'>" SKIP                                                                       /* 1dot3 */
+		    "<DIV class='table_col'>" SKIP
+		    "<TABLE>" SKIP 
+		    "   <TR>" SKIP
+		    "       <TH colspan=2>Condition Maintenance</TH>" SKIP
+		    "   <TR>" SKIP 
+		    "       <TD>Condition</TD>" SKIP 
+		    "       <TD class='REQ'>" SKIP
+		    "         <input type='text' name='h-condname' value='" condname "' size=18 required />" SKIP
+		    "       </TD>" SKIP
+		    "   </TR>" skip 
+		    "   <TR>" SKIP 
+		    "       <TD>Condition Description</TD>" SKIP
+		    "       <TD>" SKIP
+		    "             <input type='text' name='h-conddesc' value='" conddesc "' size=78 />" SKIP
+		    "       </TD>" SKIP
+		    "   </TR>" SKIP
+		    "     <TR>" SKIP
+		    "         <TD>Common Condition</TD>" SKIP
+		    "         <TD>" SKIP. 
+		    
+        IF iscommon = YES THEN 
+            {&OUT}		    
+                "           <input type='checkbox' name='h-iscommon' value='YES' CHECKED />" SKIP.
+		ELSE 
+            {&OUT}
+                "           <input type='checkbox' name='h-iscommon' value='YES' />" SKIP.          
+		 
+        {&OUT}
+            "       </TD>" SKIP
+            "   </TR>" SKIP
+		    "</TABLE>" SKIP
+		    "</DIV>" SKIP                                                                                       /* 1dot3 */
+		    "</DIV>         <!-- end of grid_8 -->" SKIP                                                        /* 1dot3 */
+			"<DIV class='grid_2'> </DIV>" SKIP                                                                  /* 1dot3 */
+			"</DIV>     <!-- end of row -->" SKIP                                                               /* 1dot3 */
+/*		    "<center>" SKIP*/
+            "<BR>" SKIP                                                                                         /* 1dot3 */
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                  /* 1dot2 - bonus fix */  
+/* ****** removed in 1dot3 ******       
+/*		    "<INPUT type='hidden' name='h-act' value='CREATE' />" SKIP                 */
+/*		    "<INPUT type='submit' name='Submit' value='Create Record' /></center>" SKIP*/
+    ****** end of removal ****** */
+		    "<div class='row'>" SKIP                                                                            /* 1dot3 */
+			"   <div class='grid_5'> </DIV>" SKIP                                                               /* 1dot3 */
+			"   <div class='grid_2'><button type='submit' name='h-act' value='CREATE' class='btn'>CREATE</BUTTON></div>" SKIP   /* 1dot3 */
+			"   <div class='grid_5'> </DIV>" SKIP                                                               /* 1dot3 */
+			"</div>" SKIP
+/*		    "</DIV>" SKIP*/
+		    "</FORM>" SKIP.  
+        
+    END.  /** of act = "PROMPT" **/
+    
+    WHEN "CREATE" THEN DO:
+        
+																		        IF ITshowmsg = YES THEN 
+																			        {&OUT}
+																			            "<P>Inside Create</P>" skip
+																			            "<P>Act = " act "</P>" skip
+																			            "<P>condid = " condid "</P>" skip   
+																			            "<P>condname = " condname "</P>" skip
+																			            "<P>conddesc = " conddesc "</P>" skip
+																			            "<P>iscommon = " iscommon "</P>" skip
+																			            "<hr width=90%>" skip.
+	            
+        FIND FIRST condition_mstr WHERE condition_mstr.condition_name = condname AND 
+            condition_mstr.condition_deleted = ?
+                NO-LOCK NO-ERROR.
+        IF AVAILABLE condition_mstr THEN DO: 
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Avail condition_mstr</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>condid = " condid "</P>" skip   
+                                                                                        "<P>condname = " condname "</P>" skip
+                                                                                        "<P>conddesc = " conddesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.
+            {&OUT}
+                "<DIV class='row'>" SKIP                                                                                                                    /* 1dot4 */          
+                "<DIV class='grid_2'> </DIV>" SKIP                                                                                                          /* 1dot4 */
+                "<DIV class='grid_8'>" SKIP                                                                                                                 /* 1dot4 */
+                "<CENTER><P class='errmsg'>ERROR! Item " condname " already exists.  Would you like to update the existing record?</P></CENTER>" SKIP       /* 1dot4 */
+                "</DIV>         <!-- end of grid_8 -->" SKIP                                                                                                /* 1dot4 */
+				"<DIV class='grid_2'> </DIV>" SKIP                                                                                                          /* 1dot4 */
+				"</DIV>     <!-- end of row -->" SKIP                                                                                                       /* 1dot4 */    
+                "<FORM>" SKIP                                                                                                                               /* 1dot4 */
+                "<BR>" SKIP                                                                                                                                 /* 1dot4 */
+                "<div class='row'>" SKIP                                                                                                                    /* 1dot4 */
+				"   <div class='grid_3'> </DIV>" SKIP                                                                                                       /* 1dot4 */    
+				"   <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                                       /* 1dot4 */
+                "   <INPUT type='hidden' name='h-condid' value='" condition_mstr.condition_ID "' />" SKIP                                                   /* 1dot4 */
+				"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='FIND CONDITION' class='btn'>Yes</BUTTON></div>" SKIP                      /* 1dot4 */        
+				"   <div class='grid_2'> </DIV>" SKIP                                                                                                       /* 1dot4 */    
+				"   <div class='grid_2'><BUTTON type='submit'  name='h-act' value='INITIAL' class='btn'>No</BUTTON></div>" SKIP                             /* 1dot4 */    
+				"   <div class='grid_3'> </DIV>" SKIP                                                                                                       /* 1dot4 */
+				"</div>" SKIP                                                                                                                               /* 1dot4 */
+				"</Form/" SKIP.                                                                                                                             /* 1dot4 */
+/*                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP    */
+/*                "<INPUT type='hidden' name='h-condid' value='" condition_mstr.condition_ID "' />" SKIP*/
+/*                "<button name='h-act' value='FIND CONDITION' type='submit'>Yes</button>" SKIP         */
+/*                "<button name='h-act' value='INITIAL' type='submit'>No</button></FORM></CENTER>" SKIP.*/
+                                                                                                    
+            act = "CONDITION EXISTS".    /* not actually used.  Was originally going to be tied to the OTHERWISE condition in the email */
+        
+        END.  /** of if avail condition_mstr **/
+        
+        ELSE DO:
+            
+																	            IF ITshowmsg = YES THEN 
+																	                {&OUT}
+																	                    "<P>Inside Not Avail condition_mstr</P>" skip
+																	                    "<P>Act = " act "</P>" skip
+																	                    "<P>condid = " condid "</P>" skip   
+																	                    "<P>condname = " condname "</P>" skip
+																	                    "<P>conddesc = " conddesc "</P>" skip
+																	                    "<hr width=90%>" skip.
+           
+           /**** removed in 1dot2 - bonus delayed fix ****
+            FIND LAST condition_mstr NO-LOCK NO-ERROR.       /** need to remove this find last and if avail assign once seq-condid is created **/
+            IF AVAILABLE condition_mstr THEN 
+                condid = condition_mstr.condition_ID.
+	                *************  end of delayed fix - 1dot2 *******/
+	                
+	                
+            CREATE condition_mstr.
+            ASSIGN 
+                condid                                  = NEXT-VALUE(seq-condition)                    /* 1dot2 - bonus delayed fix */
+                condition_mstr.condition_ID             = condid    
+                condition_mstr.condition_name           = condname
+                condition_mstr.condition_desc           = conddesc 
+                condition_mstr.condition_common         = iscommon
+                condition_mstr.condition_created_by     = USERID("HHI")
+                condition_mstr.condition_create_date    = TODAY 
+                condition_mstr.condition_modified_by    = USERID("HHI")
+                condition_mstr.condition_modified_date  = TODAY
+                condition_mstr.condition_prog_name      = THIS-PROCEDURE:FILE-NAME                                                                              /* 1dot5 */
+                .
+                
+            {CONDmaintU-form.i "INITIAL" "DISABLED" "DISABLED" "NOTHING"}.     
+                
+        END.  /** of else do **/
+        
+    END.  /** of act = "CREATE" **/
+      
+    OTHERWISE DO: 
+                       
+																		        IF ITshowmsg = YES THEN 
+																		            {&OUT}
+																		                "<P>Inside Otherwise Do</P>" skip
+																		                "<P>Act = " act "</P>" skip
+																		                "<P>condid = " condid "</P>" skip   
+																		                "<P>condname = " condname "</P>" skip
+																		                "<P>conddesc = " conddesc "</P>" skip
+																		                "<hr width=90%>" skip.
+                                           
+        {&OUT} 
+            "<P class='errmsg'>Unexpected Condition!  Please contact <a href='mailto:hhi.techsupport@mysolsource.com?subject=Error with CONDmaintU.html -- " act "'>Solsource</a> immediately.</P>" SKIP             
+            "<FORM method='post'>" skip
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                  /* 1dot3 */  
+            "<center><INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP 
+            "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP 
+            "</FORM>" skip.     
+        
+    END.  /** of otherwise **/
+    
+END CASE.  /*** case of act ***/
+
+																				IF ITshowmsg = YES THEN 
+																				    {&OUT} "<P>End OF LINE.</P>".
+
+/*******************************  End of Program  **********************************/
+</SCRIPT>
+</BODY>
+</HTML>

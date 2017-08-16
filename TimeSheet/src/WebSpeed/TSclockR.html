@@ -1,0 +1,511 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Time Clock Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="12/Jul/16">
+    <META NAME="MODIFIED_DATE" CONTENT="12/Jul/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           TShoursU.html
+    Description:    Time Sheet Report
+    Created:        Jacob Luttrell
+    Version History:
+        1.0 - Created by Jacob Luttrell on 12/Jul/16.
+        Need to come back and touch this up to work with logins see 
+        commented out variables and TSentryU.
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE raw-week    AS CHARACTER                       NO-UNDO.
+DEFINE VARIABLE yr          AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE week        AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE days        AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE jan1        AS DATE                            NO-UNDO.  
+DEFINE VARIABLE disp-wkdate AS CHARACTER                       NO-UNDO.
+DEFINE VARIABLE dayadj      AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE itdate      AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE dateind     AS CHARACTER                       NO-UNDO.
+  
+DEFINE VARIABLE fromdate      LIKE Hours_Mstr.Hours_date          NO-UNDO.  
+DEFINE VARIABLE todate        LIKE Hours_Mstr.Hours_date          NO-UNDO.
+DEFINE VARIABLE disp-from     AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE disp-to       AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE empname       AS   CHARACTER                      NO-UNDO.
+
+DEFINE VARIABLE amount        LIKE Hours_Mstr.Hours_amount        NO-UNDO.
+DEFINE VARIABLE clientid      LIKE Hours_Mstr.Hours_client_ID     NO-UNDO.
+DEFINE VARIABLE hours-date    LIKE Hours_Mstr.Hours_date          NO-UNDO.
+DEFINE VARIABLE disp-date     AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE hours-desc    LIKE Hours_Mstr.Hours_description   NO-UNDO.
+DEFINE VARIABLE empid         LIKE Hours_Mstr.Hours_employee_ID   NO-UNDO.
+DEFINE VARIABLE projname      LIKE Hours_Mstr.Hours_project_name  NO-UNDO.
+DEFINE VARIABLE translation   LIKE Hours_Mstr.Hours_translation   NO-UNDO.
+DEFINE VARIABLE empidlist     AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE c-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE db-time       LIKE Hours_Mstr.Hours_time          NO-UNDO.
+DEFINE VARIABLE h-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE m-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE time-desc     LIKE Hours_Mstr.Hours_time_desc     NO-UNDO.  
+DEFINE VARIABLE time-desclist AS   CHARACTER INITIAL "CLOCKED_IN,CLOCKED_OUT,BREAK_OUT,BREAK_IN" NO-UNDO.
+DEFINE VARIABLE x             AS   INTEGER                        NO-UNDO.
+
+DEFINE VARIABLE v-hour        AS DECIMAL                          NO-UNDO.
+DEFINE VARIABLE hr-hour       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE min-hour      AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE disp-hour     AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE subtot        AS DECIMAL                          NO-UNDO.
+DEFINE VARIABLE v-in          LIKE Hours_Mstr.hours_time          NO-UNDO.
+DEFINE VARIABLE v-out         LIKE Hours_Mstr.hours_time          NO-UNDO.
+DEFINE VARIABLE v-type        AS CHARACTER                        NO-UNDO. /* the "IN" or "OUT" of time_desc */
+DEFINE VARIABLE v-htot        AS DECIMAL                          NO-UNDO.
+DEFINE VARIABLE hr-htot       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE min-htot      AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE disp-htot     AS CHARACTER                        NO-UNDO.
+
+DEFINE VARIABLE clientabbv    LIKE Client_Mstr.Client_abbv        NO-UNDO.
+
+DEFINE VARIABLE entrynbr      AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE entrytotal    AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE isselected    AS CHARACTER                        NO-UNDO. 
+DEFINE VARIABLE isdisabled    AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE curr-entry    AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE progname      AS CHARACTER                        NO-UNDO.
+
+DEFINE VARIABLE act         AS CHARACTER                          NO-UNDO.
+DEFINE VARIABLE itmessage   AS LOGICAL INITIAL NO                 NO-UNDO.
+
+ASSIGN 
+    empid           = INTEGER(html-encode(get-value("h-empid")))
+    empname         = html-encode(get-value("h-empname"))
+    raw-week        = html-encode(get-value("html5-week"))
+    disp-from       = html-encode(get-value("html5-from"))
+    disp-to         = html-encode(get-value("html5-to"))   
+    amount          = DECIMAL(html-encode(get-value("h-amount")))
+    clientid        = INTEGER(html-encode(get-value("h-clientid")))
+    hours-desc      = html-encode(get-value("h-hours-desc"))
+    projname        = html-encode(get-value("h-projname"))
+    act             = html-encode(get-value("h-act"))
+    disp-date       = html-encode(get-value("html5-date"))
+    clientabbv      = html-encode(get-value("h-clientabbv"))
+    progname        = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1)    
+    empidlist       = html-encode(get-value("h-empidlist"))   
+    v-time          = html-encode(get-value("h-time"))
+    time-desc       = html-encode(get-value("h-time-desc"))
+    .
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    disp-from,                                                               
+    OUTPUT fromdate                                                             
+    ).                                                                          
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                   
+    disp-to,                                                                 
+    OUTPUT todate                                                               
+    ).                                          
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    disp-date,                                                               
+    OUTPUT hours-date                                                             
+    ).           
+    
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL".    
+
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO: 
+      {&OUT}
+        "<form>" SKIP 
+        "<div class='row'>" skip
+        "   <div class='grid_3'></div>" skip
+        "       <div class='grid_6'>" skip             
+        "               <div class='table_2col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='4'>Time Stamp Report</th>" skip
+        "                       </tr>" skip 
+        "                       <tr>" skip
+        "                           <td>Select a Week</td>" skip
+        "                           <td><input type='week' name='html5-week' value='" raw-week "' required/></td>" skip
+        "                       </tr>" SKIP(1)     
+/*        "                       <tr>" skip                                                                    */
+/*        "                           <td>From Date</td>" skip                                                  */
+/*        "                           <td><input type='date' name='html5-from' value='" disp-from "'></td>" skip*/
+/*        "                           <td>TO</td>" skip                                                         */
+/*        "                           <td><input type='date' name='html5-to' value='" disp-to "'></td>" skip    */
+/*        "                       </tr>" skip                                                                   */
+        "                       <tr>" skip
+        "                           <td>Select Employee(s)</td>" skip
+        "                           <td colspan='3'><select name='h-empidlist' multiple required>" skip. 
+
+        FOR EACH Emp_Mstr WHERE Emp_Mstr.Emp_deleted = ?
+                                   NO-LOCK,
+            EACH people_mstr WHERE people_mstr.people_id = Emp_Mstr.Emp_ID AND 
+                                   people_mstr.people_deleted = ?
+                                   NO-LOCK
+                                   BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname: 
+                ASSIGN 
+                    empname   = people_mstr.people_lastname + ", " + people_mstr.people_firstname + " " + STRING(people_mstr.people_id)
+                    empid     = people_mstr.people_id.
+        
+            {&OUT}                                                                                
+        "                               <option value='" empid "'>" empname "</option>" SKIP.
+        
+        END.  /* 4ea. client_mstr */     
+        {&OUT} 
+        "                           </td>" SKIP
+        "                       </tr>" skip               
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_3'></div>" skip
+        "</div>" skip  
+        "<BR>" SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</div>" SKIP.
+
+             
+    END. /* INITIAL */  
+    WHEN "SEARCH" THEN DO:
+        
+        ASSIGN
+            yr = INTEGER(SUBSTRING(raw-week,1,4))
+            week = INTEGER(SUBSTRING(raw-week,INDEX(raw-week,"-w") + 2,2))
+            jan1 = DATE(1, 1, yr).
+            
+        IF WEEKDAY(jan1) > 5 THEN
+           ASSIGN 
+            itdate = WEEKDAY(jan1)
+            dateind = "First"       
+            days = (week * 7) + (2 - WEEKDAY(jan1)).
+        ELSE 
+           ASSIGN
+             itdate = WEEKDAY(jan1) 
+             dateind = "Second"      
+             days = (week * 7) - (5 + WEEKDAY(jan1)).  
+        
+        ASSIGN 
+            fromdate = jan1 + days
+            todate = fromdate + 6.
+        
+        FOR EACH Hours_Mstr WHERE LOOKUP(STRING(Hours_Mstr.Hours_employee_ID),empidlist) > 0 AND
+                                    Hours_Mstr.Hours_date >= fromdate AND 
+                                    Hours_Mstr.Hours_date <= todate AND 
+/*                               ((Hours_Mstr.Hours_date >= fromdate) OR*/
+/*                                (fromdate = ?)) AND                   */
+/*                               ((Hours_Mstr.Hours_date <= todate) OR  */
+/*                                (todate = ?)) AND                     */
+                                Hours_Mstr.Hours_deleted = ? AND 
+                                Hours_Mstr.Hours_time <> ?
+                                NO-LOCK
+                                    BREAK BY Hours_Mstr.Hours_employee_ID BY Hours_Mstr.Hours_date BY Hours_Mstr.Hours_time:
+        
+            ASSIGN 
+                v-type = SUBSTRING(Hours_Mstr.Hours_time_desc,INDEX(Hours_Mstr.Hours_time_desc,"_") + 1,LENGTH(Hours_Mstr.Hours_time_desc)).
+        
+            IF FIRST-OF (Hours_Mstr.Hours_employee_ID) THEN DO:
+                
+                v-htot = 0.
+                
+                FIND people_mstr WHERE people_mstr.people_id = Hours_Mstr.Hours_employee_ID NO-LOCK NO-ERROR.
+                
+                    IF AVAILABLE (people_mstr) THEN 
+                        ASSIGN
+                            empname   = people_mstr.people_lastname + ", " + people_mstr.people_firstname. 
+                
+				{&OUT}
+				"<div class='row'>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"   <div class='grid_3'><h2>Employee: " empname "</h2></DIV>" SKIP
+				"   <div class='grid_6'> </DIV>" SKIP
+				"</div>" SKIP.
+            
+            END. /* first of emp id */
+            IF FIRST-OF (Hours_Mstr.Hours_date) THEN DO: 
+                ASSIGN
+	                v-hour = 0
+	                v-in = ?
+	                v-out = ?.
+	            
+	            {&OUT}
+				"<div class='row'>" SKIP
+				"   <div class='grid_4'> </DIV>" SKIP
+				"   <div class='grid_2'><h3>Date: " Hours_Mstr.Hours_date "</h3></DIV>" SKIP
+				"   <div class='grid_7'> </DIV>" SKIP
+				"</div>" SKIP
+				"<div class='row'>" skip
+				"   <div class='grid_4'></div>" skip
+				"        <div class='grid_4'>" skip             
+				"            <div class='table_col'>" skip
+				"                <table>" skip
+				"                    <thead>" skip
+				"                        <tr>" skip
+				"                            <th>Time Stamp</th>" skip
+				"                            <th>Time Stamp Type</th>" skip
+				"                        </tr>" SKIP
+				"                    </thead>" SKIP
+				"                    <tbody>" SKIP.    	                
+	                                        
+            END. /* first of hours */                                                            
+            IF v-type = "IN" THEN DO:
+                IF v-in = ? THEN DO: 
+                    ASSIGN 
+                    time-desc = Hours_Mstr.Hours_time_desc
+                    v-in = Hours_Mstr.Hours_time
+                    c-time = STRING(Hours_Mstr.Hours_time)
+                    v-time = IF c-time <> ? THEN SUBSTRING(c-time,index(c-time," ") + 1,5) ELSE "".
+                   
+                END.
+                                                                                        IF itmessage = YES THEN DO:
+                                                                                            {&OUT}
+                                                                                            "If v-type = in... v-in = ? </BR>" SKIP
+                                                                                            "time-desc = " time-desc "</BR>" SKIP
+                                                                                            "v-in = " v-in "</BR></BR>" SKIP. 
+                                                                                        END.                 
+/*                ELSE DO:                                                                                                         */
+/*                    ASSIGN                                                                                                       */
+/*                        time-desc = Hours_Mstr.Hours_time_desc + " " + "Error: Missing Entry!"                                   */
+/*/*                        v-in = ?   */                                                                                          */
+/*/*                        v-out = ?  */                                                                                          */
+/*/*                        v-time = ""*/                                                                                          */
+/*                        .                                                                                                        */
+/*                                                                                        IF itmessage = YES THEN DO:              */
+/*                                                                                            {&OUT}                               */
+/*                                                                                            "else if v-in <> ? </BR>" SKIP       */
+/*                                                                                            "time-desc = " time-desc "</BR>" SKIP*/
+/*                                                                                            "v-in = " v-in "</BR>" SKIP          */
+/*                                                                                            "v-out = " v-out "</BR></BR>" SKIP.  */
+/*                                                                                        END.                                     */
+/*                END.                                                                                                             */
+            END. /* v-type = in */
+            ELSE IF v-type = "OUT" THEN DO:
+                IF v-out = ? THEN DO: 
+                    ASSIGN 
+	                    time-desc = Hours_Mstr.Hours_time_desc
+	                    v-out = Hours_Mstr.Hours_time
+	                    c-time = STRING(Hours_Mstr.Hours_time)
+                        v-time = IF c-time <> ? THEN SUBSTRING(c-time,index(c-time," ") + 1,5) ELSE "".
+                                                                                                                                                                       
+                END. 
+                                                                                        IF itmessage = YES THEN DO:
+                                                                                            {&OUT}
+                                                                                            "If v-type = out... v-out = ? </BR>" SKIP
+                                                                                            "time-desc = " time-desc "</BR>" SKIP
+                                                                                            "v-out = " v-out "</BR></BR>" SKIP.
+                                                                                        END.                                                                                           
+/*                ELSE DO:                                                                                                         */
+/*                    ASSIGN                                                                                                       */
+/*	                    time-desc = Hours_Mstr.Hours_time_desc + " " + "Error: Missing Entry!"                                      */
+/*/*	                    v-in = ?   */                                                                                             */
+/*/*	                    v-out = ?  */                                                                                             */
+/*/*	                    v-time = ""*/                                                                                             */
+/*	                    .                                                                                                           */
+/*                                                                                        IF itmessage = YES THEN DO:              */
+/*                                                                                            {&OUT}                               */
+/*                                                                                            "else if v-out <> ? </BR>" SKIP      */
+/*                                                                                            "time-desc = " time-desc "</BR>" SKIP*/
+/*                                                                                            "v-in = " v-in "</BR>" SKIP          */
+/*                                                                                            "v-out = " v-out "</BR></BR>" SKIP.  */
+/*                                                                                        END.                                     */
+/*	            END.                                                                                                                */
+            END. /* v-type = out */
+            ELSE DO: 
+                ASSIGN 
+                    time-desc = "Error: Missing Time Stamp Description!".
+            END. /* wierdness error */
+                                                                                        IF itmessage = YES THEN DO:
+                                                                                            {&OUT}
+                                                                                            "Display v-time / time-desc</BR>" SKIP
+                                                                                            "time-desc = " time-desc "</BR>" SKIP
+                                                                                            "v-in = " v-in "</BR>" SKIP
+                                                                                            "v-out = " v-out "</BR></BR>" SKIP. 
+                                                                                        END.                
+            {&OUT}
+                "                       <tr><td>" v-time "</td><td>" time-desc "</td></tr>" SKIP.
+                                                                                        IF itmessage = YES THEN DO:
+                                                                                            {&OUT}
+                                                                                            "before v-in <> ? and v-out <> ?</BR>" SKIP
+                                                                                            "subtot = " subtot "</BR>" SKIP
+                                                                                            "v-hour = " v-hour "</br>" SKIP
+                                                                                            "v-in = " v-in "</BR>" SKIP
+                                                                                            "v-out = " v-out "</BR></BR>" SKIP.  
+                                                                                        END.                                                                                          
+            IF v-in = ? AND v-out <> ? THEN DO: 
+                
+                ASSIGN 
+                    v-in = DATETIME-TZ(Hours_Mstr.Hours_date).
+            
+            END.
+            IF v-in <> ? AND v-out <> ? THEN DO:
+                
+                FOR FIRST TSC_ctrl NO-LOCK: 
+                    IF TSC_ctrl.TSC_rounding_point = "PER_ENTRY" THEN 
+                        
+                        IF TSC_ctrl.TSC_rounding_value = .25 THEN 
+                            ASSIGN 
+                                subtot = ROUND((MTIME(v-out) - MTIME(v-in)) / (60 * 60 * 1000), 2) /* changes for millisec to hrs */
+                                subtot = ROUND(((subtot * 4) + .249),0) / 4.
+                        
+                        ELSE IF TSC_ctrl.TSC_rounding_value = .5 THEN 
+                            
+                            ASSIGN 
+                                subtot = ROUND((MTIME(v-out) - MTIME(v-in)) / (60 * 60 * 1000), 2) /* changes for millisec to hrs */   
+                                subtot = ROUND(((subtot * 2) + .499),0) / 2.
+                        
+                        ELSE /* TSC_ctrl.TSC_rounding_value = 0 */
+                            ASSIGN 
+	                            subtot = ROUND((MTIME(v-out) - MTIME(v-in)) / (60 * 60 * 1000), 2). /* changes for millisec to hrs */
+                    
+                    ELSE /* if TSC_rounding_point <> "PER_ENTRY" */
+                    
+                        subtot = ROUND((MTIME(v-out) - MTIME(v-in)) / (60 * 60 * 1000), 2). /* changes for millisec to hrs */
+                        
+                    IF TSC_ctrl.TSC_rounding_point = "DAILY" THEN      
+                        
+                        IF TSC_ctrl.TSC_rounding_value = .25 THEN 
+                        
+                            v-hour = v-hour + (ROUND(((subtot * 4) + .249),0) / 4).
+                        
+                        ELSE IF TSC_ctrl.TSC_rounding_value = .5 THEN 
+                        
+                            v-hour = v-hour + (ROUND(((subtot * 2) + .499),0) / 2).
+                            
+                        ELSE /* TSC_ctrl.TSC_rounding_value = 0 */    
+                            v-hour = v-hour + subtot.
+                
+                    ELSE /* if TSC_rounding_point <> "DAILY" */
+                    
+                        v-hour = v-hour + subtot.
+                 
+                END.
+                        
+                ASSIGN  
+                    v-in = ?
+                    v-out = ?.
+                                                                                                              
+            END. /* v-in <> ? and v-out <> ? */
+                                                                                        IF itmessage = YES THEN DO:
+                                                                                            {&OUT}
+                                                                                            "after v-in <> ? and v-out <> ?</BR>" SKIP
+                                                                                            "subtot = " subtot "</BR>" SKIP
+                                                                                            "v-hour = " v-hour "</br>" SKIP
+                                                                                            "v-in = " v-in "</BR>" SKIP
+                                                                                            "v-out = " v-out "</BR></BR>" SKIP.  
+                                                                                        END.             
+
+            IF LAST-OF (Hours_Mstr.Hours_date) THEN DO:             
+
+	            IF v-in <> ? AND v-out = ? THEN DO:
+	                ASSIGN
+	                    subtot = ROUND((MTIME(NOW) - MTIME(v-in)) / (60 * 60 * 1000), 2) /* changes for millisec to hrs */
+	                    v-hour = v-hour + subtot
+	                    v-in = ?
+	                    v-out = ?.
+	            END. /* v-in <> ? and v-out = ? */
+                
+/*                disp-hour = STRING(v-hour,"HH:MM").*/
+                 
+                {&OUT}
+	            "                   </tbody>" SKIP         
+	            "                   <tfoot>" skip
+	            "                       <tr><td>" v-hour "</td><td>Total Hours</td></tr>" skip 
+	            "                   </tfoot>" SKIP
+	            "               </table>" SKIP
+	            "           </div>" SKIP
+	            "       </div>" SKIP
+	            "   <div class='grid_4'></div>" skip
+	            "</div>" skip.
+            
+            
+                FOR FIRST TSC_ctrl NO-LOCK: 
+                    
+                    IF TSC_ctrl.TSC_rounding_point = "WEEKLY" OR TSC_ctrl.TSC_rounding_point = "PER_PERIOD" AND 
+                       TSC_ctrl.TSC_pay_period = "WEEKLY" THEN DO:
+                    
+                        IF TSC_ctrl.TSC_rounding_value = .25 THEN  
+                         
+                            v-htot = v-htot + (ROUND(((v-hour * 4) + .249),0) / 4).
+                        
+                        ELSE IF TSC_ctrl.TSC_rounding_value = .5 THEN 
+                        
+                            v-htot = v-htot + (ROUND(((v-hour * 2) + .499),0) / 2).    
+                        
+                        ELSE /* TSC_ctrl.TSC_rounding_value = 0 */ 
+                        
+                            v-htot = v-htot + v-hour.
+                    END.        
+                    ELSE /* if TSC_rounding_point <> "WEEKLY" */
+                    
+                        v-htot = v-htot + v-hour.  
+                        
+                 END.             
+/*                ASSIGN                       */
+/*                    v-htot = v-htot + v-hour.*/
+/*                    disp-htot = STRING(v-htot,"HH:MM").*/
+/*                    v-hour = 0*/
+/*                    v-in = ?  */
+/*                    v-out = ?.*/
+
+            END. /* last-of date */                                   
+
+            IF LAST-OF (Hours_Mstr.Hours_employee_ID) THEN DO:
+                {&OUT}
+                "<div class='row'>" SKIP
+                "   <div class='grid_4'> </DIV>" SKIP
+                "   <div class='grid_4'>" SKIP
+                "       <div class='table_col'>" skip
+                "           <table>" skip
+                "               <tfoot>" skip
+                "                   <tr><td>" v-htot format ">>9.99" "</td><td>Total Hours From " fromdate " To " todate "</td></tr>" skip 
+                "               </tfoot>" SKIP
+                "           </table>" SKIP
+                "       </div>" SKIP
+                "   </DIV>" SKIP
+                "   <div class='grid_4'> </DIV>" SKIP
+                "</div>" SKIP.
+            END. /* last of ID */        
+        END. /* 4ea. hours_mstr */
+            
+        
+        {&OUT}
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+        
+    END. /* SEARCH */
+
+END CASE.         
+               
+</SCRIPT>
+</BODY>
+</HTML>

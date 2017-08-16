@@ -1,0 +1,574 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+<TITLE>Edit Test Kit</TITLE>
+
+<META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.41">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="15/Feb/16">
+     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+     
+     
+<SCRIPT LANGUAGE="SpeedScript">
+/*------------------------------------------------------------------
+ * File: TK_TKKitEditU.html
+ * Description: This is used in conjunction with TK_TKKitEdit.html to edit a test kit record before it has been sold.
+ *              This received User input from TK_TKKitEdit.html.
+ * Created:
+ *-------------------------------------------------------------------
+ * Revision History:    
+ * ---------------------
+ *  1.1 - Added Run statement to create transaction history record or delete transaction record depending on action taken;
+ *      - paid by customer or 
+ *      - not paid by customer (SUBtrh-ucU.r)
+ *      - Added Last modified Date.
+ * 1.2 - written by DOUG LUTTRELL on 01/Jun/15.  Added code to support the 
+ *          pathing workaround.  Marked by 1dot2. 
+ * 1.4 - Edited run statements To RUN VALUE(SEARCH("*.r")) 9/30/15. Marked with 1dot4.
+ * 1.41 - Written by Jacob Luttrell on 15/Feb/16. Updated testtype to test_type unmarked.
+ * 1.5 - Modified by Jacob Luttrell on 11/Mar/16 Marked by 1dot5. added 
+ *          SUBtrh-findR.p and changed what trh_date is updated by. 
+ *-------------------------------------------------------------------- */
+ 
+
+
+CREATE WIDGET-POOL.
+
+{../depot/src/WebSpeed/menuname.i}.
+
+DEFINE VARIABLE codetorun       AS CHARACTER                        NO-UNDO.    /* 1dot2 */  
+DEFINE VARIABLE depotcode       AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+DEFINE VARIABLE drive_letter    AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+         
+ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1).                /* 1dot2 */
+
+ /*   DEFINE VARIABLE tk LIKE Tk_id NO-UNDO. 
+    DEFINE VARIABLE typ LIKE TK_mstr.TK_testtype NO-UNDO. 
+    DEFINE VARIABLE prof LIKE tk_prof_kit NO-UNDO.
+    DEFINE VARIABLE dom LIKE TK_domestic NO-UNDO.*/
+    DEFINE VARIABLE seq   LIKE TK_mstr.TK_ID NO-UNDO.
+    DEFINE VARIABLE newTK LIKE TK_mstr.TK_ID NO-UNDO.
+    /*-------------------------------------------------These came from test kit delete edit */
+    DEFINE VARIABLE tk   LIKE TK_mstr.Tk_id NO-UNDO.
+    DEFINE VARIABLE typ  LIKE TK_mstr.TK_test_type NO-UNDO.
+    DEFINE VARIABLE prof LIKE scust_shadow.scust_prof NO-UNDO.
+    DEFINE VARIABLE dom  LIKE TK_mstr.TK_domestic  NO-UNDO.
+    DEFINE VARIABLE who  LIKE TK_mstr.TK_created_by NO-UNDO.
+    /*------------------------------------------------*/  
+    
+    DEFINE VARIABLE e-typ  LIKE typ NO-UNDO.
+    DEFINE VARIABLE e-prof LIKE prof NO-UNDO.
+    DEFINE VARIABLE e-dom  LIKE dom NO-UNDO.
+    DEFINE VARIABLE e-paid LIKE TK_mstr.TK_cust_paid NO-UNDO. 
+    
+    DEFINE VARIABLE act      AS INTEGER NO-UNDO.
+    
+    DEFINE VARIABLE prof-ck    AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE notprof-ck AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE dom-ck     AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE inter-ck   AS CHARACTER NO-UNDO.
+    
+    DEFINE VARIABLE paid-ck     AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE not-paid-ck AS CHARACTER NO-UNDO.
+    
+   /* DEFINE VARIABLE who AS CHARACTER NO-UNDO. */  
+    DEFINE VARIABLE C-date  LIKE Tk_create_date NO-UNDO.
+    DEFINE VARIABLE typ-abb LIKE typ NO-UNDO.
+    
+    DEFINE VARIABLE origTK   LIKE TK NO-UNDO.  /* This group of 5 variables are used to retain original data during edits */
+    DEFINE VARIABLE origprof LIKE prof NO-UNDO.
+    DEFINE VARIABLE origdom  LIKE dom NO-UNDO.
+    DEFINE VARIABLE origtyp  LIKE typ NO-UNDO.
+    
+    DEFINE VARIABLE origpaid LIKE TK_mstr.TK_cust_paid NO-UNDO. 
+    DEFINE VARIABLE paid     LIKE TK_mstr.TK_cust_paid NO-UNDO.
+    DEFINE VARIABLE keep-go AS INTEGER NO-UNDO. 
+    
+    DEFINE VARIABLE v-trh-id LIKE trh_hist.trh_ID NO-UNDO.
+    DEFINE VARIABLE v-trh-err AS LOGICAL NO-UNDO.
+    
+	DEFINE VARIABLE v-trhid                 AS INTEGER                  NO-UNDO. /* 1dot5 */ 
+	DEFINE VARIABLE v-trhfound              AS LOG INITIAL NO           NO-UNDO. /* 1dot5 */
+    
+   /*-----------------------------------------------------------*/      
+        DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.       /*---< ITfeedback (YES or NO)  */
+   /*-----------------------------------------------------------*/   
+    
+   
+        
+    ASSIGN
+       origTK   =   get-value ("otk")
+       origprof =   LOGICAL (get-value("oprof"))
+       origdom  =   LOGICAL (get-value("odom"))
+       origtyp  =   get-value (get-value("otyp"))
+       
+       origpaid =   LOGICAL (get-value("opaid")) 
+       
+       who      =   get-value ("by")
+       C-date   =   DATE(get-value("cdate"))
+       newTK    =   get-value ("newID")
+       tk       =   get-value ("testkit")       
+       typ      =   get-value ("TK-typ")                            
+       prof     =   LOGICAL (get-value ("profal"))                            
+       dom      =   LOGICAL (get-value("domic"))
+       
+       paid     =   LOGICAL (get-value("h-paid"))
+       
+       e-typ    =   get-value ("new-typ")
+       e-prof   =   LOGICAL (get-value ("new-profal"))
+       e-dom    =   LOGICAL (get-value("new-domic"))
+       
+       e-paid   =   LOGICAL (get-value("new-cust-paid"))
+       
+       keep-go  =   INTEGER (get-value ("h-keep-go")).
+            
+
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+   
+<SCRIPT LANGUAGE="SpeedScript">   
+                           
+                                                                 
+                            
+                                                                           IF ITfeedback = YES THEN
+		                                                                         {&OUT} "<p>Befor the 1st IF" SKIP 
+		                                                                                "<br> TK -- "  TK  SKIP 
+		                                                                                "<br> origTK --" origTK SKIP
+		                                                                                "<br> prof-ck --" prof-ck SKIP
+		                                                                                "<br> notprof-ck --" notprof-ck SKIP
+		                                                                                "</p>".
+                                                                                                    
+       IF
+          origTK    = "" OR
+          origprof  = ?  OR
+          origdom   = ?   THEN DO:
+
+
+		       FIND TK_mstr WHERE TK_mstr.TK_ID = TK  NO-LOCK.
+		        IF AVAILABLE TK_mstr THEN
+		            ASSIGN
+		               origTK   =  TK_mstr.TK_ID                      
+				       origprof =  TK_mstr.TK_prof 
+				       origdom  =  TK_mstr.TK_domestic
+				       origtyp  =  TK_mstr.TK_test_type 
+				       C-date   =  TK_mstr.TK_create_date
+				       origpaid =  TK_mstr.TK_cust_paid
+				       who      =  TK_mstr.TK_created_by. 
+
+				          ASSIGN	
+				          		       
+						  paid-ck     =   IF origpaid = YES THEN  /* paid */
+					                           "checked"
+					                            ELSE
+					                            ?
+					      not-paid-ck =   IF origpaid = NO THEN
+					                           "checked"
+					                           ELSE
+					                           ?
+					      prof-ck     =   IF origprof = YES THEN
+					                        "checked"
+					                            ELSE
+					                            ?   
+					       notprof-ck  =   IF origprof = NO THEN
+					                        "checked"
+					                            ELSE
+					                            ?
+					       dom-ck      =   IF origdom = YES THEN
+					                         "checked"
+					                            ELSE
+					                            ?
+					       inter-ck    =   IF origdom = NO THEN
+					                          "checked"
+					                            ELSE 
+					                            ?.
+					                          
+				       
+				       
+				       
+		END. /* IF .... THEN DO: */    
+				 
+														                   IF ITfeedback = YES THEN
+														                        {&OUT} "<p>Found a test kit with a ID of -- " TK  SKIP 
+														                               "<br>origTK --" origTK SKIP
+														                               "<br>origtyp --" origtyp SKIP
+														                               "<br>keep-go --" keep-go SKIP
+														                               "<br>e-typ --" e-typ SKIP
+														                               "<br>e-prof--" e-prof SKIP
+														                               "<br>origprof --" origprof SKIP
+                                                                                       "<br>e-dom --" e-dom SKIP
+                                                                                       "<br>origdom--" origdom SKIP
+                                                                                       "<br>origpaid--" origpaid "</p>".        
+                            
+</SCRIPT>
+
+			    <div class='table_2col' style="width:25%" align="center">     
+			        <table <!-- Original record display -->
+			        
+			             <tr>
+			                <th colspan="2" >Original Record</th> <!-- style='text-align:center;' -->
+			             </tr>
+			             <tr>
+			                <td>Testkit</td>
+			                <td> `origTK`  </td>
+			             <tr>
+			                <td>Date Created</td>
+			                <td> `C-date`  </td>
+			             </tr>
+			             <tr>
+			                <td>Created By</td>
+			                <td> `who`  </td>             
+			             </tr>
+			             <tr>
+			                <td>Professional</td>
+			                <td> `origprof`  </td>
+			             </tr>
+			             <tr>
+			                <td>Domestic</td>
+			                <td> `origdom`  </td>
+			             </tr>          
+			             <tr>
+			                <td>Customer Paid</td>
+			                <td> `origpaid`  </td>
+			             </tr>         
+			                                           
+			        </table>
+			    </div>
+			  <p>&nbsp</p>
+			  
+<SCRIPT LANGUAGE="SpeedScript">
+    
+		IF keep-go = 3 THEN DO:     /** This is coming from the hyperlink for a additional edit **/ 
+		    
+		    FIND TK_mstr WHERE TK_mstr.TK_ID = TK  NO-LOCK.
+                        IF AVAILABLE TK_mstr THEN
+                            ASSIGN
+                               origTK   =  TK_ID                      
+                               prof     =  TK_prof 
+                               dom      =  TK_domestic
+                               origtyp  =  TK_test_type 
+                           /*  origtyp  =  TK_type */
+                               paid     =  TK_cust_paid. 
+                               
+							        ASSIGN                       
+									dom-ck      =   IF dom = YES THEN
+							                         "checked"
+							                            ELSE
+							                            ?
+							       inter-ck    =   IF dom = NO THEN
+							                          "checked"
+							                            ELSE 
+							                            ?
+							       prof-ck     =   IF prof = YES THEN
+							                        "checked"
+							                            ELSE
+							                            ?   
+							       notprof-ck  =   IF prof = NO THEN
+							                        "checked"
+							                            ELSE
+							                            ?
+							       paid-ck     =   IF paid = YES THEN  /* paid */
+							                        "checked"
+							                            ELSE
+							                            ?
+							       not-paid-ck =   IF paid = NO THEN
+							                         "checked"
+							                           ELSE
+							                           ?.
+		           
+</SCRIPT>                     
+			   <center>
+			    <div class='table_2col' style="width:25%"> 
+			       <form  method="post"> 
+			          <table><!-- Edit record form -->
+			             <tr>
+			                <th colspan="2" >This Record has been Edied from the original</th>  <!-- style='text-align:center;' -->
+			             </tr>          
+			             <tr>
+			                <td>Testkit</td>
+			                <td>`TK`  </td>               
+			             </tr>        
+			             <tr>    
+			                <td>Professional</td>
+			                <td><input type="radio" name="new-profal" value="yes" `prof-ck`>  </td>  
+			             </tr>
+			             <tr>    
+			                <td> Non-Professional</td>
+			                <td><input type="radio" name="new-profal" value="no" `notprof-ck`>  </td>
+			             </tr>
+			             <tr>
+			                <td>Domestic</td>
+			                <td><input type="radio" name="new-domic" value="yes" `dom-ck`>  </td>
+			             </tr>
+			             <tr>    
+			                <td>International</td>
+			                <td><input type="radio" name="new-domic" value="no" `inter-ck`>  </td>
+			             </tr>
+			             <tr>
+			                <td>Customer Paid</td>
+			                <td><input type="radio" name="new-cust-paid" value="Yes" `paid-ck`>   </td>    <!--paid-ck-->
+			             </tr>
+			             <tr>
+			                <td>Customer Not Paid</td>
+			                <td><input type="radio" name="new-cust-paid" value="no" `not-paid-ck`>  </td>
+			             </tr>
+			                <input type="hidden" name="testkit" value="`TK`">
+			                <input type="hidden" name="TK-typ" value="`typ`">
+			                <input type="hidden" name="newID" value="`newTK`">              
+			                <input type="hidden" name="by" value="`who`">
+			                <input type="hidden" name="cdate" value="`C-date`">
+			                <input type="hidden" name="h-keep-go" value="2">
+			                 			                
+			                   
+                      </table>
+                </div>
+                            <input type="submit" name="edit" value="Edit Test Kit"><br>      
+                   </form>       
+    
+  <SCRIPT LANGUAGE="SpeedScript">   
+  
+  {&OUT}     
+                          "<p><a href='TK_TKKitEdit.html?whattorun=1.97'>Click here to return to Testkit Edit Start Page</a></p>". 
+  
+  
+        END.  /*IF keep-go = 3 THEN DO:  */ 
+            
+            
+        ELSE   
+               
+               IF keep-go < 2 THEN DO:
+
+  </SCRIPT>                     
+               <center>
+                 <div class='table_2col' style="width:25%" align="center"> 
+                    <form  method="post"> 
+                       <table><!-- Edit record form -->
+                         <tr>
+                            <th colspan="2" style='text-align:center;'>Edit Record Below</th>
+                         </tr>          
+                         <tr>
+                            <td>Testkit</td>
+                            <td>`TK`  </td>     
+                         </tr>        
+                         <tr>    
+                            <td>Professional</td>
+                            <td><input type="radio" name="new-profal" value="yes" `prof-ck`>  </td>  
+                         </tr>
+                         <tr>    
+                            <td> Non-Professional</td>
+                            <td><input type="radio" name="new-profal" value="no" `notprof-ck`>  </td>
+                         </tr>
+                         <tr>
+                            <td>Domestic</td>
+                            <td><input type="radio" name="new-domic" value="yes" `dom-ck`>  </td>
+                         </tr>
+                         <tr>    
+                            <td>International</td>
+                            <td><input type="radio" name="new-domic" value="no" `inter-ck`>  </td>
+                         </tr>
+                         <tr>
+                            <td>Customer Paid</td>
+                            <td><input type="radio" name="new-cust-paid" value="Yes" `paid-ck`>   </td>    <!--paid-ck-->
+                         </tr>
+                         <tr>
+                            <td>Customer Not Paid</td>
+                            <td><input type="radio" name="new-cust-paid" value="no" `not-paid-ck`>  </td>
+                         
+                            <input type="hidden" name="testkit" value="`TK`">
+                            <input type="hidden" name="TK-typ" value="`typ`">
+                            <input type="hidden" name="newID" value="`newTK`">              
+                            <input type="hidden" name="by" value="`who`">
+                            <input type="hidden" name="cdate" value="`C-date`">
+                            <input type="hidden" name="h-keep-go" value="2"> 
+                                                        
+                               
+                       </table>
+                 </div>
+                            <input type="submit" name="edit" value="Edit Test Kit"><br>      
+                    </form>
+     
+<SCRIPT LANGUAGE="SpeedScript">   
+             
+               END.  /* IF keep-go < 2 THEN DO: */  
+
+                    IF keep-go < 2 THEN
+				        {&OUT}     
+						  "<p><a href='TK_TKKitEdit.html?whattorun=1.97'>Click here to return to Testkit Edit Start Page</a></p>" 	
+						     	  
+				          "</center><p>&nbsp</p>".
+				          
+				    ELSE
+				          {&OUT}
+				          "</center></p>".
+     
+               IF keep-go = 2 THEN DO:
+	                                                                                 IF ITfeedback = YES THEN
+                                                                                    {&OUT} 
+                                                                                           "<p>I'm just befor the last FIND" SKIP
+                                                                                           "<br>TK --" TK   SKIP
+					                                                                       "<br>origTK --" origTK SKIP
+                                                                                           "<br>origtyp --" origtyp SKIP
+	                                                                                       "<br>keep-go --" keep-go SKIP
+	                                                                                       "<br>e-typ --" e-typ SKIP
+	                                                                                       "<br>e-prof--" e-prof SKIP
+	                                                                                       "<br>origprof --" origprof SKIP
+	                                                                                       "<br>e-dom --" e-dom SKIP
+	                                                                                       "<br>origdom--" origdom SKIP
+	                                                                                       "<br>keep-gp --" keep-go SKIP
+	                                                                                       "<br>e-paid--" e-paid "</p>".
+					   FIND  Tk_mstr WHERE  TK_mstr.Tk_id = TK.
+				       
+				               IF AVAILABLE (TK_mstr) THEN DO:                                  
+		                                       
+		                                       ASSIGN                               
+		                                          act                      = 1  
+		                                          TK_mstr.TK_cust_paid     = e-paid		                                          
+		                                          TK_mstr.TK_prof          = e-prof                                  
+		                                          TK_mstr.TK_domestic      = e-dom
+		                                          TK_mstr.TK_modified_date = TODAY
+		                                          TK_mstr.TK_modified_by   = USERID ("HHI") 
+		                                          TK_mstr.TK_prog_name     = THIS-PROCEDURE:FILE-NAME         /* 1dot5 */
+		                                          . 
+		                                         
+		                                          
+								END.  /*  IF AVAILABLE tk_mstr */                                          
+																
+									                                                   IF ITfeedback = YES THEN
+														                                {&OUT} 
+														                                       "<p>just after last find" SKIP
+														                                       "<br>seq-- " seq SKIP 
+														                                       "<br>e-typ --" e-typ SKIP
+														                                       "<br>newTK --" newTK SKIP
+														                                       "<br>e-prof-- " e-prof SKIP 
+														                                       "<br>e-dom--" e-dom SKIP
+														                                       "<br>origdom--" origdom SKIP
+														                                       "<br>e-paid--" e-paid "</p>". 
+								IF e-paid = YES THEN DO:
+								   
+								    FIND FIRST trh_hist WHERE trh_hist.trh_serial = TK AND
+                                         trh_hist.trh_action = "PAID_BY_CUSTOMER" NO-ERROR.
+                                         
+                                         IF NOT AVAILABLE (trh_hist) THEN
+                                         
+/*                                         {../datahub/src/webspeed/pathfix.i "SUBtrh-ucU.r"}. /* 1dot2 */*/
+                                                                                								    
+/*                                         RUN "../depot/rcode/SUBtrh-ucU.r"*/               /* 1dot2 */
+/*                                           RUN VALUE(depotcode)                              /* 1dot2 */*/
+
+										RUN VALUE(SEARCH("SUBtrh-findR.r"))                                 /* 1dot5 */
+										    (TK_mstr.tk_test_type,                                          /* 1dot5 */
+										     TK_mstr.TK_status,                                             /* 1dot5 */
+										     TK_mstr.TK_ID,                                                 /* 1dot5 */
+										     TK_mstr.TK_test_seq,                                           /* 1dot5 */
+										     OUTPUT v-trhid,                                                /* 1dot5 */
+										     OUTPUT v-trhfound).                                            /* 1dot5 */
+
+                                           RUN VALUE(SEARCH("SUBtrh-ucU.r")) (                  /* 1dot4 */                            
+                                                    v-trhid,                                                /* 1dot5 */                
+                                                    TK_mstr.TK_test_type, 
+                                                    "PAID_BY_CUSTOMER", 
+                                                    1, 
+                                                    "", 
+                                                    "", 
+                                                    TK_mstr.TK_ID, 
+                                                    "", 
+                                                    TK_mstr.TK_test_seq, 
+                                                    
+                                            /* 1dot41 --> */           
+													"",						         /*trh_hist.trh_comments */
+													TK_mstr.TK_magento_order,		 /*trh_hist.trh_other_ID */
+													TK_mstr.TK_cust_ID,    	         /*trh_hist.trh_people_ID*/
+													"",						         /*trh_hist.trh_order    */
+													TODAY,					         /*trh_hist.trh_date     */
+													STRING(TIME,"HH:MM:SS"),         /*trh_hist.trh_time     */
+													TK_mstr.TK_lab_sample_ID,        /*trh_hist.trh_ref      */
+                                            /* <-- 1dot41 */        
+                                                    OUTPUT v-trh-id, 
+                                                    OUTPUT v-trh-err
+                                                    ).
+                
+		                                 IF v-trh-err = YES THEN 
+						                   {&OUT}
+						                       "WARNING!  Transaction History Record not created!  Contact Solsource.".  
+				                 END.  /* IF e-paid = YES THEN DO: */    
+				                 
+				                IF e-paid = NO THEN DO:
+				                
+				                    FIND trh_hist WHERE trh_hist.trh_serial = TK AND
+				                         trh_hist.trh_action = "PAID_BY_CUSTOMER" NO-ERROR. 
+				                         
+				                         IF AVAILABLE (trh_hist) THEN
+				                         DELETE trh_hist .      						                                       
+								 END.  /* IF e-paid = NO THEN DO: */    						                                                                              
+</SCRIPT> 	
+	                                           
+			
+							     <div class='table_2col' style="width:25%" align="center">     
+					                <table <!-- New Edited Record display -->
+							             <tr>
+							                  <th colspan="2">New Edited Record</th>
+							             </tr>
+							             <tr>
+							                  <td>Testkit</td>
+							                  <td> `TK`  </td>
+							             </tr>     
+							             <tr>
+                                              <td>Date Created</td>
+                                              <td> `C-date`  </td>                                            
+							             </tr>
+							             <tr>
+							                  <td>Professional</td>
+							                  <td> `e-prof`  </td>
+							             </tr>
+							             <tr>
+							                  <td>Domestic</td>
+							                  <td> `e-dom`  </td>
+							             </tr>
+							             
+							             <tr>
+							                  <td>Customer Paid</td>
+							                  <td> `e-paid`  </td>
+							             </tr>                                
+							        </table>
+							     </div>
+  
+             	                                                     
+		
+<SCRIPT LANGUAGE="SpeedScript">		
+
+                       
+	           END. /* IF keep-go = 2 THEN DO:*/        
+ 
+	
+	           IF act = 1 THEN DO: 
+  
+</SCRIPT> 
+				    <center>
+				        <table>        
+                          <tr><td align='center'><a href='TK_TKKitEditU.html?testkit=`TK`&TK-typ=`typ`&profal=`prof`&domic=`dom`&newID=`newTK`
+                                                          &by=`who`&cdate=`C-date`&otk=`origTK`&oprof=`origprof`&odom=`origdom`&otyp=`origtyp`
+                                                          &h-keep-go=3&opaid=`origpaid`&whattorun=1.97'>
+                                                          Click here to make additional edits to&nbsp `tk`  Testkit</a></td></tr>   
+          
+ <SCRIPT LANGUAGE="SpeedScript"> 
+                   {&OUT}
+                         "<tr>&nbsp</tr>
+                          <tr><td align='center'><a href='TK_TKKitEdit.html?whattorun=1.97'>Click here to return to Test  it Edit Start Page</a></td>
+                          </tr>
+                        </table>
+                   </center>".  
+				 ASSIGN
+				    act = 0.
+				   
+			   END. /* IF act = 1 THEN DO:  */
+  
+ 
+</SCRIPT> 
+                   
+ </BODY>
+</HTML>

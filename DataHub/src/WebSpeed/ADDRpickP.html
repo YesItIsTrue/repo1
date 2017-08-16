@@ -1,0 +1,691 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Address Picker</TITLE>
+    <META NAME='AUTHOR' CONTENT='Jacob Luttrell'>
+    <META NAME='VERSION' CONTENT='2.1'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT='29/Dec/15'>
+    <META NAME='LAST_UPDATED' CONTENT='31/Aug/16'>    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' /> 
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<script src='/depot/src/HTMLContent/buttons.js'></script>
+
+<script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+
+<script TYPE="text/javascript">       
+$(document).ready(function() {
+
+                // Get an array of all element heights
+
+                var elementHeights = $('.btn').map(function() {
+                    return $(this).height();
+                }).get();
+
+                // Math.max takes a variable number of arguments
+
+                var maxHeight = Math.max.apply(null, elementHeights);
+
+                // Set each height to the max height
+
+                $('.btn').height(maxHeight);
+            });
+</script>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+
+  /*********************************************************************
+    File:           ADDRpickerP.html
+    Description:    Address Picker Screen
+    Created:        Jacob Luttrell
+    
+    Calling Procedure code:
+        
+     "<td colspan='3'><a href='../../DataHub/rcode/ADDRpickP.r" 
+     "?h-prevproc=TSclientmaintU.r"                          /* Calling Procedure */
+     "&h-act=MAINTENANCE"                                    /* Calling Procedure's Act */                              
+     "&h-pp-passBack-peopid=" people_id                      /* Calling Procedure's people id to pass back. */          
+     "&h-pp-passBack-addrid=" addr_id                        /* Calling Procedure's address id to pass back. */         
+     "&h-pp-passBack-char1=" some_char1                      /* Calling Procedure's Character data to pass back. */     
+     "&h-pp-passBack-char2=" some_char2                      /* Calling Procedure's Character data to pass back. */     
+     "&h-pp-passBack-int1=" some_nbr1                        /* Calling Procedure's Integer data to pass back. */     
+     "&h-pp-passBack-int2=" some_nbr2                        /* Calling Procedure's Integer data to pass back. */     
+     "&h-addr-act=" pass-act 
+     "&whattorun=" whatshouldrun " '>"
+     addrline "</a></td>" SKIP 
+    
+    Version History:
+        1.0 - Created by Jacob Luttrell on 29/Dec/15.
+        2.0 - Written by Jacob Luttrell on 24/Mar/16. Marked by 2dot0.
+                - Added ADDRpickP.i to simplify flow.
+                - Added more acts to clean and validate the data going through
+                - changed the country and state acts to be look like the rest of the 
+        2.1 - Written by Jacob Luttrell on 31/Aug/16. Added html-encode to first assign 
+                statement as added messure of security. Unmarked.        
+        
+   **********************************************************************/
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+   
+DEFINE VARIABLE v-addr-id       LIKE addr_mstr.addr_id NO-UNDO.
+DEFINE VARIABLE v-addr1         LIKE addr_mstr.addr_addr1 NO-UNDO. 
+DEFINE VARIABLE v-addr2         LIKE addr_mstr.addr_addr2 NO-UNDO.
+DEFINE VARIABLE v-addr3         LIKE addr_mstr.addr_addr3 NO-UNDO. 
+DEFINE VARIABLE v-city          LIKE addr_mstr.addr_city NO-UNDO.
+DEFINE VARIABLE v-state         LIKE addr_mstr.addr_stateprov NO-UNDO.
+DEFINE VARIABLE v-zip           LIKE addr_mstr.addr_zip NO-UNDO.
+DEFINE VARIABLE v-country       LIKE addr_mstr.addr_country NO-UNDO.   
+DEFINE VARIABLE act             AS CHARACTER NO-UNDO. 
+ 
+DEFINE VARIABLE isselected      AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE pp-act              AS CHARACTER LABEL "Previous Procedure Act" NO-UNDO.
+  
+DEFINE VARIABLE pp-in           AS CHARACTER LABEL "Previous Procedure passed in with .html" NO-UNDO.                        
+DEFINE VARIABLE pp-out          AS CHARACTER LABEL "Previos Procedure passed back out with .r" NO-UNDO.       
+
+DEFINE VARIABLE pp-project      AS CHARACTER LABEL "Previous Procedure Project" NO-UNDO.
+
+DEFINE VARIABLE pp-passBack-peopid  AS INTEGER   LABEL "Previous Procedure People ID" NO-UNDO.      
+DEFINE VARIABLE pp-passBack-int1    AS INTEGER   LABEL "Previous Procedure Integer Data" NO-UNDO.      
+DEFINE VARIABLE pp-passBack-int2    AS INTEGER   LABEL "Previous Procedure Integer Data" NO-UNDO.  
+DEFINE VARIABLE pp-passBack-char1   AS CHARACTER LABEL "Previous Procedure Character Data" NO-UNDO.     /* 2dot0 */       
+DEFINE VARIABLE pp-passBack-char2   AS CHARACTER LABEL "Previous Procedure Character Data" NO-UNDO.     /* 2dot0 */  
+
+DEFINE VARIABLE o-ucaddr-id         LIKE addr_mstr.addr_id  NO-UNDO.
+DEFINE VARIABLE o-ucaddr-create     AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-ucaddr-update     AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-ucaddr-avail      AS LOGICAL NO-UNDO. 
+DEFINE VARIABLE o-ucaddr-successful AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-faddr-ran         AS LOGICAL NO-UNDO. 
+DEFINE VARIABLE o-faddr-addrID      AS INTEGER NO-UNDO.
+DEFINE VARIABLE o-faddr-error       AS LOGICAL NO-UNDO.
+
+DEFINE VARIABLE peopcounter     AS INTEGER      NO-UNDO.                 /* 2dot0 */
+DEFINE VARIABLE pagetitle       AS CHARACTER    NO-UNDO.                 /* 2dot0 */
+
+DEFINE VARIABLE itmessage       AS  LOGICAL INITIAL NO NO-UNDO.
+
+DEFINE VARIABLE updater         AS INTEGER NO-UNDO.
+
+ASSIGN 
+    v-addr-id           = INTEGER(html-encode(get-value("h-pp-passBack-addrid")))
+    v-addr1             = html-encode(get-value("h-addr1"))
+    v-addr2             = html-encode(get-value("h-addr2"))
+    v-addr3             = html-encode(get-value("h-addr3"))
+    v-city              = html-encode(get-value("h-city"))
+    v-state             = html-encode(get-value("h-state"))
+    v-zip               = html-encode(get-value("h-zip"))
+    v-country           = html-encode(get-value("h-country"))
+    act                 = html-encode(get-value("h-addr-act"))
+    pp-act              = html-encode(get-value("h-act"))
+    updater             = INTEGER(html-encode(get-value("h-updater")))
+    pp-in               = html-encode(get-value("h-prevproc"))                                           
+    pp-passBack-peopid  = INTEGER(html-encode(get-value("h-pp-passBack-peopid")))  /* 2dot0 */                          
+    pp-passBack-int1    = INTEGER(html-encode(get-value("h-pp-passBack-int1")))      /* 2dot0 */
+    pp-passBack-int2    = INTEGER(html-encode(get-value("h-pp-passBack-int2")))      /* 2dot0 */  
+    pp-passBack-char1   = html-encode(get-value("h-pp-passBack-char1"))              /* 2dot0 */
+    pp-passBack-char2   = html-encode(get-value("h-pp-passBack-char2"))              /* 2dot0 */        
+    peopcounter         = INTEGER(html-encode(get-value("h-peopcounter")))            /* 2dot0 */
+    pagetitle           = html-encode(get-value("h-pagetitle"))                       /* 2dot0 */ 
+    .
+
+ASSIGN                                                                                 
+    pp-in    = SUBSTRING(pp-in,1,INDEX(pp-in,".")).                                     
+/*                                                                                                                                    IF itmessage = YES THEN                     */
+/*                                                                                                                                    {&OUT}                                      */
+/*                                                                                                                                        "ITmessage 1: assigning pp-in <BR>" SKIP*/
+/*                                                                                                                                        "pp-in = " pp-in "<BR>" SKIP.           */
+FIND FIRST menu_mstr WHERE menu_mstr.menu_exprog BEGINS pp-in NO-LOCK NO-ERROR.        
+
+    IF AVAILABLE (menu_mstr) THEN                                                       
+        ASSIGN                                                                       
+            pp-project = menu_mstr.menu_module.                                                   
+/*                                                                                                                                    IF itmessage = YES THEN                          */
+/*                                                                                                                                    {&OUT}                                           */
+/*                                                                                                                                        "ITmessage 2: assigning pp-project <BR>" SKIP*/
+/*                                                                                                                                        "pp-project = " pp-project "<BR>" SKIP       */
+/*                                                                                                                                        "pp-in = " pp-in "<BR>" SKIP.                */
+ASSIGN                                                                                                                                                              
+    pp-out    = pp-in + "r".                                                            
+/*                                                                                                                                    IF itmessage = YES THEN                          */
+/*                                                                                                                                    {&OUT}                                           */
+/*                                                                                                                                        "ITmessage 2: assigning pp-project <BR>" SKIP*/
+/*                                                                                                                                        "pp-project = " pp-project "<BR>" SKIP       */
+/*                                                                                                                                        "pp-in = " pp-in "<BR>" SKIP                 */
+/*                                                                                                                                        "pp-out = " pp-out "<BR>" SKIP.              */
+
+
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL"
+        .
+/* **** 2dot0 --> **** */
+
+IF act = "CLEAN" THEN 
+    ASSIGN 
+        v-addr-id = 0
+        act = "INITIAL"
+        .
+
+IF act = "CLEAN2" THEN 
+    ASSIGN 
+        v-addr-id = 0
+        act = "COUNTRY"
+        .
+
+IF act = "VALIDATION" THEN DO:
+
+/*    IF v-addr-id = 0 THEN DO:*/
+                                                                                                                            
+        RUN VALUE(SEARCH("SUBaddr-findR.r")) (
+            v-addr1,                /*addr_mstr.addr_addr1   */
+            v-addr2,                /*addr_mstr.addr_addr2   */
+            v-addr3,                /*addr_mstr.addr_addr3   */
+            v-city,                 /*addr_mstr.addr_city    */
+            v-state,                /*addr_mstr.addr_statepro*/
+            v-zip,                  /*addr_mstr.addr_zip     */ 
+            v-country,              /*addr_mstr.addr_country */
+
+            OUTPUT o-faddr-addrID,
+            OUTPUT o-faddr-error,
+            OUTPUT o-faddr-ran
+            ).
+        
+        IF o-faddr-error = NO AND o-faddr-ran = YES THEN
+        
+        
+            ASSIGN 
+                v-addr-id = o-faddr-addrID.
+
+/*    END. /* v-addr-id = 0 */*/
+
+    IF v-addr-id > 0 THEN
+	    FOR EACH people_mstr WHERE (people_mstr.people_addr_id = v-addr-id OR 
+	                               people_mstr.people_second_addr_ID = v-addr-id) AND 
+	                               people_mstr.people_deleted = ? AND 
+	                               (
+	                               people_mstr.people_id <> pp-passBack-peopid 
+	                               OR 
+	                               pp-passBack-peopid = 0)
+	                               NO-LOCK:   
+	    
+	        peopcounter = peopcounter + 1.
+	    
+	    END. /* 4ea people_mstr */	         
+	       
+    IF peopcounter > 0 THEN DO:
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                    {&OUT}
+                                                                                                                                        "ACT = VALIDATION </BR>" SKIP
+                                                                                                                                        "v-addr1 = " v-addr1 "</BR>" SKIP
+                                                                                                                                        "v-addr2 = " v-addr2 "</BR>" SKIP
+                                                                                                                                        "v-addr3 = " v-addr3 "</BR>" SKIP
+                                                                                                                                        "v-city = " v-city "</BR>" SKIP
+                                                                                                                                        "v-state = " v-state "</BR>" SKIP
+                                                                                                                                        "v-zip = " v-zip "</BR>" SKIP
+                                                                                                                                        "v-country = " v-country "</BR>" SKIP                                                                                                                                               
+                                                                                                                                        "prevproc = " pp-in "</BR>" SKIP
+                                                                                                                                        "pp-act = " pp-act "</BR>" SKIP   
+                                                                                                                                        "pp-passBack-peopid = " pp-passBack-peopid "</BR>" SKIP          
+                                                                                                                                        "v-addr-ID = " v-addr-ID "</BR>" SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-char1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-char2 "</BR>"    SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-int1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-int2 "</BR>"    SKIP                                                                                                                                        
+                                                                                                                                        "pp-whatshouldrun = " whatshouldrun "</BR>"    SKIP                                                                                                                                         
+                                                                                                                                        "peopcounter = " peopcounter "</BR>" SKIP.
+        
+        {&OUT}
+            "<FORM>" SKIP
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP 
+                "<center><h2>WARNING: This address already exists and is attached to other people. Would you like to create a new one?</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP 
+            "<div class='row'>" SKIP  
+            "       <input type='hidden' name='h-addr1'   value='" v-addr1 "'/>"     SKIP
+            "       <input type='hidden' name='h-addr2'   value='" v-addr2 "'/>"     SKIP
+            "       <input type='hidden' name='h-addr3'   value='" v-addr3 "'/>"     SKIP
+            "       <input type='hidden' name='h-city'    value='" v-city "'/>"      SKIP
+            "       <input type='hidden' name='h-state'   value='" v-state "'/>"     SKIP
+            "       <input type='hidden' name='h-zip'     value='" v-zip "'/>"       SKIP
+            "       <input type='hidden' name='h-country' value='" v-country "'/>"   SKIP          
+            "       <input type='hidden' name='whattorun' value='" whatshouldrun "'/>"    SKIP
+            "       <input type='hidden' name='h-prevproc'  value='" pp-in "'/>"     SKIP
+            "       <input type='hidden' name='h-act'  value='" pp-act "'/>"      SKIP   
+            "       <input type='hidden' name='h-peopcounter'  value='" peopcounter "'/>"    SKIP                              
+            "       <input type='hidden' name='h-pp-passBack-peopid'  value='" pp-passBack-peopid "'/>"    SKIP          
+            "       <input type='hidden' name='h-pp-passBack-addrid'  value='" v-addr-ID "'/>"    SKIP
+            "       <input type='hidden' name='h-pp-passBack-char1'  value='" pp-passBack-char1 "'/>"    SKIP          
+            "       <input type='hidden' name='h-pp-passBack-char2'  value='" pp-passBack-char2 "'/>"    SKIP
+            "       <input type='hidden' name='h-pp-passBack-int1'  value='" pp-passBack-int1 "'/>"    SKIP          
+            "       <input type='hidden' name='h-pp-passBack-int2'  value='" pp-passBack-int2 "'/>"    SKIP            
+            "   <div class='grid_3'> </DIV>" SKIP            
+            "   <div class='grid_2'><button type='submit' name='h-addr-act' value='CREATE' class='btn'>Yes</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-addr-act' value='INITIAL' class='btn'>No</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "</FORM>" SKIP.    
+    END. /* createpath */
+	
+	ELSE
+	    ASSIGN
+	        act = "CREATE".      
+
+   
+END. /* VALIDATION */    
+/* **** <-- 2dot0 **** */
+/* ****************************************** Case act ********************************************* */    
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                    {&OUT}
+                                                                                                                                        "ACT = INITIAL </BR>" SKIP
+                                                                                                                                        "v-addr1 = " v-addr1 "</BR>" SKIP
+																															            "v-addr2 = " v-addr2 "</BR>" SKIP
+																															            "v-addr3 = " v-addr3 "</BR>" SKIP
+																															            "v-city = " v-city "</BR>" SKIP
+																															            "v-state = " v-state "</BR>" SKIP
+																															            "v-zip = " v-zip "</BR>" SKIP
+																															            "v-country = " v-country "</BR>" SKIP          																															            
+																															            "prevproc = " pp-in "</BR>" SKIP
+																															            "pp-act = " pp-act "</BR>" SKIP   
+																															            "pp-passBack-peopid = " pp-passBack-peopid "</BR>" SKIP          
+																															            "v-addr-ID = " v-addr-ID "</BR>" SKIP
+																															            "pp-passBack-char1 = " pp-passBack-char1 "</BR>"    SKIP          
+																															            "pp-passBack-char2 = " pp-passBack-char2 "</BR>"    SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-int1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-int2 "</BR>"    SKIP 																															            
+																															            "pp-whatshouldrun = " whatshouldrun "</BR>"    SKIP.
+                                                                                                                                        
+     IF v-addr-ID > 0 THEN DO:  
+        FIND addr_mstr WHERE addr_mstr.addr_id = v-addr-ID NO-LOCK NO-ERROR.
+         
+            IF AVAILABLE (addr_mstr) THEN
+                ASSIGN 
+                    v-addr1     = addr_mstr.addr_addr1
+                    v-addr2     = addr_mstr.addr_addr2
+                    v-addr3     = addr_mstr.addr_addr3
+                    v-city      = addr_mstr.addr_city
+                    v-state     = addr_mstr.addr_stateprov
+                    v-country   = addr_mstr.addr_country
+                    v-zip       = addr_mstr.addr_zip.
+        
+    END. /* if updater */    
+
+    pagetitle = "Search Criteria".
+
+    {ADDRpickP.i pagetitle "SEARCH" "NOTHING" "NOTHING" "NOTHING" "NOTHING" "NOTHING" "NOTHING" "NOTHING"}.         /* 2dot0 */
+        
+    END.  /** of when initial **/
+    
+    WHEN "SEARCH" THEN DO: 
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                    {&OUT}
+                                                                                                                                        "ACT = SEARCH </BR>" SKIP
+                                                                                                                                        "v-addr1 = " v-addr1 "</BR>" SKIP
+                                                                                                                                        "v-addr2 = " v-addr2 "</BR>" SKIP
+                                                                                                                                        "v-addr3 = " v-addr3 "</BR>" SKIP
+                                                                                                                                        "v-city = " v-city "</BR>" SKIP
+                                                                                                                                        "v-state = " v-state "</BR>" SKIP
+                                                                                                                                        "v-zip = " v-zip "</BR>" SKIP
+                                                                                                                                        "v-country = " v-country "</BR>" SKIP                                                                                                                                               
+                                                                                                                                        "prevproc = " pp-in "</BR>" SKIP
+                                                                                                                                        "pp-act = " pp-act "</BR>" SKIP   
+                                                                                                                                        "pp-passBack-peopid = " pp-passBack-peopid "</BR>" SKIP          
+                                                                                                                                        "v-addr-ID = " v-addr-ID "</BR>" SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-char1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-char2 "</BR>"    SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-int1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-int2 "</BR>"    SKIP                                                                                                                                         
+                                                                                                                                        "pp-whatshouldrun = " whatshouldrun "</BR>"    SKIP.                                                                                                                                               
+        IF v-addr-ID > 0 THEN DO: 
+            FIND addr_mstr WHERE addr_mstr.addr_id = v-addr-ID NO-LOCK NO-ERROR.
+            IF AVAILABLE (addr_mstr) THEN 
+                ASSIGN 
+	                v-addr1     = addr_mstr.addr_addr1
+	                v-city      = addr_mstr.addr_city
+	                v-state     = addr_mstr.addr_stateprov
+	                v-country   = addr_mstr.addr_country.
+        END. /* pp-passBack-addrid > 0 */        
+
+            /******** * * * JAVASCRIPT TIME * * * ***********/
+            </script>
+
+            <script TYPE='text/javascript'>
+
+            // made by Quinton Schaffer on May 14 2015
+            // lets you highlight and click on entire rows to trigger a selection box in it.
+
+            $(document).ready(function() {
+               //change .table to the table class being used.
+                $('.table_report_fromto tbody tr').click(function(event) {
+                    if (event.target.type !== 'radio') {
+                        $(':radio', this).trigger('click');
+                    }
+                });
+            });
+
+            </script>
+
+            <SCRIPT language='SpeedScript'>
+            /******** * * * END OF JAVA * * * * **************/
+        
+        {&OUT}
+            "<div class='row'>"                                 SKIP
+            "<div class='grid_12'>"                             SKIP
+            "<form> "                                           SKIP
+            "<div class='table_report_FromTo'>"                 SKIP
+            "   <table>"                                        SKIP
+            "       <thead>"                                    SKIP 
+            "           <tr>"                                   SKIP
+            "               <th colspan=8>Address Report</th>"  SKIP
+            "           </tr>"                                  SKIP
+            "           <tr>"                                   SKIP
+            "               <td>--</td>"                        SKIP            
+            "               <td>" v-addr1 "</td>"               SKIP
+            "               <td>--</td>"                        SKIP
+            "               <td>--</td>"                        SKIP
+            "               <td>" v-city "</td>"                SKIP
+            "               <td>" v-state "</td>"               SKIP
+            "               <td>" v-zip "</td>"                 SKIP
+            "               <td>" v-country "</td>"             SKIP
+            "           </tr>"                                  SKIP
+            "           <tr>"                                   SKIP
+            "           </tr>"                                  SKIP        
+            "           <tr>"                                   SKIP
+            "               <th>Update?</th>"                   SKIP
+            "               <th>Address Line 1</th>"            SKIP
+            "               <th>Address Line 2</th>"            SKIP            
+            "               <th>Address Line 3</th>"            SKIP
+            "               <th>City</th>"                      SKIP
+            "               <th>State / Provence</th>"          SKIP
+            "               <th>Zip Code</th>"                  SKIP
+            "               <th>Country</th>"                   SKIP
+            "           </tr>"                                  SKIP
+            "       </thead>"                                   SKIP
+            "       <tbody class='clickable'>"                  SKIP.
+            
+            FOR EACH addr_mstr WHERE ((addr_mstr.addr_addr1 CONTAINS v-addr1) OR   
+                                        (v-addr1 = "")) AND 
+                                        ((addr_mstr.addr_city = v-city) OR 
+                                        (v-city = "")) AND
+                                        ((addr_mstr.addr_stateprov = v-state) OR 
+                                        (v-state = "")) AND
+                                        ((addr_mstr.addr_zip = v-zip) OR 
+                                        (v-zip = "")) AND
+                                        ((addr_mstr.addr_country = v-country) OR 
+                                        (v-country = "")) AND
+                                        addr_mstr.addr_deleted = ?
+                                        NO-LOCK:                                        
+
+            ASSIGN 
+                 v-addr-id = addr_mstr.addr_id.
+
+          {&OUT}
+           
+            "  <tr>" SKIP
+            "       <td><input type='radio' name='h-pp-passBack-addrid' " /*h-addr_id*/ " value='" v-addr-id "' /></td>"   SKIP
+            "       <td>" addr_mstr.addr_addr1 "</td>"   SKIP             
+            "       <td>" addr_mstr.addr_addr2 "</td>"   SKIP
+            "       <td>" addr_mstr.addr_addr3 "</td>"   SKIP
+            "       <td>" addr_mstr.addr_city  "</td>"   SKIP
+            "       <td>" addr_mstr.addr_stateprov "</td>" SKIP
+            "       <td>" addr_mstr.addr_zip "</td>"   SKIP
+            "       <td>" addr_mstr.addr_country "</td>" SKIP
+            "   </tr>" SKIP.            
+            
+            END.    
+                    
+            {&OUT}
+            "   </tbody>" SKIP
+            "   <tfoot>" SKIP
+            "       <tr>"   SKIP
+            "               <td colspan=8>End of Report</td>" SKIP
+            "       </tr>"  SKIP
+            "   </tfoot>" SKIP
+            "   </table>"       SKIP
+            "</div> "       SKIP                                                                                                    
+            "</div><!-- of grid_12 -->" SKIP                                                                                        
+            "</div>" 
+            "<BR>" SKIP 
+            "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP
+            "       <input type='hidden' name='h-prevproc'  value='" pp-in "'/>"    SKIP
+            "       <input type='hidden' name='h-act'  value='" pp-act "'/>"    SKIP 
+            "       <input type='hidden' name='h-pp-passBack-peopid'  value='" pp-passBack-peopid "'/>"    SKIP         /* 2dot0 */
+            "       <input type='hidden' name='h-pp-passBack-char1'  value='" pp-passBack-char1 "'/>"    SKIP           /* 2dot0 */
+            "       <input type='hidden' name='h-pp-passBack-char2'  value='" pp-passBack-char2 "'/>"    SKIP           /* 2dot0 */
+            "       <input type='hidden' name='h-pp-passBack-int1'  value='" pp-passBack-int1 "'/>"    SKIP             /* 2dot0 */
+            "       <input type='hidden' name='h-pp-passBack-int2'  value='" pp-passBack-int2 "'/>"    SKIP.            /* 2dot0 */
+
+
+/* 2dot0 --> */ 
+            {&OUT}                                                                                                                                                                                                                                                    
+            "<div class='row'>" SKIP                                                                                                            
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-addr-act' value='PROMPT' class='btn'>Update Selected Address</BUTTON></div>" SKIP                                                                                                                                                                                                                 
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-addr-act' value='CLEAN2' class='btn'>Create a New Address</BUTTON></div>" SKIP         
+            "   <div class='grid_1'> </DIV>" SKIP            
+            "   <div class='grid_2'><button type='submit' name='h-addr-act' value='CLEAN' class='btn'>Search Again</BUTTON></div>" SKIP       
+            "   <div class='grid_2'> </DIV>" SKIP                                                                                     
+            "</div>" SKIP
+            "<BR>" SKIP.
+             
+         IF pp-passBack-peopid > 0 THEN   
+           {&OUT}    
+	        "<div class='row'>" SKIP           	              
+	        "   <div class='grid_5'> </DIV>" SKIP	    
+            "   <div class='grid_2'>" SKIP 
+                                "<BUTTON type='submit' formaction='../../" pp-project "/rcode/" pp-out "' class='btn'>Send Selected Address</BUTTON></a></div>" SKIP
+	        "   <div class='grid_5'> </DIV>" SKIP
+	        "</div>" SKIP.
+/* <-- 2dot0 */	    
+
+	       {&OUT}
+                "</form>" SKIP.
+                                                                                                          
+                    
+    END.  /** of when SEARCH **/
+    WHEN "COUNTRY" THEN DO: 
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                    {&OUT}
+                                                                                                                                        "ACT = COUNTRY </BR>" SKIP
+                                                                                                                                        "v-addr1 = " v-addr1 "</BR>" SKIP
+                                                                                                                                        "v-addr2 = " v-addr2 "</BR>" SKIP
+                                                                                                                                        "v-addr3 = " v-addr3 "</BR>" SKIP
+                                                                                                                                        "v-city = " v-city "</BR>" SKIP
+                                                                                                                                        "v-state = " v-state "</BR>" SKIP
+                                                                                                                                        "v-zip = " v-zip "</BR>" SKIP
+                                                                                                                                        "v-country = " v-country "</BR>" SKIP                                                                                                                                               
+                                                                                                                                        "prevproc = " pp-in "</BR>" SKIP
+                                                                                                                                        "pp-act = " pp-act "</BR>" SKIP   
+                                                                                                                                        "pp-passBack-peopid = " pp-passBack-peopid "</BR>" SKIP          
+                                                                                                                                        "v-addr-ID = " v-addr-ID "</BR>" SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-char1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-char2 "</BR>"    SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-int1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-int2 "</BR>"    SKIP                                                                                                                                         
+                                                                                                                                        "pp-whatshouldrun = " whatshouldrun "</BR>"    SKIP.                                                                                                                                        
+        pagetitle = "Select a Country".
+
+        {ADDRpickP.i pagetitle "STATE" "DISABLED" "NOTHING" "DISABLED" "DISABLED" "NOTHING" "REQUIRED" "class='req'"}.                  /* 2dot0 */
+ 
+    END. /* of when COUNTRY */
+    WHEN "STATE" THEN DO:
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                    {&OUT}
+                                                                                                                                        "ACT = STATE </BR>" SKIP
+                                                                                                                                        "v-addr1 = " v-addr1 "</BR>" SKIP
+                                                                                                                                        "v-addr2 = " v-addr2 "</BR>" SKIP
+                                                                                                                                        "v-addr3 = " v-addr3 "</BR>" SKIP
+                                                                                                                                        "v-city = " v-city "</BR>" SKIP
+                                                                                                                                        "v-state = " v-state "</BR>" SKIP
+                                                                                                                                        "v-zip = " v-zip "</BR>" SKIP
+                                                                                                                                        "v-country = " v-country "</BR>" SKIP                                                                                                                                               
+                                                                                                                                        "prevproc = " pp-in "</BR>" SKIP
+                                                                                                                                        "pp-act = " pp-act "</BR>" SKIP   
+                                                                                                                                        "pp-passBack-peopid = " pp-passBack-peopid "</BR>" SKIP          
+                                                                                                                                        "v-addr-ID = " v-addr-ID "</BR>" SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-char1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-char2 "</BR>"    SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-int1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-int2 "</BR>"    SKIP                                                                                                                                         
+                                                                                                                                        "pp-whatshouldrun = " whatshouldrun "</BR>"    SKIP.                                                                                                                                        
+        ASSIGN 
+            pagetitle = "Select a State".                                                                                               /* 2dot0 */
+
+        {ADDRpickP.i pagetitle "PROMPT" "DISABLED" "NOTHING" "DISABLED" "REQUIRED" "class='req'" "DISABLED" "NOTHING"}.                 /* 2dot0 */
+
+    END. /* of when STATE */
+    WHEN "PROMPT" THEN DO: 
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                    {&OUT}
+                                                                                                                                        "ACT = PROMPT </BR>" SKIP
+                                                                                                                                        "v-addr1 = " v-addr1 "</BR>" SKIP
+                                                                                                                                        "v-addr2 = " v-addr2 "</BR>" SKIP
+                                                                                                                                        "v-addr3 = " v-addr3 "</BR>" SKIP
+                                                                                                                                        "v-city = " v-city "</BR>" SKIP
+                                                                                                                                        "v-state = " v-state "</BR>" SKIP
+                                                                                                                                        "v-zip = " v-zip "</BR>" SKIP
+                                                                                                                                        "v-country = " v-country "</BR>" SKIP                                                                                                                                               
+                                                                                                                                        "prevproc = " pp-in "</BR>" SKIP
+                                                                                                                                        "pp-act = " pp-act "</BR>" SKIP   
+                                                                                                                                        "pp-passBack-peopid = " pp-passBack-peopid "</BR>" SKIP          
+                                                                                                                                        "v-addr-ID = " v-addr-ID "</BR>" SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-char1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-char2 "</BR>"    SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-int1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-int2 "</BR>"    SKIP                                                                                                                                         
+                                                                                                                                        "pp-whatshouldrun = " whatshouldrun "</BR>"    SKIP.                                                                                                                                            
+    IF v-addr-id <> 0 THEN DO:
+         
+        FIND addr_mstr WHERE addr_mstr.addr_id = v-addr-id NO-LOCK NO-ERROR.
+        
+            IF AVAILABLE (addr_mstr) THEN
+                ASSIGN 
+                    v-addr1     = addr_mstr.addr_addr1
+                    v-addr2     = addr_mstr.addr_addr2 
+                    v-addr3     = addr_mstr.addr_addr3
+                    v-city      = addr_mstr.addr_city
+                    v-state     = addr_mstr.addr_stateprov
+                    v-country   = addr_mstr.addr_country
+                    v-zip       = addr_mstr.addr_zip
+                    pagetitle = "Update Address".                                                                                           /* 2dot0 */
+        
+    END. /* if v-addr-id <> 0 */    
+    ELSE                                                                                                                                    /* 2dot0 */
+        ASSIGN                                                                                                                              /* 2dot0 */
+            v-addr-id = 0                                                                                                                   /* 2dot0 */
+            pagetitle = "Create a New Address".                                                                                             /* 2dot0 */
+    
+{ADDRpickP.i pagetitle "VALIDATION" "NOTHING" "class='req'" "NOTHING" "NOTHING" "class='req'" "NOTHING" "class='req'"}.                     /* 2dot0 */ 
+        
+
+        
+    END. /* of when PROMPT */    
+    WHEN "CREATE" THEN DO:
+                                                                                                                                    IF itmessage = YES THEN 
+                                                                                                                                    {&OUT}
+                                                                                                                                        "ACT = CREATE </BR>" SKIP
+                                                                                                                                        "v-addr1 = " v-addr1 "</BR>" SKIP
+                                                                                                                                        "v-addr2 = " v-addr2 "</BR>" SKIP
+                                                                                                                                        "v-addr3 = " v-addr3 "</BR>" SKIP
+                                                                                                                                        "v-city = " v-city "</BR>" SKIP
+                                                                                                                                        "v-state = " v-state "</BR>" SKIP
+                                                                                                                                        "v-zip = " v-zip "</BR>" SKIP
+                                                                                                                                        "v-country = " v-country "</BR>" SKIP                                                                                                                                               
+                                                                                                                                        "prevproc = " pp-in "</BR>" SKIP
+                                                                                                                                        "pp-act = " pp-act "</BR>" SKIP   
+                                                                                                                                        "pp-passBack-peopid = " pp-passBack-peopid "</BR>" SKIP          
+                                                                                                                                        "v-addr-ID = " v-addr-ID "</BR>" SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-char1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-char2 "</BR>"    SKIP
+                                                                                                                                        "pp-passBack-char1 = " pp-passBack-int1 "</BR>"    SKIP          
+                                                                                                                                        "pp-passBack-char2 = " pp-passBack-int2 "</BR>"    SKIP                                                                                                                                         
+                                                                                                                                        "pp-whatshouldrun = " whatshouldrun "</BR>"    SKIP                                                                                                                                               
+                                                                                                                                        "peopcounter = " peopcounter "</BR>" SKIP.
+        IF v-addr-id > 0 THEN 
+            ASSIGN 
+                pagetitle = "Address Updated".  
+        ELSE 
+            ASSIGN 
+                pagetitle = "New Address Created".
+                         
+        IF peopcounter > 0 THEN 
+        
+            ASSIGN 
+                pagetitle = "New Address Created"
+                v-addr-ID = 0. 
+        
+        
+        RUN VALUE(SEARCH("SUBaddr-ucU.r")) (
+			v-addr-ID,                   /* addr_ID */
+			v-addr1,
+			v-addr2,
+			v-addr3,
+			v-city,  
+			v-state,
+			v-zip,     
+			v-country,  
+			"",                  /* addr_type */
+			
+			OUTPUT o-ucaddr-id,
+			OUTPUT o-ucaddr-create,
+			OUTPUT o-ucaddr-update,
+			OUTPUT o-ucaddr-avail,
+			OUTPUT o-ucaddr-successful        
+            ).
+        
+            IF o-ucaddr-successful = NO OR o-ucaddr-id = 0 THEN
+        	        
+	        {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_2'> </DIV>" SKIP
+                "<DIV class='grid_8'>" SKIP
+                "<h2>An error occured and address was not created. Please contact SolSource.</h2>" SKIP
+                "</DIV>         <!-- end of grid_8 -->" SKIP
+                "<DIV class='grid_2'> </DIV>" SKIP  
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP 
+                "<div class='row'>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+                "   <div class='grid_2'><button type='submit' name='h-addr-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+                "</div>" SKIP.
+ 
+	        ELSE IF o-ucaddr-successful = YES OR o-ucaddr-id > 0 THEN DO: 
+	        
+	        FOR FIRST addr_mstr WHERE addr_mstr.addr_id = o-ucaddr-id AND 
+	                             addr_mstr.addr_deleted = ?
+                             NO-LOCK: 
+
+            ASSIGN 
+                v-addr-ID = o-ucaddr-id.
+ 
+{ADDRpickP.i pagetitle "INITIAL" "DISABLED" "NOTHING" "DISABLED" "DISABLED" "NOTHING" "DISABLED" "NOTHING"}.                                              /* 2dot0 */             
+            
+            END. /* for first */            
+        END. /* else if o-ucaddr-successful ... */
+    END. /* of when CREATE */              
+END CASE.  /*** of case act ***/
+    
+</SCRIPT>
+</BODY>
+</HTML>

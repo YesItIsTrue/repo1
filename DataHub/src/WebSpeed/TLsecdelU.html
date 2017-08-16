@@ -1,0 +1,308 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.6">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="26/Jan/15">
+    <META NAME="LAST_UPDATED" CONTENT="18/Mar/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <TITLE>Test Section Maintenance</TITLE>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+/**********************************************************************************
+ *
+ *  TLsecdelU.html   -   Version 1.0
+ *
+ *  This program is designed to allow users to delete sections for Tests (MPA and BioMed).
+ *
+ *  ----------------------------------------------------------------------------
+ *
+ *  Revision History:
+ *  -----------------
+ *  1.0 - written by Doug Luttrell on 26/Jan/15.  Original Version.  Based upon
+ *          TLsecmaintU.html version 1.2.  
+ *  1.3 - written by Jacob Luttrell on 05/Oct/15. changed "FIND SECTION" to "FIND SECTION TO DELETE"
+ *          to fix title display. Marked by 1dot3.
+ *  1.4 - written by Jacob Luttrell on 06/Oct/15. Added check to make sure items in section are deleted
+ *          before being able to delete. Marked by 1dot4.
+ *  1.5 - written by Jacob Luttrell on 08/Oct/15. Added code to display dates. Marked by 1dot5.
+ *  1.6 - written by Jacob Luttrell on 18/Mar/16. Added progname updater. Marked by 1d0t6.
+ ***********************************************************************************/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/  
+
+/***************************  Variable Definition Section  *************************/
+DEFINE VARIABLE sectid      LIKE tl_mstr.tl_sect_id         NO-UNDO.
+DEFINE VARIABLE testtype    LIKE tl_mstr.tl_testtype        NO-UNDO.
+DEFINE VARIABLE testname    LIKE test_mstr.test_name        NO-UNDO.
+DEFINE VARIABLE sectdesc    LIKE tl_mstr.tl_section_desc    NO-UNDO.
+DEFINE VARIABLE starteff    LIKE tl_mstr.tl_start_eff       NO-UNDO.
+DEFINE VARIABLE endeff      LIKE tl_mstr.tl_end_eff         NO-UNDO.
+DEFINE VARIABLE sortorder   LIKE tl_mstr.tl_order           NO-UNDO.
+
+DEFINE VARIABLE disp-start  AS CHARACTER                 NO-UNDO.                   /* 1dot5 */
+DEFINE VARIABLE disp-end    AS CHARACTER                 NO-UNDO.                   /* 1dot5 */
+DEFINE VARIABLE out-start   AS CHARACTER                 NO-UNDO.                   /* 1dot5 */
+DEFINE VARIABLE out-end     AS CHARACTER                 NO-UNDO.                   /* 1dot5 */
+ 
+ DEFINE VARIABLE act        AS CHARACTER                    NO-UNDO. 
+ DEFINE VARIABLE ITshowmsg  AS LOG INITIAL NO               NO-UNDO.
+ 
+ DEFINE VARIABLE thismarker AS CHARACTER                    NO-UNDO. 
+
+ 
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "<P>Pre get-value</P>" SKIP.
+        
+ ASSIGN 
+    act         = get-value('h-act')
+    sectid      = IF substring(get-value('h-sectid'),1,4) = "null" THEN         /* 1dot1 */
+                    0                                                           /* 1dot1 */
+                  ELSE                                                          /* 1dot1 */
+                    INTEGER(get-value('h-sectid'))                              /* 1dot1 */
+    testtype    = get-value('h-testtype')
+    sectdesc    = get-value('h-sectdesc')
+    sortorder   = INTEGER(get-value('h-sortorder'))
+    disp-start  = get-value('html5-start')                                              /* 1dot5 */
+    disp-end    = get-value('html5-end').                                               /* 1dot5 */
+    
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                            /* 1dot5 */
+            disp-start,                                                                 /* 1dot5 */
+            OUTPUT starteff                                                             /* 1dot5 */    
+            ).                                                                          /* 1dot5 */
+        
+        RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                        /* 1dot5 */
+            disp-end,                                                                   /* 1dot5 */
+            OUTPUT endeff                                                               /* 1dot5 */
+            ).                                                                          /* 1dot5 */
+    
+    /*** also need to get-value on h-starteff and h-endeff, but need to run them through date converter ***/
+    
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "<P>Post get-value</P>" SKIP
+                                                                                       "<P>Act = " act "</P>" SKIP
+                                                                                       "<P>sectid = " sectid "</P>" SKIP    
+                                                                                       "<P>sectdesc = " sectdesc "</P>" SKIP
+                                                                                       "<P>testtype = " testtype "</P>" SKIP
+                                                                                       "<P>sortorder = " sortorder "</P>" SKIP
+                                                                                       "<hr width=90%>" SKIP.
+        
+ IF act = "" THEN 
+    act = "INITIAL".
+    
+ ELSE IF act = "INITIAL" THEN
+    act = "INITIAL".
+    
+ ELSE IF act = "FIND TEST" THEN 
+    act = "FIND TEST".
+    
+    /*
+ ELSE IF act = "FIND SECTION" THEN 
+    act = "FIND SECTION".    
+    */
+    
+ ELSE IF act = "CREATE" THEN  
+    act = "CREATE".
+    
+ ELSE IF act = "UPDATE" THEN  
+    act = "UPDATE".
+     
+ ELSE IF sectid = 0 THEN 
+    act = "PROMPT".
+     
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "<P>Pre Case</P>" SKIP
+                                                                                       "<P>Act = " act "</P>" SKIP
+                                                                                       "<P>sectid = " sectid "</P>" SKIP    
+                                                                                       "<P>sectdesc = " sectdesc "</P>" SKIP
+                                                                                       "<P>testtype = " testtype "</P>" SKIP
+                                                                                       "<P>sortorder = " sortorder "</P>" SKIP
+                                                                                       "<hr width=90%>" SKIP.
+        
+/********************************  Main Program  ***********************************/
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:
+        
+        {TLsecmaintU-form.i "FIND TEST" "Required" "DISABLED" "DISABLED" "NOTHING" "Delete"}. 
+        
+    END.  /** of act = "INITIAL" **/ 
+    
+    WHEN "FIND TEST" THEN DO:
+         
+        FIND test_mstr WHERE test_mstr.test_type = testtype AND 
+            test_mstr.test_deleted = ? 
+                NO-LOCK NO-ERROR.
+        IF AVAILABLE test_mstr THEN 
+            ASSIGN 
+                testname    = test_mstr.test_name. 
+ 
+        {TLsecmaintU-form.i "FIND SECTION TO DELETE" "DISABLED" "Required" "DISABLED" "NOTHING" "Delete"}.    
+                
+                                                                                IF ITshowmsg = YES THEN  
+                                                                                    {&OUT}
+                                                                                        "<P>Post FIND TEST</P>" SKIP  
+                                                                                        "<P>Act = " act "</P>" SKIP
+                                                                                       "<P>sectid = " sectid "</P>" SKIP    
+                                                                                       "<P>sectdesc = " sectdesc "</P>" SKIP
+                                                                                       "<P>testtype = " testtype "</P>" SKIP
+                                                                                       "<P>sortorder = " sortorder "</P>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+         
+    END.  /** of act = "FIND TEST" **/
+
+    WHEN "FIND SECTION TO DELETE" THEN DO:                                      /* 1dot3 */
+        
+        FIND tl_mstr WHERE tl_mstr.tl_sect_id = sectid AND 
+            tl_mstr.tl_testtype = testtype AND                                  /* 1dot2 */
+            tl_mstr.tl_deleted = ? 
+                NO-LOCK NO-ERROR. 
+        IF AVAILABLE tl_mstr THEN    
+            ASSIGN 
+                sectdesc    = tl_mstr.tl_section_desc
+                sortorder   = tl_mstr.tl_order
+                starteff    = tl_mstr.tl_start_eff
+                endeff      = tl_mstr.tl_end_eff. 
+                
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot5 */
+            starteff,                                                                           /* 1dot5 */
+            OUTPUT out-start                                                                    /* 1dot5 */    
+            ).                                                                                  /* 1dot5 */
+ 
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot5 */
+            endeff,                                                                             /* 1dot5 */
+            OUTPUT out-end                                                                      /* 1dot5 */    
+            ).                                                                                  /* 1dot5 */
+    
+        ASSIGN                                                                                  /* 1dot5 */ 
+            disp-start = out-start                                                              /* 1dot5 */    
+            disp-end   = out-end.                                                               /* 1dot5 */            
+ 
+        {TLsecmaintU-form.i "DELETE" "DISABLED" "DISABLED" "DISABLED" "DISABLED" "Delete"}.       
+                
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Post FIND SECTION</P>" SKIP  
+                                                                                        "<P>Act = " act "</P>" SKIP
+                                                                                       "<P>sectid = " sectid "</P>" SKIP    
+                                                                                       "<P>sectdesc = " sectdesc "</P>" SKIP
+                                                                                       "<P>testtype = " testtype "</P>" SKIP
+                                                                                       "<P>sortorder = " sortorder "</P>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+         
+    END.  /** of act = "FIND SECTION" **/
+    
+    WHEN "DELETE" THEN DO:
+        
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Update</P>" SKIP
+                                                                                        "<P>Act = " act "</P>" SKIP
+                                                                                       "<P>sectid = " sectid "</P>" SKIP    
+                                                                                       "<P>sectdesc = " sectdesc "</P>" SKIP
+                                                                                       "<P>testtype = " testtype "</P>" SKIP
+                                                                                       "<P>sortorder = " sortorder "</P>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+        
+        IF CAN-FIND (FIRST tld_det WHERE tld_det.tld_sect_id = sectid AND                        /* 1dot4 */
+                                          tld_det.tld_delete = ?) THEN                           /* 1dot4 */
+                 
+                 {&OUT}                                                                          /* 1dot4 */
+                    "<CENTER><H3>Section " sectid "Still has Items / Markers.  Please Delete the Items / Markers before deleteing this section.</H3></CENTER>". /* 1dot4 */
+                            
+        ELSE DO:                                                                                 /* 1dot4 */
+            
+	        FIND tl_mstr WHERE tl_mstr.tl_sect_id = sectid AND                                 
+	            tl_mstr.tl_testtype = testtype AND                                  /* 1dot2 */
+	            tl_mstr.tl_deleted = ?                                              /* 1dot2 */
+	                EXCLUSIVE-LOCK NO-ERROR.                                                                                                             
+                    
+			        IF AVAILABLE tl_mstr THEN DO: 
+			             
+			            ASSIGN  
+			                tl_mstr.tl_deleted          = TODAY 
+			                tl_mstr.tl_modified_date    = TODAY 
+			                tl_mstr.tl_modified_by      = USERID("HHI")
+			                tl_mstr.tl_prog_name        = THIS-PROCEDURE:FILE-NAME.                  /* 1dot6 */ 
+			                
+			            {&OUT}
+			                "<CENTER><H3>Section " tl_mstr.tl_section_desc " in the Test Type " tl_mstr.tl_testtype " has been deleted.</H3></CENTER>" SKIP.     /* 1dot6 */
+			                
+		           END.  /** of if avail tl_mstr **/  
+		               
+			       ELSE 
+			           {&OUT} "<P>ERROR - tl_mstr not found for Section = " sectid ".</P>" SKIP.
+ 
+        END. /** of else do **/                                                         /* 1dot3 */    
+                                                                   /* 1dot3 */                     
+ 
+        ASSIGN 
+            sectid      = 0
+            sectdesc    = "".
+        
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot5 */
+            starteff,                                                                           /* 1dot5 */
+            OUTPUT out-start                                                                    /* 1dot5 */    
+            ).                                                                                  /* 1dot5 */ 
+ 
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot5 */
+            endeff,                                                                             /* 1dot5 */
+            OUTPUT out-end                                                                      /* 1dot5 */    
+            ).                                                                                  /* 1dot5 */
+    
+        ASSIGN                                                                                  /* 1dot5 */ 
+            disp-start = out-start                                                              /* 1dot5 */    
+            disp-end   = out-end.                                                               /* 1dot5 */    
+            
+        {TLsecmaintU-form.i "INITIAL" "DISABLED" "DISABLED" "DISABLED" "NOTHING" "Delete"}.                
+        
+    END.  /** of act = "UPDATE" **/
+    
+      
+    OTHERWISE DO: 
+                       
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Otherwise Do</P>" SKIP
+                                                                                        "<P>Act = " act "</P>" SKIP
+                                                                                       "<P>sectid = " sectid "</P>" SKIP    
+                                                                                       "<P>sectdesc = " sectdesc "</P>" SKIP
+                                                                                       "<P>testtype = " testtype "</P>" SKIP
+                                                                                       "<P>sortorder = " sortorder "</P>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+                                           
+        {&OUT} 
+            "<P class='errmsg'>Unexpected Condition!  Please contact <a href='mailto:hhi.techsupport@mysolsource.com?subject=Error with TLsecmaintU.html -- " act "'>Solsource</a> immediately.</P>" SKIP             
+            "<FORM method='post'>" SKIP
+            "<center><INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP 
+            "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP  
+            "</FORM>" SKIP.     
+        
+    END.  /** of otherwise **/
+    
+END CASE.  /*** case of act ***/
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT} "<P>End OF LINE.</P>".
+
+/*******************************  End of Program  **********************************/
+
+
+</SCRIPT>
+</BODY>
+</HTML>

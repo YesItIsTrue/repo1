@@ -1,0 +1,525 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<TITLE>WebSpeed Script</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="DATE">
+    <META NAME='LAST_UPDATED' CONTENT="DATE">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+<script src='/depot/src/HTMLContent/buttons.js'></script>
+
+<script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Template Notes: 
+        This template is designed to be used with a maintenance screen.
+        Quoted areas are either instuctions or place holders for your 
+        variables and fields.
+    
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+DEFINE VARIABLE v-new           AS LOGICAL              NO-UNDO.
+DEFINE VARIABLE whichrec        AS INTEGER              NO-UNDO.
+DEFINE VARIABLE o-successful    AS LOGICAL              NO-UNDO.
+
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-Warehouse_site LIKE Warehouse_mstr.Warehouse_site NO-UNDO.
+DEFINE VARIABLE v-Warehouse_name LIKE Warehouse_mstr.Warehouse_name NO-UNDO.
+DEFINE VARIABLE v-Warehouse_desc LIKE Warehouse_mstr.Warehouse_desc NO-UNDO.
+DEFINE VARIABLE v-warehouse_def_loc LIKE warehouse_mstr.warehouse_def_loc NO-UNDO.
+
+DEFINE VARIABLE o-create AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-update AS LOGICAL NO-UNDO.
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act             = html-encode(get-value("h-act"))
+    whichrec        = INTEGER(html-encode(get-value("h-whichrec")))
+    v-new           = IF html-encode(get-value("h-new")) = "YES" THEN YES ELSE IF html-encode(get-value("h-new")) = "NO" THEN NO ELSE ?
+    v-Warehouse_site = html-encode(get-value("h-Warehouse_site"))
+    v-Warehouse_name = html-encode(get-value("h-Warehouse_name"))
+    v-Warehouse_desc = html-encode(get-value("h-Warehouse_desc"))
+    v-warehouse_def_loc = html-encode(get-value("h-warehouse_def_loc"))
+    .
+
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1) 
+            "       <tr>" skip
+            "           <td>Warehouse Site</td>" skip
+            "           <td class='req'><input type='text' name='h-Warehouse_site'  value='" v-Warehouse_site "' Required /></td>" SKIP            
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Warehouse Name</td>" skip
+            "           <td class='req'><input type='text' name='h-Warehouse_name'  value='" v-Warehouse_name "' REQUIRED /></td>" SKIP            
+            "       </tr>" SKIP(1)
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR></BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Search' class='btn'>Search</BUTTON></form></div>" SKIP
+            "   <div class='grid_2'><form> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Create' class='btn'>Create</BUTTON></form></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP        
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "LIST" THEN DO:
+    
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_1'></DIV>" SKIP
+            "<DIV class='grid_10'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='4'>Warehouse Report</TH>" SKIP    
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "               <td></td>" SKIP
+            "                <TD> Site Name </TD>" SKIP
+            "                <TD> Warehouse Name </TD>" SKIP
+            "                <TD> Description </TD>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1).
+            
+        FOR EACH warehouse_mstr WHERE 
+            (warehouse_mstr.warehouse_site BEGINS v-warehouse_site OR v-warehouse_site = "") AND
+            (warehouse_mstr.warehouse_name BEGINS v-warehouse_name OR v-warehouse_name = "") AND
+            warehouse_mstr.warehouse_deleted = ?
+                NO-LOCK BY warehouse_mstr.warehouse_site BY warehouse_mstr.warehouse_name:
+            
+            {&OUT}
+                "           <tr>" SKIP
+                "               <TD><center><input type='radio' name='h-whichrec' value='" RECID(warehouse_mstr) "' /></center></TD>" SKIP
+                "               <td>" warehouse_mstr.warehouse_site "</td>" SKIP
+                "               <td>" warehouse_mstr.warehouse_name "</td>" SKIP
+                "               <td>" warehouse_mstr.warehouse_desc "</td>" SKIP
+                "           </tr>" SKIP.
+
+        END. /* 4ea. */
+        
+        {&OUT}          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='4'>END OF REPORT</TD>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_10 -->" SKIP
+            "<DIV class='grid_1'></DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<div class='row'>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP            
+            "   <div class='grid_2'><button type='submit' name='h-act' value='SEARCH' class='btn'>Submit</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP            
+            "   <div class='grid_2'><button type='submit' name='h-act' value='Create' class='btn'>Create New</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP            
+            "   <div class='grid_2'><button type='submit' name='h-act' value='Initial' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+        
+    END. /*** list act ***/
+    WHEN "SEARCH" THEN DO:
+    
+        FIND Warehouse_mstr WHERE 
+            warehouse_mstr.warehouse_site = v-warehouse_site AND 
+            warehouse_mstr.warehouse_name = v-warehouse_name AND 
+            warehouse_mstr.warehouse_deleted = ?
+            NO-LOCK NO-ERROR.
+   
+        IF AVAILABLE (Warehouse_mstr) THEN DO:
+        
+            ASSIGN v-Warehouse_desc = Warehouse_mstr.Warehouse_desc
+                v-warehouse_def_loc = warehouse_mstr.warehouse_def_loc.
+        
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_2'> </DIV>" SKIP
+                "<DIV class='grid_8'>" SKIP
+                "<DIV class='table_2col'>" SKIP
+                "<FORM>" SKIP
+                "    <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                "    <input type='hidden' name='h-Warehouse_name' value='" v-Warehouse_name "' />" SKIP
+                "    <INPUT type='hidden' name='h-Warehouse_site' value='" v-Warehouse_site "' />" SKIP
+                "  <TABLE>" SKIP(1)
+                "      <TR>" SKIP
+                "          <TH colspan=4>Edit this Warehouse record.</TH>" SKIP
+                "      </TR>" SKIP(1)
+            
+                "      <TR>" SKIP
+                "          <TD>Warehouse Site</TD>" SKIP
+                "          <TD><INPUT type='TEXT' value='" v-Warehouse_site "' disabled/></TD>" SKIP
+                "          <TD>Warehouse Name</TD>" SKIP
+                "          <TD><INPUT type='TEXT' value='" v-Warehouse_name "' disabled/></TD>" SKIP
+                "      </TR>" SKIP
+                
+                "      <TR>" SKIP
+                "          <TD>Warehouse Description</TD>" SKIP
+                "          <TD colspan='1'><textarea cols='35' rows='4' name='h-Warehouse_desc'>" v-Warehouse_desc "</textarea></TD>" SKIP
+                "          <TD>Default Location</TD>" SKIP
+                "          <TD class='req'>" SKIP
+                "            <select name='h-warehouse_def_loc' required>" SKIP.
+           
+            FIND loc_mstr WHERE loc_mstr.loc_site = warehouse_mstr.warehouse_site AND 
+                loc_mstr.loc_warehouse = warehouse_mstr.warehouse_name AND 
+                loc_mstr.loc_name = warehouse_mstr.warehouse_def_loc AND 
+                loc_mstr.loc_deleted = ? NO-LOCK NO-ERROR.
+                
+            IF AVAILABLE (loc_mstr) THEN {&OUT} "                <option value'" loc_mstr.loc_name "' SELECTED >" loc_mstr.loc_name "</option>" SKIP.
+               
+            FOR EACH loc_mstr WHERE loc_mstr.loc_site = warehouse_mstr.warehouse_site AND 
+                loc_mstr.loc_warehouse = warehouse_mstr.warehouse_name AND 
+                loc_mstr.loc_name <> warehouse_mstr.warehouse_def_loc AND 
+                loc_mstr.loc_deleted = ? NO-LOCK: 
+               
+                {&OUT} "                <option value'" loc_mstr.loc_name "'>" loc_mstr.loc_name "</option>" SKIP.
+               
+            END. /*** for each loc ***/
+               
+            {&OUT}
+                "      </TR>" SKIP
+                
+                "   </TABLE>" SKIP
+                "</DIV>          <!-- end of table_2col -->" SKIP
+                "</DIV>         <!-- end of grid_8 -->" SKIP
+                "<DIV class='grid_2'> </DIV>           <!-- spacer DIV -->" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<div class='row'>" SKIP
+                "   <div class='grid_2'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn'>Update</BUTTON></div>" SKIP
+                "   <div class='grid_1'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='DELETE' class='btn'>Delete</BUTTON></div>" SKIP
+                "   <div class='grid_1'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Initial' class='btn'>Search Again</BUTTON></div>" SKIP
+                "   <div class='grid_2'> </DIV>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP
+                "<BR>" SKIP
+                .
+            
+        END. /*** of available ***/
+        
+        ELSE DO:
+        
+            {&OUT}
+                "<div class='row'><div class='grid_12'><center><h2>Sorry, there was no ~"" v-Warehouse_name "~" at the ~"" v-Warehouse_site "~" site in the database.</h2></center></div></div>"
+                "<BR>" SKIP 
+                "<form>" SKIP
+                "<div class='row'>" SKIP
+                "   <input type='hidden' name='h-item_nbr' value='" v-Warehouse_name "' />" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='CREATE' class='btn'>Create New Record</BUTTON></div>" SKIP
+                "   <div class='grid_2'> </DIV>" SKIP
+                "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP.
+            
+        END. /*** of not available ***/
+        
+    END. /** when search ***/        
+    
+    WHEN "CREATE" THEN DO:
+    
+        {&OUT}
+           "<DIV class='row'>" SKIP
+           "<DIV class='grid_2'> </DIV>" SKIP
+           "<DIV class='grid_8'>" SKIP
+           "<DIV class='table_2col'>" SKIP
+           "<FORM>" SKIP
+           "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+           "  <TABLE>" SKIP(1)
+           "      <TR>" SKIP
+           "          <TH colspan=4>Create new Warehouse record.</TH>" SKIP
+           "      </TR>" SKIP(1)
+        
+           "      <TR>" SKIP
+           "          <TD>Site Name</TD>" SKIP
+           "          <TD class='req'>" SKIP
+           "            <select name='h-warehouse_site' required>" SKIP
+           "                <option></option>" SKIP.
+        
+        FOR EACH site_mstr NO-LOCK:
+        
+            {&OUT} "                <option value'" site_mstr.site_name "'>" site_mstr.site_name "</option>" SKIP.
+            
+        END. /** 4ea site_mstr **/
+ 
+        {&OUT}  
+           "            </select>".
+           
+           
+        IF itmessage = YES THEN {&OUT} " <a href=~"../../InvCtrl/rcode/ICsite_maintU.r?h-item_nbr=&whattorun=&h-act=CREATE~" >Create New Site</a>" SKIP.
+        
+        {&OUT}
+           "          </TD>" SKIP
+           "          <TD>Warehouse Name</TD>" SKIP
+           "          <TD class='req'><INPUT type='TEXT' name='h-Warehouse_name' value='" v-Warehouse_name "' required/></TD>" SKIP
+           "      </TR>" SKIP
+        
+           "      <TR>" SKIP
+           "          <TD>Warehouse Description</TD>" SKIP
+           "          <TD colspan='1'><textarea cols='30' rows='4' name='h-Warehouse_desc' value='" v-Warehouse_desc "'>" v-Warehouse_desc "</textarea></TD>" SKIP
+           "          <TD>Default Location</TD>" SKIP
+           "          <TD><INPUT type='TEXT' name='h-warehouse_def_loc' value='" v-Warehouse_def_loc "'/></TD>" SKIP
+           "      </TR>" SKIP
+        
+           "   </TABLE>" SKIP
+           "</DIV>          <!-- end of table_2col -->" SKIP
+           "</DIV>         <!-- end of grid_8 -->" SKIP
+           "<DIV class='grid_2'> </DIV>           <!-- spacer DIV -->" SKIP
+           "</DIV>     <!-- end of row -->" SKIP
+           "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Update' class='btn'>Submit</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Initial' class='btn'>Search Again</BUTTON></div>" SKIP  
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "<BR>" SKIP
+           .
+  
+    END. /*** Create act ***/
+    
+    WHEN "UPDATE" THEN DO:
+    
+                                                                                        IF itmessage = YES THEN 
+                                                                                            {&OUT} "Start of Update Act <br>"
+                                                                                            "v-Warehouse_site = " v-Warehouse_site "<br>" SKIP
+                                                                                            "v-Warehouse_name = " v-Warehouse_name "<br>" SKIP
+                                                                                            "v-Warehouse_desc = " v-Warehouse_desc "<br>" SKIP.
+          
+        RUN VALUE(SEARCH("SUBware-ucU.r"))(
+            v-Warehouse_site,
+            v-Warehouse_name,
+            v-Warehouse_desc,
+            v-warehouse_def_loc,
+            OUTPUT o-create,
+            OUTPUT o-update,
+            OUTPUT o-successful
+            ).
+    
+        IF o-successful = YES THEN DO:
+    
+            {&OUT} 
+                    "<form>" SKIP
+                    "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                    "<DIV class='row'>" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "<DIV class='grid_6'>" SKIP  
+                    "<center><h2>The Warehouse record ~"" v-Warehouse_name "~" at the ~"" v-Warehouse_site "~" site was successfully ".
+                
+                IF o-update = YES THEN {&OUT} "updated".
+                IF o-create = YES THEN {&OUT} "created".
+                    
+                {&OUT}
+                    ".</h2></center></DIV>" SKIP            
+                    "</DIV>         <!-- end of grid_6 -->" SKIP
+                    "<DIV class='grid_3'></DIV>     <!-- end of row -->" SKIP
+                    "</div>" SKIP
+                    "<BR></BR>" SKIP
+                    "<div class='row'>" SKIP          
+                    "   <div class='grid_5'> </DIV>" SKIP
+                    "   <div class='grid_2'><button type='submit' name='h-act' value='initial' class='btn'>Search Again</BUTTON></div>" SKIP
+                    "   <div class='grid_5'> </DIV>" SKIP 
+                    "</div>" SKIP
+                    "<BR>" SKIP
+                    "</form>" SKIP.
+        
+        END. /*** successful ***/        
+         
+        ELSE
+        
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>Could not find record ~"" v-Warehouse_name "~" at the ~"" v-Warehouse_site "~" site. Contact Solsource.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP 
+                "<form>" SKIP
+                "<div class='row'>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "</form>" SKIP.     
+        
+    END. /* update */
+    
+    WHEN "DELETE" THEN DO: 
+    
+        FIND Warehouse_mstr WHERE 
+            Warehouse_mstr.Warehouse_site = v-Warehouse_site AND
+            Warehouse_mstr.Warehouse_name = v-Warehouse_name AND
+            Warehouse_mstr.Warehouse_deleted = ?
+            EXCLUSIVE-LOCK NO-ERROR.
+
+        IF AVAILABLE (Warehouse_mstr) THEN DO:
+
+            FIND loc_mstr WHERE 
+                loc_mstr.loc_site = v-warehouse_site AND 
+                loc_mstr.loc_warehouse = v-warehouse_name AND 
+                loc_mstr.loc_deleted = ?
+                NO-LOCK NO-ERROR.
+            
+            IF NOT AVAILABLE (loc_mstr) THEN DO:
+        
+                FIND FIRST qoh_det WHERE 
+                    qoh_det.qoh_site = v-warehouse_site AND 
+                    qoh_det.qoh_warehouse = v-warehouse_name
+                    NO-LOCK NO-ERROR.
+                    
+                IF NOT AVAILABLE (qoh_det) THEN DO:
+
+                    DELETE Warehouse_mstr.
+                    
+                    {&OUT}
+                        "<DIV class='row'>" SKIP
+                        "<DIV class='grid_3'> </DIV>" SKIP
+                        "<DIV class='grid_6'>" SKIP 
+                            "<center><h2>Record ~"" v-Warehouse_name "~" at the ~"" v-Warehouse_site "~" site has been deleted.</h2></center>" SKIP
+                        "</DIV>         <!-- end of grid_6 -->" SKIP
+                        "<DIV class='grid_3'> </DIV>" SKIP
+                        "</DIV>     <!-- end of row -->" SKIP
+                        "<BR>" SKIP.
+        
+                END. /*** not avail qoh_det ***/
+                
+                ELSE {&OUT}
+                    "<DIV class='row'>" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>There are still QOH records using that warehouse!</h2></center>" SKIP
+                    "<center><h2>Could not delete.</h2></center>" SKIP
+                    "</DIV>         <!-- end of grid_6 -->" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "</DIV>     <!-- end of row -->" SKIP
+                    "<BR>" SKIP. 
+                
+            END. /**** not avail loc_mstr ***/
+            
+            ELSE {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                "<center><h2>There are still Locations using that warehouse!</h2></center>" SKIP
+                "<center><h2>Could not delete.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP. 
+                 
+        END. /* if avail Warehouse_mstr */
+        
+        ELSE {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+            "<center><h2>Could not find record ~"" v-Warehouse_name "~" at the ~"" v-Warehouse_site "~" site to delete. Please contact Solsource.</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP.                                  
+        
+        {&OUT}
+            "   <form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='Initial' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP          
+            "</div>" SKIP
+            "   </form>" SKIP
+            "<BR>" SKIP
+            .
+        
+    END. /* delete */  
+                  
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<center><h2>Could not find act ~"" act "~".</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.   
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

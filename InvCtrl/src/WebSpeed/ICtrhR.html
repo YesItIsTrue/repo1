@@ -1,0 +1,343 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<META NAME="VERSION" CONTENT="1.71">
+<META NAME="COPYRIGHT" CONTENT="Solsource">
+<META NAME="CREATE_DATE" CONTENT="15/August/14">
+<META NAME="LAST_UPDATED" CONTENT="19/Mar/16">
+<TITLE>InvCtrl Transaction Report</TITLE>
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+
+/********************************************  Variable Definitions  ****************************************************/
+
+/***  Database Variable  ***/
+
+DEFINE VARIABLE v-ID            LIKE trh_hist.trh_ID        NO-UNDO.
+DEFINE VARIABLE v-low-ID        LIKE trh_hist.trh_ID        NO-UNDO.
+DEFINE VARIABLE v-high-ID       LIKE trh_hist.trh_ID        NO-UNDO.
+DEFINE VARIABLE v-low-item      LIKE trh_hist.trh_item      NO-UNDO.
+DEFINE VARIABLE v-high-item     LIKE trh_hist.trh_item      NO-UNDO.
+DEFINE VARIABLE v-action        LIKE trh_hist.trh_action    NO-UNDO.
+DEFINE VARIABLE v-low-qty       LIKE trh_hist.trh_qty       NO-UNDO.
+DEFINE VARIABLE v-high-qty      LIKE trh_hist.trh_qty       NO-UNDO.
+DEFINE VARIABLE v-low-loc       LIKE trh_hist.trh_loc       NO-UNDO.
+DEFINE VARIABLE v-high-loc      LIKE trh_hist.trh_loc       NO-UNDO.
+DEFINE VARIABLE v-low-lot       LIKE trh_hist.trh_lot       NO-UNDO.
+DEFINE VARIABLE v-high-lot      LIKE trh_hist.trh_lot       NO-UNDO.
+DEFINE VARIABLE v-low-serial    LIKE trh_hist.trh_serial    NO-UNDO.
+DEFINE VARIABLE v-high-serial   LIKE trh_hist.trh_serial    NO-UNDO.
+DEFINE VARIABLE v-low-site      LIKE trh_hist.trh_site      NO-UNDO.
+DEFINE VARIABLE v-high-site     LIKE trh_hist.trh_site      NO-UNDO.
+DEFINE VARIABLE v-low-order     LIKE trh_hist.trh_order     NO-UNDO.
+DEFINE VARIABLE v-high-order    LIKE trh_hist.trh_order     NO-UNDO.
+DEFINE VARIABLE v-low-date      AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE v-high-date     AS CHARACTER                NO-UNDO.
+  
+/***  Administrator Variables  ***/
+
+DEFINE VARIABLE v-act               AS INTEGER                              NO-UNDO.  /***  controls flow of program  ***/
+DEFINE VARIABLE v-ITfeedback        AS LOGICAL INITIAL NO                   NO-UNDO.  /***  debug messages  ***/
+
+DEFINE VARIABLE v-prog-low-date     LIKE trh_hist.trh_modified_date         NO-UNDO.
+DEFINE VARIABLE v-prog-high-date    LIKE trh_hist.trh_modified_date         NO-UNDO.
+
+DEFINE VARIABLE x AS INTEGER NO-UNDO.
+
+/* ************************************************  HTML get-values  ********************************************************* */
+
+                                                        IF v-ITfeedback = YES THEN 
+                                                            {&OUT} 
+                                                               "<h3>After Progress Variable Definations, before HTML Assigns</h3>".
+        
+ASSIGN
+
+    v-act           = INTEGER(html-encode(get-value("h-act")))
+    v-low-ID        = INTEGER(html-encode(get-value("h-low-ID")))
+    v-high-ID       = INTEGER(html-encode(get-value("h-high-ID")))
+    v-low-item      = html-encode(get-value("h-low-item"))
+    v-high-item     = html-encode(get-value("h-high-item"))
+    v-action        = html-encode(get-value("h-action"))
+    v-low-qty       = DECIMAL(html-encode(get-value("h-low-qty")))
+    v-high-qty      = DECIMAL(html-encode(get-value("h-high-qty"))) 
+    v-low-loc       = html-encode(get-value("h-low-loc"))
+    v-high-loc      = html-encode(get-value("h-high-loc"))
+    v-low-lot       = html-encode(get-value("h-low-lot")) 
+    v-high-lot      = html-encode(get-value("h-high-lot"))
+    v-low-serial    = html-encode(get-value("h-low-serial"))
+    v-high-serial   = html-encode(get-value("h-high-serial"))  
+    v-low-site      = html-encode(get-value("h-low-site"))
+    v-high-site     = html-encode(get-value("h-high-site"))
+    v-low-order     = html-encode(get-value("h-low-order"))
+    v-high-order    = html-encode(get-value("h-high-order"))                                           
+    v-low-date      = html-encode(get-value("h-low-date"))
+    v-high-date     = html-encode(get-value("h-high-date")).
+
+        
+IF v-low-date <> "" THEN DO:                                                                        
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                                                        
+        (v-low-date, OUTPUT v-prog-low-date).
+END.   /** of if v-low-date <> "" **/                                                              
+
+IF v-high-date <> "" THEN DO:                                                                      
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                                                         
+        (v-high-date, OUTPUT v-prog-high-date).
+END.  /** of if v-high-date <> "" **/                                                                
+
+                                                                                IF v-ITfeedback = YES THEN 
+                                                                                    {&OUT} 
+                                                                                        "<h3>After  HTML Assigns</h3><br><h3>Act = "
+                                                                                        v-act "... </h3>".
+
+/* ********************************************  Act - 0 "Search" Criteria  ************************************************** */
+IF v-act = 0 THEN DO:
+    
+                                                                                    IF v-ITfeedback = YES THEN 
+                                                                                    {&OUT} 
+                                                                                        "<h3>Inside Act 0, Start</h3><br><h3>Act = "
+                                                                                        v-act "...</h3> ".
+   
+    {&OUT}
+        "<div class='row'>"             SKIP
+        "<div class='grid_1'></div>"    SKIP
+        "<div class='grid_10'>"          SKIP
+        "<div class='table_2col'>"      SKIP
+        "<form>" SKIP
+        "   <table>"    SKIP
+        "       <tr>"   SKIP
+        "           <th colspan=4>Search Criteria</th>" SKIP
+        "       </tr>"  SKIP 
+        "       <tr>"   SKIP
+        "           <td>Item Number</td>" SKIP
+        "           <td><input type='text' name='h-low-item' value='" v-low-item "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-item' value='" v-high-item "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Action</td>" SKIP
+        "           <td colspan=3>" SKIP
+        "               <select name='h-action'>"                           SKIP                                                                                           
+        "                   <option value=''></option>"                     SKIP
+/*        "                   <option value='PO-ISS'>PO-ISS</option>"         SKIP*/
+        "                   <option value='PO-RCPT'>PO-RCPT</option>"       SKIP
+        "                   <option value='PO-RCPT'>UNP-RCPT</option>"      SKIP
+        "                   <option value='XFER-ISS'>XFER-ISS</option>"     SKIP                                                                    
+        "                   <option value='XFER-RCPT'>XFER-RCPT</option>"   SKIP
+        "                   <option value='SO-ISS'>UNP-ISS</option>"         SKIP  
+        "                   <option value='SO-ISS'>SO-ISS</option>"         SKIP                                                                  
+/*        "                   <option value='SO-RCPT'>SO-RCPT</option>"       SKIP*/
+        "               </select>"                                          SKIP                                                          
+        "           </td>" SKIP
+        "       </tr>" SKIP
+        "       <tr>"   SKIP
+        "           <td>Site</td>" SKIP
+        "           <td><input type='text' name='h-low-site' value='" v-low-site "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-site' value='" v-high-site "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Location</td>" SKIP
+        "           <td><input type='text' name='h-low-loc' value='" v-low-loc "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-loc' value='" v-high-loc "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Lot</td>" SKIP
+        "           <td><input type='text' name='h-low-lot' value='" v-low-lot "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-lot' value='" v-high-lot "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>" SKIP
+        "           <td>Serial</td>" SKIP
+        "           <td><input type='text' name='h-low-serial' value='" v-low-serial "'/></td>" SKIP
+        "           <td>To</td>" SKIP
+        "           <td><input type='text' name='h-high-serial' value='" v-high-serial "'/></td>" SKIP
+        "       </tr>" SKIP
+        "       <tr>"   SKIP
+        "           <td>Date</td>" SKIP
+        "           <td><input type='date' name='h-low-date' value='" v-low-date "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='date' name='h-high-date' value='" v-high-date "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>" SKIP
+        "           <td>Quantity</td>" SKIP
+        "           <td><input type='number' name='h-low-qty' value='" v-low-qty "'/></td>" SKIP
+        "           <td>To</td>" SKIP
+        "           <td><input type='number' name='h-high-qty' value='" v-high-qty "'/></td>" SKIP
+        "       </tr>" SKIP
+        "       <tr>" SKIP
+        "           <td>Order Number</td>" SKIP
+        "           <td><input type='number' name='h-low-order' value='" v-low-order "'/></td>" SKIP
+        "           <td>To</td>" SKIP
+        "           <td><input type='number' name='h-high-order' value='" v-high-order "'/></td>" SKIP
+        "       </tr>" SKIP
+        "   </table>"   SKIP
+        "</div>" SKIP        
+        "</div><!-- end of grid_6 -->" SKIP
+        "<div class='grid_1'></div>" SKIP
+        "</div>" SKIP
+        "<br></br>" SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='1' class='btn'>Search</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</div>" SKIP
+        "<BR>" SKIP
+
+        "</form>"
+                .
+
+END. /*** of v-act = "Search" Then DO: ***/
+
+                                            IF v-ITfeedback = YES THEN 
+                                                {&OUT} 
+                                                    "<h3>Just after END. /** v-act = 0 **/ about to start Act 1</h3><br><h3>Act = "
+                                                    v-act "... </h3>".
+
+/* *************************************************  Act - 1 "Report"  ****************************************************** */
+IF v-act = 1 THEN DO:
+    
+                                                                                    IF v-ITfeedback = YES THEN 
+                                                                                        {&OUT} 
+                                                                                            "<h3>Inside Act 1</h3><br><h3>Act = "
+                                                                                            v-act "... </h3>".
+
+    {&OUT}
+        "<div class='row'>" SKIP
+/*        "<div class='grid_1'></div>" SKIP*/
+        "<div class='grid_12'>" SKIP
+        "<form>"        SKIP
+        "<div class='table_report_FromTo'>" SKIP
+        "   <table>"    SKIP
+        "       <thead>"    SKIP
+        "           <tr>"   SKIP
+        "               <th colspan=12>Inventory Transaction History Report</th>" SKIP
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <td>From</th>"                      SKIP      
+        "               <td>" v-low-item "</td>"            SKIP        
+        "               <td>" v-action "</td>"              SKIP
+        "               <td>" v-low-site "</td>"            SKIP 
+        "               <td>" v-low-loc "</td>"            SKIP      
+        "               <td>" v-low-lot "</td>"            SKIP
+        "               <td>" v-low-serial "</td>"         SKIP
+        "               <td>" v-prog-low-date "</td>"       SKIP 
+        "               <td>" v-low-qty "</td>"       SKIP
+        "               <td>" v-low-order "</td>"       SKIP                  
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <td>To</th>"                SKIP
+        "               <td>" v-high-item "</td>"            SKIP        
+        "               <td>" v-action "</td>"              SKIP
+        "               <td>" v-high-site "</td>"            SKIP 
+        "               <td>" v-high-loc "</td>"            SKIP      
+        "               <td>" v-high-lot "</td>"            SKIP
+        "               <td>" v-high-serial "</td>"         SKIP
+        "               <td>" v-prog-high-date "</td>"       SKIP 
+        "               <td>" v-high-qty "</td>"       SKIP 
+        "               <td>" v-high-order "</td>"       SKIP  
+        "           </tr>"  SKIP                    
+        "           <tr>"   SKIP
+        "               <th></td>"              SKIP
+        "               <th>Item Number</th>"   SKIP                  
+        "               <th>Action</th>"        SKIP
+        "               <th>Site</th>"          SKIP
+        "               <th>Location</th>"      SKIP
+        "               <th>Lot</th>"           SKIP
+        "               <th>Serial</th>"        SKIP
+        "               <th>Date</th>"          SKIP      
+        "               <th>Quantity</th>"      SKIP    
+        "               <th>Order</th>"         SKIP        
+        "           </tr>"  SKIP
+        "       </thead>"   SKIP.
+    
+    /* 4ea of doom*/
+    FOR EACH trh_hist WHERE 
+        trh_hist.trh_deleted    = ? AND
+        (trh_hist.trh_date      >= v-prog-low-date    OR v-prog-low-date = ? )       AND   
+        (trh_hist.trh_date      <= v-prog-high-date   OR v-prog-high-date = ? )      AND    
+        (trh_hist.trh_item      >= v-low-item     OR v-low-item = "")         AND
+        (trh_hist.trh_item      <= v-high-item    OR v-high-item = "")        AND
+        (trh_hist.trh_loc       >= v-low-loc    OR v-low-loc = "")       AND
+        (trh_hist.trh_loc       <= v-high-loc   OR v-high-loc = "")      AND
+        (trh_hist.trh_lot       >= v-low-lot      OR v-low-lot = "")    AND 
+        (trh_hist.trh_lot       <= v-high-lot     OR v-high-lot = "")     AND 
+        (trh_hist.trh_site      >= v-low-site    OR v-low-site = "")       AND
+        (trh_hist.trh_site      <= v-high-site   OR v-high-site = "")      AND   
+        (trh_hist.trh_serial    >= v-low-serial  OR v-low-serial = "")     AND 
+        (trh_hist.trh_serial    <= v-high-serial OR v-high-serial = "")    AND
+        (trh_hist.trh_action    = v-action      OR v-action = "")         AND 
+        (trh_hist.trh_order     >= v-low-order  OR v-low-order = "")     AND 
+        (trh_hist.trh_order     <= v-high-order OR v-high-order = "")    AND
+        (trh_hist.trh_qty       >= v-low-qty   OR v-low-qty = 0)       AND
+        (trh_hist.trh_qty       <= v-high-qty   OR v-high-qty = 0)                                                
+        NO-LOCK
+                BREAK BY trh_hist.trh_ID DESCENDING BY trh_hist.trh_date BY trh_hist.trh_item BY trh_hist.trh_action BY trh_hist.trh_site :   
+                
+        
+            x = x + 1.
+                
+            {&OUT}
+                "       <tr>" SKIP
+                "           <td></td>"  SKIP         
+                "           <td><a href=~"../../InvCtrl/rcode/ICtrh-detailR.r?h-tranID=" trh_hist.trh_id "&h-act=report&whattorun=9.6~">" trh_hist.trh_item     "</a></td>"     SKIP  
+                "           <td>" trh_hist.trh_action   "</td>"     SKIP                
+                "           <td>" trh_hist.trh_site     "</td>"     SKIP
+                "           <td>" trh_hist.trh_loc      "</td>"     SKIP 
+                "           <td>" trh_hist.trh_lot      "</td>"     SKIP      
+                "           <td>" trh_hist.trh_serial   "</td>"     SKIP   
+                "           <td>" trh_hist.trh_date     "</td>"     SKIP     
+                "           <td>" trh_hist.trh_qty      "</td>"     SKIP 
+                "           <td>" trh_hist.trh_order    "</td>"     SKIP 
+                "       </tr>" SKIP.
+                                                                                  
+                                                                                IF v-ITfeedback = YES THEN 
+                                                                                    {&OUT} 
+                                                                                        "<h3>End 4ea of doom</h3><br><h3>Act = "
+                                                                                        v-act "... </h3>".
+        
+    END. /* of 4ea of doom */
+    
+    {&OUT}    
+        "       <TFOOT>" SKIP
+        "           <tr>"   SKIP
+        "               <center><td colspan=12 >End of Report, " x " displayed.</td></center>" SKIP
+        "           </tr>"  SKIP
+        "       </TFOOT>" SKIP
+        "   </table>"       SKIP
+        "</div> "           SKIP
+
+        "</div><!-- of grid_10 -->" SKIP
+/*        "<div class='grid_1'></div>"*/
+        "</div>"
+        "<br/>"             SKIP
+        "<div class='row'>" SKIP
+        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "   <div class='grid_2'><button type='submit' name='h-act' value='0' class='btn'>Search Again</BUTTON></div>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "</div>" SKIP
+        "<BR>" SKIP.
+
+END. /*** of If Act = "SEARCH" THEN DO: ***/
+
+</SCRIPT>
+</BODY>
+</HTML>

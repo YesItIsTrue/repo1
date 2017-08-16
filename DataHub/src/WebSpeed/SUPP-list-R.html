@@ -1,0 +1,266 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <TITLE>Supplement Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Sara Luttrell">
+    <META NAME="VERSION" CONTENT="1.1">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="10/July/14">
+    <META NAME="LAST_UPDATED" CONTENT="19/Nov/15">
+    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside' >
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+    Notes: 1.1 - Jacob Luttrell 30/Sep/15 Div corrections 1dot1
+           1.2 - Jacob Luttrell 30/Oct/15 added tfoot 1dot2
+           
+  -------------------------------------------------------------------
+ * Revision History: 
+ *-------------------
+ * 1.1 - written by Mark Jacobs on 19/Nov/15. Marked by 1dot1. Adding the ability to search by Suppliment ID.
+ *
+ *        
+ * ---------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+
+/********************************************  Variable Definitions  ****************************************************/
+
+DEFINE VARIABLE v-from-suppl_ID         LIKE suppl_list.suppl_ID        NO-UNDO.
+DEFINE VARIABLE v-to-suppl_ID           LIKE suppl_list.suppl_ID        NO-UNDO.
+DEFINE VARIABLE v-from-suppl_name       LIKE suppl_list.suppl_name      NO-UNDO.
+DEFINE VARIABLE v-to-suppl_name         LIKE suppl_list.suppl_name      NO-UNDO. 
+DEFINE VARIABLE v-suppl_desc            LIKE suppl_list.suppl_desc      NO-UNDO. 
+DEFINE VARIABLE v-from-suppl_sku        LIKE suppl_list.suppl_sku       NO-UNDO. 
+DEFINE VARIABLE v-to-suppl_sku          LIKE suppl_list.suppl_sku       NO-UNDO. 
+DEFINE VARIABLE v-from-suppl_def_qty    LIKE suppl_list.suppl_def_qty   NO-UNDO. 
+DEFINE VARIABLE v-to-suppl_def_qty      LIKE suppl_list.suppl_def_qty   NO-UNDO. 
+DEFINE VARIABLE v-from-suppl_def_uom    LIKE suppl_list.suppl_def_uom   NO-UNDO. 
+DEFINE VARIABLE v-to-suppl_def_uom      LIKE suppl_list.suppl_def_uom   NO-UNDO. 
+DEFINE VARIABLE v-suppl_def_notes       LIKE suppl_list.suppl_def_notes NO-UNDO. 
+ 
+DEFINE VARIABLE v-act                   AS INTEGER                  NO-UNDO.
+
+
+ASSIGN 
+    v-from-suppl_ID         = INTEGER   (get-value("h-from-suppl_ID"))
+    v-to-suppl_ID           = INTEGER   (get-value("h-to-suppl_ID"))
+    v-from-suppl_name       = get-value ("h-from-suppl_name")
+    v-to-suppl_name         = get-value ("h-to-suppl_name")
+    v-suppl_desc            = get-value ("h-suppl_desc")
+    v-from-suppl_sku        = get-value ("h-from-suppl_sku")
+    v-to-suppl_sku          = get-value ("h-to-suppl_sku")
+    v-from-suppl_def_qty    = DECIMAL   (get-value("h-from-suppl_def_qty"))
+    v-to-suppl_def_qty      = DECIMAL   (get-value("h-to-suppl_def_qty"))
+    v-from-suppl_def_uom    = get-value ("h-from-def_uom")
+    v-to-suppl_def_uom      = get-value ("h-to-def_uom")
+    v-suppl_def_notes       = get-value ("h-suppl_def_notes") 
+    
+    v-act               = INTEGER (get-value("h-act")).
+    
+    
+    /* ********************************************  Act - 0 "Search" Criteria  ************************************************** */
+IF v-act = 0 THEN DO:
+
+    {&OUT} 
+        "<div class='row'>" SKIP                                                                                /* 1dot1 */
+        "<div class='grid_3'></div>" SKIP                                                                       /* 1dot1 */
+        "<div class='grid_6'>" SKIP                                                                             /* 1dot1 */
+        "<div class='table_2col'>" SKIP
+        "<form>" SKIP
+        "   <table>"    SKIP
+        "       <tr>"   SKIP
+        "           <th colspan=4>Search Criteria</th>" SKIP
+        "       </tr>"  SKIP 
+        "       <tr>"   SKIP
+        "           <td>Suppliment Name:</td>" SKIP
+        "           <td><input type='text' name='h-from-suppl_name' value='" v-from-suppl_name "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-suppl_name' value='" v-to-suppl_name "'/></td>" SKIP
+        "       </tr>"  SKIP 
+        "       <tr>"   SKIP
+        "           <td>Description:</td>" SKIP
+        "           <td colspan=3><input type='text' name='h-suppl_desc' value='" v-suppl_desc "'/></td>" SKIP
+        "       </tr>"  SKIP 
+        "       <tr>"   SKIP
+        "           <td>Suppliment ID:</td>" SKIP                                                             /* 1dot2 */
+        "           <td><input type='text' name='h-from-suppl_ID' value=''/></td>" SKIP /*v-from-suppl_ID*/   /* 1dot2 */
+        "           <td style='width:15px;'>To</td>" SKIP                                                     /* 1dot2 */
+        "           <td><input type='text' name='h-to-suppl_ID' value=''/></td>" SKIP  /* v-to-suppl_ID */    /* 1dot2 */
+        "       </tr>"  SKIP                                                                                  /* 1dot2 */
+        "       <tr>"   SKIP
+        "           <td>SKU:</td>" SKIP
+        "           <td><input type='text' name='h-from-suppl_sku' value='" v-from-suppl_sku "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-suppl_sku' value='" v-to-suppl_sku "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Unit of Measure:</td>" SKIP
+        "           <td><input type='text' name='h-from-suppl_def_uom' value='" v-from-suppl_def_uom "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-suppl_def_uom' value='" v-to-suppl_def_uom "'/></td>" SKIP
+        "       </tr>"  SKIP       
+        "       <tr>"   SKIP
+        "           <td>Notes:</td>" SKIP
+        "           <td colspan=3><input type='text' name='h-suppl_def_notes' value='" v-suppl_def_notes "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "   </table>"   SKIP
+        "</div> <!-- end of table -->" SKIP                                                                                 /* 1dot1 */
+        "</DIV>         <!-- end of grid_6 -->" SKIP                                                                        /* 1dot1 */
+		"<DIV class='grid_3'> </DIV>" SKIP                                                                                  /* 1dot1 */
+		"</DIV>     <!-- end of row -->" SKIP                                                                               /* 1dot1 */   
+		"<BR>" SKIP                                                                                                         /* 1dot1 */   
+		"<div class='row'>" SKIP                                                                                            /* 1dot1 */  
+		"   <div class='grid_3'> </DIV>" SKIP                                                                               /* 1dot1 */  
+		"       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                                /* 1dot1 */
+		"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='1' class='btn'>Search</BUTTON></div>" SKIP        /* 1dot1 */
+		"   <div class='grid_2'> </DIV>" SKIP                                                                               /* 1dot1 */  
+		"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP                                 /* 1dot1 */
+		"   <div class='grid_3'> </DIV>" SKIP		                                                                        /* 1dot1 */
+		"</div>" SKIP                                                                                                       /* 1dot1 */  
+		"</form>" SKIP                                                                                                      /* 1dot1 */  
+		"<BR>" SKIP                                                                                                         /* 1dot1 */
+/*        "   <center>" SKIP                                                                  */
+/*        "       <input type='hidden' name='h-act'       value=1>"        SKIP               */
+/*        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP*/
+/*        "       <input type='submit' name='submit'      value='Search'>" SKIP               */
+/*        "       <input type='reset'  name='reset'       value='Reset'>"  SKIP               */
+/*        "   </center>" SKIP                                                                 */
+/*        "</form>"*/
+/*        "</div>" SKIP                 */
+/*        "</div><!-- end of grid_6 -->"*/
+/*        "<div class='grid_3'></div>"  */
+/*        "</div>"                      */
+        .
+        
+END. /*** of v-act = "Search" Then DO: ***/
+
+/* *************************************************  Act - 1 "Report"  ****************************************************** */
+IF v-act = 1 THEN DO:
+
+    {&OUT}
+        "<div class='row'>"                                 SKIP                
+        "<div class='grid_1'></div>"                        SKIP
+        "<div class='grid_10'>"                             SKIP
+        "<form>"                                            SKIP
+        "<div class='table_report_FromTo'>"                 SKIP
+        "   <table>"                                        SKIP
+        "       <thead>"                                    SKIP
+        "           <tr>"                                   SKIP
+        "               <th colspan=9>Lab Report</th>"      SKIP
+        "           </tr>"                                  SKIP
+        "           <tr>"                                   SKIP
+        "               <td>From</td>"                      SKIP
+        "               <td>" v-from-suppl_ID       "</td>" SKIP
+        "               <td>" v-from-suppl_name     "</td>" SKIP
+        "               <td>" v-suppl_desc          "</td>" SKIP
+        "               <td>" v-from-suppl_sku      "</td>" SKIP
+        "               <td>" v-from-suppl_def_qty  "</td>" SKIP
+        "               <td>" v-from-suppl_def_uom  "</td>" SKIP
+        "               <td>" v-suppl_def_notes     "</td>" SKIP
+        "           </tr>"                                  SKIP
+        "           <tr>"                                   SKIP
+        "               <td>To</td>"                        SKIP
+        "               <td>"v-to-suppl_ID          "</td>" SKIP
+        "               <td>"v-to-suppl_name        "</td>" SKIP
+        "               <td>-</td>"                         SKIP
+        "               <td>"v-to-suppl_sku         "</td>" SKIP
+        "               <td>"v-to-suppl_def_qty     "</td>" SKIP
+        "               <td>"v-to-suppl_def_uom     "</td>" SKIP
+        "               <td>-</td>"                         SKIP
+        "           </tr>"                                  SKIP        
+        "           <tr>"                                   SKIP
+        "               <th></th>"                          SKIP
+        "               <th>Suppliment ID   </th>"          SKIP
+        "               <th>Name            </th>"          SKIP
+        "               <th>Description     </th>"          SKIP
+        "               <th>SKU             </th>"          SKIP
+        "               <th>Quantity        </th>"          SKIP
+        "               <th>Unit of Measure </th>"          SKIP
+        "               <th>Notes           </th>"          SKIP
+        "           </tr>"                                  SKIP
+        "       </thead>"                                   SKIP.
+    
+/***********************************************************************/
+    FOR EACH suppl_list WHERE 
+        (suppl_list.suppl_ID        >= v-from-suppl_ID      OR v-from-suppl_ID      = 0 ) AND 
+        (suppl_list.suppl_ID        <= v-to-suppl_ID        OR v-to-suppl_ID        = 0 ) AND     
+        (suppl_list.suppl_name      >= v-from-suppl_name    OR v-from-suppl_name    = "") AND
+        (suppl_list.suppl_name      <= v-to-suppl_name      OR v-to-suppl_name      = "") AND
+        (suppl_list.suppl_desc      CONTAINS v-suppl_desc   OR v-suppl_desc         = "") AND
+        (suppl_list.suppl_sku       >= v-from-suppl_sku     OR v-from-suppl_sku     = "") AND
+        (suppl_list.suppl_sku       <= v-to-suppl_sku       OR v-to-suppl_sku       = "") AND
+        (suppl_list.suppl_def_qty   >= v-from-suppl_def_qty OR v-from-suppl_def_qty = 0 ) AND
+        (suppl_list.suppl_def_qty   <= v-to-suppl_def_qty   OR v-to-suppl_def_qty   = 0 ) AND
+        (suppl_list.suppl_def_uom   >= v-from-suppl_def_uom OR v-from-suppl_def_uom = "") AND
+        (suppl_list.suppl_def_uom   <= v-to-suppl_def_uom   OR v-to-suppl_def_uom   = "") AND
+        (suppl_list.suppl_def_notes CONTAINS v-suppl_def_notes OR v-suppl_def_notes    = "") AND
+        suppl_list.suppl_deleted = ?
+        NO-LOCK.  
+
+            {&OUT}
+        "       <tr>" SKIP
+        "           <td></td>" SKIP
+        "           <td>" suppl_list.suppl_ID           "</td>"   SKIP
+        "           <td>" suppl_list.suppl_name         "</td>"   SKIP
+        "           <td>" suppl_list.suppl_desc         "</td>"   SKIP
+        "           <td>" suppl_list.suppl_sku          "</td>"   SKIP
+        "           <td>" suppl_list.suppl_def_qty      "</td>"   SKIP
+        "           <td>" suppl_list.suppl_def_uom      "</td>"   SKIP
+        "           <td>" suppl_list.suppl_def_notes    "</td>"   SKIP
+        "       </tr>" SKIP.
+
+    END. /* of FOR EACH */
+    
+    {&OUT}
+        "   <tfoot>" SKIP                                                                                                   /* 1dot2 */    
+        "       <tr>"   SKIP
+        "               <td colspan=8>End of Report</td>" SKIP
+        "       </tr>"  SKIP
+        "   </tfoot>" SKIP                                                                                                  /* 1dot2 */
+        "   </table>"       SKIP
+        "</div> <!-- end of table -->" SKIP                                                                                 /* 1dot1 */       
+		"</DIV>         <!-- end of grid_10 -->" SKIP                                                                       /* 1dot1 */  
+		"<DIV class='grid_1'> </DIV>" SKIP                                                                                  /* 1dot1 */  
+		"</DIV>     <!-- end of row -->" SKIP                                                                               /* 1dot1 */  
+/*        "   <center>"       SKIP*/    
+        "   <form>"         SKIP                                
+        "<div class='row'>" SKIP                                                                                            /* 1dot1 */
+		"   <div class='grid_5'> </DIV>" SKIP                                                                               /* 1dot1 */  
+		"       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                                /* 1dot1 */  
+		"   <div class='grid_2'><button type='submit' name='h-act' value='0' class='btn'>Search Again</BUTTON></div>" SKIP  /* 1dot1 */  
+		"   <div class='grid_5'> </DIV>" SKIP                                                                               /* 1dot1 */      
+		"</div>" SKIP                                                                                                       /* 1dot1 */  
+		"<BR>" SKIP                                                                                                         /* 1dot1 */  
+/*        "       <input type='hidden' name='h-act' value=0> "                            SKIP*/
+/*        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP*/
+/*        "       <input type='submit' name='submit' value='Search Again'>"               SKIP*/
+        "   </form>"    SKIP
+/*        "   </center>"   SKIP*/
+/*        "</div> "       SKIP            */
+/*        "</div><!-- of grid_10 -->" SKIP*/
+/*        "<div class='grid_1'></div>"    */
+/*        "</div>"                        */
+        "".
+
+END. /*** of If Act = "SEARCH" THEN DO: ***/ 
+
+        
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,209 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+<TITLE>Transaction Detail Report</TITLE>
+<META NAME="AUTHOR" CONTENT="Sara Luttrell">
+<META NAME="VERSION" CONTENT="1.25">
+<META NAME="COPYRIGHT" CONTENT="Solsource">
+<META NAME="CREATE_DATE" CONTENT="12/Jan/15">
+<META NAME="LAST_UPDATED" CONTENT="04/Mar/16">
+    
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' /> 
+
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+
+  /*------------------------------------------------------------------
+Version 1.22 (2/20/15) Sara Luttrell
+a. fix error with final display - transaction ID now showing actual ID and not item type
+b. commented out location and lot sections in the final report
+c. rename serial section to TestKit ID
+d. add new sections to final report and rearrange the order - add sections to be used in the future
+e. Move buttons to outside the table DIV
+
+Version 1.23 - written by DOUG LUTTRELL on 08/Oct/15.  Changed to use correct HTML tags for DIVs, etc.
+
+Version 1.24 - written by Jacob Luttrell on 09/Nov/15. Changed button in v-act 1 to hyperlink. 
+    Marked by 1dot24.
+
+version 1.25 - written by Jacob Luttrell on 04/Mar/16. Added fields for v11.1 changes. (unmarked). 
+  -------------------------------------------------------------------*/
+
+
+{&OUT}
+    "</HEAD>" SKIP
+    "<BODY class='inside'>" SKIP.
+
+{../depot/src/WebSpeed/menuname.i}.
+    
+DEFINE VARIABLE whattorun AS CHARACTER NO-UNDO.        
+   
+
+  /********************************************  Variable Definitions  ****************************************************/
+
+DEFINE VARIABLE v-tranID            LIKE trh_hist.trh_ID      NO-UNDO.
+DEFINE VARIABLE v-act               AS INTEGER                NO-UNDO.
+
+ASSIGN 
+    v-tranID                        = INTEGER (get-value("h-tranID"))     
+    v-act                           = INTEGER (get-value("h-act")).
+    
+    /* ********************************************  Act - 0 "Search" Criteria  ************************************************** */
+    
+    
+IF v-act = 0 THEN DO:
+
+    {&OUT} 
+        "<div class='row'>"             SKIP
+        "<div class='grid_3'></div>"    SKIP
+        "<div class='grid_6'>"          SKIP
+        "<div class='table_2col'>"      SKIP
+        "<form>" SKIP
+        "   <table>"    SKIP
+        "       <tr>"   SKIP
+        "           <th colspan=4>Search Criteria</th>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Transation ID</td>" SKIP
+        "           <td><input type='number' min='1' name='h-tranID' value='" v-tranID "'/></td>" SKIP
+        "       </tr>"  SKIP 
+        "   </table>"   SKIP
+        "</div>" SKIP
+        "   <center>" SKIP
+        "       <input type='hidden' name='h-act'       value=1>"        SKIP
+        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP
+        "       <input type='submit' name='submit'      value='Search'>" SKIP
+        "       <input type='reset'  name='reset'       value='Reset'>"  SKIP
+        "   </center>" SKIP
+        "</form>"
+        "</div><!-- end of grid_6 -->"
+        "<div class='grid_3'></div>"
+        "</div>"
+        .
+END. /*** of v-act = "Search" Then DO: ***/ 
+
+/* *************************************************  Act - 1 "Report"  ****************************************************** */
+IF v-act = 1 THEN DO:
+    
+        FIND trh_hist WHERE trh_hist.trh_ID = v-tranID        
+            NO-LOCK NO-ERROR.  
+        
+        IF AVAILABLE (trh_hist) THEN DO:
+
+    {&OUT}
+        "<div class='row'>"                                     SKIP
+        "<div class='grid_1'></div>"                            SKIP
+        "<div class='grid_10'>"                                 SKIP
+/*        "<form>"                                                SKIP*/
+        "<div class='table_col'>"                               SKIP
+        "   <table>"                                            SKIP
+        "       <thead>"                                        SKIP
+        "           <tr>"                                       SKIP
+        "               <th colspan=2>Transaction History Detail</th>"  SKIP
+        "           </tr>"                                      SKIP
+        "       </thead>"                                       SKIP         
+        "           <tr>"                                       SKIP
+        "               <td>Transation ID               </td>"  SKIP
+        "               <td>" trh_hist.trh_ID           "</td>" SKIP
+        "           </tr>"                                      SKIP 
+        "           <tr>"                                       SKIP
+        "               <td>Item                        </td>"  SKIP
+        "               <td>" trh_hist.trh_item         "</td>" SKIP
+        "           </tr>"                                      SKIP
+        "           <tr>"                                       SKIP
+        "               <td>TestKit ID                  </td>"  SKIP
+        "               <td>" trh_hist.trh_serial       "</td>" SKIP
+        "           </tr>"
+        "           <tr>"                                       SKIP
+        "               <td>TestKit Sequence            </td>"  SKIP
+        "               <td>" trh_hist.trh_sequence     "</td>" SKIP
+        "           </tr>"
+        "           <tr>"                                       SKIP
+        "               <td>Action                      </td>"  SKIP
+        "               <td>" trh_hist.trh_action       "</td>" SKIP
+        "           </tr>"
+        "           <tr>"                                       SKIP
+        "               <td>Quantity                    </td>"  SKIP
+        "               <td>" trh_hist.trh_qty          "</td>" SKIP
+        "           </tr>"              
+        "           <tr>"                                       SKIP
+        "               <td>Location                    </td>"  SKIP
+        "               <td>" trh_hist.trh_loc          "</td>" SKIP
+        "           </tr>"                       
+        "           <tr>"                                       SKIP
+        "               <td>Lot                         </td>"  SKIP
+        "               <td>" trh_hist.trh_lot          "</td>" SKIP
+        "           </tr>" 
+        "           <tr>"                                       SKIP
+        "               <td>Created by                  </td>"  SKIP
+        "               <td>" trh_hist.trh_created_by   "</td>" SKIP
+        "           </tr>"
+        "           <tr>"                                       SKIP
+        "               <td>Date Created                </td>"  SKIP
+        "               <td>" trh_hist.trh_create_date  "</td>" SKIP
+        "           </tr>"
+        "           <tr>"                                       SKIP
+        "               <td>Modified by                 </td>"  SKIP
+        "               <td>" trh_hist.trh_modified_by  "</td>" SKIP
+        "           </tr>"
+        "           <tr>"                                       SKIP
+        "               <td>Date Modified               </td>"  SKIP
+        "               <td>" trh_hist.trh_modified_date "</td>" SKIP
+        "           </tr>"  SKIP 
+        "           <tr>"                                       SKIP    /* 1dot25 */
+        "               <td>Date                        </td>"  SKIP    /* 1dot25 */
+        "               <td>" trh_hist.trh_date         "</td>" SKIP    /* 1dot25 */
+        "           </tr>"  SKIP                                        /* 1dot25 */
+        "           <tr>"                                       SKIP
+        "               <td>Transaction Comments        </td>"  SKIP
+        "               <td>" trh_hist.trh_comments     "</td>" SKIP
+        "           </tr>"
+        "           <tr>"                                       SKIP
+        "               <td>Order Number                </td>"  SKIP
+        "               <td>" trh_hist.trh_other_ID     "</td>" SKIP
+        "           </tr>"  SKIP          
+        "   </table>"       SKIP
+        "</div> "           SKIP
+                "</div><!-- of grid_10 -->" SKIP
+        "<div class='grid_1'></div>" SKIP
+        "</DIV>     <!-- of row -->" SKIP
+        "<br></BR>"             SKIP
+        
+        "<div class='row'>" SKIP
+		"   <div class='grid_5'> </DIV>" SKIP
+/*       "   <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP*/
+        "   <div class='grid_2'>" SKIP
+        "       <a href=~"../../DataHub/rcode/TRH-history-R.r?h-act=0&whattorun=1.41~">" SKIP                                                   /* 1dot24 */
+        "       <button type='submit' class='btn'>Search Again</BUTTON></a></div>" SKIP
+/*		"</FORM>" SKIP*/
+		"   <div class='grid_5'> </DIV>" SKIP
+		"</div>" SKIP
+		"<BR>" SKIP
+.
+        
+        END. /** IF Available **/
+        
+        ELSE 
+            {&OUT} 
+	            "<DIV class='row'>" SKIP
+				"<DIV class='grid_4'> </DIV>" SKIP
+				"<DIV class='grid_4'>" SKIP
+	            "<CENTER><h1> Not a valid Transaction ID number. </h1></CENTER>" SKIP
+				"</DIV>     <!-- end of grid_4 -->" SKIP
+				"<DIV class='grid_4'> </DIV>" SKIP
+				"</DIV>     <!-- end of row -->" SKIP  
+	            "<br>" SKIP
+	            
+	            "<div class='row'>" SKIP
+				"   <div class='grid_5'> </DIV>" SKIP
+				"   <div class='grid_2'><button type='submit' name='h-act' value='0' class='btn'>Try Again</BUTTON></div>" SKIP
+				"   <div class='grid_5'> </DIV>" SKIP
+				"</div>" SKIP
+				"<BR>" SKIP.
+
+END. /*** of If Act = "SEARCH" THEN DO: ***/ 
+
+</SCRIPT>
+</BODY>
+</HTML>

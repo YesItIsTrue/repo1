@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Conditions Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:           ConditionsR.html
+    Description:    Report page search by doctor to find customers
+    Created:        11/13/14
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE f-con-name  LIKE condition_mstr.condition_name NO-UNDO.
+DEFINE VARIABLE t-con-name  LIKE condition_mstr.condition_name NO-UNDO.
+DEFINE VARIABLE con-desc    LIKE condition_mstr.condition_desc NO-UNDO.
+DEFINE VARIABLE con-com     LIKE condition_mstr.condition_common NO-UNDO.
+
+DEFINE VARIABLE com-display AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE act         AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE bugger      AS CHARACTER INITIAL "off" NO-UNDO.
+/****************************** assigning ***************************/
+ASSIGN 
+    act         = get-value("s-act")
+    
+    f-con-name  = get-value("s-f-con-name")
+    t-con-name  = get-value("s-t-con-name")
+    con-desc    = get-value("s-con-desc")
+    con-com     = LOGICAL(get-value("s-con-com")).
+    
+IF act = "" THEN 
+    ASSIGN act = "Search".
+/****************************** body ******************************/
+IF act = "Search" THEN DO:
+   {&OUT}
+        "<center>                                                                                                               " SKIP
+        "   <div class='table_2col'>                                                                                            " SKIP 
+        "       <form>                                                                                                          " SKIP
+        "           <table>                                                                                                     " SKIP
+        "               <tr>                                                                                                    " SKIP
+        "                   <th colspan=4> Search Criteria</th>                                                                 " SKIP 
+	    "               </tr>                                                                                                   " SKIP
+	    "               <tr>                                                                                                    " SKIP
+	    "                   <td>Condition</td><td><INPUT type='text' name='s-f-con-name'/></td>                                 " SKIP 
+	    "                   <td>To</td><td><INPUT type='text' name='s-t-con-name'/></td>                                        " SKIP 
+	    "               </tr>                                                                                                   " SKIP
+	    "               <tr>                                                                                                    " SKIP
+	    "                    <td>Description Containing</td><td colspan=3><INPUT type='text' size='98' name='s-con-desc'/></td> " SKIP 
+	    "               </tr>                                                                                                   " SKIP
+	    "               <tr>                                                                                                    " SKIP
+	    "                   <td>Common</td>                                                                                     " SKIP
+	    "                   <td colspan=3>Yes<INPUT type='radio' name='s-con-com' value= 'Yes' />                               " SKIP 
+	    "                   No<INPUT type='radio' name='s-con-com' value= 'No' /></td>                                          " SKIP 
+	    "               </tr>                                                                                                   " SKIP
+        "           </table>                                                                                                    " SKIP
+        "       <INPUT type='hidden' name='s-act' value='Results' />                                                            " SKIP 
+        "       <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />                                     " SKIP 
+        "       <INPUT type='submit' name='s-submit' value='Submit'/>                                                           " SKIP 
+        "       <INPUT type='reset' name='s-reset' value='Reset'/>                                                              " SKIP
+        "    </FORM>                                                                                                            " SKIP
+        "  </div>                                                                                                               " SKIP
+        "</CENTER>                                                                                                              ".
+END. /*** act 0 ***/
+/***************************** Act Result *********************************************/
+IF bugger = "ON" THEN DO:
+{&OUT}
+    "finished search, before Results".
+end. /*** bugger ***/
+
+IF act = "Results" THEN DO:
+
+    IF con-com = ? THEN 
+    ASSIGN 
+        com-display = "".
+    ELSE IF con-com = YES THEN
+    ASSIGN 
+        com-display = "Yes".
+    ELSE 
+    ASSIGN 
+        com-display = "No".
+           
+     {&OUT}
+        "<CENTER>                                                   " SKIP
+        "   <form>                                                  " SKIP
+        "       <div class='table_report_FromTo'>                   " SKIP 
+        "           <table>                                         " SKIP
+        "               <thead>                                     " SKIP
+        "                  <tr>                                     " SKIP
+        "                       <td colspan=4>Conditions</td>       " SKIP 
+        "                  </tr>                                    " SKIP
+        "                  <tr>                                     " SKIP
+        "                       <th></th>                           " SKIP
+        "                       <th>Condition</th>                  " SKIP
+        "                       <th>Description</th>                " SKIP
+        "                       <th>Common</th>                     " SKIP
+        "                  </tr>                                    " SKIP
+        "                  <tr>                                     " SKIP
+        "                       <th>From</th>                       " SKIP 
+        "                       <th>" f-con-name "</th>             " SKIP 
+        "                       <th rowspan=2>" con-desc "</th>     " SKIP
+        "                       <th rowspan=2>" com-display "</th>  " SKIP
+        "                  </tr>                                    " SKIP
+        "                  <tr>                                     " SKIP
+        "                       <th>To</th>                         " SKIP
+        "                       <th>" t-con-name "</th>             " SKIP 
+        "                  </tr>                                    " SKIP   
+        "                  <tr>                                     " SKIP
+        "                       <td></td>                           " SKIP
+        "                       <td>Condition</td>                  " SKIP 
+        "                       <td>Description</td>                " SKIP 
+        "                       <td>Common</td>                     " SKIP 
+        "                  </tr>                                    " SKIP
+        "               </thead>                                    " SKIP.      
+    
+    FOR EACH condition_mstr WHERE 
+        ((condition_mstr.condition_name >= f-con-name) OR
+         (f-con-name = "")) AND
+        ((condition_mstr.condition_name <= t-con-name) OR
+         (t-con-name = "")) AND
+        ((condition_mstr.condition_desc CONTAINS con-desc) OR 
+         (con-desc = "")) AND 
+        ((condition_mstr.condition_common = con-com) OR 
+         (con-com = ?))
+         NO-LOCK 
+         BY condition_mstr.condition_ID:
+   
+    {&OUT}
+        "<tr>                                                " SKIP
+        "   <td></td>                                        " SKIP 
+        "   <td>" condition_mstr.condition_name "</td>   " SKIP   
+        "   <td>" condition_mstr.condition_desc "</td>   " SKIP   
+        "   <td>" condition_mstr.condition_common "</td> " SKIP 
+        "</tr>                                               " SKIP.
+   
+    END.  /*** for each ***/
+  
+  {&OUT}
+   "        <tr>                                                                       " SKIP
+   "            <td colspan=4>End of Report</td>                                       " SKIP 
+   "        </tr>                                                                      " SKIP 
+   "    </table>                                                                       " SKIP
+   "    <form>                                                                         " SKIP
+   "        <input type='hidden' name='s-act' value='Search' />                        " SKIP
+   "        <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP 
+   "        <input type='submit' name='submit' value='Search Again' />                 " SKIP 
+   "    </form>                                                                        " SKIP
+   "</div>                                                                             ".  
+        
+    END.
+</SCRIPT>
+</BODY>
+</HTML>

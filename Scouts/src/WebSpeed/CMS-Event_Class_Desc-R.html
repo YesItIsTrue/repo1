@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="DOUG LUTTRELL">
+    <TITLE>Class Descriptions</TITLE>
+    <META NAME="VERSION" CONTENT="1.0"> 
+    
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css">
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='w3-black'>
+
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE x AS INTEGER NO-UNDO.       /** junk counter for rows **/
+
+ 
+{CMS-theme_area-R.i}. 
+
+{CMS-nav_area-R.i}.  
+      
+       
+{&OUT}
+    "<!-- Paragraph Section -->" SKIP
+    "<div class='w3-container w3-content w3-large' style='max-width:1400px;'>" SKIP
+    "   <H2>Lecture / Lab Combinations</H2>" SKIP(1)
+    
+    "<div class='w3-row'>" SKIP
+        "   <P class='w3-container'>"
+        "A standard approach in colleges across the globe is the Lecture / Lab format.  This is often used when studying Words of Science, "
+        "but it also applies well to events that can be explained to a large group, but need the hands-on component to be a smaller group "
+        "so that everyone can have personal interaction.  Last year there were several classes that people wanted more hands-on activity. "
+        "This year at Man College!!! we have added this feature.  You'll have the opportunity to take certain classes as a group for 1 hour "
+        "and then later take an associated lab for 2 hours.  Lab class sizes are about 1/3 the size of the Lecture classes."     
+        "  </P>" SKIP(1)
+
+    "</DIV>     <!-- end of div row -->" SKIP(1)
+    
+    "</DIV>     <!-- end of div container -->" SKIP(1)
+
+    "<!-- Paragraph Section -->" SKIP
+    "<div class='w3-container w3-content w3-large' style='max-width:1400px;'>" SKIP
+    "   <H2>What is a ~"Classtivity~"?</H2>" SKIP(1)
+    
+    "<div class='w3-row'>" SKIP
+	    "   <P class='w3-container'>"
+	    "A Classtivity is one of the <I>best</I> ways to learn. It is the antithesis of boring. "
+	    "A Classtivity is active, it’s energetic, and it’s uplifting, while helping you feel the emotion of a topic. It is an "
+	    "opportunity to feel the Spirit and learn how to recognize what the Spirit feel like. It is an experience!"    
+	    "  </P>" SKIP(1)
+
+	    "  <div class='w3-cell-row'>" SKIP
+		    "     <P class='w3-container w3-cell-middle w3-half w3-mobile'>"
+		    "We have even more options for you this year. You will need to follow the guidance of Spirit as you choose those things that "
+		    "will be of the most worth to you. You will only be able to choose a fraction of what is available to you, so choose wisely. We "
+		    "are not having classes in the traditional sense of the word. These are more of a mix of class and activity, so we have chosen "
+		    "to call them that - ~"classtivities~"."    
+		    "     </P>" SKIP	    
+	        "      <img src='/depot/src/HTMLContent/images/Youth-CMS/choose_wisely.jpg' class='w3-cell-middle w3-half w3-mobile'></img>" SKIP
+        "   </div>" SKIP
+        
+        "   <P class='w3-container'>"     
+        "Classtivities are powerful, active, experiences that you will love. We have assembled some "
+        "of the best Men in the Stake to share things with you that you normally might not hear until you were Men yourselves. Some of "
+        "them will be sharing true stories of their personal experiences. They are powerful. Some of them will be demonstrating hands-on "
+        "techniques of skills you want to have. Some will prepare you better to serve a mission. Some to be better husbands and fathers. "
+        "All of them will help you become better Priesthood holders and to live a life that is more full and rich with blessings than "
+        "you can imagine. (And yes, we DO know what Han Solo says about imagining.)"
+        "   </P>" SKIP(1)
+    
+    "</DIV>     <!-- end of DIV row section -->" SKIP(1)
+
+    "</DIV>     <!-- end of DIV paragraph section -->" SKIP(1).
+    
+{&OUT}
+    "<div class='w3-row w3-container w3-content' style='max-width:1400px;'>" SKIP
+    "<!-- Paragraph Section -->" SKIP
+    "   <H2>Classtivity Descriptions</H2>" SKIP(1).
+    
+FOR EACH event_mstr WHERE event_mstr.event_ID = v-event_ID AND 
+        event_mstr.event_deleted = ? NO-LOCK, 
+    EACH sched_mstr WHERE sched_mstr.sched_event_id = event_mstr.event_ID AND 
+/*         sched_mstr.sched_start_date >= 03/11/17 event_mstr.event_start_date  AND*/
+/*        sched_mstr.sched_end_date <= 04/22/17  event_mstr.event_end_date AND     */
+        sched_mstr.sched_deleted = ? NO-LOCK, 
+    FIRST MB_mstr WHERE MB_mstr.MB_BSA_ID = sched_mstr.sched_BSA_ID NO-LOCK,
+    EACH MBR_reqs WHERE MBR_reqs.MBR_BSA_ID = sched_mstr.sched_BSA_ID NO-LOCK      
+    BREAK BY MB_mstr.MB_name: 
+        
+    IF FIRST-OF (MB_mstr.mb_name) THEN DO: 
+    
+        x = x + 1.
+            
+        {&OUT}
+            "   <P class='w3-container w3-col s12 l4'>" SKIP 
+/*            sched_mstr.sched_class_ID " - " SKIP*/
+            "<B>" MB_mstr.MB_name "</B> - " SKIP 
+            MBR_reqs.MBR_Req_Desc SKIP 
+            "   </P>" SKIP(1).
+        
+        IF x >= 3 THEN DO: 
+            
+            {&OUT}
+                "</DIV>     <!-- end of DIV row section -->" SKIP(1)
+                "<div class='w3-row w3-container w3-content' style='max-width:1400px;'>" SKIP.
+                
+            x = 0.
+            
+        END.  /** of if x >= 3 **/
+        
+    END.  /** of if first-of mb_name **/
+    
+END.  /** of 4ea. event_mstr, etc. **/
+    
+{&OUT}
+    "</DIV>     <!-- end of DIV row section -->" SKIP(1)
+    "<BR>" SKIP.
+          
+
+   
+
+</SCRIPT>
+</BODY>
+</HTML>

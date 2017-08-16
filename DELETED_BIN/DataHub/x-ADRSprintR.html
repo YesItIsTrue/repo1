@@ -1,0 +1,313 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>HHI Label Print</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<center>
+<br></br> <!-- Need a white box around the following statement -->
+<h3>Your labels will be printed to your default printer.<br>See email for further details on labels.</h3>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:           hhi_label_print.html -> ADRSprintR.html
+    Description:    3 of 3 pages to create labels
+    Created:        7/1/2014
+    Author:         Jacob Luttrell
+  -------------------------------------------------------------------*/
+  
+/*****************************************************************************
+X make sure that the sendmail is available before calling it / error capture
+X OS-COMMAND -silent
+X if RP is not avail then use the Patient info
+               X also if NEW PATIENT is in RP then use Patient info
+X update code to use the email group or the person running the code?
+    X need a group at HHI for this (MPA_Results@holistichealth.com) contact eric to set this up
+X give them the ability to only print sub-sections of the list
+X space out # from names on emailed report
+X drop TK_testtype from emailed report
+X cleanup messages
+X work with labelline FORMAT and Colons to fit labels
+X fix the page length with PAGE-size value
+X selection criteria for WHERE clause (from - to's)
+    X tk_ID
+    X lastname
+    X firstname
+X Print to page margins (prints right at the top of the page)
+*****************************************************************************/
+/*************************** Define Vars *****************************/
+/** you may have to change the labelline format **/
+DEFINE VARIABLE labelline       AS CHARACTER FORMAT "x(38)" EXTENT 18 NO-UNDO.
+
+DEFINE VARIABLE showmsg         AS LOGICAL INITIAL NO  NO-UNDO.
+DEFINE VARIABLE showmsg2        AS LOGICAL INITIAL NO  NO-UNDO.
+
+DEFINE VARIABLE x               AS INTEGER NO-UNDO.
+DEFINE VARIABLE y               AS INTEGER NO-UNDO.
+DEFINE VARIABLE z               AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE testkitcount    AS INTEGER NO-UNDO.
+DEFINE VARIABLE confirm         AS CHARACTER NO-UNDO.
+DEFINE VARIABLE denied          AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE emailaddr       AS CHARACTER INITIAL "-r MPA_Printing_Results@holistichealth.com" NO-UNDO.
+DEFINE VARIABLE messagetxt      AS CHARACTER INITIAL "-m test message." NO-UNDO.
+DEFINE VARIABLE subjtxt         AS CHARACTER INITIAL "-s subject test." NO-UNDO.
+DEFINE VARIABLE outfile         AS CHARACTER INITIAL "C:\Temp\labels_printed.txt" NO-UNDO.
+
+DEFINE VARIABLE labelcount      AS INTEGER NO-UNDO.             
+DEFINE VARIABLE numpgs          AS INTEGER NO-UNDO.
+DEFINE VARIABLE pagecount       AS INTEGER NO-UNDO.
+DEFINE VARIABLE pagebreak       AS INTEGER INITIAL 1 NO-UNDO.
+DEFINE VARIABLE fromTK          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toTK            AS CHARACTER NO-UNDO.
+DEFINE VARIABLE fromLN          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toLN            AS CHARACTER NO-UNDO.
+DEFINE VARIABLE fromFN          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toFN            AS CHARACTER NO-UNDO.
+
+DEFINE BUFFER morepeople        FOR General.people_mstr.
+DEFINE STREAM outstream.
+DEFINE STREAM labelprints.
+
+DEFINE VARIABLE out-id          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE out-create      AS LOGICAL NO-UNDO.
+DEFINE VARIABLE out-update      AS LOGICAL NO-UNDO.
+DEFINE VARIABLE out-avail       AS LOGICAL NO-UNDO.
+DEFINE VARIABLE out-success     AS LOGICAL NO-UNDO.
+
+FORM 
+    hhi.TK_mstr.TK_ID hhi.TK_mstr.TK_lbl_print SPACE(2) hhi.patient_mstr.patient_ID   
+    general.people_mstr.people_firstname
+    general.people_mstr.people_lastname SPACE(2)
+    hhi.patient_mstr.patient_RP_ID SPACE(2)
+    morepeople.people_firstname
+    morepeople.people_lastname 
+    WITH FRAME emailout DOWN WIDTH 180.
+
+ASSIGN
+    confirm     = get-value('s-Submit')
+    denied      = get-value('s-Submit')
+    fromTK      = get-value('b-fromTK')
+    toTK        = get-value('b-toTK')
+    fromLN      = get-value('b-fromLN')
+    toLN        = get-value('b-toLN')
+    fromFN      = get-value('b-fromFN')
+    toFN        = get-value('b-toFN')
+    numpgs      = INTEGER(get-value('b-numpgs')).
+    
+/*************************** Main Body ******************************/
+OUTPUT STREAM outstream TO PRINTER PAGE-SIZE VALUE (70).
+PUT STREAM outstream
+    SKIP(3).
+OUTPUT STREAM labelprints TO VALUE (outfile).
+
+froot_loop:                                                                
+
+FOR EACH HHI.patient_mstr       WHERE HHI.patient_mstr.patient_verified = LOGICAL("yes") AND 
+                                HHI.patient_mstr.patient_deleted = ? NO-LOCK,
+    EACH HHI.tk_mstr            WHERE HHI.TK_mstr.TK_patient_ID = HHI.patient_mstr.patient_id AND
+                                HHI.TK_mstr.TK_lbl_print = ? AND 
+                                HHI.TK_mstr.TK_testtype = "MD" AND 
+                                HHI.TK_mstr.TK_deleted = ? AND 
+                                ((HHI.TK_mstr.TK_ID >= fromTK) OR
+                                    (fromTK = "")) AND 
+                                ((HHI.TK_mstr.TK_ID <= toTK ) OR 
+                                    (toTK = "")) NO-LOCK,
+    FIRST General.people_mstr   WHERE General.people_mstr.people_id = HHI.patient_mstr.patient_ID AND 
+                                General.people_mstr.people_deleted = ? AND 
+                                ((General.people_mstr.people_firstname >= fromFN) OR 
+                                    (fromFN = "")) AND 
+                                ((General.people_mstr.people_firstname <= toFN ) OR 
+                                    (fromFN = "" )) AND 
+                                ((General.people_mstr.people_lastname >= fromLN) OR 
+                                    (fromLN = "")) AND 
+                                ((General.people_mstr.people_lastname <= toLN ) OR 
+                                    (toLN = "")) NO-LOCK,                              
+    FIRST General.addr_mstr     WHERE General.addr_mstr.addr_id = General.people_mstr.people_addr_id AND
+                                General.addr_mstr.addr_deleted = ? NO-LOCK
+    BREAK BY General.people_mstr.people_lastname:
+   
+    FIND morepeople             WHERE morepeople.people_id = patient_mstr.patient_RP_ID NO-LOCK NO-ERROR.
+   
+   x = y * 6.     
+   y = y + 1.     
+   
+   
+   IF showmsg = YES THEN 
+        {&OUT}
+            " firstname = " general.people_mstr.people_firstname "<br>" skip
+            " lastname = " general.people_mstr.people_lastname "<br>" skip
+            " tk_id = " tk_id "<br>" skip(1). 
+              
+   
+   IF morepeople.people_firstname = "" AND morepeople.people_lastname = "" OR 
+            morepeople.people_firstname = "NEW" OR morepeople.people_lastname = "PATIENT" THEN
+             
+            ASSIGN 
+                x               = x + 1
+                labelline[x]    = people_mstr.people_firstname + " " + people_mstr.people_lastname.  
+       ELSE 
+        IF morepeople.people_firstname <> "" OR morepeople.people_lastname <> "" THEN 
+        ASSIGN                                                                  
+            x               = x + 1 
+            labelline[x]    = morepeople.people_firstname + " " + morepeople.people_lastname.        
+                
+    IF addr_mstr.addr_addr1 <> "" THEN
+        ASSIGN
+            x               = x + 1 
+            labelline[x]    = addr_mstr.addr_addr1.
+            
+    IF addr_mstr.addr_addr2 <> "" THEN
+        ASSIGN
+            x               = x + 1 
+            labelline[x]    = addr_mstr.addr_addr2.
+            
+    IF addr_mstr.addr_addr3 <> "" THEN
+        ASSIGN
+            x               = x + 1 
+            labelline[x]    = addr_mstr.addr_addr3.
+        
+    IF addr_mstr.addr_city <> "" OR addr_mstr.addr_stateprov <> "" OR addr_mstr.addr_zip <> "" THEN
+        ASSIGN
+            x               = x + 1 
+            labelline[x]    = addr_mstr.addr_city + ", " + addr_mstr.addr_stateprov + "  " + addr_mstr.addr_zip.
+            
+    IF addr_mstr.addr_country <> "" THEN
+        ASSIGN
+            x               = x + 1 
+            labelline[x]    = addr_mstr.addr_country.      
+   
+      
+    IF y = 3 THEN DO: /*** you may have to adjust the AT points ***/
+    PUT STREAM outstream         
+        labelline[1] AT 3 labelline[7] AT 47 labelline[13] AT 91
+        labelline[2] AT 3 labelline[8] AT 47 labelline[14] AT 91
+        labelline[3] AT 3 labelline[9] AT 47 labelline[15] AT 91
+        labelline[4] AT 3 labelline[10] AT 47 labelline[16] AT 91
+        labelline[5] AT 3 labelline[11] AT 47 labelline[17] AT 91
+        labelline[6] AT 3 labelline[12] AT 47 labelline[18] AT 91.
+        
+    
+    
+    DO z = 1 TO 18:
+        labelline[z] = "" .
+        
+    END. /** do x = 1 to 18 **/
+    
+    x = 0.
+    y = 0.   
+    
+    END.  /*** do put statement ***/   
+
+  RUN "../depot/rcode/upcreate-TK-mstr.r"
+    ( hhi.TK_mstr.TK_ID,              
+      HHI.TK_mstr.TK_testtype,         
+      ?,            
+      0,         
+      ?,         
+      0,         
+      0,       
+      "",    
+      0,          
+      0,        
+      0,           
+      "Printed",           
+      "",         
+      "",            
+      ?,        
+      TODAY,        
+      ?,
+      
+      OUTPUT out-id, 
+      OUTPUT out-create,
+      OUTPUT out-update,
+      OUTPUT out-avail,
+      OUTPUT out-success         
+    ). 
+         
+   labelcount = labelcount + 1.
+  
+  pagecount = labelcount MODULO 30.
+  
+  IF pagecount = 0 AND 
+     (pagebreak < numpgs OR numpgs = 0)  THEN
+      DO:
+          PAGE STREAM outstream.
+          PUT STREAM outstream " " SKIP(2).
+          pagebreak = pagebreak + 1.
+      END. 
+  
+  
+      
+  IF numpgs > 0 AND
+    labelcount >= (30 * numpgs) THEN
+        LEAVE froot_loop.                 
+  
+  IF showmsg2 = YES THEN DO:
+      {&OUT}
+            "Patient Name = " general.people_mstr.people_firstname " " general.people_mstr.people_lastname "<br>" SKIP 
+            "TK ID = " hhi.TK_mstr.TK_ID "<br>" SKIP 
+            "Date Printed = " hhi.TK_mstr.TK_lbl_print "<br>" SKIP 
+            "Status = " hhi.TK_mstr.TK_status "<br>" SKIP(1).
+  END. /*** showmsg2 ***/
+     
+  DISPLAY STREAM labelprints
+    hhi.TK_mstr.TK_ID
+    hhi.TK_mstr.TK_lbl_print
+    hhi.patient_mstr.patient_ID    
+    general.people_mstr.people_firstname
+    general.people_mstr.people_lastname
+    hhi.patient_mstr.patient_RP_ID
+    morepeople.people_firstname
+    morepeople.people_lastname   
+    SKIP(1)
+        WITH FRAME emailout DOWN.
+        DOWN WITH FRAME emailout.
+        
+    END. /** for each - froot_loop **/
+    
+IF y <> 0 THEN DO:
+    
+       PUT STREAM outstream
+            labelline[1] AT 3 labelline[7] AT 47 labelline[13] AT 91
+	        labelline[2] AT 3 labelline[8] AT 47 labelline[14] AT 91
+	        labelline[3] AT 3 labelline[9] AT 47 labelline[15] AT 91
+	        labelline[4] AT 3 labelline[10] AT 47 labelline[16] AT 91
+	        labelline[5] AT 3 labelline[11] AT 47 labelline[17] AT 91
+	        labelline[6] AT 3 labelline[12] AT 47 labelline[18] AT 91.
+             
+END. /** y <> 0 **/  
+    
+ OUTPUT STREAM outstream CLOSE. 
+ OUTPUT STREAM labelprints CLOSE.
+ 
+
+OS-COMMAND SILENT "C:\apps\biomed\batch-files\errormail" VALUE (emailaddr)
+    VALUE (messagetxt) VALUE (subjtxt) "-a" VALUE (outfile).
+</SCRIPT>
+</Form>
+<FORM method="post" action="ADRScriteriaR.r" >
+<INPUT type='hidden' name='whattorun' value=' get-value("whattorun") ' />
+<INPUT type="submit" name="Return" value="Return to Home Page"/>
+</FORM>
+</center>
+</BODY>
+</HTML>

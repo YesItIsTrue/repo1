@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Vendor Maintenance</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="14Jul15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           VENDmainU_MOCK.html
+    Description:    html mockup of Vendor Management Screen
+    Created:
+  -------------------------------------------------------------------*/
+{&OUT}
+"<div class='row'> " SKIP
+"   <div class='grid_1'></div> " SKIP
+"   <div class='grid_10'> " SKIP
+"        <div class='table_2col'> " SKIP
+"           <table> " SKIP
+"              <tr> " SKIP
+"                 <th colspan=2>Vendor Information</th> " SKIP
+"                 <th colspan=2>Address</th> " SKIP
+/*"                 <th colspan=2>Primary Contact</th> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Name</td> " SKIP
+"                 <td>RJ's Rock Hounds</td> " SKIP
+"                 <td>Address Line 1</td> " SKIP
+"                 <td>690 Trejo St</td> " SKIP
+/*"                <td>Name</td> " SKIP          */
+/*"                <td>Jacob Luttrell</td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>ID Number</td> " SKIP
+"                 <td>123Awesome</td> " SKIP
+"                 <td>Address Line 2</td> " SKIP
+"                 <td>Apt 100</td> " SKIP
+/*"                 <td>ID Number</td> " SKIP*/
+/*"                 <td>TuffGuy</td> " SKIP  */
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Email</td> " SKIP
+"                 <td>r.j.luttrell@mysolsource.com</td> " SKIP
+"                 <td>Address Line 3</td> " SKIP
+"                 <td></td> " SKIP
+/*"                 <td>Email</td> " SKIP                      */
+/*"                 <td>r.j.luttrell@rockhounds.com</td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Confirm Email</td> " SKIP
+"                 <td>r.j.luttrell@mysolsource.com</td> " SKIP
+"                 <td>City</td> " SKIP
+"                 <td>Rexburg</td> " SKIP
+/*"                <td>Confirm Email</td> " SKIP              */
+/*"                <td>r.j.luttrell@rockhounds.com</td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Phone Number</td> " SKIP
+"                <td>208-497-0000</td> " SKIP
+"                 <td>Statev / Province</td> " SKIP
+"                 <td>Idaho</td> " SKIP
+/*"                <td>Cell Number</td> " SKIP  */
+/*"                 <td>298-234-3299</td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Fax Number</td> " SKIP
+"                 <td>298-765-4663</td> " SKIP
+"                 <td>Zip Code</td> " SKIP
+"                 <td>83440</td> " SKIP
+/*"                 <td>Home Number</td> " SKIP*/
+/*"                <td>208-999-1232</td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td></td> " SKIP
+"                 <td></td> " SKIP
+"                 <td>Country</td> " SKIP
+"                 <td>USA</td> " SKIP
+/*"                 <td>Work Number</td> " SKIP */
+/*"                 <td>208-208-2081</td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                <td>Notes</td> " SKIP
+"                <td colspan=3>Rocks are Cool!</td> " SKIP
+"           </table> " SKIP
+"        </div><!-- table_3col --> " SKIP
+"    </div><!-- grid_10 --> " SKIP
+"    <div class='grid_1'></div> " SKIP
+"</div><!-- row --> " SKIP
+"<DIV class='row'> " SKIP
+"<div class='grid_1'></div> " SKIP
+"<div class='grid_10'> " SKIP
+"    <div class='table_report'> " SKIP
+"       <table> " SKIP
+"          <thead> " SKIP
+"             <tr> " SKIP
+"                <th colspan=4>Tags</th> " SKIP
+"             </tr> " SKIP
+"          </thead> " SKIP
+"           <tr> " SKIP
+"             <td><INPUT type='checkbox' />HCl acid</td> " SKIP
+"             <td><INPUT type='checkbox' checked='yes' />rock hammers</td> " SKIP
+"             <td><INPUT type='checkbox' checked='yes' />hand lenses</td> " SKIP
+"             <td><INPUT type='checkbox' />field books</td> " SKIP
+"          </tr> " SKIP
+"          <tr> " SKIP
+"             <td><INPUT type='checkbox' />corer</td> " SKIP
+"             <td><INPUT type='checkbox' />maps</td> " SKIP
+"             <td><INPUT type='checkbox' />stereonet photos</td> " SKIP
+"             <td><INPUT type='checkbox' />*_*</td> " SKIP
+"          </tr> " SKIP
+"       </table> " SKIP
+"    </div> " SKIP
+"</div> <!-- grid_10 --> " SKIP
+"<div class='grid_1'></div> " SKIP
+"</DIV><!-- row --> " SKIP
+"<BR/>" SKIP
+"<DIV class='row'> " SKIP
+"<div class='grid_1'></div> " SKIP
+"<div class='grid_10'> " SKIP
+"    <div class='table_report'> " SKIP
+"       <table> " SKIP
+"          <thead> " SKIP
+"             <tr> " SKIP
+"                <th colspan=4>Contacts</th> " SKIP
+"             </tr> " SKIP
+"             <tr> " SKIP
+"                <td>Name</td> " SKIP
+"                <td>ID Number</td> " SKIP
+"                <td>Email</td> " SKIP
+"                <td>Work Number</td> " SKIP
+"             </tr> " SKIP
+"          </thead> " SKIP
+"           <tr> " SKIP
+"             <td><a href='http://localhost:3333/DataHub/rcode/VENDcontU_2.r'>Jacob Luttrell</a></td> " SKIP
+"             <td>TuffGuy</td> " SKIP
+"             <td>r.j.luttrell@rockhounds.com</td> " SKIP
+"             <td>208-208-2081</td> " SKIP
+"          </tr> " SKIP
+/*"          <tr> " SKIP                                                 */
+/*"             <td><INPUT type='checkbox' />corer</td> " SKIP           */
+/*"             <td><INPUT type='checkbox' />maps</td> " SKIP            */
+/*"             <td><INPUT type='checkbox' />stereonet photos</td> " SKIP*/
+/*"             <td><INPUT type='checkbox' />*_*</td> " SKIP             */
+/*"          </tr> " SKIP                                                */
+"       </table> " SKIP
+"    </div> " SKIP
+"</div> <!-- grid_10 --> " SKIP
+"<div class='grid_1'></div> " SKIP
+"</DIV><!-- row --> " SKIP
+"<BR/> " SKIP
+"<div class='row'>" SKIP
+"   <div class='grid_2'> </DIV>" SKIP
+"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='EDIT' class='btn'>Edit Vendor</BUTTON></div>" SKIP
+"   <div class='grid_1'> </DIV>" SKIP
+"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='ADD' class='btn'><a href='http://localhost:3333/DataHub/rcode/VENDcontU.r'>Add Contact</a></BUTTON></div>" SKIP
+"   <div class='grid_1'> </DIV>" SKIP
+"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='NEW' class='btn'>Create New Vendor</BUTTON></div>" SKIP
+"   <div class='grid_2'> </DIV>" SKIP
+"</div>" SKIP.
+</SCRIPT>
+
+</BODY>
+</HTML>

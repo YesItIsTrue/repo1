@@ -1,0 +1,753 @@
+<html>
+
+<head>
+    <title>Discrepancy </title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel='stylesheet' type='text/css' href='/DataHub/src/HTMLContent/stylesheets/discrepancy.css' />
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <script>
+        $(document).ready(() => {
+            $(".option").click(function() {
+                var btn = $(this);
+                var otherBtn = btn.parent().siblings().find("button");
+                btn.attr("checked", true);
+                otherBtn.attr("checked", false);
+                btn.addClass("w3-theme");
+                otherBtn.removeClass("w3-theme");
+            });
+            
+            
+        });
+        
+        function createNewRecord() {
+                $("button[checked]").each(function() {
+                    console.log($(this));
+                });
+            }
+            
+            function mergeRecords() {
+                alert("doing things");
+            }
+
+    </script>
+</head>
+
+<body>
+
+<script language="SpeedScript">
+DEFINE BUFFER addr_mstr2 FOR addr_mstr.
+DEFINE BUFFER D_addr_mstr2 FOR D_addr_mstr.
+
+{&OUT}
+    "<div class='w3-theme-d5 title-bar var-width'>" SKIP
+        "<h1 class='center'>Data Discrepancy Reconciliation</h1>" SKIP
+    "</div>" SKIP
+    "<br>" SKIP.
+
+FOR FIRST D_people_mstr WHERE D_people_mstr.D_people_Verify_Flag = FALSE,
+    FIRST D_addr_mstr WHERE D_people_mstr.D_people_addr_ID = D_addr_mstr.D_addr_ID NO-LOCK:
+        
+    FIND people_mstr WHERE people_mstr.people_ID = D_people_mstr.D_people_ID NO-LOCK NO-ERROR.
+    FIND addr_mstr WHERE addr_mstr.addr_id = people_mstr.people_addr_ID NO-LOCK NO-ERROR.
+    FIND addr_mstr2 WHERE addr_mstr2.addr_id = people_mstr.people_second_addr_ID NO-LOCK NO-ERROR.
+    FIND D_addr_mstr2 WHERE D_addr_mstr2.D_addr_id = D_people_mstr.D_people_second_addr_ID NO-LOCK NO-ERROR.
+    
+    IF AVAILABLE (people_mstr) THEN DO:
+        {&OUT}
+        "<div class='center'>" SKIP
+            "<button class='btn btn-warning action' data-toggle='modal' data-target='#createRecordModal'>Create New Record</button>" SKIP
+            "<button class='btn w3-theme-d3 action' onclick='mergeRecords()'>Merge Selected Changes</button>" SKIP
+        "</div>" SKIP
+        "<br>" SKIP.
+        
+	    {&OUT}
+	    "<div class='w3-card var-width w3-theme-l5'>" SKIP
+	        "<div class='container dec-table'>" SKIP
+	            "<h4 class='center bold'>Person ID: " D_people_mstr.D_people_id "</h4>" SKIP
+	            "<div class='row bold'>" SKIP
+	                "<div class='col-sm-3'>Field</div>" SKIP
+	                "<div class='col-sm-4'>Old Value</div>" SKIP
+	                "<div class='col-sm-4'>New Value</div>" SKIP
+	            "</div>" SKIP
+	            "<div class='rows'>" SKIP.
+	            
+				/*
+	            *   Person
+	            */
+	            
+	             IF D_people_mstr.D_people_prefix <> "" OR people_mstr.people_prefix <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Prefix</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_prefix <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='prefix_old'>" people_mstr.people_prefix "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_prefix <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='prefix_new'>" D_people_mstr.D_people_prefix "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+	            
+	             {&OUT}
+                "<div class='row'>" SKIP
+                    "<div class='col-sm-4'>First Name</div>" SKIP
+                    "<div class='col-sm-4'><button class='btn option' id='firstname_old'>" people_mstr.people_firstname "</button></div>" SKIP
+                    "<div class='col-sm-4'><button class='btn option' id='firstname_new'>" D_people_mstr.D_people_firstname "</button></div>" SKIP
+                "</div>" SKIP.
+	            
+	            IF D_people_mstr.D_people_midname <> "" OR people_mstr.people_midname <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Middle Name</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_midname <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='midname_old'>" people_mstr.people_midname "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_midname <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='midname_new'>" D_people_mstr.D_people_midname "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                {&OUT}
+                "<div class='row'>" SKIP
+                    "<div class='col-sm-4'>Last Name</div>" SKIP
+                    "<div class='col-sm-4'><button class='btn option' id='lastname_old'>" people_mstr.people_lastname "</button></div>" SKIP
+                    "<div class='col-sm-4'><button class='btn option' id='lastname_new'>" D_people_mstr.D_people_lastname "</button></div>" SKIP
+                "</div>" SKIP.
+	            
+	            IF D_people_mstr.D_people_suffix <> "" OR people_mstr.people_suffix <> "" THEN DO:
+	                {&OUT}
+		            "<div class='row'>" SKIP
+		                "<div class='col-sm-4'>Suffix</div>" SKIP
+		                "<div class='col-sm-4'>".
+		            IF people_mstr.people_suffix <> "" THEN DO: 
+		              {&OUT} "<button class='btn option' id='suffix_old'>" people_mstr.people_suffix "</button>".
+		            END.
+		            
+		              {&OUT}
+		                  "</div>" SKIP
+		                  "<div class='col-sm-4'>".
+		                
+		            IF D_people_mstr.D_people_suffix <> "" THEN DO:
+		              {&OUT} "<button class='btn option' id='suffix_new'>" D_people_mstr.D_people_suffix "</button>".
+		            END.
+		            
+		              {&OUT}    
+		                  "</div>" SKIP
+		              "</div>" SKIP.
+	            END.
+	            
+	             {&OUT}
+                "<div class='row'>" SKIP
+                    "<div class='col-sm-4'>DOB</div>" SKIP
+                    "<div class='col-sm-4'><button class='btn option' id='dob_old'>" people_mstr.people_DOB "</button></div>" SKIP
+                    "<div class='col-sm-4'><button class='btn option' id='dob_new'>" D_people_mstr.D_people_DOB "</button></div>" SKIP
+                "</div>" SKIP.
+                
+                IF D_people_mstr.D_people_prefname <> "" OR people_mstr.people_prefname <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Preferred Name</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_prefname <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='prefname_old'>" people_mstr.people_prefname "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_prefname <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='prefname_new'>" D_people_mstr.D_people_prefname "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_people_mstr.D_people_title <> "" OR people_mstr.people_title <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Title</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_title <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='title_old'>" people_mstr.people_title "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_title <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='title_new'>" D_people_mstr.D_people_title "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_people_mstr.D_people_company <> "" OR people_mstr.people_company <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Company</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_company <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='company_old'>" people_mstr.people_company "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_company <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='company_new'>" D_people_mstr.D_people_company "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_people_mstr.D_people_gender <> ? OR people_mstr.people_gender <> ? THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Gender</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_gender <> ? THEN DO: 
+                      {&OUT} "<button class='btn option' id='gender_old'>" IF people_mstr.people_gender = TRUE THEN "Male" ELSE "Female" "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_gender <> ? THEN DO:
+                      {&OUT} "<button class='btn option' id='gender_new'>" IF D_people_mstr.D_people_gender = TRUE THEN "Male" ELSE "Female" "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_people_mstr.D_people_homephone <> "" OR people_mstr.people_homephone <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Home Phone</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_homephone <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='homephone_old'>" people_mstr.people_homephone "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_homephone <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='homephone_new'>" D_people_mstr.D_people_homephone "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_people_mstr.D_people_workphone <> "" OR people_mstr.people_workphone <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Work Phone</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_workphone <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='workphone_old'>" people_mstr.people_workphone "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_workphone <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='workphone_new'>" D_people_mstr.D_people_workphone "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_people_mstr.D_people_cellphone <> "" OR people_mstr.people_cellphone <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Cell Phone</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_cellphone <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='cellphone_old'>" people_mstr.people_cellphone "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_cellphone <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='cellphone_new'>" D_people_mstr.D_people_cellphone "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_people_mstr.D_people_fax <> "" OR people_mstr.people_fax <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Fax</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_fax <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='fax_old'>" people_mstr.people_fax "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_fax <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='fax_new'>" D_people_mstr.D_people_fax "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_people_mstr.D_people_email <> "" OR people_mstr.people_email <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Email</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_email <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='email_old'>" people_mstr.people_email "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_email <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='email_new'>" D_people_mstr.D_people_email "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_people_mstr.D_people_email2 <> "" OR people_mstr.people_email2 <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Secondary Email</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF people_mstr.people_email2 <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='email2_old'>" people_mstr.people_email2 "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_people_mstr.D_people_email2 <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='email2_new'>" D_people_mstr.D_people_email2 "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+            END.
+                
+                /*
+                *   Address 1
+                */
+                
+            IF AVAILABLE (addr_mstr) then DO:    
+                {&OUT} "<h4 class='center bold'>Address</h4>".
+                
+                IF D_addr_mstr.D_addr_addr1 <> "" OR addr_mstr.addr_addr1 <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Address Line 1</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF addr_mstr.addr_addr1 <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='addr1_old'>" addr_mstr.addr_addr1 "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_addr_mstr.D_addr_addr1 <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='addr1_new'>" D_addr_mstr.D_addr_addr1 "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_addr_mstr.D_addr_addr2 <> "" OR addr_mstr.addr_addr2 <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Address Line 2</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF addr_mstr.addr_addr2 <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='addr2_old'>" addr_mstr.addr_addr2 "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_addr_mstr.D_addr_addr2 <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='addr2_new'>" D_addr_mstr.D_addr_addr2 "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_addr_mstr.D_addr_addr3 <> "" OR addr_mstr.addr_addr3 <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Address Line 3</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF addr_mstr.addr_addr3 <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='addr3_old'>" addr_mstr.addr_addr3 "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_addr_mstr.D_addr_addr3 <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='addr3_new'>" D_addr_mstr.D_addr_addr3 "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_addr_mstr.D_addr_city <> "" OR addr_mstr.addr_city <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>City</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF addr_mstr.addr_city <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='city_old'>" addr_mstr.addr_city "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_addr_mstr.D_addr_city <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='city_new'>" D_addr_mstr.D_addr_city "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_addr_mstr.D_addr_stateprov <> "" OR addr_mstr.addr_stateprov <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>State/Province</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF addr_mstr.addr_stateprov <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='stateprov_old'>" addr_mstr.addr_stateprov "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_addr_mstr.D_addr_stateprov <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='stateprov_new'>" D_addr_mstr.D_addr_stateprov "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_addr_mstr.D_addr_zip <> "" OR addr_mstr.addr_zip <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Zip</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF addr_mstr.addr_zip <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='zip_old'>" addr_mstr.addr_zip "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_addr_mstr.D_addr_zip <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='zip_new'>" D_addr_mstr.D_addr_zip "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF D_addr_mstr.D_addr_country <> "" OR addr_mstr.addr_country <> "" THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Country</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF addr_mstr.addr_country <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='country_old'>" addr_mstr.addr_country "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF D_addr_mstr.D_addr_country <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='country_new'>" D_addr_mstr.D_addr_country "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+		        
+            END.
+            
+                /*
+                *   Address 2
+                */
+            
+            IF AVAILABLE (addr_mstr2) OR AVAILABLE (D_addr_mstr2) then DO:    
+                {&OUT} "<h4 class='center bold'>Secondary Address</h4>".
+                
+                IF (AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_addr1 <> "") OR (AVAILABLE (addr_mstr2) AND addr_mstr2.addr_addr1 <> "") THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Address Line 1</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF AVAILABLE (addr_mstr2) and addr_mstr2.addr_addr1 <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='addr1_old'>" addr_mstr2.addr_addr1 "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_addr1 <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='addr1_new'>" D_addr_mstr2.D_addr_addr1 "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF (AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_addr2 <> "") OR (AVAILABLE (addr_mstr2) AND addr_mstr2.addr_addr2 <> "") THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Address Line 2</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF AVAILABLE (addr_mstr2) and addr_mstr2.addr_addr2 <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='addr2_old'>" addr_mstr2.addr_addr2 "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_addr2 <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='addr2_new'>" D_addr_mstr2.D_addr_addr2 "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF (AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_addr3 <> "") OR (AVAILABLE (addr_mstr2) AND addr_mstr2.addr_addr3 <> "") THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Address Line 3</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF AVAILABLE (addr_mstr2) and addr_mstr2.addr_addr3 <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='addr3_old'>" addr_mstr2.addr_addr3 "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_addr3 <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='addr3_new'>" D_addr_mstr2.D_addr_addr3 "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF (AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_city <> "") OR (AVAILABLE (addr_mstr2) AND addr_mstr2.addr_city <> "") THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>City</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF AVAILABLE (addr_mstr2) and addr_mstr2.addr_city <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='city_old'>" addr_mstr2.addr_city "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_city <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='city_new'>" D_addr_mstr2.D_addr_city "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF (AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_stateprov <> "") OR (AVAILABLE (addr_mstr2) AND addr_mstr2.addr_stateprov <> "") THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>State/Province</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF AVAILABLE (addr_mstr2) and addr_mstr2.addr_stateprov <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='stateprov_old'>" addr_mstr2.addr_stateprov "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_stateprov <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='stateprov_new'>" D_addr_mstr2.D_addr_stateprov "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF (AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_zip <> "") OR (AVAILABLE (addr_mstr2) AND addr_mstr2.addr_zip <> "") THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Zip</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF AVAILABLE (addr_mstr2) and addr_mstr2.addr_zip <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='zip_old'>" addr_mstr2.addr_zip "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_zip <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='zip_new'>" D_addr_mstr2.D_addr_zip "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+                IF (AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_country <> "") OR (AVAILABLE (addr_mstr2) AND addr_mstr2.addr_country <> "") THEN DO:
+                    {&OUT}
+                    "<div class='row'>" SKIP
+                        "<div class='col-sm-4'>Country</div>" SKIP
+                        "<div class='col-sm-4'>".
+                    IF AVAILABLE (addr_mstr2) and addr_mstr2.addr_country <> "" THEN DO: 
+                      {&OUT} "<button class='btn option' id='country_old'>" addr_mstr2.addr_country "</button>".
+                    END.
+                    
+                      {&OUT}
+                          "</div>" SKIP
+                          "<div class='col-sm-4'>".
+                        
+                    IF AVAILABLE (D_addr_mstr2) AND D_addr_mstr2.D_addr_country <> "" THEN DO:
+                      {&OUT} "<button class='btn option' id='country_new'>" D_addr_mstr2.D_addr_country "</button>".
+                    END.
+                    
+                      {&OUT}    
+                          "</div>" SKIP
+                      "</div>" SKIP.
+                END.
+                
+            END.
+            
+             {&OUT}      
+                   "</div>" SKIP
+                "</div>" SKIP
+            "</div>" SKIP.
+        
+        {&OUT}
+        "<div class='center'>" SKIP
+            "<button class='btn btn-warning action' data-toggle='modal' data-target='#createRecordModal'>Create New Record</button>" SKIP
+            "<button class='btn w3-theme-d3 action' onclick='mergeRecords()'>Merge Selected Changes</button>" SKIP
+        "</div>" SKIP
+        "<br>" SKIP.
+END.
+
+</script>
+    <br>
+    <div class="center">
+        <a href="http://mysolsource.com/" target="_blank">Powered by Solsource</a>
+    </div>
+    <br>
+    
+    <!-- Modal -->
+    <div class="modal fade" id="createRecordModal" role="dialog">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-body">
+          <p>Are you sure you want to create a new record containing new values?</p>
+        </div>
+        <div class="center">
+            <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+            <button type="button" class="btn btn-default" onclick="createNewRecord()">Yes</button>
+        </div>
+        <br>
+      </div>
+    </div>
+  </div>
+    
+</body>
+
+</html>

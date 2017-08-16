@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>      
+<HEAD> 
+    
+    <TITLE>Billing IP UNKNOWN Lab Screen</TITLE>
+    
+    <META NAME="AUTHOR" CONTENT="Harold Luttrell, Sr.">
+    <META NAME="VERSION" CONTENT="1.1">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="23/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="25/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+    /*----------------------------------------------------------------------
+      Main-program  : Billing-IP-UNKNOWN-Lab-Screen.html.
+      Description   : This is dummy catch-all screen. 
+                    :     A new Lab has been created in LAB_mstr and 
+                    :     no input billing invoice screen and programs have
+                    :     been written.
+                  
+      Sub-programs  : none.
+      Description   : nothing. 
+             
+      - - Version History - -
+      
+            1.0 - Oct 23, 2014 - Original code.
+            1.1 - Oct 25, 2014 - removed all '../..' from the html code and 
+                                    changed '.html' to '.r' and
+                                    added the META & css.
+                                    
+  ----------------------------------------------------------------------*/ 
+   
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+</HEAD> 
+      
+<BODY class="inside">
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Include code. */
+
+{../depot/src/WebSpeed/menuname.i}.       /*** menu name assignment ***/
+ 
+/* Define Variables. */
+DEFINE VARIABLE act                 AS INTEGER                                   NO-UNDO.
+/*  
+    act values: 86 = new lab - no input screen.
+                1 = DDI format.
+                2 = GENOVA format.
+                3 = NS format.
+                4 = SABRE format. 
+*/
+DEFINE VARIABLE ip-lab-id           LIKE lab_mstr.lab_id                      NO-UNDO.  
+
+DEFINE VARIABLE look4it             AS CHARACTER                                  NO-UNDO.
+
+DEFINE VARIABLE whattorun           AS CHARACTER                                  NO-UNDO.   /* to get the menu title */
+
+/* Assign Values to Variable statements. */
+ASSIGN  
+
+/* Logical variables. */ 
+                 
+/* Date variables. */ 
+  
+/* Integer variables. */        
+             
+/* Character variables. */
+        whattorun           = get-value("whattorun")                   
+        ip-lab-id           = TRIM(get-field("h-lab-ID"))
+        act                  = 86
+        look4it             = get-field("s-Submit")
+        . 
+    
+/*          MESSAGE showmsg VIEW-AS ALERT-BOX BUTTONS OK.       */
+/*  Need to get the error message from the err_message table when Doug gets the lock out display working.  */  
+    IF  ip-lab-id = "" THEN 
+        ASSIGN  ip-lab-id = "You did NOT select a button from the previous screen!".
+            
+    {&OUT}   "<H2 class='webpagetitle' >" SKIP           
+             "<P STYLE='text-align: center'> Billing IP UNKNOWN Lab Screen. </H2>" SKIP. 
+           
+    {&OUT} "<form ACTION='Billing-Input-Screen.r'  method='get' >" SKIP 
+                     "<input type='hidden' name='whattorun'    value='" whattorun "' >" SKIP            /* to get the menu title */     
+                     "<input type='hidden' name='h-act'        value='" act "' >" SKIP                   
+                    "<div class='table_col'>" SKIP               
+                     "<table>" SKIP                    
+                        "<tr>" SKIP                              
+                            "<td> LAB Name</td>" SKIP
+                            "<td><input type='text' name='h-LabID' value='" ip-lab-id "' size='42' disabled </td>" SKIP 
+                        "<tr>" SKIP                                             
+                    "</table>"  SKIP
+                        "<center>" SKIP
+/*  Need to get the error message from the err_message table when Doug gets the lock out display working.  */        
+                        "<tr> NO Billing Input Screen has been developed for this requested Lab. </tr>" SKIP
+                        "<BR><tr> Please notify Solsource. </tr>" SKIP 
+                        "<BR><tr> Thank you. </tr>" SKIP
+                        "</center>" SKIP
+                   "</div>" SKIP
+                   "<br> </br>" SKIP   
+                   "<td>" "<center><input type='image' src='/depot/src/HTMLContent/images/submit_image.gif'  
+                                alt='Submit' name='s-Submit'>" "</td>"  SKIP.                                                                                                            
+                "</form>".   
+
+  
+</SCRIPT>      
+</BODY>
+</HTML>

@@ -1,0 +1,625 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//Dli HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+<TITLE>Soap Test 2!</TITLE>
+
+<style type="text/CSS">
+.w3-theme-l5 {color:#000 !important; background-color:#eff8fe !important}
+.w3-theme-l4 {color:#000 !important; background-color:#cae8fd !important}
+.w3-theme-l3 {color:#000 !important; background-color:#95d0fb !important}
+.w3-theme-l2 {color:#000 !important; background-color:#60b9f8 !important}
+.w3-theme-l1 {color:#fff !important; background-color:#2ba2f6 !important}
+.w3-theme-d1 {color:#fff !important; background-color:#087acb !important}
+.w3-theme-d2 {color:#fff !important; background-color:#086cb4 !important}
+.w3-theme-d3 {color:#fff !important; background-color:#075f9e !important}
+.w3-theme-d4 {color:#fff !important; background-color:#065187 !important}
+.w3-theme-d5 {color:#fff !important; background-color:#054471 !important}
+
+.w3-theme-light {color:#000 !important; background-color:#eff8fe !important}
+.w3-theme-dark {color:#fff !important; background-color:#054471 !important}
+.w3-theme-action {color:#fff !important; background-color:#054471 !important}
+
+.w3-theme {color:#fff !important; background-color:#0987e0 !important}
+.w3-text-theme {color:#0987e0 !important}
+.w3-border-theme {border-color:#0987e0 !important}
+
+.w3-hover-theme:hover {color:#fff !important; background-color:#0987e0 !important}
+.w3-hover-text-theme {color:#0987e0 !important}
+.w3-hover-border-theme:hover {border-color:#0987e0 !important}
+</style>
+
+<style>
+.w3-yellow,.w3-hover-yellow:hover{color:#000!important;background-color:#FFEF6C!important}
+</style>
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY  class='w3-light-grey'>
+<div class='w3-container w3-opennav w3-xlarge w3-theme-dark w3-padding-large' '>Soap Test</div>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+/*****  Define Variables  ******/
+
+DEFINE VARIABLE ITmessages AS LOGICAL INITIAL YES NO-UNDO. 
+DEFINE VARIABLE hWebService AS HANDLE NO-UNDO.
+DEFINE VARIABLE hPortType AS HANDLE NO-UNDO.
+DEFINE VARIABLE sessionId AS CHARACTER NO-UNDO.
+DEFINE VARIABLE endSessionResults AS LOGICAL NO-UNDO.
+DEFINE VARIABLE filters AS LONGCHAR NO-UNDO.
+ASSIGN filters = "<rootnode><filter><state><key>state</key><value>processing</value></state><status1><key>status</key><value>new_order</value></status1></filter></rootnode>".
+DEFINE VARIABLE storeView1 AS CHARACTER initial "1" NO-UNDO.
+DEFINE VARIABLE storeView2 AS INTEGER INITIAL 3 NO-UNDO.
+
+
+/*****  Set Up for Web Server Thing ****************************************************************/
+
+{&OUT} 
+    "<br>" SKIP
+    "<div class='w3-card-4 w3-content w3-white w3-padding-large' style='max-width:1400px;'>" SKIP    
+    "<ul class='w3-ul w3-hoverable'>" SKIP.
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<li>About to connect to Magento webservice - " string(time,"HH:MM:SS") "</li>" SKIP.
+        
+CREATE SERVER hWebService.
+hWebService:CONNECT("-WSDL 'https://test-store.holisticheal.com/index.php/api/v2_soap/index/?wsdl=1' -Service 'MagentoService' -Port 'Port'").
+/*hWebService:CONNECT("-WSDL 'https://demo.mysolsource.com/index.php/api/v2_soap/index/?wsdl=1' -Service 'MagentoService' -Port 'Port'").*/
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<li>About to run Magento PortType - " string(time,"HH:MM:SS") "</li>" SKIP.
+        
+RUN PortType SET hPortType ON hWebService.
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<li>About to run Magento login - " string(time,"HH:MM:SS") "</li>" SKIP.
+        
+RUN login IN hPortType(INPUT 'solsource_invctrl', INPUT 'HJ9d3D3SrfDjLE1JCaNP', OUTPUT sessionId).
+
+IF sessionID <> "" THEN DO: 
+    
+    {&OUT} "<li class='w3-hover-green'><b> Successful connection to Magento, session ID = " sessionID SKIP(1).
+    IF ITmessages = YES THEN {&OUT} " - " string(time,"HH:MM:SS") "." SKIP.
+    {&OUT} "</b></li>" SKIP.
+    
+END. /*** session_id avaiable ***/
+
+ELSE DO:
+
+    {&OUT} "<li class='w3-hover-red'><b>Unsuccessfull ". 
+    IF ITmessages = YES THEN {&OUT} " - " string(time,"HH:MM:SS") "." SKIP. 
+    {&OUT} "</b></li><br>".
+
+END.
+
+/****************************************  MAIN PROGRAM  *************************************/
+
+IF ITmessages = YES THEN {&OUT}
+    "<li>About to run Magento catalogProductTypeList - " string(time,"HH:MM:SS") "</li>" SKIP.
+
+RUN catalogCategoryAttributeCurrentStore IN hPortType(INPUT sessionId, INPUT storeView1, OUTPUT storeView2).
+
+IF ITmessages = YES THEN {&OUT}
+    "<li>Finished running Magento catalogProductTypeList - " string(time,"HH:MM:SS") "</li>" SKIP.
+
+IF ITmessages = YES THEN {&OUT}
+    "<li>StoreView2 = " storeView2 " - " string(time,"HH:MM:SS") "</li>" SKIP.
+
+
+/**********************************  Sales Order List  ****************************************/
+
+DEFINE TEMP-TABLE Item NO-UNDO
+    NAMESPACE-URI "" 
+    FIELD increment_id AS CHARACTER 
+    FIELD store_id AS CHARACTER 
+    FIELD created_at AS CHARACTER 
+    FIELD updated_at AS CHARACTER 
+    FIELD customer_id AS CHARACTER 
+    FIELD tax_amount AS CHARACTER 
+    FIELD shipping_amount AS CHARACTER 
+    FIELD discount_amount AS CHARACTER 
+    FIELD subtotal AS CHARACTER 
+    FIELD grand_total AS CHARACTER 
+    FIELD total_paid AS CHARACTER 
+    FIELD total_refunded AS CHARACTER 
+    FIELD total_qty_ordered AS CHARACTER 
+    FIELD total_canceled AS CHARACTER 
+    FIELD total_invoiced AS CHARACTER 
+    FIELD total_online_refunded AS CHARACTER 
+    FIELD total_offline_refunded AS CHARACTER 
+    FIELD base_tax_amount AS CHARACTER 
+    FIELD base_shipping_amount AS CHARACTER 
+    FIELD base_discount_amount AS CHARACTER 
+    FIELD base_subtotal AS CHARACTER 
+    FIELD base_grand_total AS CHARACTER 
+    FIELD base_total_paid AS CHARACTER 
+    FIELD base_total_refunded AS CHARACTER 
+    FIELD base_total_qty_ordered AS CHARACTER 
+    FIELD base_total_canceled AS CHARACTER 
+    FIELD base_total_invoiced AS CHARACTER 
+    FIELD base_total_online_refunded AS CHARACTER 
+    FIELD base_total_offline_refunded AS CHARACTER 
+    FIELD billing_address_id AS CHARACTER 
+    FIELD billing_firstname AS CHARACTER 
+    FIELD billing_lastname AS CHARACTER 
+    FIELD shipping_address_id AS CHARACTER 
+    FIELD shipping_firstname AS CHARACTER 
+    FIELD shipping_lastname AS CHARACTER 
+    FIELD billing_name AS CHARACTER 
+    FIELD shipping_name AS CHARACTER 
+    FIELD store_to_base_rate AS CHARACTER 
+    FIELD store_to_order_rate AS CHARACTER 
+    FIELD base_to_global_rate AS CHARACTER 
+    FIELD base_to_order_rate AS CHARACTER 
+    FIELD weight AS CHARACTER 
+    FIELD store_name AS CHARACTER 
+    FIELD remote_ip AS CHARACTER 
+    FIELD status1 AS CHARACTER XML-NODE-NAME "status" 
+    FIELD state AS CHARACTER 
+    FIELD applied_rule_ids AS CHARACTER 
+    FIELD global_currency_code AS CHARACTER 
+    FIELD base_currency_code AS CHARACTER 
+    FIELD store_currency_code AS CHARACTER 
+    FIELD order_currency_code AS CHARACTER 
+    FIELD shipping_method AS CHARACTER 
+    FIELD shipping_description AS CHARACTER 
+    FIELD customer_email AS CHARACTER 
+    FIELD customer_firstname AS CHARACTER 
+    FIELD customer_lastname AS CHARACTER 
+    FIELD quote_id AS CHARACTER 
+    FIELD is_virtual AS CHARACTER 
+    FIELD customer_group_id AS CHARACTER 
+    FIELD customer_note_notify AS CHARACTER 
+    FIELD customer_is_guest AS CHARACTER 
+    FIELD email_sent AS CHARACTER 
+    FIELD order_id AS CHARACTER 
+    FIELD gift_message_id AS CHARACTER 
+    FIELD coupon_code AS CHARACTER 
+    FIELD protect_code AS CHARACTER 
+    FIELD base_discount_canceled AS CHARACTER 
+    FIELD base_discount_invoiced AS CHARACTER 
+    FIELD base_discount_refunded AS CHARACTER 
+    FIELD base_shipping_canceled AS CHARACTER 
+    FIELD base_shipping_invoiced AS CHARACTER 
+    FIELD base_shipping_refunded AS CHARACTER 
+    FIELD base_shipping_tax_amount AS CHARACTER 
+    FIELD base_shipping_tax_refunded AS CHARACTER 
+    FIELD base_subtotal_canceled AS CHARACTER 
+    FIELD base_subtotal_invoiced AS CHARACTER 
+    FIELD base_subtotal_refunded AS CHARACTER 
+    FIELD base_tax_canceled AS CHARACTER 
+    FIELD base_tax_invoiced AS CHARACTER 
+    FIELD base_tax_refunded AS CHARACTER 
+    FIELD base_total_invoiced_cost AS CHARACTER 
+    FIELD discount_canceled AS CHARACTER 
+    FIELD discount_invoiced AS CHARACTER 
+    FIELD discount_refunded AS CHARACTER 
+    FIELD shipping_canceled AS CHARACTER 
+    FIELD shipping_invoiced AS CHARACTER 
+    FIELD shipping_refunded AS CHARACTER 
+    FIELD shipping_tax_amount AS CHARACTER 
+    FIELD shipping_tax_refunded AS CHARACTER 
+    FIELD subtotal_canceled AS CHARACTER 
+    FIELD subtotal_invoiced AS CHARACTER 
+    FIELD subtotal_refunded AS CHARACTER 
+    FIELD tax_canceled AS CHARACTER 
+    FIELD tax_invoiced AS CHARACTER 
+    FIELD tax_refunded AS CHARACTER 
+    FIELD can_ship_partially AS CHARACTER 
+    FIELD can_ship_partially_item AS CHARACTER 
+    FIELD edit_increment AS CHARACTER 
+    FIELD forced_do_shipment_with_invoice AS CHARACTER 
+    FIELD payment_authorization_expiration AS CHARACTER 
+    FIELD paypal_ipn_customer_notified AS CHARACTER 
+    FIELD quote_address_id AS CHARACTER 
+    FIELD adjustment_negative AS CHARACTER 
+    FIELD adjustment_positive AS CHARACTER 
+    FIELD base_adjustment_negative AS CHARACTER 
+    FIELD base_adjustment_positive AS CHARACTER 
+    FIELD base_shipping_discount_amount AS CHARACTER 
+    FIELD base_subtotal_incl_tax AS CHARACTER 
+    FIELD base_total_due AS CHARACTER 
+    FIELD payment_authorization_amount AS CHARACTER 
+    FIELD shipping_discount_amount AS CHARACTER 
+    FIELD subtotal_incl_tax AS CHARACTER 
+    FIELD total_due AS CHARACTER 
+    FIELD customer_dob AS CHARACTER 
+    FIELD customer_middlename AS CHARACTER 
+    FIELD customer_prefix AS CHARACTER 
+    FIELD customer_suffix AS CHARACTER 
+    FIELD customer_taxvat AS CHARACTER 
+    FIELD discount_description AS CHARACTER 
+    FIELD ext_customer_id AS CHARACTER 
+    FIELD ext_order_id AS CHARACTER 
+    FIELD hold_before_state AS CHARACTER 
+    FIELD hold_before_status AS CHARACTER 
+    FIELD original_increment_id AS CHARACTER 
+    FIELD relation_child_id AS CHARACTER 
+    FIELD relation_child_real_id AS CHARACTER 
+    FIELD relation_parent_id AS CHARACTER 
+    FIELD relation_parent_real_id AS CHARACTER 
+    FIELD x_forwarded_for AS CHARACTER 
+    FIELD customer_note AS CHARACTER 
+    FIELD total_item_count AS CHARACTER 
+    FIELD customer_gender AS CHARACTER 
+    FIELD hidden_tax_amount AS CHARACTER 
+    FIELD base_hidden_tax_amount AS CHARACTER 
+    FIELD shipping_hidden_tax_amount AS CHARACTER 
+    FIELD base_shipping_hidden_tax_amount AS CHARACTER 
+    FIELD hidden_tax_invoiced AS CHARACTER 
+    FIELD base_hidden_tax_invoiced AS CHARACTER 
+    FIELD hidden_tax_refunded AS CHARACTER 
+    FIELD base_hidden_tax_refunded AS CHARACTER 
+    FIELD shipping_incl_tax AS CHARACTER 
+    FIELD base_shipping_incl_tax AS CHARACTER 
+    FIELD base_customer_balance_amount AS CHARACTER 
+    FIELD customer_balance_amount AS CHARACTER 
+    FIELD base_customer_balance_invoiced AS CHARACTER 
+    FIELD customer_balance_invoiced AS CHARACTER 
+    FIELD base_customer_balance_refunded AS CHARACTER 
+    FIELD customer_balance_refunded AS CHARACTER 
+    FIELD base_customer_balance_total_refu AS CHARACTER XML-NODE-NAME "base_customer_balance_total_refunded" 
+    FIELD customer_balance_total_refunded AS CHARACTER 
+    FIELD gift_cards AS CHARACTER 
+    FIELD base_gift_cards_amount AS CHARACTER 
+    FIELD gift_cards_amount AS CHARACTER 
+    FIELD base_gift_cards_invoiced AS CHARACTER 
+    FIELD gift_cards_invoiced AS CHARACTER 
+    FIELD base_gift_cards_refunded AS CHARACTER 
+    FIELD gift_cards_refunded AS CHARACTER 
+    FIELD reward_points_balance AS CHARACTER 
+    FIELD base_reward_currency_amount AS CHARACTER 
+    FIELD reward_currency_amount AS CHARACTER 
+    FIELD base_reward_currency_amount_invo AS CHARACTER XML-NODE-NAME "base_reward_currency_amount_invoiced" 
+    FIELD reward_currency_amount_invoiced AS CHARACTER 
+    FIELD base_reward_currency_amount_refu AS CHARACTER XML-NODE-NAME "base_reward_currency_amount_refunded" 
+    FIELD reward_currency_amount_refunded AS CHARACTER 
+    FIELD reward_points_balance_refunded AS CHARACTER 
+    FIELD reward_points_balance_to_refund AS CHARACTER 
+    FIELD reward_salesrule_points AS CHARACTER 
+    FIELD firstname AS CHARACTER 
+    FIELD lastname AS CHARACTER 
+    FIELD telephone AS CHARACTER 
+    FIELD postcode AS CHARACTER .
+
+DEFINE DATASET result NAMESPACE-URI "urn:Magento" 
+    FOR Item.
+
+DEFINE VARIABLE xml-doc AS HANDLE NO-UNDO.
+DEFINE VARIABLE xml-root AS HANDLE NO-UNDO.
+
+DEFINE VARIABLE lGood AS LOGICAL NO-UNDO.
+
+DEFINE VARIABLE orderIncrementId AS CHARACTER NO-UNDO.
+DEFINE VARIABLE result AS LONGCHAR NO-UNDO.
+
+PROCEDURE salesOrderInfo:
+  DEFINE INPUT PARAMETER sessionId AS CHARACTER NO-UNDO.
+  DEFINE INPUT PARAMETER orderIncrementId AS CHARACTER NO-UNDO.
+  DEFINE OUTPUT PARAMETER result AS LONGCHAR NO-UNDO.
+END PROCEDURE.
+
+/**********************  end of definitions and what not  ***************************/
+    
+IF ITmessages = YES THEN {&OUT}
+    "<li class=''>About to run salesOrderList - " string(time,"HH:MM:SS") "</li>" SKIP.
+
+RUN salesOrderList IN hPortType(INPUT sessionId, INPUT filters, OUTPUT DATASET result).
+
+IF ITmessages = YES THEN {&OUT}
+    "<li>Finished running salesOrderList - " string(time,"HH:MM:SS") "</li>" SKIP.
+
+IF ITmessages = YES THEN {&OUT}
+    "<li>About to 4ea item Table - " string(time,"HH:MM:SS") "</li>" SKIP.
+
+c-item = 0.
+
+FOR EACH item NO-LOCK:
+
+    c-item = c-item + 1.
+    
+    {&OUT}
+        "<li>" SKIP
+        "   <div class='w3-panel w3-leftbar w3-border-blue w3-pale-blue'>" SKIP
+        "       <ul class='w3-ul'>" SKIP
+        "           <li class='w3-hover-blue'><b>~"Order~" ID:</b> " item.increment_id "</li>" SKIP
+        "           <li class='w3-hover-blue'><b>Firstname:</b> " item.firstname "</li>" SKIP
+        "           <li class='w3-hover-blue'><b>Lastname:</b> " item.lastname "</li>" SKIP
+        "           <li class='w3-hover-blue'><b>State:</b> " item.state "</li>" SKIP
+        "           <li class='w3-hover-blue'><b>Status:</b> " item.status1 "</li>" SKIP
+        .
+
+
+    /********************************  SalesOrderInfo  *******************************************/
+    
+    IF ITmessages = YES THEN {&OUT}
+        "<li class='w3-hover-green'>About to run salesOrderInfo - " string(time,"HH:MM:SS") " increment_id = " item.increment_id "</li>" SKIP.
+        
+    RUN salesOrderInfo IN hPortType(INPUT sessionId, INPUT item.increment_id, OUTPUT result).
+    
+    IF ITmessages = YES THEN {&OUT}
+        "<li class='w3-hover-green'>Finished running salesOrderInfo - " string(time,"HH:MM:SS") "</li>" SKIP.
+    
+    CREATE X-DOCUMENT xml-doc.
+    CREATE X-NODEREF xml-root.
+    
+    xml-doc:LOAD("LONGCHAR",result,FALSE).
+    xml-doc:GET-DOCUMENT-ELEMENT(xml-root).
+    DEFINE VARIABLE v-increment_id AS CHARACTER INITIAL "I never got touched by XML." no-undo.
+    
+    RUN getChildren(xml-Root, 1, OUTPUT v-increment_ID).
+    
+    DELETE OBJECT xml-Doc.
+    DELETE OBJECT xml-Root.
+    
+    PROCEDURE getChildren:
+        
+        DEFINE INPUT PARAMETER hParent AS HANDLE NO-UNDO.
+        DEFINE INPUT PARAMETER iLevel AS INTEGER NO-UNDO.
+        DEFINE VARIABLE ix AS INTEGER NO-UNDO.
+        DEFINE VARIABLE hNoderef AS HANDLE NO-UNDO.
+        DEFINE OUTPUT PARAMETER o-increment_ID AS CHARACTER INITIAL "XML touched me a little." NO-UNDO.
+        
+        DEFINE VARIABLE xml-Text AS HANDLE NO-UNDO.        
+        
+        CREATE X-NODEREF hNoderef.
+        
+        REPEAT ix = 1 TO hParent:NUM-CHILDREN:
+            
+            lGood = hParent:GET-CHILD(hNoderef, ix).
+            
+            IF NOT lGood THEN LEAVE.
+            
+            IF hNoderef:SUBTYPE <> "element" THEN NEXT.
+/*                                                                                                                */
+/*            {&OUT}                                                                                              */
+/*                "<li class='w3-hover-green w3-black'><ul>"                                                      */
+/*                "<li class='w3-hover-light-green'><b>hNoderef:HANDLE: </b>" hNoderef:HANDLE "</li>"             */
+/*                "<li class='w3-hover-light-green'><b>hNoderef:Name: </b>" hNoderef:Name "</li>"                 */
+/*                "<li class='w3-hover-light-green'><b>ix: </b>" ix "</li>"                                       */
+/*                "<li class='w3-hover-light-green'><b>hNoderef:NODE-VALUE: </b>" hNoderef:NODE-VALUE "</li>"     */
+/*                "<li class='w3-hover-light-green'><b>hNoderef:SUBTYPE: </b>" hNoderef:SUBTYPE "</li></ul></li>".*/
+                
+            IF hNoderef:NAME = "increment_id" THEN DO:
+                                      
+                CREATE X-NODEREF xml-text. 
+                                
+                {&OUT} SKIP(3) 
+                    "<H1>I'm in here with " hNoderef:NUM-CHILDREN " kids.</h1>" skip(3).                    
+                    
+                hNoderef:GET-CHILD(xml-text, 1).
+                
+                o-increment_ID = xml-text:NODE-VALUE.
+                
+                {&OUT}
+                    "<H2>Bet you wish you could see the VALUE OF this o-increment_ID = " o-increment_ID "</H2>" SKIP(2).
+                
+            end. /*** increment_id getter ****/
+            
+            ELSE ASSIGN o-increment_ID = "I couldnt find an increment_ID IN XML land".
+            
+            RUN getChildren(hNoderef, (iLevel + 1), output o-increment_ID).
+            
+        END.
+        
+        DELETE OBJECT hNoderef.
+        
+    END PROCEDURE.
+       
+    {&OUT}
+        "<li class='w3-hover-green'><p>" v-increment_id "</p></li>" SKIP
+        "       </ul>" SKIP
+        "   </div>" SKIP
+        "</li>" SKIP(1).
+
+END.  /*** of 4ea. tree ***/
+
+IF ITmessages = YES THEN {&OUT}
+    "<li>Finished 4ea-ing " c-item " records in the item Table - " string(time,"HH:MM:SS") "</li>" SKIP.
+
+
+
+/***************************************  Closing stuff  ******************************************/
+IF ITmessages = YES THEN {&OUT}
+    "<li>About to run Magento endSession - " string(time,"HH:MM:SS") "</li>" SKIP.
+
+RUN endSession IN hPortType(INPUT sessionId, OUTPUT endSessionResults).
+
+IF ITmessages = YES THEN {&OUT}
+    "<li>Finished running Magento endSession - " string(time,"HH:MM:SS") "</li>" SKIP.
+
+IF endSessionResults = YES THEN {&OUT} "<li class='w3-hover-green'><b> Successful disconnection from Magento </b></li><br>".
+    ELSE {&OUT} "<li class='w3-hover-red'><b> Unsuccessful disconnection from Magento </b></li><br>".
+
+/**********************************  END OF LINE  *************************************************/
+
+/******************************* CATAGORY TREE - Not working ***************************************/
+
+/*****  Temp Tables & Other Junk for the catalogCategoryTree Magento thingy  ****/
+
+/*DEFINE VARIABLE parentId AS CHARACTER INITIAL "1" NO-UNDO.                                                      */
+/*DEFINE VARIABLE storeView AS CHARACTER INITIAL "1" NO-UNDO.                                                     */
+/*DEFINE variable c-tree as int no-undo.                                                                          */
+/*def var c-children as int no-undo.                                                                              */
+/*def var c-item as int no-undo.                                                                                  */
+/*                                                                                                                */
+/*DEFINE TEMP-TABLE tree NO-UNDO                                                                                  */
+/*    NAMESPACE-URI "urn:Magento"                                                                                 */
+/*    FIELD category_id AS INTEGER                                                                                */
+/*    FIELD parent_id AS INTEGER                                                                                  */
+/*    FIELD name AS CHARACTER                                                                                     */
+/*    FIELD position AS INTEGER                                                                                   */
+/*    FIELD level AS INTEGER .                                                                                    */
+/*                                                                                                                */
+/*DEFINE TEMP-TABLE children NO-UNDO                                                                              */
+/*    NAMESPACE-URI ""                                                                                            */
+/*    FIELD Item_id AS RECID XML-NODE-TYPE "HIDDEN"                                                               */
+/*    FIELD tree_id AS RECID XML-NODE-TYPE "HIDDEN" .                                                             */
+/*                                                                                                                */
+/*DEFINE TEMP-TABLE Item NO-UNDO                                                                                  */
+/*    NAMESPACE-URI ""                                                                                            */
+/*    FIELD category_id AS INTEGER                                                                                */
+/*    FIELD parent_id AS INTEGER                                                                                  */
+/*    FIELD name AS CHARACTER                                                                                     */
+/*    FIELD is_active AS INTEGER                                                                                  */
+/*    FIELD position AS INTEGER                                                                                   */
+/*    FIELD level AS INTEGER .                                                                                    */
+/*                                                                                                                */
+/*DEFINE DATASET treeDset NAMESPACE-URI "urn:Magento" XML-NODE-TYPE "HIDDEN"                                      */
+/*    FOR tree, children, Item                                                                                    */
+/*    PARENT-ID-RELATION RELATION1 FOR Item, children                                                             */
+/*        PARENT-ID-FIELD Item_id                                                                                 */
+/*    PARENT-ID-RELATION RELATION2 FOR tree, children                                                             */
+/*        PARENT-ID-FIELD tree_id                                                                                 */
+/*        .                                                                                                       */
+/*                                                                                                                */
+/*IF ITmessages = YES THEN {&OUT}                                                                                 */
+/*    "<li class='w3-pink'>About to run Magento catalogCategoryTree - " string(time,"HH:MM:SS") "</li>" SKIP.     */
+/*                                                                                                                */
+/*RUN catalogCategoryTree IN hPortType(INPUT sessionId, INPUT "3", INPUT storeView2, OUTPUT DATASET treeDset).    */
+/*                                                                                                                */
+/*IF ITmessages = YES THEN {&OUT}                                                                                 */
+/*    "<li>Finished running Magento catalogCategoryTree - " string(time,"HH:MM:SS") "</li>" SKIP.                 */
+/*                                                                                                                */
+/*IF ITmessages = YES THEN {&OUT}                                                                                 */
+/*    "<li>About to 4ea Tree Table - " string(time,"HH:MM:SS") "</li>" SKIP.                                      */
+/*                                                                                                                */
+/*c-tree = 0.                                                                                                     */
+/*                                                                                                                */
+/*FOR EACH tree NO-LOCK:                                                                                          */
+/*                                                                                                                */
+/*    c-tree = c-tree + 1.                                                                                        */
+/*                                                                                                                */
+/*    {&OUT}                                                                                                      */
+/*        "<li>" SKIP                                                                                             */
+/*        "   <div class='w3-panel w3-leftbar w3-border-blue w3-pale-blue'>" SKIP                                 */
+/*        "       <ul class='w3-ul'>" SKIP                                                                        */
+/*        "           <li>" tree.category_id "</li>" SKIP                                                         */
+/*        "           <li>" tree.parent_id "</li>" SKIP                                                           */
+/*        "           <li>" tree.name "</li>" SKIP                                                                */
+/*        "           <li>" tree.position "</li>" SKIP                                                            */
+/*        "           <li>" tree.level "</li>" SKIP                                                               */
+/*        "       </ul>" SKIP                                                                                     */
+/*        "   </div>" SKIP                                                                                        */
+/*        "</li>" SKIP(1).                                                                                        */
+/*                                                                                                                */
+/*END.  /*** of 4ea. tree ***/                                                                                    */
+/*                                                                                                                */
+/*IF ITmessages = YES THEN {&OUT}                                                                                 */
+/*    "<li>Finished 4ea-ing " c-tree " records in the Tree Table - " string(time,"HH:MM:SS") "</li>" SKIP.        */
+/*                                                                                                                */
+/*IF ITmessages = YES THEN {&OUT}                                                                                 */
+/*    "<li>About to 4ea Children Table - " string(time,"HH:MM:SS") "</li>" SKIP.                                  */
+/*                                                                                                                */
+/*c-children = 0.                                                                                                 */
+/*                                                                                                                */
+/*FOR EACH children NO-LOCK:                                                                                      */
+/*                                                                                                                */
+/*    c-children = c-children + 1.                                                                                */
+/*                                                                                                                */
+/*    {&OUT}                                                                                                      */
+/*        "<li>" SKIP                                                                                             */
+/*        "   <div class='w3-panel w3-leftbar w3-border-blue w3-pale-blue'>" SKIP                                 */
+/*        "       <ul class='w3-ul'>" SKIP                                                                        */
+/*        "           <li>" children.Item_id "</li>" SKIP                                                         */
+/*        "           <li>" children.tree_id "</li>" SKIP                                                         */
+/*        "       </ul>" SKIP                                                                                     */
+/*        "   </div>" SKIP                                                                                        */
+/*        "</li>" SKIP(1).                                                                                        */
+/*                                                                                                                */
+/*END.  /*** of 4ea. tree ***/                                                                                    */
+/*                                                                                                                */
+/*IF ITmessages = YES THEN {&OUT}                                                                                 */
+/*    "<li>Finished 4ea-ing " c-children " records in the Children Table - " string(time,"HH:MM:SS") "</li>" SKIP.*/
+/*                                                                                                                */
+/*IF ITmessages = YES THEN {&OUT}                                                                                 */
+/*    "<li>About to 4ea Item Table - " string(time,"HH:MM:SS") "</li>" SKIP.                                      */
+/*                                                                                                                */
+/*c-item = 0.                                                                                                     */
+/*                                                                                                                */
+/*FOR EACH item NO-LOCK:                                                                                          */
+/*                                                                                                                */
+/*    c-item = c-item + 1.                                                                                        */
+/*                                                                                                                */
+/*    {&OUT}                                                                                                      */
+/*        "<li>" SKIP                                                                                             */
+/*        "   <div class='w3-panel w3-leftbar w3-border-blue w3-pale-blue'>" SKIP                                 */
+/*        "       <ul class='w3-ul'>" SKIP                                                                        */
+/*        "           <li>" item.category_id "</li>" SKIP                                                         */
+/*        "           <li>" item.parent_id "</li>" SKIP                                                           */
+/*        "           <li>" item.name "</li>" SKIP                                                                */
+/*        "           <li>" item.is_active "</li>" SKIP                                                           */
+/*        "           <li>" item.position "</li>" SKIP                                                            */
+/*        "           <li>" item.level "</li>" SKIP                                                               */
+/*        "       </ul>" SKIP                                                                                     */
+/*        "   </div>" SKIP                                                                                        */
+/*        "</li>" SKIP(1).                                                                                        */
+/*                                                                                                                */
+/*END.  /*** of 4ea. tree ***/                                                                                    */
+/*                                                                                                                */
+/*IF ITmessages = YES THEN {&OUT}                                                                                 */
+/*    "<li>Finished 4ea-ing " c-item " records in the Item Table - " string(time,"HH:MM:SS") "</li>" SKIP.        */
+
+/********************************* PRODUCT TYPE LIST, working great **************************/
+
+/***** Temp Table for catalogProductTypeList ****/
+
+/*DEFINE TEMP-TABLE Item NO-UNDO                                                                    */
+/*    NAMESPACE-URI ""                                                                              */
+/*    FIELD type AS CHARACTER                                                                       */
+/*    FIELD label1 AS CHARACTER                                                                     */
+/*        XML-NODE-NAME "label" .                                                                   */
+/*                                                                                                  */
+/*DEFINE DATASET result NAMESPACE-URI "urn:Magento"                                                 */
+/*    FOR Item.                                                                                     */
+/*                                                                                                  */
+/*IF ITmessages = YES THEN {&OUT}                                                                   */
+/*    "<li>About to run Magento catalogProductTypeList - " string(time,"HH:MM:SS") "</li>" SKIP.    */
+/*                                                                                                  */
+/*RUN catalogProductTypeList IN hPortType(INPUT sessionId, OUTPUT DATASET result).                  */
+/*                                                                                                  */
+/*IF ITmessages = YES THEN {&OUT}                                                                   */
+/*    "<li>Finished running Magento catalogProductTypeList - " string(time,"HH:MM:SS") "</li>" SKIP.*/
+/*                                                                                                  */
+/*IF ITmessages = YES THEN {&OUT}                                                                   */
+/*    "<li>About TO 4ea ITEM Table - " string(time,"HH:MM:SS") "</li>" SKIP.                        */
+/*                                                                                                  */
+/*FOR EACH Item NO-LOCK:                                                                            */
+/*                                                                                                  */
+/*    {&OUT}                                                                                        */
+/*        "<li>" SKIP                                                                               */
+/*        "   <div class='w3-panel w3-leftbar w3-border-blue w3-pale-blue'>" SKIP                   */
+/*        "       <ul class='w3-ul'>" SKIP                                                          */
+/*        "           <li class='w3-hover-blue'><b>Code Name:</b> " item.type "</li>" SKIP          */
+/*        "           <li class='w3-hover-blue'><b>Display Name:</b> " item.label1 "</li>" SKIP     */
+/*        "       </ul>" SKIP                                                                       */
+/*        "   </div>" SKIP                                                                          */
+/*        "</li>" SKIP(1).                                                                          */
+/*                                                                                                  */
+/*END.  /*** of 4ea. tree ***/                                                                      */
+/*                                                                                                  */
+/*IF ITmessages = YES THEN {&OUT}                                                                   */
+/*    "<li>Finished 4ea-ing ITEM Table - " string(time,"HH:MM:SS") "</li>" SKIP.                    */
+
+</SCRIPT>
+</BODY>
+</HTML>

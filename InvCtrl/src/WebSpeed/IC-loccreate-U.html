@@ -1,0 +1,635 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+<META NAME="AUTHOR" CONTENT="Doug Luttrell">
+<META name="VERSION" content="1.0">
+<META name="COPYRIGHT" content="Solsource">  
+<META name="CREATE_DATE" content="25/Aug/16">
+<META NAME="LAST_UPDATED" CONTENT="18/Oct/16">   
+
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<TITLE>Mass Location Creation</TITLE>
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+
+/*************************************************************************************
+ *
+ *  IC-loccreate-U.html - mass create locations with a specific format.
+ *
+ *  --------------------------------------------------------------------------------
+ *
+ *  Notes:
+ *  ------
+ *  - Creates a location with a format of Row Column Shelf.  Each of these can have
+ *      their own identifier, defaulted to R, C, & S.  Multiple characters are fine.
+ *  - Incrementing units can be numeric or alphabetic.  Not really smart enough to 
+ *      properly handle more than 26 alphabetic increments, though I'm thinking about
+ *      how to do that.
+ *
+ *  --------------------------------------------------------------------------------
+ *
+ *  Revision History:
+ *  -----------------
+ *  1.0 - written by DOUG LUTTRELL on 25/Aug/16.  Original Version.
+ *
+ *************************************************************************************/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+DEFINE VARIABLE v-numrows AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-numcols AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-numshelves AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE alphabet AS CHARACTER INITIAL "A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z" NO-UNDO. 
+
+DEFINE VARIABLE v-rowalpha AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-colalpha AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-shelfalpha AS LOGICAL NO-UNDO.
+
+DEFINE VARIABLE v-rowtext AS CHARACTER INITIAL "R" NO-UNDO.
+DEFINE VARIABLE v-coltext AS CHARACTER INITIAL "C" NO-UNDO.
+DEFINE VARIABLE v-shelftext AS CHARACTER INITIAL "S" NO-UNDO.
+
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE r AS INTEGER NO-UNDO.
+DEFINE VARIABLE c AS INTEGER NO-UNDO.
+DEFINE VARIABLE s AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-locname AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-site LIKE site_mstr.site_name NO-UNDO.
+DEFINE VARIABLE v-whse LIKE warehouse_mstr.warehouse_name NO-UNDO.
+
+DEFINE VARIABLE v-create AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-update AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-success AS LOGICAL NO-UNDO.
+
+
+
+ASSIGN 
+    v-site          = html-encode(get-value('h-site'))
+    v-whse          = html-encode(get-value('h-whse'))
+    v-numrows       = INTEGER(html-encode(get-value('h-numrows')))
+    v-numcols       = INTEGER(html-encode(get-value('h-numcols')))
+    v-numshelves    = INTEGER(html-encode(get-value('h-numshelves')))
+    v-rowalpha      = IF html-encode(get-value('h-rowalpha')) = "YES" THEN YES ELSE NO 
+    v-colalpha      = IF html-encode(get-value('h-colalpha')) = "YES" THEN YES ELSE NO 
+    v-shelfalpha    = IF html-encode(get-value('h-shelfalpha')) = "YES" THEN YES ELSE NO
+    v-rowtext       = html-encode(get-value('h-rowtext'))
+    v-coltext       = html-encode(get-value('h-coltext'))
+    v-shelftext     = html-encode(get-value('h-shelftext'))
+    v-act           = html-encode(get-value('h-act')).
+    
+IF v-act = "" THEN 
+    ASSIGN 
+	    v-act       = "SITE".
+	  
+IF v-act = "DATA_ENTRY" THEN
+    ASSIGN 
+	    v-rowtext   = "R"
+	    v-coltext   = "C"
+	    v-shelftext = "S".
+	    
+CASE v-act:
+
+    WHEN "SITE" THEN DO:
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP            
+        
+            "<div class='table_3col'>" SKIP
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=6>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" SKIP
+            "           <td>Site</td>" SKIP
+            "           <td class='req'>" SKIP
+            "               <select name='h-site' value='" v-site "' REQUIRED />" SKIP.
+            
+        FOR EACH site_mstr WHERE 
+            site_mstr.site_deleted = ? NO-LOCK:
+        
+            {&OUT} "                    <option value'" site_mstr.site_name "'>" site_mstr.site_name "</option>" SKIP.
+            
+        END. /** 4ea site_mstr **/
+            
+        {&OUT}
+            "               </select>" SKIP
+            "           </td>" SKIP
+            "           <td>Warehouse</td>" SKIP
+            "           <td class='req'>" SKIP
+            "               <select name='h-whse' REQUIRED DISABLED>" SKIP.
+            
+        FOR EACH warehouse_mstr WHERE 
+            warehouse_mstr.warehouse_site = v-site AND 
+            warehouse_mstr.warehouse_deleted = ? NO-LOCK:
+        
+            {&OUT} "                <option value'" warehouse_mstr.warehouse_name "'>" warehouse_mstr.warehouse_name "</option>" SKIP.
+            
+        END. /** 4ea site_mstr **/
+            
+        {&OUT}
+            "               </select>" SKIP
+            "           </td>" SKIP
+
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "       </tr>" SKIP(1)            
+
+            "       <tr>" SKIP
+            "           <td>Row Prefix</td>" SKIP
+            "           <td><input type='text' name='h-rowtext' value='" v-rowtext "' DISABLED /></td>" SKIP
+            "           <td>Number of Rows</td>" SKIP
+            "           <td><input type='number' step='1' min='1' name='h-numrows' value='" v-numrows "' DISABLED/></td>" SKIP
+            "           <td>Increment Rows by</td>" SKIP.
+            
+        IF v-rowalpha = YES THEN 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='YES' CHECKED DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='NO' DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        ELSE 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='YES' DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='NO' CHECKED DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        
+        {&OUT}
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" SKIP
+            "           <td>Column Prefix</td>" SKIP
+            "           <td><input type='text' name='h-coltext' value='" v-coltext "' DISABLED /></td>" SKIP
+            "           <td>Number of Columns</td>" SKIP
+            "           <td><input type='number' step='1' min='1' name='h-numcols' value='" v-numcols "' DISABLED/></td>" SKIP
+            "           <td>Increment Columns by</td>" SKIP.
+            
+        IF v-colalpha = YES THEN 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-colalpha' value='YES' CHECKED DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-colalpha' value='NO' DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        ELSE 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-colalpha' value='YES' DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-colalpha' value='NO' CHECKED DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        
+        {&OUT}
+            "       </tr>" SKIP(1)   
+            
+            "       <tr>" SKIP
+            "           <td>Shelf Prefix</td>" SKIP
+            "           <td><input type='text' name='h-shelftext' value='" v-shelftext "' DISABLED /></td>" SKIP
+            "           <td>Number of Shelves</td>" SKIP
+            "           <td><input type='number' step='1' min='1' name='h-numshelves' value='" v-numshelves "' DISABLED /></td>" SKIP
+            "           <td>Increment Shelves by</td>" SKIP.
+            
+        IF v-shelfalpha = YES THEN 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='YES' CHECKED DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='NO' DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        ELSE 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='YES' DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='NO' CHECKED DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        
+        {&OUT}
+            "       </tr>" SKIP(1)
+            
+            "   </table>" SKIP
+            "</DIV>" SKIP
+                                
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP(1)
+            
+            "<BR><BR>" SKIP(1)
+            
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='WAREHOUSE' class='btn'>Select Site</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "</FORM>" SKIP
+            "<BR>" SKIP(1).     
+        
+        
+    END.  /** of v-act = "SITE" **/
+    
+    WHEN "WAREHOUSE" THEN DO:
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP            
+        
+            "<div class='table_3col'>" SKIP
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=6>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" SKIP
+            "           <td>Site</td>" SKIP
+            "           <td>" SKIP
+            "               <INPUT type='hidden' name='h-site' value='" v-site "' />" SKIP
+                            v-site SKIP
+                            
+/*            "               <select name='h-site' value='" v-site "' REQUIRED DISABLED />" SKIP.                      */
+/*                                                                                                                      */
+/*        FOR EACH site_mstr WHERE                                                                                      */
+/*            site_mstr.site_deleted = ? NO-LOCK:                                                                       */
+/*                                                                                                                      */
+/*            {&OUT} "                    <option value'" site_mstr.site_name "'>" site_mstr.site_name "</option>" SKIP.*/
+/*                                                                                                                      */
+/*        END. /** 4ea site_mstr **/                                                                                    */
+/*                                                                                                                      */
+/*        {&OUT}                                                                                                        */
+/*            "               </select>" SKIP                                                                           */
+
+            "           </td>" SKIP
+            "           <td>Warehouse</td>" SKIP
+            "           <td class='req'>" SKIP
+            "               <select name='h-whse' REQUIRED >" SKIP.
+            
+        FOR EACH warehouse_mstr WHERE 
+            warehouse_mstr.warehouse_site = v-site AND 
+            warehouse_mstr.warehouse_deleted = ? NO-LOCK:
+        
+            {&OUT} "                <option value'" warehouse_mstr.warehouse_name "'>" warehouse_mstr.warehouse_name "</option>" SKIP.
+            
+        END. /** 4ea site_mstr **/
+            
+        {&OUT}
+            "               </select>" SKIP
+            "           </td>" SKIP
+
+            "           <td></td>" SKIP
+            "           <td></td>" SKIP
+            "       </tr>" SKIP(1)            
+
+            "       <tr>" SKIP
+            "           <td>Row Prefix</td>" SKIP
+            "           <td><input type='text' name='h-rowtext' value='" v-rowtext "' DISABLED /></td>" SKIP
+            "           <td>Number of Rows</td>" SKIP
+            "           <td><input type='number' step='1' min='1' name='h-numrows' value='" v-numrows "' DISABLED/></td>" SKIP
+            "           <td>Increment Rows by</td>" SKIP.
+            
+        IF v-rowalpha = YES THEN 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='YES' CHECKED DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='NO' DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        ELSE 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='YES' DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='NO' CHECKED DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        
+        {&OUT}
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" SKIP
+            "           <td>Column Prefix</td>" SKIP
+            "           <td><input type='text' name='h-coltext' value='" v-coltext "' DISABLED /></td>" SKIP
+            "           <td>Number of Columns</td>" SKIP
+            "           <td><input type='number' step='1' min='1' name='h-numcols' value='" v-numcols "' DISABLED/></td>" SKIP
+            "           <td>Increment Columns by</td>" SKIP.
+            
+        IF v-colalpha = YES THEN 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-colalpha' value='YES' CHECKED DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-colalpha' value='NO' DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        ELSE 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-colalpha' value='YES' DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-colalpha' value='NO' CHECKED DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        
+        {&OUT}
+            "       </tr>" SKIP(1)   
+            
+            "       <tr>" SKIP
+            "           <td>Shelf Prefix</td>" SKIP
+            "           <td><input type='text' name='h-shelftext' value='" v-shelftext "' DISABLED /></td>" SKIP
+            "           <td>Number of Shelves</td>" SKIP
+            "           <td><input type='number' step='1' min='1' name='h-numshelves' value='" v-numshelves "' DISABLED /></td>" SKIP
+            "           <td>Increment Shelves by</td>" SKIP.
+            
+        IF v-shelfalpha = YES THEN 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='YES' CHECKED DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='NO' DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        ELSE 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='YES' DISABLED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='NO' CHECKED DISABLED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        
+        {&OUT}
+            "       </tr>" SKIP(1)
+            
+            "   </table>" SKIP
+            "</DIV>" SKIP
+                                
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP(1)
+            
+            "<BR><BR>" SKIP(1)
+            
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='DATA_ENTRY' class='btn'>Select Warehouse</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "</FORM>" SKIP
+            "<BR>" SKIP(1).     
+        
+        
+    END.  /** of v-act = "WAREHOUSE" **/
+    
+    WHEN "DATA_ENTRY" THEN DO: 
+        
+        {&OUT}
+			"<DIV class='row'>" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP
+			"<DIV class='grid_8'>" SKIP            
+        
+			"<div class='table_3col'>" SKIP
+			"<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+			"   <table>" SKIP(1)
+			"       <tr>" SKIP
+			"           <th colspan=6>Search Criteria</th>" SKIP
+			"       </tr>" SKIP(1)
+			
+			"       <tr>" SKIP
+			"           <td>Site</td>" SKIP
+			"           <td><input type='hidden' name='h-site' value='" v-site "'/>" v-site "</td>" SKIP
+			"           <td>Warehouse</td>" SKIP
+			"           <td><input type='hidden' name='h-whse' value='" v-whse "'/>" v-whse "</td>" SKIP
+			"           <td></td>" SKIP
+			"           <td></td>" SKIP
+			"       </tr>" SKIP(1)            
+
+            "       <tr>" SKIP
+            "           <td>Row Prefix</td>" SKIP
+            "           <td><input type='text' name='h-rowtext' value='" v-rowtext "'/></td>" SKIP
+            "           <td>Number of Rows</td>" SKIP
+            "           <td><input type='number' step='1' min='1' name='h-numrows' value='" v-numrows "'/></td>" SKIP
+            "           <td>Increment Rows by</td>" SKIP.
+            
+        IF v-rowalpha = YES THEN 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='YES' CHECKED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='NO'>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        ELSE 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='YES'>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-rowalpha' value='NO' CHECKED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        
+        {&OUT}
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" SKIP
+            "           <td>Column Prefix</td>" SKIP
+            "           <td><input type='text' name='h-coltext' value='" v-coltext "'/></td>" SKIP
+            "           <td>Number of Columns</td>" SKIP
+            "           <td><input type='number' step='1' min='1' name='h-numcols' value='" v-numcols "'/></td>" SKIP
+            "           <td>Increment Columns by</td>" SKIP.
+            
+        IF v-colalpha = YES THEN 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-colalpha' value='YES' CHECKED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-colalpha' value='NO'>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        ELSE 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-colalpha' value='YES'>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-colalpha' value='NO' CHECKED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        
+        {&OUT}
+            "       </tr>" SKIP(1)   
+            
+            "       <tr>" SKIP
+            "           <td>Shelf Prefix</td>" SKIP
+            "           <td><input type='text' name='h-shelftext' value='" v-shelftext "'/></td>" SKIP
+            "           <td>Number of Shelves</td>" SKIP
+            "           <td><input type='number' step='1' min='1' name='h-numshelves' value='" v-numshelves "'/></td>" SKIP
+            "           <td>Increment Shelves by</td>" SKIP.
+            
+        IF v-shelfalpha = YES THEN 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='YES' CHECKED>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='NO'>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        ELSE 
+            {&OUT}
+                "           <td>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='YES'>Alphabet</input><BR>" SKIP
+                "               <input type='radio' name='h-shelfalpha' value='NO' CHECKED>Numbers</input>" SKIP
+                "           </td>" SKIP.
+        
+        {&OUT}
+            "       </tr>" SKIP(1)
+            
+            "   </table>" SKIP
+            "</DIV>" SKIP
+                                
+			"</DIV>         <!-- end of grid_8 -->" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP  
+			"</DIV>     <!-- end of row -->" SKIP(1)
+			
+			"<BR><BR>" SKIP(1)
+			
+			"<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='CREATE' class='btn'>Create Locations</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"</div>" SKIP
+			"</FORM>" SKIP
+			"<BR>" SKIP(1).     
+			       
+        
+    END.  /** of when v-act = "INITIAL" **/
+    
+    WHEN "CREATE" THEN DO:
+        
+        {&OUT}
+			"<DIV class='row'>" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP
+			"<DIV class='grid_8'>" SKIP        
+        
+			"<DIV class='table_report'>" SKIP
+			"   <TABLE>" SKIP
+			"       <THEAD>" SKIP
+			"          <TR>" SKIP
+			"              <TH colspan=4>Location List</TH>" SKIP    /* thead, tr, th makes the silver bar */
+			"          </TR>" SKIP
+			"          <TR>" SKIP
+			"              <TD>Site</TD>" SKIP          /* thead, tr, td makes the blue bar */
+			"              <TD>Warehouse</TD>" SKIP
+			"              <TD>Location</TD>" SKIP
+			"              <TD>Created?</TD>" SKIP
+			"          </TR>" SKIP
+			"      </THEAD>" SKIP(1)
+			"      <TBODY>" SKIP.            
+        
+        DO r = 1 TO v-numrows: 
+            
+            DO c = 1 TO v-numcols:
+                
+                DO s = 1 TO v-numshelves:
+                    
+                    v-locname   = v-rowtext.
+                    
+                    IF v-rowalpha = YES THEN 
+                        v-locname = v-locname + ENTRY(((v-numrows + 1) - R),alphabet).
+                    ELSE 
+                        v-locname = v-locname + STRING(R).
+                        
+                    v-locname   = v-locname + v-coltext.
+                    
+                    IF v-colalpha = YES THEN 
+                        v-locname = v-locname + ENTRY(((v-numcols + 1) - C),alphabet).
+                    ELSE 
+                        v-locname = v-locname + STRING(C).
+                        
+                    v-locname   = v-locname + v-shelftext.
+                    
+                    IF v-shelfalpha = YES THEN 
+                        v-locname = v-locname + ENTRY(((v-numshelves + 1) - S),alphabet).
+                    ELSE 
+                        v-locname = v-locname + STRING(S).
+                    
+                    
+                    RUN VALUE(SEARCH("SUBloc-ucU.r"))
+                        (v-site,
+                         v-whse,
+                         v-locname,
+                         "WAREHOUSE RACKING",                   /** location description **/
+                         "",                                    /** default status **/
+                         "",                                    /** location type **/
+                         OUTPUT v-create,
+                         OUTPUT v-update,
+                         OUTPUT v-success).
+                    
+                    {&OUT}
+                        "           <TR>" SKIP
+                        "               <TD>" v-site "</TD>" SKIP
+                        "               <TD>" v-whse "</TD>" SKIP
+                        "               <TD>" v-locname "</TD>" SKIP.
+                        
+                    IF v-create = YES THEN 
+                        {&OUT}
+                            "               <TD bgcolor='lightgreen' align='center'><center>" v-create "</center></TD>" SKIP.
+                    ELSE IF v-create = NO THEN 
+                        {&OUT}
+                            "               <TD bgcolor='red' align='center'><B><font color='white'><CENTER>" v-create "</CENTER></font></B></TD>" SKIP.
+                    ELSE 
+                        {&OUT}
+                            "               <TD bgcolor='yellow'><B>" v-create "</B></TD>" SKIP.
+                        
+                    {&OUT}    
+                        "           </TR>" SKIP.
+                        
+                END.  /** of do s = 1 to v-numshelves **/
+            
+            END.  /** of do c = 1 to v-numcols **/           
+            
+        END.  /** of do r = 1 to v-numrows **/
+    
+        {&OUT}
+            "   </TBODY>" SKIP
+			"   <TFOOT>" SKIP
+			"       <TR>" SKIP
+			"           <TD COLSPAN=4>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+			"       </TR>" SKIP
+			"   </TFOOT>" SKIP
+			"   </TABLE>" SKIP
+			"</DIV>                 <!-- end of table_report -->" SKIP(1)
+			
+			"</DIV>         <!-- end of grid_8 -->" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP  
+			"</DIV>     <!-- end of row -->" SKIP
+            
+            "<BR><BR>" SKIP(1)
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Site' class='btn'>Start Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</FORM>" SKIP.
+			            
+    
+    END.  /** of when v-act = "CREATE" **/
+
+    OTHERWISE DO: 
+        
+        {&OUT}
+            "<H1>What are you doing in here?</H1>" SKIP.
+        
+    END.  /** of otherwise do **/
+    
+END CASE.   /** of case = v-act **/
+    
+     
+     
+
+</SCRIPT>
+</BODY>
+</HTML>

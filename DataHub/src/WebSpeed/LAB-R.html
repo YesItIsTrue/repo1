@@ -1,0 +1,224 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+    <TITLE>Lab Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Sara Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="12/Dec/14">
+    <META NAME="LAST_UPDATED" CONTENT="30/Oct/15">
+        
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+
+{&OUT}
+    "</HEAD>" SKIP
+    "<BODY class='inside'>".
+
+
+ /*------------------------------------------------------------------
+    File: LAB-R.html  (LAB-R)
+    Description: The report for Labs
+    Created: Saturday December 12th 2014 11:17 PM - Sara Luttrell
+    Version 1.1 - Jacob Luttrell 30/Sep/15 Div corrections. Marked by 1dot1.  
+    Version 1.2 - Jacob Luttrell 30/Oct/15 added tfoot. Marked by 1dot2.   
+    Version 1.3 - Jacob Luttrell 17/Nov/15. Aphabetized lab list. Marked by 1dot3.    
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+
+/********************************************  Variable Definitions  ****************************************************/
+
+DEFINE VARIABLE v-from-lab_name         LIKE lab_mstr.lab_name      NO-UNDO.
+DEFINE VARIABLE v-to-lab_name           LIKE lab_mstr.lab_name      NO-UNDO.
+DEFINE VARIABLE v-from-lab_ID           LIKE lab_mstr.lab_ID        NO-UNDO.
+DEFINE VARIABLE v-to-lab_ID             LIKE lab_mstr.lab_ID        NO-UNDO.
+DEFINE VARIABLE v-from-lab_acct_nbr     LIKE lab_mstr.lab_acct_nbr  NO-UNDO. 
+DEFINE VARIABLE v-to-lab_acct_nbr       LIKE lab_mstr.lab_acct_nbr  NO-UNDO. 
+DEFINE VARIABLE v-from-lab_payterm      LIKE lab_mstr.lab_payterm   NO-UNDO. 
+DEFINE VARIABLE v-to-lab_payterm        LIKE lab_mstr.lab_payterm   NO-UNDO. 
+
+DEFINE VARIABLE v-act                   AS INTEGER                  NO-UNDO.
+
+
+ASSIGN 
+    v-from-lab_name     = GET-value ("h-from-lab_name")
+    v-to-lab_name       = GET-value ("h-to-lab_name")
+    v-from-lab_ID       = get-value ("h-from-lab_ID")
+    v-to-lab_ID         = get-value ("h-to-lab_ID")
+    v-from-lab_acct_nbr = get-value ("h-from-lab_acct_nbr")
+    v-to-lab_acct_nbr   = get-value ("h-to-lab_acct_nbr")
+    v-from-lab_payterm  = get-value ("h-from-lab_payterm")
+    v-to-lab_payterm    = get-value ("h-to-lab_payterm")
+    
+    v-act               = INTEGER (get-value("h-act")).
+    
+    
+    /* ********************************************  Act - 0 "Search" Criteria  ************************************************** */
+IF v-act = 0 THEN DO:
+
+    {&OUT} 
+        "<div class='row'>"                 SKIP
+        "<div class='grid_3'></div>"        SKIP
+        "<div class='grid_6'>"              SKIP
+        "<div class='table_2col'>"          SKIP
+        "<form>"        SKIP
+        "   <table>"    SKIP
+        "       <tr>"   SKIP
+        "           <th colspan=4>Search Criteria</th>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Lab Name:</td>" SKIP
+        "           <td><input type='text' name='h-from-lab_name' value='" v-from-lab_name "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-lab_name' value='" v-to-lab_name "'/></td>" SKIP
+        "       </tr>"  SKIP  
+        "       <tr>"   SKIP
+        "           <td>Account Number:</td>" SKIP
+        "           <td><input type='text' name='h-from-lab_acct_nbr' value='" v-from-lab_acct_nbr "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-lab_acct_nbr' value='" v-to-lab_acct_nbr "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Payterm:</td>" SKIP
+        "           <td><input type='text' name='h-from-lab_payterm' value='" v-from-lab_payterm "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-lab_payterm' value='" v-to-lab_payterm "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "   </table>"   SKIP
+        "</div>" SKIP                                                                                                       /* 1dot1 */
+        "</div><!-- end of grid_6 -->" SKIP                                                                                 /* 1dot1 */
+        "<div class='grid_3'></div>" SKIP                                                                                   /* 1dot1 */    
+        "</div>" SKIP                                                                                                       /* 1dot1 */
+        
+        "<div class='row'>" SKIP                                                                                            /* 1dot1 */
+		"   <div class='grid_3'> </DIV>" SKIP                                                                               /* 1dot1 */  
+		"       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                                /* 1dot1 */  
+		"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='1' class='btn'>Search</BUTTON></div>" SKIP        /* 1dot1 */  
+		"   <div class='grid_2'> </DIV>" SKIP                                                                               /* 1dot1 */
+		"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP                                 /* 1dot1 */
+		"   <div class='grid_3'> </DIV>" SKIP                                                                               /* 1dot1 */
+		"</div>" SKIP                                                                                                       /* 1dot1 */
+		"<BR>" SKIP                                                                                                         /* 1dot1 */
+		
+/*        "   <center>" SKIP                                                                  */
+/*        "       <input type='hidden' name='h-act'       value=1>"        SKIP               */
+/*        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP*/
+/*        "       <input type='submit' name='submit'      value='Search'>" SKIP               */
+/*        "       <input type='reset'  name='reset'       value='Reset'>"  SKIP               */
+/*        "   </center>" SKIP                                                                 */
+/*        "</form>"                                                                           */
+/*        "</div>" SKIP                                                                       */
+/*        "</div><!-- end of grid_6 -->"                                                      */
+/*        "<div class='grid_3'></div>"                                                        */
+/*        "</div>"                                                                            */
+        .
+END. /*** of v-act = "Search" Then DO: ***/
+
+/* *************************************************  Act - 1 "Report"  ****************************************************** */
+IF v-act = 1 THEN DO:
+
+    {&OUT}
+        "<div class='row'>"                                 SKIP
+        "<div class='grid_1'></div>"                        SKIP
+        "<div class='grid_10'>"                             SKIP
+        "<form>"                                            SKIP
+        "<div class='table_report_FromTo'>"                 SKIP
+        "   <table>"                                        SKIP
+        "       <thead>"                                    SKIP
+        "           <tr>"                                   SKIP
+        "               <th colspan=9>Lab Report</th>"      SKIP
+        "           </tr>"                                  SKIP
+        "           <tr>"                                   SKIP
+        "               <td>From</td>"                      SKIP
+        "               <td>" v-from-lab_name       "</td>" SKIP
+        "               <td>-</td>"                         SKIP
+        "               <td>" v-from-lab_acct_nbr   "</td>" SKIP
+        "               <td>" v-from-lab_payterm    "</td>" SKIP
+        "               <td>-</td>"                         SKIP
+        "           </tr>"                                  SKIP
+        "           <tr>"                                   SKIP
+        "               <td>To</td>"                        SKIP
+        "               <td>"v-to-lab_name      "</td>"     SKIP
+        "               <td>-</td>"                         SKIP
+        "               <td>"v-to-lab_acct_nbr  "</td>"     SKIP
+        "               <td>"v-to-lab_payterm   "</td>"     SKIP
+        "               <td>-</td>"                         SKIP
+        "           </tr>"                                  SKIP        
+        "           <tr>"                                   SKIP
+        "               <th></th>"                          SKIP
+        "               <th>Lab Name        </th>"          SKIP
+        "               <th>Lab ID          </th>"          SKIP
+        "               <th>Account Number  </th>"          SKIP
+        "               <th>Payterm         </th>"          SKIP
+        "               <th>Contact         </th>"          SKIP
+        "           </tr>"                                  SKIP
+        "       </thead>"                                   SKIP.
+    
+      
+/***********************************************************************/
+    FOR EACH lab_mstr WHERE 
+        (lab_mstr.lab_name      >= v-from-lab_name      OR v-from-lab_name      = "") AND 
+        (lab_mstr.lab_name      <= v-to-lab_name        OR v-to-lab_name        = "") AND     
+        (lab_mstr.lab_ID        >= v-from-lab_ID        OR v-from-lab_ID        = "") AND
+        (lab_mstr.lab_ID        <= v-to-lab_ID          OR v-to-lab_ID          = "") AND
+        (lab_mstr.lab_acct_nbr  >= v-from-lab_acct_nbr  OR v-from-lab_acct_nbr  = "") AND
+        (lab_mstr.lab_acct_nbr  <= v-to-lab_acct_nbr    OR v-to-lab_acct_nbr    = "") AND
+        (lab_mstr.lab_payterm   >= v-from-lab_payterm   OR v-from-lab_payterm   = "") AND 
+        (lab_mstr.lab_payterm   <= v-to-lab_payterm     OR v-to-lab_payterm     = "") AND
+        lab_mstr.lab_deleted = ?
+        NO-LOCK BREAK BY lab_mstr.lab_name.                                                         /* 1dot3 */
+
+        FIND people_mstr WHERE people_mstr.people_id = lab_mstr.lab_contact_ID NO-LOCK. 
+
+            {&OUT}
+        "       <tr>" SKIP
+        "           <td></td>" SKIP
+        "           <td>" lab_mstr.lab_name     "</td>"   SKIP
+        "           <td>" lab_mstr.lab_ID       "</td>"   SKIP
+        "           <td>" lab_mstr.lab_acct_nbr "</td>"   SKIP
+        "           <td>" lab_mstr.lab_payterm  "</td>"   SKIP
+        "           <td>" people_mstr.people_lastname "," people_mstr.people_firstname "</td>" SKIP
+        "       </tr>" SKIP.
+
+    END. /* of FOR EACH */
+    
+    {&OUT} 
+        "   <tfoot>" SKIP                                                                                                       /* 1dot2 */
+        "       <tr>"   SKIP
+        "               <td colspan=6>End of Report</td>" SKIP
+        "       </tr>"  SKIP
+        "   </tfoot>" SKIP                                                                                                      /* 1dot2 */ 
+        "   </table>"       SKIP
+        "</div> "       SKIP                                                                                                    /* 1dot1 */
+        "</div><!-- of grid_10 -->" SKIP                                                                                        /* 1dot1 */
+        "<div class='grid_1'></div>"                                                                                            /* 1dot1 */
+        "</div>"                                                                                                                /* 1dot1 */        
+        "<div class='row'>" SKIP                                                                                                /* 1dot1 */            
+		"   <div class='grid_5'> </DIV>" SKIP                                                                                   /* 1dot1 */  
+		"       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                                    /* 1dot1 */  
+		"   <div class='grid_2'><button type='submit' name='h-act' value='0' class='btn'>Search Again</BUTTON></div>" SKIP      /* 1dot1 */  
+		"   <div class='grid_5'> </DIV>" SKIP                                                                                   /* 1dot1 */  
+		"</div>" SKIP                                                                                                           /* 1dot1 */  
+		"<BR>" SKIP                                                                                                             /* 1dot1 */      
+/*        "   <center>"       SKIP                                                            */
+/*        "   <form>"         SKIP                                                            */
+/*        "       <input type='hidden' name='h-act' value=0> "                            SKIP*/
+/*        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP*/
+/*        "       <input type='submit' name='submit' value='Search Again'>"               SKIP*/
+/*        "   </form>"    SKIP                                                                */
+/*        "   </cener>"   SKIP                                                                */
+/*        "</div> "       SKIP                                                                */
+/*        "</div><!-- of grid_10 -->" SKIP                                                    */
+/*        "<div class='grid_1'></div>"                                                        */
+/*        "</div>"                                                                            */
+        .
+
+END. /*** of If Act = "SEARCH" THEN DO: ***/ 
+
+
+
+</SCRIPT>
+</BODY>
+</HTML>

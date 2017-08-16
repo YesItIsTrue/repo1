@@ -1,0 +1,333 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Doctor Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <META NAME="VERSION" CONTENT="1.31">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="07/Aug/14">
+    <META NAME="LAST_UPDATED" CONTENT="25/Aug/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+   
+
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+
+{&OUT}
+    "</HEAD>" SKIP
+    "<BODY class='inside'>".
+
+  /*------------------------------------------------------------------
+    File: Doctor-Report.html
+    Description: The report for the Doctor Record Set
+    Created: Thursday August 7th 2014 4:17 PM - Trae Luttrell
+    
+    - - Version History - -
+     
+        v0.5 - Had a bug that prevented everything after the menuname include file. Turns out that it was in trying to have my
+        v-act be a character value instead of a integer value. Who knew that would cause a problem?
+        
+* 1.2 - written by Mark Jacobs on 03/Oct/15. Added in the code snippets for grid_* div, code snippets for Buttons, <TFOOT> and  META tags updated. Marked with 1dot2 
+*       Removed ":" from input field names. Removed 2 unnecessary CSS links. Not marked.         
+* 1.3 - written by Jacob Luttrell on 31/Mar/16. Added Doctor ID and hyperlinks. Marked by 1dot3.
+* 1.31 - Written by Jacob Luttrell on 25/Aug/16. Reordered first name last name. Unmarked.        
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+
+/********************************************  Variable Definitions  ****************************************************/
+
+/***  Database Variable  ***/
+
+DEFINE VARIABLE v-from-firstname    LIKE people_mstr.people_firstname       NO-UNDO.
+DEFINE VARIABLE v-to-firstname      LIKE people_mstr.people_firstname       NO-UNDO.
+DEFINE VARIABLE v-from-lastname     LIKE people_mstr.people_lastname        NO-UNDO.
+DEFINE VARIABLE v-to-lastname       LIKE people_mstr.people_lastname        NO-UNDO.   
+DEFINE VARIABLE v-from-company      LIKE people_mstr.people_company         NO-UNDO.
+DEFINE VARIABLE v-to-company        LIKE people_mstr.people_company         NO-UNDO.
+
+DEFINE VARIABLE v-from-stateprov    LIKE addr_mstr.addr_stateprov           NO-UNDO.
+DEFINE VARIABLE v-to-stateprov      LIKE addr_mstr.addr_stateprov           NO-UNDO.
+DEFINE VARIABLE v-from-country      LIKE addr_mstr.addr_country             NO-UNDO.
+DEFINE VARIABLE v-to-country        LIKE addr_mstr.addr_country             NO-UNDO.
+
+DEFINE VARIABLE v-from-tcp          LIKE doctor_mstr.doctor_tcp_code        NO-UNDO.
+DEFINE VARIABLE v-to-tcp            LIKE doctor_mstr.doctor_tcp_code        NO-UNDO.
+
+/***  Administrator Variables  ***/
+
+DEFINE VARIABLE v-act           AS INTEGER                              NO-UNDO.  /***  controls flow of program  ***/
+DEFINE VARIABLE v-ITfeedback    AS LOGICAL INITIAL NO                   NO-UNDO.  /***  debug messages  ***/
+
+/* ************************************************  HTML get-values  ********************************************************* */
+
+IF v-ITfeedback = YES THEN 
+    {&OUT} "<h3>After Progress Variable Definations, before HTML Assigns</h3>".
+        
+ASSIGN
+
+    v-act               = INTEGER (get-value ("h-act"))
+
+    v-from-tcp          = get-value ("h-from-tcp")
+    v-to-tcp            = get-value ("h-to-tcp")
+    v-from-firstname    = get-value ("h-from-firstname")
+    v-to-firstname      = get-value ("h-to-firstname")
+    v-from-lastname     = get-value ("h-from-lastname")
+    v-to-lastname       = get-value ("h-to-lastname")
+    v-from-company      = get-value ("h-from-company")
+    v-to-company        = get-value ("h-to-company")
+    v-from-stateprov    = get-value ("h-from-stateprov")
+    v-to-stateprov      = get-value ('h-to-stateprov')
+    v-from-country      = get-value ("h-from-country")
+    v-to-country        = get-value ("h-to-country")
+    .
+
+
+    IF v-ITfeedback = YES THEN 
+        {&OUT} 
+            "<h3>Post Get-Value. Act = " v-act "... </h3>"  skip 
+            "<h3>From Lastname = " v-from-lastname "</h3>"  skip
+            "<h3>To Lastname = " v-to-lastname "</h3>"      skip.
+    
+
+IF v-ITfeedback = YES THEN 
+    {&OUT} "<h3>After  HTML Assigns</h3><br><h3>Act = "v-act "... </h3>".
+
+/* ********************************************  Act - 0 "Search" Criteria  ************************************************** */
+IF v-act = 0 THEN DO:
+    
+    IF v-ITfeedback = YES THEN 
+    {&OUT} "<h3>Inside Act 0, Start</h3><br><h3>Act = "v-act "...</h3> ".
+    
+    {&OUT}      
+        "<DIV class='row'>" SKIP                              /* 1dot2 */
+        "<DIV class='grid_2'> </DIV>" SKIP
+        "<DIV class='grid_8'>" SKIP     
+        
+        "<div class='table_2col'>" SKIP
+        "<form>" SKIP
+        "   <table>"    SKIP
+        "       <tr>"   SKIP
+        "           <th colspan=4>Search Criteria</th>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>TCP Code</td>" SKIP
+        "           <td><input type='text' name='h-from-tcp' value='" v-from-tcp "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-tcp' value='" v-to-tcp "'/></td>" SKIP
+        "       </tr>"  SKIP          
+        "       <tr>"   SKIP
+        "           <td>Last Name</td>" SKIP
+        "           <td><input type='text' name='h-from-lastname' value='" v-from-lastname "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-lastname' value='" v-to-lastname "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>First Name</td>" SKIP
+        "           <td><input type='text' name='h-from-firstname' value='" v-from-firstname "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-firstname' value='" v-to-firstname "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Company</td>" SKIP
+        "           <td><input type='text' name='h-from-company' value='" v-from-company "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td><td>" SKIP
+        "           <input type='text' name='h-to-company' value='" v-to-company "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>State or Province</td>" SKIP
+        "           <td><input type='text' name='h-from-stateprov' value='" v-from-stateprov "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-stateprov' value='" v-to-stateprov "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Country</td>" SKIP
+        "           <td><input type='text' name='h-from-country' value='" v-from-country "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-country' value='" v-to-country "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "   </table>"   SKIP
+        
+        "</DIV>         <!-- end of grid_8 -->" SKIP          /* 1dot2 */
+        "<DIV class='grid_2'> </DIV>" SKIP  
+        "</DIV>     <!-- end of row -->" SKIP
+        
+        
+        "</div>" skip                                                                       /* 1dot2 */
+        
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "   <div class='grid_2'>" skip
+        "   <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP
+        "   <BUTTON type='submit' name='h-act' value=1 class='btn'>Search</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</div>" SKIP
+        "<BR>" SKIP
+        
+        
+/*        "   <center>" SKIP                                                                  */
+/*        "       <input type='hidden' name='h-act'       value=1>"        SKIP               */
+/*        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP*/
+/*        "       <input type='submit' name='submit'      value='Search'>" SKIP               */
+/*        "       <input type='reset'  name='reset'       value='Reset'>"  SKIP               */
+/*        "   </center>" SKIP                                                                 */
+        "</form>"
+        "</div>" SKIP
+        .
+
+END. /*** of v-act = "Search" Then DO: ***/
+
+IF v-ITfeedback = YES THEN 
+    {&OUT} "<h3>Just after END. /** v-act = 0 **/ about to start Act 1</h3><br><h3>Act = "v-act "... </h3>".
+
+/* *************************************************  Act - 1 "Report"  ****************************************************** */
+IF v-act = 1 THEN DO:
+    
+    IF v-ITfeedback = YES THEN 
+    {&OUT} "<h3>Inside Act 1</h3><br><h3>Act = "v-act "... </h3>".
+
+    {&OUT}
+        "<DIV class='row'>" SKIP                                        /* 1dot2 */
+        "<DIV class='grid_12'>" SKIP
+        
+        "<form>"        SKIP
+        "<div class='table_report_FromTo'>" SKIP
+        "   <table>"    SKIP
+        "       <thead>"    SKIP
+        "           <tr>"   SKIP
+        "               <th colspan=8>Doctor Report</th>" SKIP
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <th>From</th>"                  SKIP
+        "               <th>"v-from-tcp "</th>"         SKIP
+        "               <th>"v-from-lastname ", " v-from-firstname "</th>"   SKIP /* 1dot3 */
+        "               <th>"v-from-company "</th>"     SKIP
+        "               <th>-</th>"        SKIP
+        "               <th>-</th>"        SKIP
+        "               <th>"v-from-stateprov "</th>"       SKIP
+        "               <th>"v-from-country "</th>"     SKIP
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <th>To</th>"                    SKIP
+        "               <th>"v-to-tcp "</th>"           SKIP
+        "               <th>"v-to-lastname ", " v-to-firstname "</th>"     SKIP /* 1dot3 */
+        "               <th>"v-to-company "</th>"       SKIP
+        "               <th>-</th>"          SKIP
+        "               <th>-</th>"          SKIP
+        "               <th>"v-to-stateprov "</th>"         SKIP
+        "               <th>"v-to-country "</th>"       SKIP
+        "           </tr>"  SKIP        
+        "           <tr>"   SKIP
+        "               <th>Doctor ID</th>"          SKIP
+        "               <th>TCP</th>"  SKIP
+        "               <th>Name</th>" SKIP
+/*        "               <th>First</th>"SKIP*/
+        "               <th>Company</th>"   SKIP
+        "               <th>Address</th>"   SKIP
+        "               <th>City</th>"      SKIP
+        "               <th>State</th>"     SKIP
+        "               <th>Country</th>"   SKIP
+        "           </tr>"  SKIP
+        "       </thead>"   SKIP.
+    
+    IF v-ITfeedback = YES THEN 
+        {&OUT} "<h3>Pre 4ea. doctor_mstr, etc. Act = " v-act "... </h3>" skip 
+            "<h3>From Lastname = " v-from-lastname "</h3>" skip
+            "<h3>To Lastname = " v-to-lastname "</h3>" skip.
+    
+    
+    /* 4ea of doom*/
+    FOR EACH doctor_mstr WHERE 
+        (doctor_mstr.doctor_TCP_code >= v-from-tcp  OR v-from-tcp  = "") AND 
+        (doctor_mstr.doctor_TCP_code <= v-to-tcp OR v-to-tcp = "")
+        NO-LOCK,
+      FIRST people_mstr WHERE
+        people_mstr.people_id = doctor_mstr.doctor_ID                                 AND 
+        (people_mstr.people_firstname   >= v-from-firstname OR v-from-firstname = "") AND
+        (people_mstr.people_firstname   <= v-to-firstname   OR v-to-firstname   = "") AND 
+        (people_mstr.people_lastname    >= v-from-lastname  OR v-from-lastname  = "") AND
+        (people_mstr.people_lastname    <= v-to-lastname    OR v-to-lastname    = "") AND 
+        (people_mstr.people_company     >= v-from-company   OR v-from-company   = "") AND
+        (people_mstr.people_company     <= v-to-company     OR v-to-company     = "") 
+        NO-LOCK,
+      FIRST addr_mstr WHERE
+        addr_mstr.addr_id = people_mstr.people_addr_id                              AND
+        (addr_mstr.addr_stateprov   >= v-from-stateprov OR v-from-stateprov = "")   AND
+        (addr_mstr.addr_stateprov   <= v-to-stateprov   OR v-to-stateprov   = "")   AND 
+        (addr_mstr.addr_country     >= v-from-country   OR v-from-country   = "")   AND
+        (addr_mstr.addr_country     <= v-to-country     OR v-to-country     = "")
+        NO-LOCK
+            BY people_mstr.people_lastname:
+            
+            {&OUT}
+        "       <tr>" SKIP
+        "           <td>"
+                        "<a href='../../DataHub/rcode/PEOPmaintU.r?"                                      /* 1dot3 */
+						"h-people_id=" doctor_mstr.doctor_ID                                              /* 1dot3 */
+						"&h-act=EDIT"                                                                     /* 1dot3 */
+						"&whattorun=35.99'>"                                                              /* 1dot3 */
+                        doctor_mstr.doctor_ID "</a></td>" SKIP
+        "           <td>" doctor_mstr.doctor_TCP_code "</td>"   SKIP
+        "           <td>" people_mstr.people_lastname ", " people_mstr.people_firstname "</td>"  SKIP      /* 1dot3 */
+        "           <td>" people_mstr.people_company "</td>"    SKIP
+        "           <td>" addr_mstr.addr_addr1 "</td>"          SKIP
+        "           <td>" addr_mstr.addr_city "</td>"           SKIP
+        "           <td>" addr_mstr.addr_stateprov "</td>"      SKIP
+        "           <td>" addr_mstr.addr_country "</td>"        SKIP
+        "       </tr>" SKIP
+        .
+        
+        IF v-ITfeedback = YES THEN 
+            {&OUT} "<h3>Inside 4ea of doom</h3><br><h3>Act = "v-act "... </h3>".
+        
+    END. /* of 4ea of doom */
+    
+    {&OUT}    
+/*        "       <tr>"   SKIP                                  */
+/*        "               <td colspan=9>End of Report</td>" SKIP*/
+/*        "       </tr>"  SKIP                                  */
+/*        "   </table>"       SKIP                              */
+/*        "   <center>"       SKIP                              */
+        
+		"   <TFOOT>" SKIP                                     /* 1dot2 */
+		"       <TR>" SKIP
+		"           <TD COLSPAN=8>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+		"       </TR>" SKIP
+		"   </TFOOT>" SKIP
+		"   </TABLE>" SKIP
+		"</DIV>                 <!-- end of table_report -->" SKIP(1)
+        
+        "   <form>"         SKIP
+        
+        "</DIV>         <!-- end of grid_12 -->" SKIP            /* 1dot2 */
+        "</DIV>     <!-- end of row -->" SKIP
+        "</div>" skip
+        
+        "<div class='row'>" SKIP                                 /* 1dot2 */
+        "   <div class='grid_5'></DIV>" SKIP
+        "   <div class='grid_2'>" skip
+        "   <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP
+        "   <button type='submit' name='h-act' value=0 class='btn'>Search Again</BUTTON></div>" SKIP
+        "   <div class='grid_5'></DIV>" SKIP
+        "</div>" SKIP
+        "<BR>" SKIP
+        
+/*        "       <input type='hidden' name='h-act' value=0> "                            SKIP*/
+/*        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP*/
+/*        "       <input type='submit' name='submit' value='Search Again'>"               SKIP*/
+        
+        "   </form>"    SKIP
+        "   </cener>"   SKIP
+        "</div> "       SKIP
+        "" SKIP
+        "".
+
+END. /*** of If Act = "SEARCH" THEN DO: ***/  
+
+  
+</SCRIPT>
+</BODY>
+</HTML>

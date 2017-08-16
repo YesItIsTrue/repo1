@@ -1,0 +1,575 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Catch All Table Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <META NAME="VERSION" CONTENT="3.32">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="23/Feb/16">
+    <META NAME="LAST_UPDATED" CONTENT="14/Apr/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+    <script type='text/javascript' src='/depot/src/HTMLcontent/fixed.js'> </script>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+/*------------------------------------------------------------------------
+    File        : DVcaReportActR.p
+
+    Author(s)   : Trae Luttrell
+    Created     : Mon Feb 23 14:01:31 EST 2016
+    Notes       :
+         
+  ----------------------------------------------------------------------*/
+
+/************************  Variable Definitions  *********************/
+DEFINE VARIABLE v-itmessages    AS LOGICAL INITIAL NO               NO-UNDO.  /*** debugging yes/no ****/
+DEFINE VARIABLE v-act           AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-treeflag      AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-TK_ID         LIKE TK_mstr.TK_ID                  NO-UNDO.
+DEFINE VARIABLE v-TK_test_seq   LIKE TK_mstr.TK_test_seq INITIAL 0  NO-UNDO.
+DEFINE VARIABLE v-test_type      LIKE TK_mstr.tk_test_type            NO-UNDO.
+DEFINE VARIABLE v-lab_sample_id LIKE TK_mstr.TK_lab_sample_ID       NO-UNDO.
+DEFINE VARIABLE v-lab_seq       AS INTEGER INITIAL 0                NO-UNDO.
+DEFINE VARIABLE v-firstname     LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE v-lastname      LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE vfrom-firstname LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE vfrom-lastname  LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE vto-firstname   LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE vto-lastname    LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-html-dob      AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-dob           LIKE people_mstr.people_DOB         NO-UNDO.
+DEFINE VARIABLE ip-checked-recid AS CHARACTER                       NO-UNDO.  /*** This is sometimes an integer and sometimes a comma delimited list of integers, thus a character ***/
+DEFINE VARIABLE c-deleted       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE c-created       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE c-updated       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE x               AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE v-catch_ID      LIKE catch_all.catch_id         NO-UNDO.
+DEFINE VARIABLE v-error-number  LIKE catch_all.catch_orig_error NO-UNDO.
+DEFINE VARIABLE v-people_ID     LIKE people_mstr.people_id          NO-UNDO.
+DEFINE VARIABLE v-addr_ID       LIKE people_mstr.people_addr_id     NO-UNDO.
+/*** external people find/updated ***/
+DEFINE VARIABLE v-peop-find-error AS LOGICAL                        NO-UNDO.
+DEFINE VARIABLE v-peop-find-ran AS LOGICAL                          NO-UNDO. 
+DEFINE VARIABLE v-peop-created  AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE v-peop-updated  AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE v-peop-avail    AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE v-peop-success  AS LOGICAL                          NO-UNDO. 
+/*** external TK_mstr ***/                        
+DEFINE VARIABLE o-uctkm-id          LIKE TK_mstr.TK_id              NO-UNDO.
+DEFINE VARIABLE o-uctkm-create      AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-uctkm-update      AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-uctkm-avail       AS LOGICAL INITIAL YES          NO-UNDO.
+DEFINE VARIABLE o-uctkm-successful  AS LOGICAL INITIAL NO           NO-UNDO.
+
+DEFINE VARIABLE whatshouldrun AS CHARACTER NO-UNDO.
+
+/***************************  Other Assignments  ***************************/
+
+ASSIGN 
+    v-act               = get-value("h-act")
+    v-TK_ID             = get-value("h-TK_ID")
+    v-TK_test_seq       = INTEGER(get-value("h-TK_test_seq"))
+    v-test_type          = get-value("h-test_type")
+    v-lab_sample_id     = get-value("h-lab-sample-id")     
+    v-lab_seq           = INTEGER(get-value("h-lab-seq"))
+    v-firstname         = get-value("h-firstname")
+    vfrom-firstname     = get-value("hfrom-firstname")
+    vto-firstname       = get-value("hto-firstname")
+    v-lastname          = get-value("h-lastname")
+    vfrom-lastname      = get-value("hfrom-lastname")
+    vto-lastname        = get-value("hto-lastname")
+    v-html-dob          = get-value("h-dob")
+    ip-checked-recid    = get-value ("h-checked")
+    v-catch_ID          = INTEGER(get-value ("h-catch_ID"))
+    v-error-number      = INTEGER(get-value ("h-error-number"))
+    whatshouldrun       = get-value('whattorun')
+    . 
+    
+    IF v-html-dob <> "" THEN DO:
+/*        RUN VALUE(SEARCH("subr_CCYY_to_YY.p")) (v-html-dob, OUTPUT v-dob). /*for the server*/*/
+        RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (v-html-dob, OUTPUT v-dob).
+    END. /*** <> "" DOB **/
+
+IF v-treeflag = "" THEN DO:
+    
+    IF vto-firstname <> "" OR vto-lastname <> "" OR vfrom-firstname <> "" OR vfrom-lastname <> "" OR v-dob <> ? THEN 
+        ASSIGN v-treeflag = "People".
+        
+    ELSE IF v-TK_ID <> "" OR v-test_type <> "" THEN 
+        ASSIGN v-treeflag = "TestKit".
+        
+    ELSE IF v-lab_sample_ID <> "" THEN 
+        ASSIGN v-treeflag = "Lab".
+        
+    ELSE ASSIGN v-treeflag = "People".
+    
+END.  
+
+IF vfrom-firstname  = "" THEN ASSIGN vfrom-firstname    = v-firstname.
+IF vto-firstname    = "" THEN ASSIGN vto-firstname      = v-firstname.
+IF vfrom-lastname   = "" THEN ASSIGN vfrom-lastname     = v-lastname.
+IF vto-lastname     = "" THEN ASSIGN vto-lastname       = v-lastname.
+
+/* *********************************  Main Block  *********************************** */
+        
+CASE v-treeflag:
+        
+    WHEN "People" THEN DO:
+    
+        {&OUT}
+            "<DIV class='row'>"                                         SKIP
+            "<DIV class='grid_12'>"                                      SKIP
+            "<DIV class='table_report fixed_table'>"                                SKIP
+            "<Form>"                                                    SKIP
+            "   <TABLE>"                                                SKIP
+            "       <THEAD>"                                            SKIP
+            "           <TR>"                                           SKIP
+            "               <TH colspan=9>Catch All Results (People)</TH>"              SKIP
+            "           </TR>"                                          SKIP
+            "           <TR>"                                           SKIP
+            "               <td width='5%'>Selected</td>"               SKIP
+            "               <td>File Location</td>"                     SKIP
+            "               <td>Patient Name</td>"                      SKIP
+            "               <td>Name in PDF</td>"                       SKIP
+            "               <td>DOB</td>"                               SKIP 
+            "               <td>Test Type</td>"                         SKIP                   
+            "               <TD>Testkit / Seq</TD>"                     SKIP        
+            "               <td>Lab Sample ID / Seq</td>"               SKIP       
+            "               <td>Error Number / Error Message</td>"      SKIP
+            "           </TR>"                                          SKIP
+            "       </THEAD>"                                           SKIP
+            . 
+ 
+        FOR EACH catch_all WHERE 
+            catch_all.catch_submited = NO AND
+            ((catch_all.catch_people_lastname >= vfrom-lastname)     OR (vfrom-lastname = "")) AND 
+            ((catch_all.catch_people_lastname <= vto-lastname)       OR (vto-lastname = "")) AND
+            ((catch_all.catch_people_firstname >= vfrom-firstname)   OR (vfrom-firstname = ""))  AND 
+            ((catch_all.catch_people_firstname <= vto-firstname)     OR (vto-firstname = ""))  AND
+            ((catch_all.catch_pdf_lastname >= vfrom-lastname    OR (catch_all.catch_PDF_lastname = ""))     OR (vfrom-lastname = "")) AND 
+            ((catch_all.catch_pdf_lastname <= vto-lastname      OR (catch_all.catch_PDF_lastname = ""))     OR (vto-lastname = "")) AND
+            ((catch_all.catch_pdf_firstname >= vfrom-firstname  OR (catch_all.catch_PDF_firstname = ""))    OR (vfrom-firstname = ""))  AND 
+            ((catch_all.catch_pdf_firstname <= vto-firstname    OR (catch_all.catch_PDF_firstname = ""))    OR (vto-firstname = ""))  AND 
+            ((catch_all.catch_people_DOB = v-DOB) OR (v-DOB = ?)) AND
+            ((catch_all.catch_TK_testtype = v-test_type) OR (v-test_type = "")) AND 
+            ((catch_all.catch_TK_ID = v-tk_id) OR (v-tk_id = "")) AND 
+            ((catch_all.catch_tk_seq = v-tk_test_seq) OR (v-tk_test_seq = 0)) AND                     
+            ((catch_all.catch_TK_lab_sample_id = v-lab_sample_id) OR (v-lab_sample_id = "")) AND 
+            ((catch_all.catch_TK_lab_seq = v-lab_seq) OR (v-lab_seq = 0))NO-LOCK USE-INDEX full_index 
+                BREAK 
+                BY catch_all.catch_file_location
+                BY catch_all.catch_people_lastname
+                BY catch_all.catch_people_firstname
+                BY catch_all.catch_pdf_lastname
+                BY catch_all.catch_pdf_firstname
+                BY catch_all.catch_people_DOB                          
+                BY catch_all.catch_TK_testtype 
+                BY catch_all.catch_TK_ID 
+                BY catch_all.catch_TK_seq                                               
+                BY catch_all.catch_TK_lab_sample_ID 
+                BY catch_all.catch_TK_lab_seq:
+
+            {&OUT}
+                "           <tr>" SKIP
+                "               <td width='5%'><center><input type='checkbox' name='h-checked' value='" RECID(catch_all) "' autofocus /></center></td>" SKIP 
+                "               <td><a href =~"" catch_all.catch_file_location "~" download >" catch_all.catch_file_location "</a></td>" SKIP.
+                
+            IF catch_all.catch_people_lastname <> "" OR catch_all.catch_people_lastname <> "" THEN DO:
+                
+                {&OUT}  
+                    "               <td><a href=~"../../RStP/rcode/DVcaEditActU.r"                      /* names */
+                    "?h-firstname="  catch_all.catch_people_lastname                                        /* names */
+                    "&h-lastname="  catch_all.catch_people_firstname                                        /* names */
+                    "&h-catch_ID=" catch_all.catch_id                                                       /* names */
+                    "&h-checked="  RECID(catch_all)
+                    "&h-act=EDIT~" target='editpage'>" SKIP                                                                   /* names */
+                    catch_all.catch_people_lastname  .
+            
+                IF catch_all.catch_people_lastname <> "" AND catch_all.catch_people_firstname <> "" THEN {&OUT} ",".
+            
+                {&OUT}    
+                    " "  catch_all.catch_people_firstname "</a></td>" SKIP.  /* names */
+                    
+            END. /*** names not empty ****/
+            
+            ELSE {&OUT}  
+                    "               <td><a href=~"../../RStP/rcode/DVcaEditActU.r"                      /* names */
+                    "?h-firstname="  catch_all.catch_people_lastname                                        /* names */
+                    "&h-lastname="  catch_all.catch_people_firstname                                        /* names */
+                    "&h-catch_ID=" catch_all.catch_id                                                       /* names */
+                    "&h-checked="  RECID(catch_all)
+                    "&h-act=EDIT~" target='editpage'>Unknown</a></td>" SKIP.  /* names */
+                    
+            {&OUT}
+                "               <td>" catch_all.catch_PDF_lastname ", " catch_all.catch_pdf_firstname "</a></td>" SKIP
+                "               <td>" catch_all.catch_people_DOB "</td>" SKIP                       /* DOB */
+                "               <td>" catch_all.catch_TK_testtype "</td>" SKIP                  /* Test Type */
+                "               <td>" catch_all.catch_TK_ID ' / ' catch_all.catch_tk_seq "</td>" SKIP  /* TK ID/seq */    
+                "                <td>" catch_all.catch_TK_lab_sample_ID " / " catch_all.catch_TK_lab_seq "</td>" SKIP
+                "                <td>" catch_all.catch_orig_error "/ " catch_all.catch_orig_message "</td>" SKIP
+/*                "               <td>" catch_all.catch_submited "</td>" SKIP*/
+                "           </tr>" SKIP.
+                    
+        END. /*** of TK_mstr straight 4ea ***/
+
+        {&OUT}
+            "   <tfoot>" SKIP                                                               
+            "       <TR>" SKIP
+            "           <TD COLSPAN=9><center>END OF REPORT</center</TD>" SKIP
+            "       </TR>" SKIP
+            "   </tfoot>" SKIP                                                              
+            "   </TABLE>" SKIP
+            "</DIV>                 <!-- end of table_report -->" SKIP
+            "</DIV>             <!-- end of grid_8 -->" SKIP
+            "</DIV>         <!-- end of row -->" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_12'>" SKIP
+            "       <center><p><i><b>Click the Patient Name to Edit that record in the Catch All Table.</b></i></p></center>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<input type='hidden' name='h-TK_id' value='" v-TK_ID "'/>" SKIP
+            "<input type='hidden' name='h-tk_test_seq' value='" v-tk_test_seq "'/>" SKIP 
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                                      SKIP                    
+            "<div class='row'>"                                                                                                 SKIP
+            "   <div class='grid_3'> </DIV>"                                                                                        SKIP
+            "   <div class='grid_2'><BUTTON type='submit' formaction='DVcaEditActU.html' name='h-act' value='MassDelete' class='btn'>Delete Selected</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>"                                                                                        SKIP
+            "   <div class='grid_2'><BUTTON type='submit' formaction='DVcaEditActU.html' name='h-act' value='Submit' class='btn'>Approve Selected</BUTTON></div>" SKIP
+    /*        "   <div class='grid_1'> </DIV>"                                                                                        SKIP*/
+    /*        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>"        SKIP*/
+            "   <div class='grid_3'> </DIV>"                                                                                        SKIP
+            "<br></br>" SKIP
+            "</div>" SKIP
+            "</form>".
+        
+    END. /*** of v-treeflag = people ***/
+    
+    WHEN "TestKit" THEN DO:
+    
+        {&OUT}
+        "<DIV class='row'>"                                         SKIP
+        "<DIV class='grid_12'>"                                      SKIP
+        "<DIV class='table_report fixed_table'>"                                SKIP
+        "<FORM>" SKIP
+        "   <TABLE>"                                                SKIP
+        "       <THEAD>"                                            SKIP
+        "           <TR>"                                           SKIP
+        "               <TH colspan=9>Catch All Results (Testkit)</TH>"              SKIP
+        "           </TR>"                                          SKIP
+        "           <TR>"                                           SKIP
+        "               <td width='5%'>Selected</td>"               SKIP
+        "               <td>File Location</td>"                     SKIP
+        "               <td>Test Type</td>"                         SKIP
+        "               <TD>Testkit / Seq</TD>"                     SKIP                      
+        "               <td>Patient Name</td>"                      SKIP
+        "               <td>Name in PDF</td>"                       SKIP
+        "               <td>DOB</td>"                               SKIP
+        "               <td>Lab Sample ID / Seq</td>"               SKIP 
+        "               <td>Error Number / Error Message</td>"      SKIP
+        "           </TR>"                                          SKIP
+        "       </THEAD>"                                           SKIP
+        . 
+ 
+        FOR EACH catch_all WHERE 
+            catch_all.catch_submited = NO AND
+            ((catch_all.catch_people_lastname >= vfrom-lastname)     OR (vfrom-lastname = "")) AND 
+            ((catch_all.catch_people_lastname <= vto-lastname)       OR (vto-lastname = "")) AND
+            ((catch_all.catch_people_firstname >= vfrom-firstname)   OR (vfrom-firstname = ""))  AND 
+            ((catch_all.catch_people_firstname <= vto-firstname)     OR (vto-firstname = ""))  AND
+            ((catch_all.catch_pdf_lastname >= vfrom-lastname    OR (catch_all.catch_PDF_lastname = ""))     OR (vfrom-lastname = "")) AND 
+            ((catch_all.catch_pdf_lastname <= vto-lastname      OR (catch_all.catch_PDF_lastname = ""))     OR (vto-lastname = "")) AND
+            ((catch_all.catch_pdf_firstname >= vfrom-firstname  OR (catch_all.catch_PDF_firstname = ""))    OR (vfrom-firstname = ""))  AND 
+            ((catch_all.catch_pdf_firstname <= vto-firstname    OR (catch_all.catch_PDF_firstname = ""))    OR (vto-firstname = ""))  AND 
+            ((catch_all.catch_people_DOB = v-DOB) OR (v-DOB = ?)) AND
+            ((catch_all.catch_TK_testtype = v-test_type) OR (v-test_type = "")) AND 
+            ((catch_all.catch_TK_ID = v-tk_id) OR (v-tk_id = "")) AND 
+            ((catch_all.catch_tk_seq = v-tk_test_seq) OR (v-tk_test_seq = 0)) AND                     
+            ((catch_all.catch_TK_lab_sample_id = v-lab_sample_id) OR (v-lab_sample_id = "")) AND 
+            ((catch_all.catch_TK_lab_seq = v-lab_seq) OR (v-lab_seq = 0))NO-LOCK USE-INDEX full_index  
+                BREAK 
+                BY catch_all.catch_file_location
+                BY catch_all.catch_TK_testtype
+                BY catch_all.catch_TK_ID 
+                BY catch_all.catch_TK_seq                        
+                BY catch_all.catch_people_lastname
+                BY catch_all.catch_people_firstname
+                BY catch_all.catch_PDF_lastname
+                BY catch_all.catch_pdf_firstname
+                BY catch_all.catch_people_DOB                        
+                BY catch_all.catch_TK_lab_sample_ID 
+                BY catch_all.catch_TK_lab_seq :
+
+            {&OUT}
+                "           <tr>" SKIP
+                "               <td width='5%'><center><input type='checkbox' name='h-checked' value='" RECID(catch_all) "' autofocus /></center></td>" SKIP 
+                "               <td><a href =~"" catch_all.catch_file_location "~" download >" catch_all.catch_file_location "</a></td>" SKIP
+                "               <td>" catch_all.catch_TK_testtype "</td>" SKIP
+                "               <td>" catch_all.catch_TK_ID ' / ' catch_all.catch_tk_seq "</a></td>" SKIP     
+                "               <td><a href=~"../../RStP/rcode/DVcaEditActU.r"                      /* names */
+                "?h-firstname="  catch_all.catch_people_lastname                                        /* names */
+                "&h-lastname="  catch_all.catch_people_firstname                                        /* names */
+                "&h-catch_ID=" catch_all.catch_id                                                       /* names */
+                "&h-checked="  RECID(catch_all)
+                "&h-act=EDIT~" target='editpage'>" SKIP                                                                   /* names */
+                catch_all.catch_people_lastname .
+            
+            IF catch_all.catch_people_lastname <> "" AND catch_all.catch_people_firstname <> "" THEN {&OUT} ",".
+            
+            {&OUT}    
+                " " catch_all.catch_people_firstname "</a></td>" SKIP  /* names */
+                "               <td>" catch_all.catch_PDF_lastname ", " catch_all.catch_pdf_firstname "</a></td>" SKIP
+                "               <td>" catch_all.catch_people_DOB "</td>" SKIP
+                "                <td>" catch_all.catch_TK_lab_sample_ID " / " catch_all.catch_TK_lab_seq "</td>" SKIP
+                "                <td>" catch_all.catch_orig_error "/ " catch_all.catch_orig_message "</td>" SKIP 
+                "           </tr>" SKIP.
+                    
+        END. /*** of TK_mstr straight 4ea ***/
+
+        {&OUT}
+            "   <tfoot>" SKIP                                                               
+            "       <TR>" SKIP
+            "           <TD COLSPAN=9><center>END OF REPORT</center</TD>" SKIP
+            "       </TR>" SKIP
+            "   </tfoot>" SKIP                                                              
+            "   </TABLE>" SKIP
+            "</DIV>                 <!-- end of table_report -->" SKIP
+            "</DIV>             <!-- end of grid_8 -->" SKIP
+            "</DIV>         <!-- end of row -->" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_12'>" SKIP
+            "       <center><p><i><b>Click the Patient Name to Edit that record in the Catch All Table.</b></i></p></center>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP 
+            "<input type='hidden' name='h-TK_id' value='" v-TK_ID "'/>" SKIP
+            "<input type='hidden' name='h-tk_test_seq' value='" v-tk_test_seq "'/>" SKIP  
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                                      SKIP              
+            "<div class='row'>"                                                                                                 SKIP
+        "   <div class='grid_3'> </DIV>"                                                                                        SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act'  formaction='DVcaEditActU.html' value='MassDelete' class='btn'>Delete Selected</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>"                                                                                        SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' formaction='DVcaEditActU.html'  value='Submit' class='btn'>Approve Selected</BUTTON></div>" SKIP
+/*        "   <div class='grid_1'> </DIV>"                                                                                        SKIP*/
+/*        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>"        SKIP*/
+        "   <div class='grid_3'> </DIV>"                                                                                        SKIP
+        "<br></br>" SKIP
+        "</div>" SKIP
+            "</form>".
+        
+    END. /***********************************  of v-treeflag = TestKit *************************************************/
+    
+    WHEN "Lab" THEN DO:
+    
+    {&OUT}
+            "<DIV class='row'>"                                         SKIP
+            "<DIV class='grid_12'>"                                      SKIP
+            "<DIV class='table_report fixed_table'>"                                SKIP
+            "<FORM>" SKIP
+            "   <TABLE>"                                                SKIP
+            "       <THEAD>"                                            SKIP
+            "           <TR>"                                           SKIP
+            "               <TH colspan=9>Catch All Results (People)</TH>"              SKIP
+            "           </TR>"                                          SKIP
+            "           <TR>"                                           SKIP
+            "               <td width='5%'>Selected</td>"               SKIP
+            "               <td>File Location</td>"                     SKIP
+            "               <td>Lab Sample ID / Seq</td>"               SKIP
+            "               <td>Patient Name</td>"                      SKIP
+            "               <td>Name in PDF</td>"                       SKIP
+            "               <td>DOB</td>"                               SKIP 
+            "               <td>Test Type</td>"                         SKIP                   
+            "               <TD>Testkit / Seq</TD>"                     SKIP 
+            "               <td>Error Number / Error Message</td>"      SKIP           
+            "           </TR>"                                          SKIP
+            "       </THEAD>"                                           SKIP
+            . 
+ 
+        FOR EACH catch_all WHERE 
+            catch_all.catch_submited = NO AND
+            ((catch_all.catch_people_lastname >= vfrom-lastname)     OR (vfrom-lastname = "")) AND 
+            ((catch_all.catch_people_lastname <= vto-lastname)       OR (vto-lastname = "")) AND
+            ((catch_all.catch_people_firstname >= vfrom-firstname)   OR (vfrom-firstname = ""))  AND 
+            ((catch_all.catch_people_firstname <= vto-firstname)     OR (vto-firstname = ""))  AND
+            ((catch_all.catch_pdf_lastname >= vfrom-lastname    OR (catch_all.catch_PDF_lastname = ""))     OR (vfrom-lastname = "")) AND 
+            ((catch_all.catch_pdf_lastname <= vto-lastname      OR (catch_all.catch_PDF_lastname = ""))     OR (vto-lastname = "")) AND
+            ((catch_all.catch_pdf_firstname >= vfrom-firstname  OR (catch_all.catch_PDF_firstname = ""))    OR (vfrom-firstname = ""))  AND 
+            ((catch_all.catch_pdf_firstname <= vto-firstname    OR (catch_all.catch_PDF_firstname = ""))    OR (vto-firstname = ""))  AND 
+            ((catch_all.catch_people_DOB = v-DOB) OR (v-DOB = ?)) AND
+            ((catch_all.catch_TK_testtype = v-test_type) OR (v-test_type = "")) AND 
+            ((catch_all.catch_TK_ID = v-tk_id) OR (v-tk_id = "")) AND 
+            ((catch_all.catch_tk_seq = v-tk_test_seq) OR (v-tk_test_seq = 0)) AND                     
+            ((catch_all.catch_TK_lab_sample_id = v-lab_sample_id) OR (v-lab_sample_id = "")) AND 
+            ((catch_all.catch_TK_lab_seq = v-lab_seq) OR (v-lab_seq = 0))NO-LOCK USE-INDEX full_index  
+                BREAK 
+                BY catch_all.catch_file_location
+                BY catch_all.catch_TK_lab_sample_ID 
+                BY catch_all.catch_TK_lab_seq                         
+                BY catch_all.catch_TK_testtype 
+                BY catch_all.catch_TK_ID 
+                BY catch_all.catch_TK_seq
+                BY catch_all.catch_people_lastname
+                BY catch_all.catch_people_firstname
+                BY catch_all.catch_pdf_lastname
+                BY catch_all.catch_pdf_firstname
+                BY catch_all.catch_people_DOB:
+
+            {&OUT}
+                "           <tr>" SKIP
+                "               <td width='5%'><center><input type='checkbox' name='h-checked' value='" RECID(catch_all) "' autofocus /></center></td>" SKIP 
+                "               <td><a href =~"" catch_all.catch_file_location "~" download >" catch_all.catch_file_location "</a></td>" SKIP
+                "                <td>" catch_all.catch_TK_lab_sample_ID " / " catch_all.catch_TK_lab_seq "</td>" SKIP                        
+                "               <td><a href=~"../../RStP/rcode/DVcaEditActU.r"                      /* names */
+                "?h-firstname="  catch_all.catch_people_lastname                                        /* names */
+                "&h-lastname="  catch_all.catch_people_firstname                                        /* names */
+                "&h-DOB=" catch_all.catch_people_DOB                                                    /* names */
+                "&h-catch_ID=" catch_all.catch_id                                                       /* names */
+                "&h-checked="  RECID(catch_all)
+                "&whattorun=" whatshouldrun                                                             /* names */
+                "&h-act=EDIT~" target='editpage'>" SKIP                                                                   /* names */
+                catch_all.catch_people_lastname .
+            
+            IF catch_all.catch_people_lastname <> "" AND catch_all.catch_people_firstname <> "" THEN {&OUT} ",".
+            
+            {&OUT}    
+                " " catch_all.catch_people_firstname "</a></td>" SKIP  /* names */
+                "               <td>" catch_all.catch_PDF_lastname ", " catch_all.catch_pdf_firstname "</a></td>" SKIP
+                "               <td>" catch_all.catch_people_DOB "</td>" SKIP               /* DOB */ 
+                "               <td>" catch_all.catch_TK_testtype "</td>" SKIP              /* Test Type */
+                "               <td>" catch_all.catch_TK_ID ' / ' catch_all.catch_tk_seq "</a></td>" SKIP  /* TK ID/seq */  
+                "                <td>" catch_all.catch_orig_error "/ " catch_all.catch_orig_message "</td>" SKIP 
+                "           </tr>" SKIP.
+                    
+        END. /*** of TK_mstr straight 4ea ***/
+
+        {&OUT}
+            "   <tfoot>" SKIP                                                               
+            "       <TR>" SKIP
+            "           <TD COLSPAN=9><center>END OF REPORT</center</TD>" SKIP
+            "       </TR>" SKIP
+            "   </tfoot>" SKIP                                                              
+            "   </TABLE>" SKIP
+            "</DIV>                 <!-- end of table_report -->" SKIP
+            "</DIV>             <!-- end of grid_8 -->" SKIP
+            "</DIV>         <!-- end of row -->" SKIP
+            "<input type='hidden' name='h-TK_id' value='" v-TK_ID "'/>" SKIP
+            "<input type='hidden' name='h-tk_test_seq' value='" v-tk_test_seq "'/>" SKIP
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                                      SKIP
+            "<div class='row'>"                                                                                                 SKIP
+        "   <div class='grid_3'> </DIV>"                                                                                        SKIP
+        "   <div class='grid_2'><BUTTON type='submit' formaction='DVcaEditActU.html'  name='h-act' value='MassDelete' class='btn'>Delete Selected</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>"                                                                                        SKIP
+        "   <div class='grid_2'><BUTTON type='submit' formaction='DVcaEditActU.html'  name='h-act' value='Submit' class='btn'>Approve Selected</BUTTON></div>" SKIP
+/*        "   <div class='grid_1'> </DIV>"                                                                                        SKIP*/
+/*        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>"        SKIP*/
+        "   <div class='grid_3'> </DIV>"                                                                                        SKIP
+        "<br></br>" SKIP
+        "</div>" SKIP
+            "</form>".
+        
+    END. /*** of v-treeflag = Lab ***/        
+
+END CASE.
+
+/*IF v-act = "BlankDOB" THEN DO:                                                                                                                          */
+/*                                                                                                                                                        */
+/*    {&OUT}                                                                                                                                              */
+/*        "<DIV class='row'>"                                         SKIP                                                                                */
+/*        "<DIV class='grid_12'>"                                     SKIP                                                                                */
+/*        "<DIV class='table_report fixed_table'>"                                SKIP                                                                    */
+/*        "   <TABLE>"                                                SKIP                                                                                */
+/*        "       <THEAD>"                                            SKIP                                                                                */
+/*        "           <TR>"                                           SKIP                                                                                */
+/*        "               <TH colspan=9>Testkit(s)</TH>"              SKIP                                                                                */
+/*        "           </TR>"                                          SKIP                                                                                */
+/*        "           <TR>"                                           SKIP                                                                                */
+/*        "               <td width='5%'>Selected</td>"               SKIP                                                                                */
+/*        "               <td>DOB</td>"                               SKIP                                                                                */
+/*        "               <td>Patient Name</td>"                      SKIP                                                                                */
+/*        "               <td>Name in PDF</td>"                       SKIP                                                                                */
+/*        "               <td>Test Type</td>"                         SKIP                                                                                */
+/*        "               <TD>Testkit / Seq</TD>"                     SKIP                                                                                */
+/*        "               <td>Lab Sample ID / Seq</td>"               SKIP                                                                                */
+/*        "               <td>Error Number / Error Message</td>"      SKIP                                                                                */
+/*        "           </TR>"                                          SKIP                                                                                */
+/*        "       </THEAD>"                                           SKIP                                                                                */
+/*        "       <FORM>"                                             SKIP                                                                                */
+/*        .                                                                                                                                               */
+/*                                                                                                                                                        */
+/*    FOR EACH catch_all WHERE                                                                                                                        */
+/*        catch_all.catch_submited = NO AND                                                                                                               */
+/*        catch_all.catch_people_DOB = ? NO-LOCK                                                                                                          */
+/*            BREAK                                                                                                                                       */
+/*            BY catch_all.catch_file_location                                                                                                            */
+/*            BY catch_all.catch_people_lastname                                                                                                          */
+/*            BY catch_all.catch_people_firstname                                                                                                         */
+/*            BY catch_all.catch_pdf_lastname                                                                                                             */
+/*            BY catch_all.catch_pdf_firstname                                                                                                            */
+/*            BY catch_all.catch_TK_testtype                                                                                                              */
+/*            BY catch_all.catch_TK_ID                                                                                                                    */
+/*            BY catch_all.catch_TK_seq                                                                                                                   */
+/*            BY catch_all.catch_TK_lab_sample_ID                                                                                                         */
+/*            BY catch_all.catch_TK_lab_seq:                                                                                                              */
+/*                                                                                                                                                        */
+/*        {&OUT}                                                                                                                                          */
+/*            "           <tr>" SKIP                                                                                                                      */
+/*            "               <td width='5%'><center><input type='checkbox' name='h-checked' value='" RECID(catch_all) "' autofocus /></center></td>" SKIP*/
+/*            "               <td>" catch_all.catch_people_DOB "</td>" SKIP                                                                               */
+/*            "               <td><a href=~"../../RStP/rcode/DVcaEditActU.r"                      /* names */                                             */
+/*            "?h-firstname="  catch_all.catch_people_lastname                                        /* names */                                         */
+/*            "&h-lastname="  catch_all.catch_people_firstname                                        /* names */                                         */
+/*            "&h-catch_ID=" catch_all.catch_id                                                       /* names */                                         */
+/*            "&ooga=booga-blankDOB"                                                                                                                      */
+/*/*            "&whattorun=" whatshouldrun                                                             /* names */*/                                     */
+/*            "&h-act=EDIT~" target='editpage'>" SKIP                                                                   /* names */                       */
+/*            catch_all.catch_people_lastname ", " catch_all.catch_people_firstname "</a></td>" SKIP  /* names */                                         */
+/*            "               <td>" catch_all.catch_PDF_lastname ", " catch_all.catch_pdf_firstname "</a></td>" SKIP                                      */
+/*            "               <td>" catch_all.catch_TK_ID ' / ' catch_all.catch_tk_seq "</td>" SKIP                                                       */
+/*            "               <td>" catch_all.catch_TK_testtype "</td>" SKIP                                                                          */
+/*            "                <td>" catch_all.catch_TK_lab_sample_ID " / " catch_all.catch_TK_lab_seq "</td>" SKIP                                       */
+/*            "                <td>" catch_all.catch_orig_error "/ " catch_all.catch_orig_message "</td>" SKIP                                            */
+/*            "           </tr>" SKIP.                                                                                                                    */
+/*                                                                                                                                                        */
+/*    END. /*** of TK_mstr straight 4ea ***/                                                                                                              */
+/*                                                                                                                                                        */
+/*    {&OUT}                                                                                                                                              */
+/*        "   <tfoot>" SKIP                                                                                                                               */
+/*        "       <TR>" SKIP                                                                                                                              */
+/*        "           <TD COLSPAN=9><center>END OF REPORT</center</TD>" SKIP                                                                              */
+/*        "       </TR>" SKIP                                                                                                                             */
+/*        "   </tfoot>" SKIP                                                                                                                              */
+/*        "   </TABLE>" SKIP                                                                                                                              */
+/*        "</DIV>                 <!-- end of table_report -->" SKIP                                                                                      */
+/*        "</DIV>             <!-- end of grid_8 -->" SKIP                                                                                                */
+/*        "</DIV>         <!-- end of row -->" SKIP                                                                                                       */
+/*        "<div class='row'>" SKIP                                                                                                                        */
+/*        "   <div class='grid_12'>" SKIP                                                                                                                 */
+/*        "       <center><p><i><b>Click the Patient Name to Edit that record in the Catch All Table.</b></i></p></center>" SKIP                          */
+/*        "   </div>" SKIP                                                                                                                                */
+/*        "</div>" SKIP                                                                                                                                   */
+/*        "<input type='hidden' name='h-TK_id' value='" v-TK_ID "'/>" SKIP                                                                                */
+/*        "<input type='hidden' name='h-tk_test_seq' value='" v-tk_test_seq "'/>" SKIP                                                                    */
+/*/*        "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                                                  SKIP*/                    */
+/*        "<div class='row'>"                                                                                                 SKIP                        */
+/*        "   <div class='grid_3'> </DIV>"                                                                                        SKIP                    */
+/*        "   <div class='grid_2'><BUTTON type='submit' formaction='DVcaEditActU.html'  name='h-act' value='MassDelete' class='btn'>Delete Selected</BUTTON></div>" SKIP                  */
+/*        "   <div class='grid_2'> </DIV>"                                                                                        SKIP                    */
+/*        "   <div class='grid_2'><BUTTON type='submit' formaction='DVcaEditActU.html' name='h-act' value='Submit' class='btn'>Approve Selected</BUTTON></div>" SKIP                     */
+/*/*        "   <div class='grid_1'> </DIV>"                                                                                        SKIP*/                */
+/*/*        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>"        SKIP*/             */
+/*        "   <div class='grid_3'> </DIV>"                                                                                        SKIP                    */
+/*        "<br></br>" SKIP                                                                                                                                */
+/*        "</div>" SKIP                                                                                                                                   */
+/*        "</form>".                                                                                                                                      */
+/*                                                                                                                                                        */
+/*END. /*** v-act = BlankDOB ***/                                                                                                                         */
+
+</SCRIPT>
+</BODY>
+</HTML>

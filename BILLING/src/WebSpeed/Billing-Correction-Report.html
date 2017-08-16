@@ -1,0 +1,951 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    
+    <TITLE>Billing Correction Process</TITLE>
+
+    <META NAME="AUTHOR" CONTENT="Harold Luttrell, Sr.">
+    <META NAME="VERSION" CONTENT="1.3">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="19/Jul/14">
+    <META NAME="LAST_UPDATED" CONTENT="4/Sep/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+    /*----------------------------------------------------------------------
+      Main-program  : Billing-Correction-Report.html.
+      Description   : This is the main User-Interface for correcting the entered 
+                    :     billing/Invoices from the different Labs for payment.
+                  
+      Sub-programs  : Billing-Match-UnMatch.r.
+                    : 
+      Description   : Validates the input billing line items and if all edits are
+                    : met, it then moves the data to the Billing Master and Billing  
+                    : Detail records for processing by the Pay Invoices program. 
+             
+      - - Version History - -
+      
+          1.0 - July 19, 2014 - Original code.
+
+          1.1 - August 26, 2014.  Added CSS commands to the screen displays.
+
+          1.2 - Sept 4, 2014.  Added edit code, .
+          
+          1.3 - Oct 25, 2014 - removed all '../..' from the html code and 
+                                    changed '.html' to '.r' and
+                                    added the META & css.
+     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />                                                
+  ----------------------------------------------------------------------*/ 
+ 
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY CLASS='inside'>
+
+<SCRIPT LANGUAGE="SpeedScript">
+  /*--------------------------------------------------------------------
+    Template: browse.html
+
+    Description: Browse a Database Table.
+
+      Modify the "&SCOPE-DEFINE..." lines to customize this browse.
+      The "Main Fields" section describes the "&SCOPE-DEFINE..."
+      Preprocessor reference fields.
+
+      This template will list Customers associated with the Sports
+      database, listing them in Name order.
+
+      A "Jump To" can be entered to start the search listing at the
+      first customer name which is equal to or greater than the
+      "Jump To" value entered.
+
+      A Sales Rep. filter can be used to list only those Customers
+      associated with the Sales Rep. filter field.  To implement
+      the filter the browse can be called via:
+
+         http://.../browse.html?salesRep=sls
+
+      In this example, the "Result List" will display only those
+      Customers that contain Sales Rep. "sls".
+
+      The "Jump To" user input field can be bypassed via:
+
+         http://.../browse.html?NoJumpForm=yes
+
+      This will start the "Result List" display output at the first
+      Customer record.
+
+      The Query can also begin the "Result List" display at the first
+      Customer record if the "Jump To" value is left blank.
+
+      The Sales Rep. filter and the NoJumpForm can be combined:
+
+         http://.../browse.html?salesRep=sls&NoJumpForm=yes
+
+      This will begin the "Result List" display with the first Customer
+      that contains Sales Rep. "sls".
+
+    Main Fields: Preprocessor references have been used to define the
+                 main fields associated with this browse.
+
+      Query-Table1    - The name of the table to browse.
+      Query-Field    - The field to be used to define the Query output
+                       Sort order.  This field is also used by the
+                       "Jump To" functionality.  This field must be
+                       the main component of an Index associated with
+                       the Table.
+      Query-Index    - The name of the Index where Query-Field is the
+                       main component.
+      Filter-Field   - The field to be used as a filter.  For large
+                       database tables this field should be the main
+                       component of an index.
+      Display-Fields - The fields to be displayed in "Result List".
+      Result-Rows    - The number of Rows to display in "Result List".
+
+
+    Performance Considerations:
+
+      For large database Tables where the Filter Field will be used
+      consideration should be given to the creation of an index and
+      program modifications to improve the performance of the browse.
+
+      The index should contain the Filter Field as the main component
+      and the Query Field as the secondary field within the index.
+
+      The following programming modifications should then be made:
+
+        1. A Preprocessor reference should be added:
+
+           &SCOPE-DEFINE Filter-Index   'xxxxxx'
+
+           where 'xxxxxx' is the name of the index consisting of the
+           Filter Field and the Query Field.
+
+        2. The OPEN QUERY statement associated with the Filter Field
+           should be modified as follows:
+
+           OPEN QUERY Browse-Qry FOR EACH {&Query-Table1}
+             WHERE {&Query-Table1}.{&Filter-Field} = {&Filter-Field}-key
+             USE-INDEX {&Filter-Index} NO-LOCK.
+
+        3. The FIND LAST associated with the Filter Field should be
+           modified as follows:
+
+           FIND LAST {&Query-Table1}
+             WHERE {&Query-Table1}.{&Filter-Field} = {&Filter-Field}-key
+               USE-INDEX {&Filter-Index} NO-LOCK NO-ERROR.
+
+        4. The FIND FIRST can also be modified in a similar fashion
+           to the FIND LAST depending on how the Browse will be
+           utilized.  The FIND FIRST as presently written will perform
+           adequately.
+
+    The browse has been defined to support character data types for
+    the Query-Field and the Filter-Field.  The programming logic may
+    need to be modified to support other data types.
+
+  --------------------------------------------------------------------*/
+
+  /* Modify the "&SCOPE-DEFINE..." lines to customize this browse. */
+
+  &SCOPED-DEFINE Query-Table    bip_bill_input
+  &SCOPED-DEFINE Query-Field    bip_Sample_ID
+  &SCOPED-DEFINE Query-Index    bip-ip-idx
+  &SCOPED-DEFINE Filter-Field   bip_UnMatched_Reason 
+
+  &SCOPED-DEFINE Display-Fields "  <TR><TD><a href='Billing-Correction-Report.r?sent=1 &ip-seq="bip_bill_input.bip_seq "'>" bip_bill_input.bip_Sample_ID "</TD><TD>" bip_bill_input.bip_LAB_ID "</TD><TD>" bip_bill_input.bip_Account_Nbr "</TD><TD>" bip_bill_input.bip_Invoice_Nbr "</TD><TD>" bip_bill_input.bip_Invoice_Date "</TD><TD>" bip_bill_input.bip_Total_Amt_Due "</TD><TD>" bip_bill_input.bip__date01 "</TD><TD>" bip_bill_input.bip_Payment_Term "</TD><TD>" bip_bill_input.bip_Activity_Date "</TD><TD>" bip_bill_input.bip_Person_First_Name "</TD><TD>" bip_bill_input.bip_Person_Mid_Name "</TD><TD>" bip_bill_input.bip_Person_Last_Name "</TD><TD>" bip_bill_input.bip_Person_Suffix "</TD><TD>" bip_bill_input.bip_Test_Type "</TD><TD>" bip_bill_input.bip_Amount "</TD><TD>" bip_bill_input.bip_UnMatched_Reason "</TD></TR>"
+                            
+  &SCOPED-DEFINE Result-Rows    10
+  
+/* ============================================== */
+/* Following added code for program requirements. */ 
+/* ============================================== */
+
+  &SCOPED-DEFINE Filter-Index   bip-unmatch-idx
+  &SCOPED-DEFINE Blank-Value    Blank-Val
+
+/* ============================================== */
+/*    Ending added code for program requirements. */ 
+/* ============================================== */
+
+  DEFINE VARIABLE jumpto-value        AS CHARACTER  NO-UNDO.
+  DEFINE VARIABLE {&Filter-Field}-key AS CHARACTER  NO-UNDO.
+  DEFINE VARIABLE repo-to             AS INTEGER    NO-UNDO.
+  DEFINE VARIABLE i-count             AS INTEGER    NO-UNDO.
+  DEFINE VARIABLE JumpForm            AS CHARACTER  NO-UNDO.
+  DEFINE VARIABLE TmpUrl              AS CHARACTER  NO-UNDO.
+  DEFINE VARIABLE DelimiterField      AS CHARACTER  NO-UNDO.
+ 
+  
+/* ============================================== */
+/* Following added code for program requirements. */ 
+/* ============================================== */
+
+/* Include code. */ 
+
+{../depot/src/WebSpeed/menuname.i}.       /*** menu name assignment ***/
+
+{../depot/src/WebSpeed/o-depot-definenames.i}.       /*** depot output define names ***/
+  
+/* Define Variables. */
+    DEFINE VARIABLE Blank-Val           AS CHARACTER  FORMAT "x(1)"  INITIAL ''       NO-UNDO.                            
+    DEFINE VARIABLE {&Blank-Value}-key  AS CHARACTER                                  NO-UNDO.
+    
+	DEFINE VARIABLE ip-lab-id           LIKE bip_bill_input.bip_LAB_ID            NO-UNDO.
+	DEFINE VARIABLE ip-Account-Nbr      LIKE bip_bill_input.bip_Account_Nbr       NO-UNDO.
+	DEFINE VARIABLE ip-Invoice-Nbr      LIKE bip_bill_input.bip_Invoice_Nbr       NO-UNDO.
+	DEFINE VARIABLE ip-Invoice-Date     LIKE bip_bill_input.bip_Invoice_Date      NO-UNDO.
+	DEFINE VARIABLE ip-Total-Amt-Due    AS DECIMAL FORMAT "->>>,>>9.99"               NO-UNDO. 
+	DEFINE VARIABLE ip-Payment-Term     LIKE bip_bill_input.bip_Payment_Term      NO-UNDO.
+	DEFINE VARIABLE ip-Sample-ID        LIKE bip_bill_input.bip_Sample_ID         NO-UNDO. 
+	DEFINE VARIABLE ip-Activity-Date    LIKE bip_bill_input.bip_Activity_Date     NO-UNDO.
+	DEFINE VARIABLE ip-Bill-Due-Date    LIKE bip_bill_input.bip__date01           NO-UNDO. 
+	DEFINE VARIABLE ip-Pat-First-Name   LIKE bip_bill_input.bip_Person_First_Name NO-UNDO.  
+	DEFINE VARIABLE ip-Pat-Mid-Name     LIKE bip_bill_input.bip_Person_Mid_Name   NO-UNDO.  
+	DEFINE VARIABLE ip-Pat-Last-Name    LIKE bip_bill_input.bip_Person_Last_Name  NO-UNDO.
+	DEFINE VARIABLE ip-Pat-Suffix       LIKE bip_bill_input.bip_Person_Suffix     NO-UNDO.  
+	DEFINE VARIABLE ip-Test-Type        LIKE bip_bill_input.bip_Test_Type         NO-UNDO.
+	DEFINE VARIABLE ip-Amount           AS  DECIMAL FORMAT "->>>,>>9.99"              NO-UNDO.
+	
+	DEFINE VARIABLE Cancel              AS CHARACTER        NO-UNDO.
+	DEFINE VARIABLE UpdateChanges       AS CHARACTER        NO-UNDO.
+	DEFINE VARIABLE act                 AS INTEGER          NO-UNDO.
+	DEFINE VARIABLE whattorun           AS CHARACTER                                  NO-UNDO.   /* to get the menu title */
+	
+	DEFINE VARIABLE ip_text                         AS CHARACTER  FORMAT "x(60)"      NO-UNDO.
+	DEFINE VARIABLE op_text                         AS CHARACTER  FORMAT "x(60)"      NO-UNDO.
+	DEFINE VARIABLE codetorun                       AS CHARACTER                      NO-UNDO.
+	DEFINE VARIABLE hold-string-unmatch-reason      AS CHARACTER  FORMAT "x(200)"     NO-UNDO.
+	DEFINE VARIABLE Error-flag                      AS logical    FORMAT "yes/no"     NO-UNDO.
+	DEFINE VARIABLE display-msg-1                   AS CHARACTER  FORMAT "x(60)"      NO-UNDO.
+    DEFINE VARIABLE len                             AS INTEGER                        NO-UNDO.
+    DEFINE VARIABLE ix                              AS INTEGER                        NO-UNDO.
+
+    DEFINE VARIABLE record-knout-to-be-corrected    AS INTEGER  INITIAL 0             NO-UNDO.
+    DEFINE VARIABLE record-knout-corrected          AS INTEGER  INITIAL 0             NO-UNDO.
+    DEFINE VARIABLE Sample-ID               LIKE bip_bill_input.bip_Sample_ID     NO-UNDO.
+    DEFINE VARIABLE ip-seq                  LIKE bip_bill_input.bip_seq           NO-UNDO.
+
+	DEFINE VARIABLE blank_prefix            AS CHARACTER                            NO-UNDO.
+	DEFINE VARIABLE blank_DOB               AS CHARACTER                            NO-UNDO.    
+    
+  /* Assign Values to Variable statements. */  
+  ASSIGN 
+
+/* Logical variables. */
+        Error-flag          = LOGICAL ('no')
+                 
+/* Date variables. */
+        ip-Activity-Date    = DATE(get-field('s-Activity-Date'))
+        ip-Invoice-Date     = DATE(get-field('s-Invoice-Date')) 
+        ip-Bill-Due-Date    = DATE(get-field("s-Bill-Due-Date"))
+        blank_DOB           = '?'   
+  
+/* Integer variables. */        
+        ip-Amount           = DECIMAL(get-value('s-Amount'))
+        ip-Total-Amt-Due    = DECIMAL(get-value('s-Total-Amt-Due'))
+        act                 = INTEGER(get-value("s-act"))
+        ip-seq              = INTEGER(get-value("ip-seq"))     
+        
+/* Character variables. */
+        whattorun           = get-value("whattorun")                 /* to get the menu title */
+        ip-lab-id           = get-field('s-LabID')
+        ip-Account-Nbr      = get-field('s-Account-Nbr')
+        ip-Invoice-Nbr      = get-field('s-Invoice-Nbr')
+        ip-Payment-Term     = get-field('s-Payment-Term')
+        ip-Sample-ID        = get-field('s-Sample-ID')
+        ip-Pat-First-Name   = get-field('s-Person1stName')
+        ip-Pat-Mid-Name     = get-field('s-PersonMidName')
+        ip-Pat-Last-Name    = get-field('s-PersonLastName')
+        ip-Pat-Suffix       = get-field('s-PersonSuffix')     
+        ip-Test-Type        = get-field('s-Test-Type')
+
+        Cancel              = get-field('s-Cancel')
+        UpdateChanges       = get-field('s-UpdateChanges') 
+        Sample-ID           = get-value("Sample-ID")
+        Blank-Val           = "":U                                   
+   
+        codetorun = '../depot/rcode/subr_Up_Low_Case.r '.
+         
+/* ============================================== */
+/*    Ending added code for program requirements. */ 
+/* ============================================== */  
+   
+  
+  /* Get all the fields from the input */
+  ASSIGN
+    JumpForm            = get-field("NoJumpForm":U)
+    jumpto-value        = get-field("jumpto-name":U)
+    repo-to             = INTEGER(get-field("repo-to":U)) NO-ERROR.
+  
+  {&Filter-Field}-key = get-field("{&Filter-Field}":U).
+
+/*        
+      {&OUT}   "<BR><TR>" SKIP
+          "<TD>" '>Begin.  ' "</TD>" SKIP
+          "<TD>" '    > act  = ' act  "</TD>" SKIP
+          "<TD>" '    > ip-seq value = ' ip-seq  "</TD>" SKIP
+          "<TD>" '    > UpdateChanges  = ' UpdateChanges  "</TD>" SKIP 
+          "<TD>" '    > Cancel  = ' Cancel  "</TD>" SKIP       
+          "</TR>" SKIP.
+*/
+
+  /*======================================= Re-Edit selected data here for Edit Errors. ==================================*/ 
+  
+IF act = 2 OR  UpdateChanges = 'Update' THEN DO:
+/*                               
+{&OUT}   "<BR><TR>" SKIP
+                      "<TD>" '>Starting the updated to the bip_bill_input record. '  "</TD>" SKIP
+                      "<TD>" ' > act  = ' act  "</TD>" SKIP
+                      "<TD>" ' > ip-seq value = ' ip-seq  "</TD>" SKIP
+                      "<TD>" ' > UpdateChanges  = ' UpdateChanges  "</TD>" SKIP
+                      "<TD>" ' > Cancel  = ' Cancel  "</TD>" SKIP
+                      "<TD>" ' > ip-lab-id = ' ip-lab-id "</TD>" SKIP
+                      "</TR>" SKIP.
+*/                            
+            ASSIGN  len = 0.
+
+            ASSIGN 
+                    ip-Activity-Date    = DATE(get-field('s-Activity-Date'))
+                    ip-Invoice-Date     = DATE(get-field('s-Invoice-Date'))
+                    ip-Bill-Due-Date    = DATE(get-field("s-Bill-Due-Date")) 
+                    ip-Amount           = DECIMAL(get-value('s-Amount'))
+                    ip-Total-Amt-Due    = DECIMAL(get-value('s-Total-Amt-Due'))
+                    ip-lab-id           = get-field('s-LabID')
+			        ip-Account-Nbr      = get-field('s-Account-Nbr')
+			        ip-Invoice-Nbr      = get-field('s-Invoice-Nbr')
+			        ip-Payment-Term     = get-field('s-Payment-Term')
+			        ip-Sample-ID        = get-field('s-Sample-ID')
+			        ip-Pat-First-Name   = get-field('s-Person1stName')
+			        ip-Pat-Mid-Name     = get-field('s-PersonMidName')
+			        ip-Pat-Last-Name    = get-field('s-PersonLastName')
+			        ip-Pat-Suffix       = get-field('s-PersonSuffix')     
+			        ip-Test-Type        = get-field('s-Test-Type').
+/*
+{&OUT}   "<BR><TR>" SKIP
+                      "<TD>" '>Screen input data: '  "</TD>" SKIP
+                      "<TD>" ' > ip-Account-Nbr  = ' ip-Account-Nbr  "</TD>" SKIP
+                      "<TD>" ' > ip-Sample-ID = ' ip-Sample-ID  "</TD>" SKIP
+                      "<TD>" ' > ip-Pat-First-Name  = ' ip-Pat-First-Name  "</TD>" SKIP
+                      "<TD>" ' > ip-Pat-Last-Name  = ' ip-Pat-Last-Name  "</TD>" SKIP
+                      "</TR>" SKIP.
+*/			                            
+            ASSIGN ip-lab-id = TRIM(ip-lab-id)
+                   ip-lab-id = CAPS(ip-lab-id).
+           
+            FIND lab_mstr WHERE lab_mstr.lab_id = ip-lab-id NO-LOCK NO-ERROR.
+
+            IF NOT AVAILABLE (lab_mstr) THEN DO:
+                ASSIGN len = LENGTH(hold-string-unmatch-reason).
+                ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Lab|ID|is|invalid-Not|in|Lab|Master.|'.
+                ASSIGN Error-flag = LOGICAL ('yes').
+            END.    /**  IF NOT AVAILABLE (lab_mstr)  **/
+            
+            FIND FIRST bip_bill_input
+                WHERE  bip_bill_input.bip_seq       =  ip-seq
+                    EXCLUSIVE-LOCK NO-ERROR.
+                    
+            IF AVAILABLE (bip_bill_input) THEN DO:
+               
+                    ASSIGN hold-string-unmatch-reason = "".
+                    
+/*		            ASSIGN  ip-Payment-Term = TRIM(ip-Payment-Term)
+                            ip-Payment-Term = LC(ip-Payment-Term).
+		            RUN VALUE (codetorun) (ip-Payment-Term, OUTPUT op_text). 
+		            ASSIGN ip-Payment-Term = op_text.
+*/		            
+		            ASSIGN ip-Account-Nbr= TRIM(ip-Account-Nbr).
+		            IF ip-Account-Nbr = "" THEN DO: 
+		                ASSIGN len = LENGTH(hold-string-unmatch-reason).
+		                ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Account|Nbr|is|blank.|'.
+		                ASSIGN Error-flag = LOGICAL ('yes').                  
+		            END.
+		            
+                    IF ip-Invoice-Nbr = "" THEN DO:
+                        ASSIGN len = LENGTH(hold-string-unmatch-reason).
+                        ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Invoice|Nbr|is|blank.|'.
+                        ASSIGN Error-flag = LOGICAL ('yes').                  
+                    END.
+                    ELSE DO: 
+		                ASSIGN ip-Invoice-Nbr = TRIM(ip-Invoice-Nbr).
+		            END.
+		            
+		            IF ip-Sample-ID = "" THEN DO:
+                        ASSIGN ip-Sample-ID = 'unknown'.
+                        ASSIGN len = LENGTH(hold-string-unmatch-reason).
+                        ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Sample|ID|is|blank-changed|to|unknown.|".
+		                ASSIGN Error-flag = LOGICAL ('yes').                  
+		            END.
+		            ELSE DO:  
+		                ASSIGN ip-Sample-ID = TRIM(ip-Sample-ID).
+		            END. 
+	                
+	                IF ip-Invoice-Nbr = "" THEN DO:
+	                    ASSIGN ip-Invoice-Nbr = 'Overridden'.
+	                    ASSIGN len = LENGTH(hold-string-unmatch-reason).
+	                    ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Invoice|Nbr|is|blank-Overridden|was|selected.|".                  
+	                END.
+		            		           	            
+		            IF ip-Activity-Date = ? THEN DO: 
+		                ASSIGN len = LENGTH(hold-string-unmatch-reason).
+		                ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Activity|Date|is|blank.|'.
+		                ASSIGN Error-flag = LOGICAL ('yes').                
+		            END.
+		            IF ip-Activity-Date > TODAY THEN DO: 
+		                ASSIGN len = LENGTH(hold-string-unmatch-reason).
+		                ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Activity|Date|can|NOT|be|greater|than|todays|date.|'.
+		                ASSIGN Error-flag = LOGICAL ('yes').                 
+		            END.  
+		            
+		            IF ip-Bill-Due-Date   = ? THEN  DO:
+		                ASSIGN len = LENGTH(hold-string-unmatch-reason).
+                        ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Bill|Due|Date|is|blank.|'.
+                        ASSIGN Error-flag = LOGICAL ('yes').                
+                    END.
+                    IF ip-Bill-Due-Date < TODAY THEN DO: 
+                        ASSIGN len = LENGTH(hold-string-unmatch-reason).
+                        ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Bill|Due|Date|can|NOT|be|less|than|todays|date.|'.
+                        ASSIGN Error-flag = LOGICAL ('yes').                 
+                    END.     
+		            
+		            ASSIGN  ip-Pat-First-Name = TRIM(ip-Pat-First-Name). 
+		            IF ip-Pat-First-Name = "" THEN DO:
+		                ASSIGN len = LENGTH(hold-string-unmatch-reason).
+		                ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Person|First|Name|is|blank.|'.
+		                ASSIGN Error-flag = LOGICAL ('yes').                  
+		            END.
+		            ELSE DO:  
+		                ASSIGN ip-Pat-First-Name = LC(ip-Pat-First-Name).
+		                RUN VALUE (codetorun) (ip-Pat-First-Name, OUTPUT op_text). 
+		                ASSIGN ip-Pat-First-Name = op_text. 
+		            END. 
+		    
+		            ASSIGN ip-Pat-Mid-Name = TRIM(ip-Pat-Mid-Name) 
+		                   ip-Pat-Mid-Name = LC(ip-Pat-Mid-Name).
+		            RUN VALUE (codetorun) (ip-Pat-Mid-Name, OUTPUT op_text). 
+		            ASSIGN ip-Pat-Mid-Name = op_text.
+		            
+		            ASSIGN ip-Pat-Suffix = TRIM(ip-Pat-Suffix)
+		                   ip-Pat-Suffix = LC(ip-Pat-Suffix).
+		            RUN VALUE (codetorun) (ip-Pat-Suffix, OUTPUT op_text). 
+		            ASSIGN ip-Pat-Suffix = op_text.
+		            
+		            ASSIGN ip-Pat-Last-Name = TRIM(ip-Pat-Last-Name).
+		            IF ip-Pat-Last-Name = "" THEN DO:
+		                ASSIGN len = LENGTH(hold-string-unmatch-reason).
+		                ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Person|Last|Name|is|blank.|'.
+		                ASSIGN Error-flag = LOGICAL ('yes').                  
+		            END.
+		            ELSE DO:  
+		                ASSIGN ip-Pat-Last-Name = LC(ip-Pat-Last-Name).
+		                RUN VALUE (codetorun) (ip-Pat-Last-Name, OUTPUT op_text). 
+		                ASSIGN ip-Pat-Last-Name = op_text.           
+		            END. 
+		            
+		            ASSIGN  ip-Test-Type = TRIM(ip-Test-Type).   
+		            IF ip-Test-Type = "" THEN DO:
+		                ASSIGN len = LENGTH(hold-string-unmatch-reason).
+		                ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Test|Type|is|blank.|'.
+		                ASSIGN Error-flag = LOGICAL ('yes').                
+		            END.
+		            ELSE DO:  
+		                ASSIGN ip-Test-Type = CAPS(ip-Test-Type).
+		            END. 
+		    
+		            IF ip-Amount = 0 THEN DO: 
+		                ASSIGN len = LENGTH(hold-string-unmatch-reason)
+		                       SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Amount|can|NOT|be|zero|or|blank.|'
+		                       Error-flag = LOGICAL ('yes').  
+		            END.
+		            	 	            
+		            RUN "../depot/rcode/find-patient.r"
+		                    (blank_prefix,          
+		                    ip-Pat-First-Name,    
+		                    ip-Pat-Mid-Name,      
+		                    ip-Pat-Last-Name,      
+		                    ip-Pat-Suffix,       
+		                    blank_DOB,            
+		                    OUTPUT o-fpat-ID, 
+		                    OUTPUT o-fpat-addr-ID, 
+		                    OUTPUT o-fpat-exist,
+		                    OUTPUT o-fpat-ran,
+		                    OUTPUT o-fpat-error).
+/*		            
+		            {&OUT}   "<BR><TR>" SKIP
+                      "<TD>" '>Returned from  ../depot/rcode/find-patient.r: '  "</TD>" SKIP
+                      "<TD>" ' > return_people_ID  = ' return_people_ID  "</TD>" SKIP
+                      "</TR>" SKIP.
+*/                              
+		            IF  o-fpat-ID = 0  THEN DO:
+		                ASSIGN Error-flag = LOGICAL ('yes')
+		                       len = LENGTH(hold-string-unmatch-reason)
+		                       SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = 'Person|is|NOT|found|in|the|database.|'.      
+		            END.  /**  IF  return_people_ID = 0  **/
+		
+		/**  data from the Line Item info.  **/                    
+		            ASSIGN 
+		                bip_bill_input.bip_LAB_ID               = ip-lab-id
+                        bip_bill_input.bip_Account_Nbr          = ip-Account-Nbr
+                        bip_bill_input.bip_Invoice_Nbr          = ip-Invoice-Nbr
+                        bip_bill_input.bip_Invoice_Date         = ip-Invoice-Date
+                        bip_bill_input.bip_Total_Amt_Due        = ip-Total-Amt-Due
+                        bip_bill_input.bip_Payment_Term         = ip-Payment-Term 
+                        bip_bill_input.bip__date01              = ip-Bill-Due-Date
+		                bip_bill_input.bip_Sample_ID            = ip-Sample-ID
+		                bip_bill_input.bip_Activity_Date        = ip-Activity-Date  
+		                bip_bill_input.bip_Person_First_Name    = ip-Pat-First-Name
+		                bip_bill_input.bip_Person_Mid_Name      = ip-Pat-Mid-Name
+		                bip_bill_input.bip_Person_Last_Name     = ip-Pat-Last-Name
+		                bip_bill_input.bip_Person_Suffix        = ip-Pat-Suffix         
+		                bip_bill_input.bip_Test_Type            = ip-Test-Type
+		                bip_bill_input.bip_Amount               = ip-Amount
+		                bip_bill_input.bip_modified_by          = USERID("HHI")
+		                bip_bill_input.bip_modified_date        = TODAY.
+                                  
+		            IF  hold-string-unmatch-reason <> "" THEN DO:
+		                    
+		                    ASSIGN  len = LENGTH(hold-string-unmatch-reason)
+		                            ix = 1.
+		                    DO while ix < (len + 1):
+		                       IF SUBSTRING(hold-string-unmatch-reason, ix, 1) = "|" THEN 
+		                           ASSIGN SUBSTRING(hold-string-unmatch-reason, ix, 1) = " ".
+		                       ASSIGN ix = (ix + 1).
+		                    END. 
+                    END.    /**  IF  hold-string-unmatch-reason <> ""   **/	 
+                    	                    
+		            ASSIGN  bip_bill_input.bip_UnMatched_Date    = TODAY 
+		                    bip_bill_input.bip_UnMatched_Reason  = hold-string-unmatch-reason
+		                    hold-string-unmatch-reason               = "". 
+		           
+		                                 
+		            RELEASE bip_bill_input NO-ERROR. 
+		            
+/* Run the Match - UnMatch pgm to process the input into the Billing master and detail tables or
+    reject the input due to edit errors.  */                                             
+                    RUN "../billing/rcode/Billing-Match-UnMatch.r".
+                        		            
+/*		            
+		            {&OUT}   "<BR><TR>" SKIP
+		                      "<TD>" '>Just updated the bip_bill_input record. '  "</TD>" SKIP
+		                      "<TD>" ' > act  = ' act  "</TD>" SKIP
+		                      "<TD>" ' > ip-seq value = ' ip-seq  "</TD>" SKIP
+		                      "<TD>" ' > UpdateChanges  = ' UpdateChanges  "</TD>" SKIP
+		                      "<TD>" ' > Cancel  = ' Cancel  "</TD>" SKIP
+		                      "<TD>" ' > ip-Pat-Mid-Name = ' ip-Pat-Mid-Name "</TD>" SKIP
+		                      "</TR>" SKIP. 
+*/		                      
+            END.     /**  IF AVAILABLE (bip_bill_input)  **/
+        
+            ASSIGN  UpdateChanges = ''
+                    act  = 0
+                    ip-seq = 0
+                    Cancel = ''
+                    JumpForm = "":U
+                    {&Blank-Value}-key = "":U
+                    jumpto-value   = get-field("jumpto-name":U)
+                    {&Filter-Field}-key = "":U.
+                        
+                    
+END.    /**  IF act = 2 OR  UpdateChanges = 'Update'  **/ 
+
+  /*================================= End of Re-Edit selected data here for Edit Errors. ==================================*/  
+            
+IF UpdateChanges <> 'Update' THEN DO:  
+    
+  /* Display "Jump To" Form.  This form will not be displayed if
+     "NoJumpForm=yes" requested */
+IF JumpForm EQ "":U THEN DO:    
+</SCRIPT>
+<!--  
+/* ============================================== */
+/* Following added code for program requirements. */ 
+/* ============================================== */
+-->
+<!-- 
+    <H2 class='webpagetitle'>   
+        <P style='text-align: center'>Input <span style="COLOR: #0000FF;"> Line Item </span> Correction Process </h2>
+    <hr style="width: 70%">
+-->    
+<!--
+/* ============================================== */
+/*    Ending added code for program requirements. */ 
+/* ============================================== */
+-->
+   
+<FORM ACTION="`SelfURL`" METHOD="GET" NAME="JumpForm">                                                
+  <INPUT TYPE="hidden" NAME="repo-to" VALUE="-1000">
+  <INPUT TYPE="hidden" NAME="`'{&amp;Filter-Field}'`" VALUE="`{&amp;Filter-Field}-key`">
+<!--  
+/* ============================================== */
+/* Following added code for program requirements. */ 
+/* ============================================== */
+-->   
+  <INPUT TYPE="hidden" NAME="`'{&amp;Blank-Value}'`"  VALUE="`{&amp;Blank-Value}-key`">  
+ <!--
+/* ============================================== */
+/*    Ending added code for program requirements. */ 
+/* ============================================== */
+-->     
+  <DIV STYLE="text-align: center;">
+  
+  <P><STRONG>Find Sample ID Billing Line Item:
+    <INPUT TYPE="text" SIZE="20" NAME="jumpto-name" VALUE="`jumpto-value`">
+    <INPUT TYPE="submit" NAME="submit-jumpto" VALUE="Submit">
+    </STRONG></P></DIV>
+    
+  <HR>
+</FORM>
+<SCRIPT LANGUAGE="SpeedScript">
+END.     /* Close of "IF JumpForm eq "":U THEN DO:" */
+
+/* ============================================== */
+/* Following added code for program requirements. */ 
+/* ============================================== */  
+  
+    SET record-knout-to-be-corrected = 0.
+    FOR EACH bip_bill_input WHERE bip_deleted = ? AND bip_UnMatched_Reason <> '' :
+        SET record-knout-to-be-corrected = (record-knout-to-be-corrected  + 1).
+    END. 
+
+/* ============================================== */
+/*    Ending added code for program requirements. */ 
+/* ============================================== */
+  
+</SCRIPT>
+
+<!--  
+/* ============================================== */
+/* Following added code for program requirements. */ 
+/* ============================================== */
+-->
+
+<P STYLE="text-align: center;">Total Line Items to correct:  <STRONG>`record-knout-to-be-corrected`</STRONG> </P>
+
+<DIV STYLE="text-align: center;">
+
+<DIV class="table_report">
+<TABLE>
+    <THEAD>
+        <TR>
+            <TH>Sample-ID</TH>
+            <TH>LAB ID</TH><TH>Account Nbr</TH><TH>Invoice Nbr</TH><TH>Invoice Date</TH><TH>Total Amount Due</TH><TH>Bill Due Date</TH><TH>Payment Term</TH> 
+            <TH>Activity Date</TH><TH>First Name</TH><TH>Middle Name</TH><TH>Last Name</TH><TH>Suffix</TH><TH>Test Type</TH><TH>Amount</TH>   
+            <TH>Error Reason</TH>
+        </TR>
+    </THEAD>
+    <TFOOT> 
+        <TR> 
+<SCRIPT LANGUAGE="SpeedScript">
+            ASSIGN 
+                display-msg-1 = "End of display.  More data to follow.".            
+
+            IF  repo-to = -999 THEN 
+	                ASSIGN  display-msg-1 = "End of selected data.  No more data to display.". 
+            
+            IF  record-knout-to-be-corrected > 0 AND record-knout-to-be-corrected < {&Result-Rows} THEN 
+                    ASSIGN  display-msg-1 = "End of display lines.  No more data to display.". 
+                            
+            IF  record-knout-to-be-corrected = 0 THEN 
+                    ASSIGN  display-msg-1 = "No data to correct at this time.". 
+                             
+            {&OUT} "<td colspan=16>"  display-msg-1  "</td>" SKIP.
+</SCRIPT>
+        </TR> 
+    </TFOOT> 
+    
+
+<!--
+/* ============================================== */
+/*    Ending added code for program requirements. */ 
+/* ============================================== */
+-->
+  <SCRIPT LANGUAGE="SpeedScript">
+
+    /* Define the Query */
+    DEFINE QUERY Browse-Qry FOR {&Query-Table} SCROLLING.
+
+     IF {&Blank-Value}-key EQ "":U THEN
+/*    IF {&Filter-Field}-key EQ "":U THEN     */                                                 /** Harold  --         **/
+      /* Open the Query for all the records associated with the Table.
+         No Filter Field specified */        
+/*          
+      OPEN QUERY Browse-Qry FOR EACH {&Query-Table}                                              /** Harold  --         **/
+        USE-INDEX {&Query-Index} NO-LOCK.   
+*/
+
+      OPEN QUERY Browse-Qry FOR EACH {&Query-Table}
+       /*      WHERE {&Query-Table}.{&Filter-Field} = {&Filter-Field}-key       */
+             WHERE {&Query-Table}.{&Filter-Field} <> {&Blank-Value}-key                           /** Harold  --  changed = to <> **/
+             USE-INDEX {&Filter-Index} NO-LOCK. 
+              
+    ELSE
+      /* Open the Query for only those records meeting the Filter Field
+         selection criteria */
+      OPEN QUERY Browse-Qry FOR EACH {&Query-Table}
+  /*      WHERE {&Query-Table}.{&Filter-Field} = {&Filter-Field}-key NO-LOCK  */
+        WHERE {&Query-Table}.{&Filter-Field} <> {&Blank-Value}-key NO-LOCK                       /** Harold  --  changed = to <>  **/
+        BY {&Query-Field}.
+
+    /* "Jump To" form posted.  Find the first record that meets the
+       "Jump To" criteria.  This works correctly if "Jump To" blank */
+    IF repo-to EQ -1000 THEN DO:
+      IF {&Filter-Field}-key EQ "":U THEN
+        /* Find the first record meeting "Jump To" criteria.
+           No Filter Field specified */
+        FIND FIRST {&Query-Table}
+          WHERE {&Query-Table}.{&Query-Field} >= jumpto-value
+           AND {&Query-Table}.{&Filter-Field} <> {&Blank-Value}-key                             /** Harold  --  changed = to <> **/
+          USE-INDEX {&Query-Index} NO-LOCK NO-ERROR.
+      ELSE
+        /* Find the first record meeting "Jump To" criteria AND
+           Filter Field criteria */
+        FIND FIRST {&Query-Table}
+          WHERE {&Query-Table}.{&Query-Field} >= jumpto-value
+      /*      AND {&Query-Table}.{&Filter-Field} = {&Filter-Field}-key          */
+            AND {&Query-Table}.{&Filter-Field} <> {&Blank-Value}-key                            /** Harold  --  changed = to <>  **/
+          USE-INDEX {&Query-Index} NO-LOCK NO-ERROR.
+      IF AVAILABLE {&Query-Table} THEN
+        /* Reposition the Query to the record meeting the selection
+           criteria */
+        REPOSITION Browse-Qry TO ROWID ROWID({&Query-Table}).
+      ELSE
+        /* No record found meeting selection criteria.  Reposition to
+           the first record */
+        REPOSITION Browse-Qry TO ROW 1.
+    END. /* Close of "IF repo-to eq -1000 THEN DO:" */
+    /* First, Prev, Next, Last navigation selected or "NoJumpForm=yes"
+       requested */
+    ELSE DO:
+      IF repo-to > 0 THEN DO:
+        /* Reposition the Query to the Row requested to by
+           the Navigation selection */
+        REPOSITION Browse-Qry TO ROW repo-to.
+        GET NEXT Browse-Qry NO-LOCK.
+        /* If attempted to reposition past the last record, then set
+           repo-to to execute Last navigation functionaltiy */
+        IF NOT AVAILABLE {&Query-Table} THEN repo-to = -999.
+      END.
+      /* Last navigation */
+      IF repo-to EQ -999 THEN DO:
+        IF {&Filter-Field}-key EQ "":U THEN
+          /* Find last record in Table using Query-Index to maintain
+             appropriate Sort order.  No Filter Field criteria */
+ 
+  /* 
+          FIND LAST {&Query-Table}
+            USE-INDEX {&Query-Index} NO-LOCK NO-ERROR.
+   */           
+             
+          FIND LAST {&Query-Table}
+      /*       WHERE {&Query-Table}.{&Filter-Field} = {&Filter-Field}-key       */
+             WHERE  {&Query-Table}.{&Filter-Field} <> {&Blank-Value}-key                       /** Harold  --  changed = to <> **/
+               USE-INDEX {&Filter-Index} NO-LOCK NO-ERROR.              
+            
+        ELSE
+          /* Find last record in Table meeting Filter Field criteria.
+             Use Query-Index to maintain Sort order */     
+            FIND LAST {&Query-Table}
+       /*     WHERE {&Query-Table}.{&Filter-Field} = {&Filter-Field}-key            */
+            WHERE {&Query-Table}.{&Filter-Field} <> {&Blank-Value}-key                        /** Harold  --  changed = to <>  **/
+              USE-INDEX {&Query-Index} NO-LOCK NO-ERROR.    
+                       
+        /* Reposition the Query to the record found */
+        REPOSITION Browse-Qry TO ROWID ROWID({&Query-Table})        NO-ERROR.      /*  whyme */
+        /* Calculate back to display the correct "Result List"
+           output Rows */
+        repo-to = CURRENT-RESULT-ROW("Browse-Qry":U) - {&Result-Rows} + 1.
+      END.
+      /* Reposition to the requested Row.  If repo-to < 1 then Query
+         will be repositioned to the first record */
+      REPOSITION Browse-Qry TO ROW repo-to.
+    END. /* Close of "If repo-to eq -1000 THEN DO:...ELSE DO:" */
+
+  {&OUT} "<form>".                                                                              /** Harold  **/
+  
+    /* Output the number of requested Rows to "Result List" */
+    DO i-count = 1 TO {&Result-Rows}:
+      GET NEXT Browse-Qry NO-LOCK.
+      IF AVAILABLE {&Query-Table} THEN
+        /* Output the requested Display Fields */
+        {&OUT} {&Display-Fields} SKIP.
+      ELSE
+        /* Reached End of Query */
+        LEAVE.
+    END. /* Close of "DO i-count = 1 to {&Result-Rows}:" */
+    
+  {&OUT} "</form>".                                                                             /** Harold  **/
+    
+  </SCRIPT>
+</TABLE>
+</DIV>
+
+<SCRIPT LANGUAGE="SpeedScript">
+  /* If Not the End of the Query, Increment Reposition pointer
+     for Navigation.  If End of Query, force Query to start from
+     beginning */
+  repo-to = (IF NOT AVAILABLE {&Query-Table} THEN -1
+             ELSE CURRENT-RESULT-ROW("Browse-Qry":U) + 1).
+
+  /* Display Navigation Links unless we are waiting for the very
+     first "Jump To" to be submitted */
+  IF repo-to NE 0 THEN DO:
+    ASSIGN
+      TmpUrl         = url-format(?,'jumpto-name,{&Filter-field},NoJumpForm,whattorun',?)    /*  Harold -  added  ,whattorun   to get the menu title */ 
+      DelimiterField = (IF INDEX(TmpUrl,"?") > 0 THEN ? ELSE "?").
+</SCRIPT>
+
+<DIV STYLE="text-align: center;">
+<TABLE align="center" BORDER="2">
+  <TR>
+    <TD>
+      <A HREF="`TmpUrl%20+%20url-field('repo-to','1',DelimiterField)`"
+        onMouseOver="window.status='First `{&amp;Result-Rows}`'; return true"
+        onMouseOut="window.status=''; return true">
+      <IMG SRC="`RootURL`/images/first-au.gif" STYLE="border: 0; width: 16; height:16;"></A>
+    </TD>
+    <TD>
+      <A HREF="`TmpUrl%20+%20url-field('repo-to',string(repo-to%20-%20({&amp;result-rows}%20*%202)),DelimiterField)`"
+        onMouseOver="window.status='Prev `{&amp;Result-Rows}`'; return true"
+        onMouseOut="window.status=''; return true">
+      <IMG SRC="`RootURL`/images/prev-au.gif" STYLE="border: 0; width: 16; height:16;"></A>
+    </TD>
+    <TD>
+      <A HREF="`TmpUrl%20+%20url-field('repo-to',string(repo-to),DelimiterField)`"
+        onMouseOver="window.status='Next `{&amp;Result-Rows}`'; return true"
+        onMouseOut="window.status=''; return true">
+      <IMG SRC="`RootURL`/images/next-au.gif" STYLE="border: 0; width: 16; height:16;"></A>
+    </TD>
+    <TD>
+      <A HREF="`TmpUrl%20+%20url-field('repo-to','-999',DelimiterField)`"
+        onMouseOver="window.status='Last `{&amp;Result-Rows}`'; return true"
+        onMouseOut="window.status=''; return true">
+      <IMG SRC="`RootURL`/images/last-au.gif" STYLE="border: 0; width: 16; height:16;"></A>
+    </TD>
+  </TR>
+</TABLE>
+<BR></BR>
+</DIV>
+
+<SCRIPT LANGUAGE="SpeedScript">
+  END. /* Close of "IF repo-to ne 0 THEN DO:" */
+ 
+   
+  /*================================================= End of browse stuff =============================================================*/ 
+/*
+      {&OUT}   "<BR><TR>" SKIP
+          "<TD>" '>1.  '  "</TD>" SKIP
+          "<TD>" ' > act  = ' act  "</TD>" SKIP
+          "<TD>" ' > ip-seq value = ' ip-seq  "</TD>" SKIP
+          "<TD>" ' > UpdateChanges  = ' UpdateChanges  "</TD>" SKIP
+          "<TD>" ' > Cancel  = ' Cancel  "</TD>" SKIP
+          "</TR>" SKIP.
+*/
+
+  /*======================================= Display selected data here for data field(s) Correction. ==================================*/ 
+IF ip-seq > 0 THEN DO:
+                                 
+    FIND FIRST bip_bill_input
+        WHERE  bip_bill_input.bip_seq       =  ip-seq      
+            NO-LOCK NO-ERROR.
+            
+    IF AVAILABLE (bip_bill_input) THEN DO:
+        
+        ASSIGN 
+               ip-lab-id        = bip_bill_input.bip_LAB_ID
+               ip-Account-Nbr   = bip_bill_input.bip_Account_Nbr
+               ip-Invoice-Nbr   = bip_bill_input.bip_Invoice_Nbr
+               ip-Invoice-Date  = bip_bill_input.bip_Invoice_Date 
+               ip-Total-Amt-Due = bip_bill_input.bip_Total_Amt_Due
+               ip-Payment-Term  = bip_bill_input.bip_Payment_Term
+               ip-Bill-Due-Date = bip_bill_input.bip__date01
+               ip-Sample-ID     = bip_bill_input.bip_Sample_ID
+               ip-Activity-Date = bip_bill_input.bip_Activity_Date 
+               ip-Pat-First-Name = bip_bill_input.bip_Person_First_Name
+               ip-Pat-Mid-Name  = bip_bill_input.bip_Person_Mid_Name
+               ip-Pat-Last-Name = bip_bill_input.bip_Person_Last_Name
+               ip-Pat-Suffix    = bip_bill_input.bip_Person_Suffix 
+               ip-Test-Type     = bip_bill_input.bip_Test_Type
+               ip-Amount        = bip_bill_input.bip_Amount.  
+                     
+        {&OUT}      /*  "<form ACTION='Billing-IP-Scn-Store-Record.r'  method='get' >" SKIP  */    
+                "<form   method='get' >" SKIP 
+                     "<input type='hidden' name='whattorun'    value='" whattorun "' >" SKIP            /* to get the menu title */ 
+                     "<input type='hidden' name='s-act' value='2' >" SKIP 
+                     "<input type='hidden' name='ip-seq' value='" bip_bill_input.bip_seq "' >" SKIP    
+                     "<input type='hidden' name='s-LabID' value='" ip-lab-id "' >" SKIP
+                    "<div class='table_2col'>" SKIP               
+                     "<table border=0>" SKIP
+                     "<thead>" SKIP
+                        "<tr>" SKIP
+                            "<td colspan=4><center> Header input data </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Account Nbr:</td>" SKIP
+                            "<td><input type='text' name='s-Account-Nbr' value='" ip-Account-Nbr "' tabindex=1 autofocus </td>"  SKIP 
+                            "<td>Payment Term:</td>" SKIP
+                            "<td><input type='text' name='s-Payment-Term' value='" ip-Payment-Term "' disabled </td>"
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Invoice Nbr:</td>" SKIP
+                            "<td><input type='text' name='s-Invoice-Nbr' value='" ip-Invoice-Nbr "' tabindex=2 </td>" SKIP
+                             "<td>Total Amount Due:</td>" SKIP
+                            "<td><input type='text' name='s-Total-Amt-Due' value='" ip-Total-Amt-Due "' tabindex=5 </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP                              
+                            "<td>Invoice/Closing Date:</td>" SKIP
+                            "<td><input type='text' name='s-Invoice-Date' value='" ip-Invoice-Date "' tabindex=3 </td>" SKIP 
+                            "<td>Bill Due Date:</td>" SKIP
+                            "<td><input type='text' name='s-Bill-Due-Date' value='" ip-Bill-Due-Date "' tabindex=6 </td>" SKIP
+                        "</tr>" SKIP
+                      "</thead>" SKIP
+                    "</table>"  SKIP              
+                   "</div>" SKIP                   
+                    
+                   "<div class='table_2col'>" SKIP
+                    "<table border=6>" SKIP
+                    "<thead>" SKIP
+                        "<tr>" SKIP
+                            "<td colspan=4><center> Line Item input detail </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>First Name:</td>" SKIP
+                            "<td><input type='text' name='s-Person1stName' value='" ip-Pat-First-Name "' tabindex=10 </td>" SKIP
+                            "<td>Sample ID:</td>" SKIP
+                            "<td>" "<input type='text' name='s-Sample-ID' value='" ip-Sample-ID "' tabindex=14 </td>"  SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Middle Name:</td>" SKIP
+                            "<td>" "<input type='text' name='s-PersonMidName' value='" ip-Pat-Mid-Name "' tabindex=11 </td>" SKIP
+                            "<td>Activity Date:</td>" SKIP
+                            "<td>" "<input type='text' name='s-Activity-Date' value='" ip-Activity-Date "' tabindex=15 </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Last Name:</td>" SKIP
+                            "<td>" "<input type='text' name='s-PersonLastName' value='" ip-Pat-Last-Name "' tabindex=12 </td>" SKIP 
+                            "<td>Test Type:</td>" SKIP
+                            "<td>" "<input type='text' name='s-Test-Type' value='" ip-Test-Type "' tabindex=16 </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Suffix:</td>" SKIP
+                            "<td>" "<input type='text' name='s-PersonSuffix' value='" ip-Pat-Suffix "' tabindex=13 </td>" SKIP
+                            "<td>Amount:</td>" SKIP
+                            "<td>" "<input type='text' name='s-Amount' value='" ip-Amount "' tabindex=17 </td>" SKIP
+                        "</tr>" SKIP 
+                      "</thead>" SKIP
+                    "</table>"  SKIP 
+                   "</div>" SKIP
+                   "<br> </br>" SKIP   
+                   "<td>" "<input type='submit' name='s-UpdateChanges' value='Update' 
+                                onclick='this.form.action='Billing-Correction-Report.r?sent=1 &ip-seq='" bip_bill_input.bip_seq "' '>" SKIP
+                   "<td>" "<input type='submit' name='s-Cancel' value='Cancel Changes' onclick='this.form.action='Billing-Correction-Report.r?sent=1''>" SKIP.                                                                           
+                "</form>".  
+ 
+    END.    /**  IF AVAILABLE (bip_bill_input)  **/  
+  END.  /**   IF ip-seq > 0  **/                
+ END.   /** IF UpdateChanges <> 'Update'  **/        
+
+</SCRIPT>
+               
+</BODY>
+</HTML>

@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Marker List Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <META NAME="UPDATED_DATE" CONTENT="03/Nov/15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+<BODY class='inside'>
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:           TLmarkerR.html
+    Description:    report page for the marker list table in the HHI database
+    Created:        10/14/14
+    Updated:        01/Oct/15
+    Version:        2.0
+    Notes:          This is the one for the 10.1.1 release.
+    
+    1.1  -  by Jacob Luttrell on 05/oct/15
+                corrected button on report page.
+                marked by 1dot1. 
+                
+    1.2 -   by Jacob Luttrell on 03/Nov/15
+                added tfoot and corrected hyperlink(s).
+                Marked by 1dot2
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE from_item   LIKE marker_list.marker_item NO-UNDO.
+DEFINE VARIABLE to_item     LIKE marker_list.marker_item NO-UNDO.
+DEFINE VARIABLE from_disply LIKE marker_list.marker_display NO-UNDO.
+DEFINE VARIABLE to_disply   LIKE marker_list.marker_display NO-UNDO.
+DEFINE VARIABLE from_desc   LIKE marker_list.marker_desc NO-UNDO.
+DEFINE VARIABLE to_desc     LIKE marker_list.marker_desc NO-UNDO.
+
+DEFINE VARIABLE act         AS CHARACTER NO-UNDO.
+
+/********************** assign stuff ********************************/
+ASSIGN 
+    act         = get-value("s-act")
+
+    from_item   = get-value("s-from_item")
+    to_item     = get-value("s-to_item")
+    from_disply = get-value("s-from_disply")
+    to_disply   = get-value("s-to_disply")
+    from_desc   = get-value("s-from_desc")
+    to_desc     = get-value("s-to_desc").
+
+IF act = "" THEN 
+    ASSIGN 
+        act = "Search".
+        
+/*********************** search **************************************/
+IF act = "Search" THEN DO:
+    
+   {&OUT} 
+		"<CENTER>
+        <div class='row'><div class='grid_2'></div>" SKIP
+        "<div class='grid_8'>" SKIP
+		"<div class='table_2col'>
+			<FORM>   
+				<Table>
+					<tr>
+					    <th colspan=4> Search Criteria</th>" SKIP "
+					</tr>
+					<tr>
+					    <td>Item</td><td><INPUT type='text' name='s-from_item'/></td> " SKIP "
+					    <td>To</td><td><INPUT type='text' name='s-to_item'/></td> " SKIP "
+					</tr>
+					<tr>
+					    <td>Display</td><td><INPUT type='text' name='s-from_disply'/></td>" SKIP "
+					    <td>To</td><td><INPUT type='text' name='s-to_disply'/></td>" SKIP "
+					</tr>
+					<tr>
+					    <td>Description</td><td><INPUT type='text' name='s-from_desc'/></td>" SKIP "
+					    <td>To</td><td><INPUT type='text' name='s-to_desc'/></td>" SKIP "
+					</tr>
+				</Table>" SKIP
+                "</div><!--close of table div-->" SKIP
+                "</div><!-- close of grid_8 div -->" SKIP
+                "<div class='grid_2'></div>" SKIP
+                "</div>" SKIP
+                "<div class='row'>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='submit' name='s-submit' value='Submit' class='btn'>Search</BUTTON></div>" SKIP
+                "   <div class='grid_2'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='reset' name='s-reset' value='Reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "</div>" SKIP 
+				"<INPUT type='hidden' name='s-act' value='Results' />" SKIP "
+				<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP 
+		    "</FORM>". 
+		
+END. /*** act 0 ***/
+/******************************************* results **************************************/
+IF act = "Results" THEN DO:
+    
+    {&OUT}
+        "<DIV class='row'>" SKIP
+        "<DIV class='grid_1'> </DIV>" SKIP
+        "<DIV class='grid_10'>" SKIP
+        "<CENTER>
+        <form>
+            <div class='table_report_FromTo'>" SKIP "
+                <table>
+                    <thead>
+                        <tr>
+                            <th colspan=8>Marker Report</th>" SKIP "
+                        </tr>
+                        <tr>
+                            <td>From</th>" SKIP "
+                            <td>"from_item "</td>" SKIP "
+                            <td>"from_disply "</td>" SKIP "
+                            <td>"from_desc "</td>" SKIP "
+                        </tr>
+                        <tr>
+	                        <td>To</td>
+	                        <td>"to_item "</td>" SKIP "
+	                        <td>"to_disply "</td>" SKIP "
+	                        <td>"to_desc "</td>" SKIP "
+	                    </tr>        
+                        <tr>
+                            <td></td>
+                            <td>Item Name</td>" SKIP "
+                            <td>Display</td>" SKIP "
+                            <td>Description</td>" SKIP "
+                        </tr>
+                    </thead>".      
+       
+FOR EACH marker_list WHERE
+    ((marker_list.marker_item >= from_item) OR
+     (from_item = "")) AND
+    ((marker_list.marker_item <= to_item) OR
+     (to_item = "")) AND
+    ((marker_list.marker_display >= from_disply) OR
+     (from_disply = "")) AND
+    ((marker_list.marker_display <= to_disply) OR
+     (to_disply = "")) AND 
+    ((marker_list.marker_desc >= from_desc) OR
+     (from_desc = "")) AND
+    ((marker_list.marker_desc <= to_desc ) OR
+     (to_desc = "")) AND 
+     marker_list.marker_deleted = ?
+    BY marker_list.marker_item:
+        
+        {&OUT}
+            "<tr>" SKIP
+                "<td></td>" SKIP
+                "<td><a href='TLitemU.r?h-markid=" marker_list.marker_ID "&h-act=FIND+ITEM&whattorun=4.1' >" marker_list.marker_item "</a></td>" SKIP /* 1dot2 */
+                "<td>" marker_list.marker_display "</td>" SKIP 
+                "<td>" marker_list.marker_desc "</td>" SKIP             
+            "</tr>" SKIP.
+            
+    
+    
+END. /*** for each ***/
+
+    {&OUT}
+        "<tfoot>" SKIP                                                                                                                          /* 1dot2 */
+        "<tr>" SKIP
+            "<td colspan=8>End of Report</td>" SKIP 
+        "</tr>" SKIP
+        "</tfoot>" SKIP                                                                                                                         /* 1dot2 */
+    "</table>" SKIP
+    "</div>" SKIP
+    "</DIV>         <!-- end of grid_10 -->" SKIP
+    "<DIV class='grid_1'> </DIV>" SKIP  
+    "</DIV>     <!-- end of row -->" SKIP
+    "<div class='row'>" SKIP
+    "   <div class='grid_5'> </DIV>" SKIP
+    "   <form> " SKIP
+    "       <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP 
+    "       <div class='grid_2'><button type='submit' name='s-act' value='Search' class='btn'>Search Again</BUTTON></div>" SKIP                 /* 1dot1 */
+    "   <div class='grid_5'> </DIV>" SKIP
+    "</div>" SKIP
+    "<BR>" SKIP
+    "</form>".
+     
+END. /*** act 1 ***/
+</SCRIPT>
+</CENTER>
+</BODY>
+</HTML>

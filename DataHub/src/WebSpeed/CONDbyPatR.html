@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Condition by Patient Report</TITLE>
+    <META NAME="AUTDOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="11/Nov/14">
+    <META NAME="LAST_UPDATED" CONTENT="11/Nov/14">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+DEFINE VARIABLE patid LIKE patient_mstr.patient_ID NO-UNDO.
+DEFINE VARIABLE ischecked AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE ITshowmsg AS LOG INITIAL YES NO-UNDO.
+
+ASSIGN 
+    patid   = INTEGER(get-value("h-patid")).
+
+    
+    
+FOR EACH patient_mstr WHERE patient_mstr.patient_ID = patid AND 
+        patient_mstr.patient_deleted = ? NO-LOCK,
+    FIRST people_mstr WHERE people_mstr.people_id = patient_mstr.patient_ID AND 
+        people_mstr.people_deleted = ? NO-LOCK 
+    BREAK BY patient_mstr.patient_ID: 
+        
+    IF FIRST-OF(patient_mstr.patient_id) THEN DO: 
+    
+        {&OUT}  
+            "<DIV class='white_table'>" SKIP.
+            
+        IF ITshowmsg = YES THEN 
+            {&OUT}  
+                "   <CENTER><H3>" people_mstr.people_firstname " " people_mstr.people_lastname " - " patient_mstr.patient_ID "</H3>" SKIP.
+                
+        {&OUT}
+            "   <TABLE>" SKIP
+            "       <THEAD>" SKIP
+            "           <TH>Conditions</TH>" SKIP
+            "       </THEAD>" SKIP.       
+            
+        FOR EACH condition_mstr WHERE condition_mstr.condition_deleted = ? NO-LOCK 
+            BREAK BY condition_mstr.condition_name BY condition_mstr.condition_ID:
+                
+            FIND pcl_det WHERE pcl_det.pcl_patient_id = patient_mstr.patient_ID AND 
+                pcl_det.pcl_cond_id = condition_mstr.condition_ID AND 
+                pcl_det.pcl_deleted = ? 
+                    NO-LOCK NO-ERROR.     
+                
+            IF AVAILABLE (pcl_det) THEN 
+                ischecked = "CHECKED".
+            ELSE 
+                ischecked = "".
+                
+            {&OUT}
+                "<TR>" SKIP
+                "   <TD><input type='checkbox' name='h-cond' value='" condition_mstr.condition_ID "' " ischecked " DISABLED />" 
+                        condition_mstr.condition_name "</TD>" SKIP
+                "</TR>" SKIP.
+                
+        END.  /* of 4ea. condition_mstr */                        
+            
+        {&OUT}
+            "   </TABLE>" SKIP
+            "</DIV>" SKIP.                                                      /* single_table */    
+            
+    END.  /** of if first-of patient_id **/                 
+    
+END.  /***  of 4ea. patient_mstr ***/
+
+</SCRIPT>
+</BODY>
+</HTML>

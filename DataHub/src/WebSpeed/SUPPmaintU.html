@@ -1,0 +1,831 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.4">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="06/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="18/Mar/16"> 
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <TITLE>Supplement Maintenance</TITLE>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure. 
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+/**********************************************************************************
+ *
+ *  SUPPmaintU.html   -   Version 1.2
+ *
+ *  This program is designed to provide basic maintenance for the Supplements that could
+ *  be recommended on a testkit (MPA or BioMed).  It is not intended to update which tests
+ *  have those supplements as recommendations on them, only that they exist to be chosen 
+ *  from.  Updates the suppl_list table in the HHI database.
+ *
+ *  ----------------------------------------------------------------------------
+ *
+ *  Revision History:
+ *  -----------------
+ *  1.0 - written by DOUG LUTTRELL on 06/Oct/14.  Original Version.
+ *  1.1 - written by DOUG LUTTRELL on 19/Nov/14.  Changed the creation of a new 
+ *          supplement to be controlled via a button instead of via the drop-down
+ *          per Danielle's request.  Marked by 1dot1.
+ *  1.2 - written by DOUG LUTTRELL on 03/Jul/15.  This was a program that was missing
+ *          the proper CSS references in the header and in the actual HTML code, 
+ *          so I fixed that.  Actual reason I was in here is that Danielle wants to be 
+ *          able to modify the key field instead of having to delete it and add another.  
+ *          This looks like it was one of the programs when I started putting the forms 
+ *          into a *.i file.  The problem with that is that I started pushing logic into 
+ *          that include file.  Now it's unnecessarily complicated.  I'm going to collapse 
+ *          it back into a single piece of code.  Also going to add in the stuff for the 
+ *          UOM_mstr table.  Not marked because of extent of changes.
+ *  1.3 - written by Jacob Luttrell on 06/Oct/15.  Changed layout from table_2col to table_col.
+ *          Marked by 1dot3.
+ *  1.4 - written by Jacob Luttrell on 09/Nov/15.  Fixed whattorun for error messages.
+ *          Marked by 1dot4.
+ *  1.5 - written by Jacob Luttrell on 18/Mar/16. Added this-procedure:file-name. Added cancel act to clean up variables.Marked by 1dot5.
+ ***********************************************************************************/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/  
+
+/***************************  Variable Definition Section  *************************/
+ DEFINE VARIABLE supplid    LIKE suppl_list.suppl_id        NO-UNDO.
+ DEFINE VARIABLE supplname  LIKE suppl_list.suppl_name      NO-UNDO.
+ DEFINE VARIABLE suppldesc  LIKE suppl_list.suppl_desc      NO-UNDO.
+ DEFINE VARIABLE sku        LIKE suppl_list.suppl_sku       NO-UNDO.
+ DEFINE VARIABLE defqty     LIKE suppl_list.suppl_def_qty   NO-UNDO.
+ DEFINE VARIABLE defuom     LIKE suppl_list.suppl_def_uom   NO-UNDO.
+ DEFINE VARIABLE defnotes   LIKE suppl_list.suppl_def_notes NO-UNDO. 
+  
+ DEFINE VARIABLE act        AS CHARACTER                    NO-UNDO.        /** controls program flow **/
+ DEFINE VARIABLE ITshowmsg  AS LOG INITIAL NO               NO-UNDO.        /** YES to see messages, NO to hide messages **/
+ 
+ DEFINE VARIABLE thismarker AS CHARACTER                    NO-UNDO.        /** used for HTML selection **/
+
+ DEFINE VARIABLE x          AS int                          NO-UNDO.        /** junk counter for uom **/
+ DEFINE VARIABLE thisuom    AS CHARACTER                    NO-UNDO.        /** used for HTML selection **/
+ DEFINE VARIABLE uomlist    AS CHARACTER
+    INITIAL "CAPSULE,DROP,TSP,TBSP,TABLET,SPRAY"                                            /* 1dot1 - need uom_list to replace */
+    NO-UNDO.
+
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre get-value</P>" skip.
+        
+ ASSIGN 
+    act         = get-value('h-act')
+    supplid     = IF substring(get-value('h-supplid'),1,4) = "null" THEN        /* 1dot1 */
+                    0                                                           /* 1dot1 */
+                  ELSE                                                          /* 1dot1 */
+                    integer(get-value('h-supplid'))                             /* 1dot1 */
+    supplname   = get-value('h-supplname')
+    suppldesc   = get-value('h-suppldesc')
+    sku         = get-value('h-sku')
+    defqty      = DECIMAL(get-value('h-defqty'))
+    defuom      = get-value("h-defuom")
+    defnotes    = get-value('h-defnotes').
+    
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Post get-value</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>supplid = " supplid "</P>" skip    
+																				       "<P>supplname = " supplname "</P>" skip
+																				       "<P>suppldesc = " suppldesc "</P>" skip
+																				       "<P>defuom = " defuom "</P>" skip
+																				       "<hr width=90%>" skip.
+        
+ IF act = "" THEN 
+    act = "INITIAL".
+    
+/* ELSE IF act = "CREATE" THEN*/
+/*    act = "CREATE".         */
+/*                            */
+/* ELSE IF act = "UPDATE" THEN*/
+/*    act = "UPDATE".         */
+     
+ ELSE IF act = "ADD" THEN 
+    act = "PROMPT".
+/* 1dot5 --> */    
+IF act = "CANCEL" THEN     
+
+    ASSIGN 
+	    act         = "INITIAL"
+	    supplid     = 0
+	    supplname   = ""
+	    suppldesc   = ""
+	    sku         = ""
+	    defqty      = 0
+	    defuom      = ""
+	    defnotes    = "".     
+/* <-- 1dot5 */
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre Case</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>supplid = " supplid "</P>" skip   
+																				       "<P>supplname = " supplname "</P>" skip
+																				       "<P>suppldesc = " suppldesc "</P>" skip
+																				       "<hr width=90%>" skip.
+        
+/********************************  Main Program  ***********************************/
+CASE act: 
+    
+    WHEN "INITIAL" THEN DO:
+        
+		{&OUT}
+			"<DIV class='row'>" SKIP
+			"<DIV class='grid_1'> </DIV>" SKIP
+			"<DIV class='grid_10'>" SKIP		
+		    "<FORM id='SUPPmaintU-form'>" SKIP 
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP           /* 1dot1 - bonus fix */		    
+		    "<DIV class='table_col'>" SKIP                                                                /* 1dot3 */
+		    "<TABLE>" SKIP
+            "   <THEAD>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan=2>Supplement Maintenance</TH>" SKIP                                    /* 1dot3 */
+		    "       </TR>" SKIP
+		    "   </THEAD>" SKIP
+		    "   <TR>" SKIP
+		    "       <TD>Supplement</TD>" SKIP 
+		    "       <TD class='REQ'>" SKIP
+            "           <select name='h-supplid' value=" supplid ">" SKIP
+            "               <option value=''> </option>" SKIP.
+            
+        FOR EACH suppl_list WHERE suppl_list.suppl_deleted = ? NO-LOCK
+            BY suppl_list.suppl_name:                                                               /* 1dot1 - bonus sort */ 
+        
+            IF suppl_list.suppl_id = supplid THEN 
+                thismarker  = "SELECTED".
+            ELSE 
+                thismarker  = "".
+            
+            {&OUT}
+                "               <option value=" suppl_list.suppl_ID " " thismarker " > " suppl_list.suppl_name " </option>" SKIP.
+            
+        END.  /** of 4ea. suppl_list **/
+    
+	    {&OUT} 
+	        "           </select>" SKIP
+	        "       </TD>" SKIP    
+/*	        "       </TD>" SKIP*/
+/* *** moved in 1dot3 ***
+		    "       <TD rowspan=2>Supplement Description</TD>" SKIP
+		    "       <TD rowspan=2>" SKIP
+		    "           <textarea rows=4 cols=50 name='h-suppldesc' DISABLED  >" suppldesc "</textarea>" SKIP
+		    "       </TD>" SKIP
+    *** end of move *** */            
+		    "   </TR>" SKIP 
+		    "   <TR>" SKIP
+		    "         <TD>Magento SKU#</TD>" SKIP
+		    "         <TD><INPUT type='text' name='h-sku' value='" sku "' DISABLED /></TD>" SKIP 
+		    "   </TR>" SKIP
+		    "   <TR>" SKIP
+		    "         <TD>Default Dosage</TD>" SKIP
+		    "         <TD><INPUT type='number' name='h-defqty' min='0' step='0.25' value=" defqty " DISABLED /></TD>" SKIP
+/* *** moved in 1dot3 ***
+		    "       <TD rowspan=2>Default Notes</TD>" SKIP
+		    "       <TD rowspan=2>" SKIP
+		    "           <textarea rows=4 cols=50 name='h-defnotes' DISABLED >" defnotes "</textarea>" SKIP
+		    "       </TD>" SKIP 
+    *** end of move *** */		               
+		    "     </TR>" SKIP
+		    "     <TR>" SKIP
+		    "         <TD>Default Unit Of Measure (UOM)</TD>"  SKIP
+            "         <TD><select name='h-defuom' value='" defuom "' DISABLED >" SKIP.
+    
+    
+    /*************  BEGIN OLD UOM CODE  ******************
+DO x = 1 TO NUM-ENTRIES(uomlist):
+    
+    IF ENTRY(x,uomlist) = defuom THEN 
+        thisuom = "SELECTED".
+    ELSE 
+        thisuom = "".
+        
+    {&OUT}
+        "<option value='" ENTRY(x,uomlist) "' " thisuom " >" ENTRY(x,uomlist) "</option>" SKIP.    
+    
+END.  /** of do x = 1 to num-entries uomlist **/
+    
+{&OUT}
+    "               </select>" SKIP
+    "           </TD>" SKIP
+    
+    *******************  End of Old UOM Code ****************/        
+        
+        
+	    {&OUT}        
+	            "   </TR>" SKIP
+	            "   <TR>" SKIP                                                                                                      /* 1dot3 */
+			    "       <TD>Supplement Description</TD>" SKIP                                                                       /* 1dot3 */
+			    "       <TD>" SKIP                                                                                                  /* 1dot3 */
+			    "           <textarea rows=4 cols=75 name='h-suppldesc' DISABLED >" suppldesc "</textarea>" SKIP                    /* 1dot3 */
+			    "       </TD>" SKIP                                                                                                 /* 1dot3 */
+			    "   </TR>" SKIP                                                                                                     /* 1dot3 */
+			    "   <TR>" SKIP                                                                                                      /* 1dot3 */ 
+			    "       <TD>Default Notes</TD>" SKIP                                                                                /* 1dot3 */
+			    "       <TD>" SKIP                                                                                                  /* 1dot3 */
+			    "           <textarea rows=4 cols=75 name='h-defnotes' DISABLED >" defnotes "</textarea>" SKIP                      /* 1dot3 */
+			    "       </TD>" SKIP                                                                                                 /* 1dot3 */
+			    "   </TR>" SKIP                                                                                                     /* 1dot3 */            
+			    "</TABLE>" SKIP
+			    "</DIV>  <!-- end of table_col -->" SKIP
+				"</DIV>         <!-- end of grid_10 -->" SKIP
+				"<DIV class='grid_1'> </DIV>" SKIP  
+				"</DIV>     <!-- end of row -->" SKIP	
+				"<div class='row'>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='FIND SUPPLEMENT' class='btn'>Find Supplement</BUTTON></div>" SKIP
+				"   <div class='grid_2'> </DIV>" SKIP
+				"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='ADD' class='btn'>Add a New Supplement</BUTTON></div>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"</div>     <!-- end of row -->" SKIP	    
+			    "</FORM>" SKIP.  
+        
+    END.  /** of act = "INITIAL" **/
+     
+     
+    WHEN "FIND SUPPLEMENT" THEN DO:
+        
+        FIND suppl_list WHERE suppl_list.suppl_id = supplid AND  
+            suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.
+        IF AVAILABLE suppl_list THEN 
+            ASSIGN 
+                supplname   = suppl_list.suppl_name
+                suppldesc   = suppl_list.suppl_desc
+                sku         = suppl_list.suppl_sku
+                defqty      = suppl_list.suppl_def_qty
+                defuom      = suppl_list.suppl_def_uom
+                defnotes    = suppl_list.suppl_def_notes. 
+ 
+/*        {SUPPmaintU-form.i "UPDATE" "DISABLED" "NOTHING" "NOTHING"}.*/
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP
+            "<DIV class='grid_10'>" SKIP        
+            "<FORM id='SUPPmaintU-form'>" SKIP 
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP           /* 1dot1 - bonus fix */            
+            "<DIV class='table_col'>" SKIP                                                                /* 1dot3 */
+            "<TABLE>" SKIP
+            "   <THEAD>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan=2>Supplement Maintenance</TH>" SKIP                                    /* 1dot3 */
+            "       </TR>" SKIP 
+            "   </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <TD>Supplement</TD>" SKIP 
+            "       <TD class='REQ'>" SKIP
+            "           <input type='hidden' name='h-supplid' value=" supplid " />" SKIP 
+	        "           <input type='text' name='h-supplname' value=~""  supplname "~" />" SKIP 
+	        "       </td>" SKIP
+/* *** moved in 1dot3 ***
+            "       <TD rowspan=2>Supplement Description</TD>" SKIP
+            "       <TD rowspan=2>" SKIP
+            "           <textarea rows=4 cols=50 name='h-suppldesc' >" suppldesc "</textarea>" SKIP
+            "       </TD>" SKIP  
+    *** end of move *** */          
+            "   </TR>" SKIP 
+            "   <TR>" SKIP
+            "         <TD>Magento SKU#</TD>" SKIP
+            "         <TD><INPUT type='text' name='h-sku' value='" sku "' /></TD>" SKIP 
+            "   </TR>" SKIP
+            "     <TR>" SKIP
+            "         <TD>Default Dosage</TD>" SKIP
+            "         <TD><INPUT type='number' name='h-defqty'  min='0' step='0.25' value=" defqty " /></TD>" SKIP
+/* *** moved in 1dot3 ***
+            "       <TD rowspan=2>Default Notes</TD>" SKIP
+            "       <TD rowspan=2>" SKIP
+            "           <textarea rows=4 cols=50 name='h-defnotes' >" defnotes "</textarea>" SKIP
+            "       </TD>" SKIP 
+    *** end of move *** */           
+            "     </TR>" SKIP
+            "     <TR>" SKIP
+            "         <TD>Default Unit Of Measure (UOM)</TD>"  SKIP
+            "         <TD><select name='h-defuom' value='" defuom "' >" SKIP.
+            
+           {../depot/src/WebSpeed/UOMDropDown.i defuom "DOSAGE" }.                                                                /* 1dot5 */
+    
+    
+    /*************  BEGIN OLD UOM CODE  ******************
+DO x = 1 TO NUM-ENTRIES(uomlist):
+    
+    IF ENTRY(x,uomlist) = defuom THEN 
+        thisuom = "SELECTED".
+    ELSE 
+        thisuom = "". 
+        
+    {&OUT}
+        "<option value='" ENTRY(x,uomlist) "' " thisuom " >" ENTRY(x,uomlist) "</option>" SKIP.    
+    
+END.  /** of do x = 1 to num-entries uomlist **/
+    
+{&OUT}
+    "               </select>" SKIP
+    "           </TD>" SKIP
+    
+    *******************  End of Old UOM Code ****************/        
+        
+        
+        {&OUT}   
+                "       </select></TD>" SKIP                                                                                        /* 1dot5 */     
+                "   </TR>" SKIP
+                "   <TR>" SKIP                                                                                                      /* 1dot3 */
+                "       <TD>Supplement Description</TD>" SKIP                                                                       /* 1dot3 */
+                "       <TD>" SKIP                                                                                                  /* 1dot3 */
+                "           <textarea rows=4 cols=75 name='h-suppldesc' >" suppldesc "</textarea>" SKIP                             /* 1dot3 */
+                "       </TD>" SKIP                                                                                                 /* 1dot3 */
+                "   </TR>" SKIP                                                                                                     /* 1dot3 */
+                "   <TR>" SKIP                                                                                                      /* 1dot3 */ 
+                "       <TD>Default Notes</TD>" SKIP                                                                                /* 1dot3 */
+                "       <TD>" SKIP                                                                                                  /* 1dot3 */
+                "           <textarea rows=4 cols=75 name='h-defnotes'>" defnotes "</textarea>" SKIP                                /* 1dot3 */
+                "       </TD>" SKIP                                                                                                 /* 1dot3 */
+                "   </TR>" SKIP                                                                                                     /* 1dot3 */                  
+                "</TABLE>" SKIP
+                "</DIV>  <!-- end of table_2col -->" SKIP
+                "</DIV>         <!-- end of grid_10 -->" SKIP
+                "<DIV class='grid_1'> </DIV>" SKIP  
+                "</DIV>     <!-- end of row -->" SKIP   
+                "<div class='row'>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn'>Update</BUTTON></div>" SKIP
+                "   <div class='grid_2'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='CANCEL' class='btn'>Cancel</BUTTON></div>" SKIP    /* 1dot5 */
+                "   <div class='grid_3'> </DIV>" SKIP
+                "</div>     <!-- end of row -->" SKIP       
+                "</FORM>" SKIP.          
+        
+                
+																				IF ITshowmsg = YES THEN 
+																				    {&OUT}
+																				        "<P>Post FIND</P>" skip  
+																				        "<P>Act = " act "</P>" skip
+																				        "<P>supplid = " supplid "</P>" skip   
+																				        "<P>supplname = " supplname "</P>" skip
+																				        "<P>suppldesc = " suppldesc "</P>" skip
+																				        "<hr width=90%>" skip.
+         
+    END.  /** of act = "INITIAL" **/
+    
+    WHEN "UPDATE" THEN DO:
+        
+																		        IF ITshowmsg = YES THEN 
+																		            {&OUT}
+																		                "<P>Inside Update</P>" skip
+																		                "<P>Act = " act "</P>" skip
+																		                "<P>supplid = " supplid "</P>" skip   
+																		                "<P>supplname = " supplname "</P>" skip
+																		                "<P>suppldesc = " suppldesc "</P>" skip
+																		                "<P>defuom = " defuom "</P>" SKIP
+																		                "<hr width=90%>" skip.
+        
+        FIND suppl_list WHERE suppl_list.suppl_id = supplid AND 
+            suppl_list.suppl_deleted = ? 
+                EXCLUSIVE-LOCK NO-ERROR.
+        IF AVAILABLE suppl_list THEN DO: 
+            
+            ASSIGN 
+                suppl_list.suppl_name           = supplname
+                suppl_list.suppl_desc           = suppldesc
+                suppl_list.suppl_sku            = sku
+                suppl_list.suppl_def_qty        = defqty
+                suppl_list.suppl_def_uom        = defuom
+                suppl_list.suppl_def_notes      = defnotes
+                suppl_list.suppl_modified_date  = TODAY 
+                suppl_list.suppl_modified_by    = USERID("HHI")
+                suppl_list.suppl_prog_name      = THIS-PROCEDURE:FILE-NAME.             /* 1dot5 */ 
+
+	        {&OUT}
+	            "<DIV class='row'>" SKIP
+	            "<DIV class='grid_1'> </DIV>" SKIP
+	            "<DIV class='grid_10'>" SKIP     
+			    "<FORM id='SUPPmaintU-form'>" SKIP 
+			    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                  /* 1dot1 - bonus fix */    
+                "<DIV class='table_col'>" SKIP                                                                /* 1dot3 */
+			    "<TABLE>" SKIP 
+			    "   <TR>" SKIP
+			    "       <TH colspan=2>Supplement Maintenance</TH>" SKIP                                       /* 1dot3 */
+			    "   <TR>" SKIP
+			    "       <TD>Supplement</TD>" SKIP 
+			    "       <TD class='REQ'>" SKIP
+			    "<input type='hidden' name='h-supplid' value=" supplid " >" SKIP 
+			    "<input type='hidden' name='h-supplname' value=~""  supplname "~" >" SKIP 
+			    supplname "</td>" SKIP
+			    "       </TD>" SKIP
+/* *** moved in 1dot3 ***			    
+			    "       <TD rowspan=2>Supplement Description</TD>" SKIP
+			    "       <TD rowspan=2>" SKIP
+			    "           <textarea rows=4 cols=50 name='h-suppldesc' DISABLED >" suppldesc "</textarea>" SKIP
+			    "       </TD>" SKIP  
+    *** end of move *** */			              
+			    "   </TR>" SKIP 
+			    "   <TR>" SKIP
+			    "         <TD>Magento SKU#</TD>" SKIP
+			    "         <TD><INPUT type='text' name='h-sku' value='" sku "' DISABLED /></TD>" SKIP 
+			    "   </TR>" SKIP
+			    "     <TR>" SKIP
+			    "         <TD>Default Dosage</TD>" SKIP
+			    "         <TD><INPUT type='number' name='h-defqty'  min='0' step='0.25' value=" defqty " DISABLED /></TD>" SKIP
+/* *** moved in 1dot3 ***
+			    "       <TD rowspan=2>Default Notes</TD>" SKIP
+			    "       <TD rowspan=2>" SKIP
+			    "           <textarea rows=4 cols=50 name='h-defnotes' DISABLED >" defnotes "</textarea>" SKIP
+			    "       </TD>" SKIP 
+    *** end of move *** */			               
+			    "     </TR>" SKIP
+			    "     <TR>" SKIP
+			    "         <TD>Default Unit Of Measure (UOM)</TD>"  SKIP
+			    "         <TD><select name='h-defuom' value='" defuom "' disabled >" SKIP.
+            
+           {../depot/src/WebSpeed/UOMDropDown.i defuom "DOSAGE" }.                                                                /* 1dot5 */       
+        
+        {&OUT}   
+                "       </select></TD>" SKIP                                                                                        /* 1dot5 */     
+			    "   </TR>" SKIP   
+			    "   <TR>" SKIP                                                                                                      /* 1dot3 */
+                "       <TD>Supplement Description</TD>" SKIP                                                                       /* 1dot3 */
+                "       <TD>" SKIP                                                                                                  /* 1dot3 */
+                "           <textarea rows=4 cols=75 name='h-suppldesc' DISABLED >" suppldesc "</textarea>" SKIP                    /* 1dot3 */
+                "       </TD>" SKIP                                                                                                 /* 1dot3 */
+                "   </TR>" SKIP                                                                                                     /* 1dot3 */
+                "   <TR>" SKIP                                                                                                      /* 1dot3 */ 
+                "       <TD>Default Notes</TD>" SKIP                                                                                /* 1dot3 */
+                "       <TD>" SKIP                                                                                                  /* 1dot3 */
+                "           <textarea rows=4 cols=75 name='h-defnotes' DISABLED >" defnotes "</textarea>" SKIP                      /* 1dot3 */
+                "       </TD>" SKIP                                                                                                 /* 1dot3 */
+                "   </TR>" SKIP                                                                                                     /* 1dot3 */        
+			    "</TABLE>" SKIP
+	            "</DIV>  <!-- end of table_2col -->" SKIP
+	            "</DIV>         <!-- end of grid_10 -->" SKIP
+	            "<DIV class='grid_1'> </DIV>" SKIP  
+	            "</DIV>     <!-- end of row -->" SKIP   
+	            "<div class='row'>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "</div>     <!-- end of row -->" SKIP       
+	            "</FORM>" SKIP.  
+                                
+        END.  /** of if avail suppl_list **/
+                
+        ELSE DO: 
+            
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_2'> </DIV>" SKIP
+                "<DIV class='grid_8'>" SKIP
+                "<CENTER><H2><P class='errmsg'>ERROR - suppl_list not found for suppl_id = " supplid ".</P></H2></CENTER>" SKIP
+                "</DIV>         <!-- end of grid_8 -->" SKIP
+                "<DIV class='grid_2'> </DIV>" SKIP  
+                "</DIV>     <!-- end of row -->" SKIP               
+                "<FORM>" SKIP
+                "<div class='row'>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                          /* 1dot4 */
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='CREATE' class='btn'>Create Supplement</BUTTON></div>" SKIP
+                "   <div class='grid_2'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "</div>" SKIP
+                "</FORM>" SKIP
+                "<BR>" SKIP.
+ 
+        END.  /** of else do --- not avail suppl_list **/
+ 
+                        
+        
+    END.  /** of act = "INITIAL" **/
+    
+    WHEN "PROMPT" THEN DO:
+    
+        ASSIGN 
+            supplid     = 0
+            supplname   = ""
+            suppldesc   = "".
+        
+																		        IF ITshowmsg = YES THEN 
+																			        {&OUT}
+																			            "<P>Inside Prompt</P>" skip
+																			            "<P>Act = " act "</P>" skip
+																			            "<P>supplid = " supplid "</P>" skip   
+																			            "<P>supplname = " supplname "</P>" skip
+																			            "<P>suppldesc = " suppldesc "</P>" skip
+																			            "<hr width=90%>" skip.
+        
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP
+            "<DIV class='grid_10'>" SKIP        
+            "<FORM id='SUPPmaintU-form'>" SKIP 
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP           /* 1dot1 - bonus fix */            
+            "<DIV class='table_2col'>" SKIP
+            "<TABLE>" SKIP
+            "   <THEAD>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan=4>Supplement Maintenance</TH>" SKIP
+            "       </TR>" SKIP
+            "   </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <TD>Supplement</TD>" SKIP 
+            "       <TD class='REQ'>" SKIP
+            "           <input type='text' size='40' name='h-supplname' value=~""  supplname "~" />" SKIP
+		    "       </TD>" SKIP 
+/* *** moved in 1dot3 ***		    
+		    "       <TD rowspan=2>Supplement Description</TD>" SKIP
+		    "       <TD rowspan=2>" SKIP
+		    "           <textarea rows=4 cols=50 name='h-suppldesc' ></textarea>" SKIP
+		    "       </TD>" SKIP 
+    *** end of move *** */		               
+		    "   </TR>" SKIP 
+		    "   <TR>" SKIP
+		    "         <TD>Magento SKU#</TD>" SKIP
+		    "         <TD><INPUT type='text' name='h-sku' /></TD>" SKIP 
+		    "   </TR>" SKIP
+		    "     <TR>" SKIP
+		    "         <TD>Default Dosage</TD>" SKIP
+		    "         <TD><INPUT type='number' name='h-defqty' min='0' step='0.25'  /></TD>" SKIP
+/* *** moved in 1dot3 ***
+		    "       <TD rowspan=2>Default Notes</TD>" SKIP
+		    "       <TD rowspan=2>" SKIP
+		    "           <textarea rows=4 cols=50 name='h-defnotes' ></textarea>" SKIP
+		    "       </TD>" SKIP
+    *** end of move *** */            
+		    "     </TR>" SKIP
+		    "     <TR>" SKIP
+		    "         <TD>Default Unit Of Measure (UOM)</TD>"  SKIP
+		    "           <TD><select name='h-defuom' value='" defuom "' >" SKIP.
+             
+           {../depot/src/WebSpeed/UOMDropDown.i defuom "DOSAGE" }.                                                                /* 1dot5 */
+    
+    
+/*DO x = 1 TO NUM-ENTRIES(uomlist):                                                              */
+/*                                                                                               */
+/*    IF ENTRY(x,uomlist) = defuom THEN                                                          */
+/*        thisuom = "SELECTED".                                                                  */
+/*    ELSE                                                                                       */
+/*        thisuom = "".                                                                          */
+/*                                                                                               */
+/*    {&OUT}                                                                                     */
+/*        "<option value='" ENTRY(x,uomlist) "' " thisuom " >" ENTRY(x,uomlist) "</option>" SKIP.*/
+/*                                                                                               */
+/*END.  /** of do x = 1 to num-entries uomlist **/                                               */
+/*                                                                                               */
+    
+        
+        
+        {&OUT}   
+            "       </select></TD>" SKIP                                                                                        /* 1dot5 */                                                                                    
+			"   </TR>" SKIP
+            "   <TR>" SKIP                                                                                                      /* 1dot3 */
+            "       <TD>Supplement Description</TD>" SKIP                                                                       /* 1dot3 */
+            "       <TD>" SKIP                                                                                                  /* 1dot3 */
+            "           <textarea rows=4 cols=75 name='h-suppldesc' >" suppldesc "</textarea>" SKIP                             /* 1dot3 */
+            "       </TD>" SKIP                                                                                                 /* 1dot3 */
+            "   </TR>" SKIP                                                                                                     /* 1dot3 */
+            "   <TR>" SKIP                                                                                                      /* 1dot3 */ 
+            "       <TD>Default Notes</TD>" SKIP                                                                                /* 1dot3 */
+            "       <TD>" SKIP                                                                                                  /* 1dot3 */
+            "           <textarea rows=4 cols=75 name='h-defnotes' >" defnotes "</textarea>" SKIP                               /* 1dot3 */
+            "       </TD>" SKIP                                                                                                 /* 1dot3 */
+            "   </TR>" SKIP                                                                                                     /* 1dot3 */ 			           
+			"</TABLE>" SKIP
+			"</DIV>  <!-- end of table_2col -->" SKIP
+			"</DIV>         <!-- end of grid_10 -->" SKIP
+			"<DIV class='grid_1'> </DIV>" SKIP  
+			"</DIV>     <!-- end of row -->" SKIP   
+			"<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATE' class='btn'>Save</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='CANCEL' class='btn'>Cancel</BUTTON></div>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"</div>     <!-- end of row -->" SKIP       
+			"</FORM>" SKIP.  
+        
+    END.  /** of act = "PROMPT" **/
+    
+    WHEN "VALIDATE" THEN DO:
+        
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Validate</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>supplid = " supplid "</P>" skip   
+                                                                                        "<P>supplname = " supplname "</P>" skip
+                                                                                        "<P>suppldesc = " suppldesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.        
+        
+        FIND FIRST suppl_list WHERE suppl_list.suppl_name = supplname NO-LOCK NO-ERROR.
+        IF AVAILABLE suppl_list THEN DO: 
+
+            {&OUT}
+                "<DIV class='row'>" SKIP
+				"<DIV class='grid_2'> </DIV>" SKIP
+				"<DIV class='grid_8'>" SKIP
+                "<CENTER><H2><P class='errmsg'>ERROR! Item " supplname " already exists.  Would you like to Update that EXISTING record or Start Over?</P></H2></CENTER>" SKIP
+				"</DIV>         <!-- end of grid_8 -->" SKIP
+				"<DIV class='grid_2'> </DIV>" SKIP  
+				"</DIV>     <!-- end of row -->" SKIP               
+                "<FORM>" SKIP
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP           /* 1dot1 - bonus fix */  
+                "<INPUT type='hidden' name='h-supplid' value=" suppl_list.suppl_id " />" SKIP 
+                "<INPUT type='hidden' name='h-supplname' value='" suppl_list.suppl_name "' />" SKIP 
+                "<INPUT type='hidden' name='h-suppldesc' value='" suppldesc "' />" SKIP
+                "<INPUT type='hidden' name='h-sku' value='" sku "' />" SKIP
+                "<INPUT type='hidden' name='h-defqty' value=" defqty " />" SKIP
+                "<INPUT type='hidden' name='h-defnotes' value='" defnotes "' />" SKIP
+                "<div class='row'>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='FIND SUPPLEMENT' class='btn'>Update Existing Record</BUTTON></div>" SKIP
+				"   <div class='grid_2'> </DIV>" SKIP
+/*				"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='CREATE' class='btn'>Change Current Record</BUTTON></div>" SKIP*/
+/*				"   <div class='grid_1'> </DIV>" SKIP                                                                                           */
+				"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Start Over</BUTTON></div>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"</div>" SKIP
+				"</FORM>" SKIP
+				"<BR>" SKIP. 
+                                                                                                    
+         
+        END.  /** of if avail suppl_list **/        
+        ELSE
+            act = "CREATE".
+        
+    END.  /** of act = "VALIDATE" **/
+    
+
+      
+    OTHERWISE DO: 
+                       
+																		        IF ITshowmsg = YES THEN 
+																		            {&OUT}
+																		                "<P>Inside Otherwise Do</P>" skip
+																		                "<P>Act = " act "</P>" skip
+																		                "<P>supplid = " supplid "</P>" skip   
+																		                "<P>supplname = " supplname "</P>" skip
+																		                "<P>suppldesc = " suppldesc "</P>" skip
+																		                "<hr width=90%>" skip.
+                                           
+        {&OUT} 
+            "<P class='errmsg'>Unexpected Condition!  Please contact <a href='mailto:hhi.techsupport@mysolsource.com?subject=Error with SUPPmaintU.html -- " act "'>Solsource</a> immediately.</P>" SKIP             
+            "<FORM method='post'>" skip
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                              /* 1dot4 */
+            "<center><INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP 
+            "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP 
+            "</FORM>" skip.     
+        
+    END.  /** of otherwise **/
+    
+END CASE.  /*** case of act ***/
+
+IF act = "CREATE" THEN DO:
+         
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Create</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>supplid = " supplid "</P>" skip   
+                                                                                        "<P>supplname = " supplname "</P>" skip
+                                                                                        "<P>suppldesc = " suppldesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.
+                
+        FIND FIRST suppl_list WHERE suppl_list.suppl_name = supplname NO-LOCK NO-ERROR.
+        IF AVAILABLE suppl_list THEN DO: 
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Avail suppl_list</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>supplid = " supplid "</P>" skip   
+                                                                                        "<P>supplname = " supplname "</P>" skip
+                                                                                        "<P>suppldesc = " suppldesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.
+            {&OUT}
+                "<CENTER><P class='errmsg'>ERROR! Item " supplname " already exists.  Would you like to update the existing record?</P>" SKIP
+                "<FORM>" SKIP
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                  /* 1dot4 */
+                "<button name='h-supplid' value=" suppl_list.suppl_ID " type='submit'>Yes</button>" SKIP 
+                "<button name='h-supplid' value=0 type='submit'>No</button></FORM></CENTER>" SKIP.
+                                                                                                    
+         
+        END.  /** of if avail suppl_list **/
+        
+        ELSE DO:
+             
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Not Avail suppl_list</P>" skip
+                                                                                        "<P>Act = " act "</P>" skip
+                                                                                        "<P>supplid = " supplid "</P>" skip   
+                                                                                        "<P>supplname = " supplname "</P>" skip
+                                                                                        "<P>suppldesc = " suppldesc "</P>" skip
+                                                                                        "<hr width=90%>" skip.
+
+                     
+            CREATE suppl_list.
+            ASSIGN 
+                supplid                           = next-value(seq-suppl-ID)                      /* 1dot1 - bonus delayed fix */
+                suppl_list.suppl_ID               = supplid    
+                suppl_list.suppl_name             = supplname
+                suppl_list.suppl_desc             = suppldesc 
+                suppl_list.suppl_sku              = sku
+                suppl_list.suppl_def_qty          = defqty
+                suppl_list.suppl_def_uom          = defuom
+                suppl_list.suppl_def_notes        = defnotes
+                suppl_list.suppl_created_by       = USERID("HHI")
+                suppl_list.suppl_create_date      = TODAY 
+                suppl_list.suppl_modified_by      = USERID("HHI")
+                suppl_list.suppl_modified_date    = TODAY
+                suppl_list.suppl_prog_name        = THIS-PROCEDURE:FILE-NAME.             /* 1dot5 */
+                
+            
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_1'> </DIV>" SKIP
+                "<DIV class='grid_10'>" SKIP     
+                "<FORM id='SUPPmaintU-form'>" SKIP 
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                  /* 1dot1 - bonus fix */    
+                "<DIV class='table_col'>" SKIP                                                                /* 1dot3 */
+                "<TABLE>" SKIP 
+                "   <TR>" SKIP
+                "       <TH colspan=2>Supplement Maintenance</TH>" SKIP                                       /* 1dot3 */  
+                "   <TR>" SKIP
+                "       <TD>Supplement</TD>" SKIP 
+                "       <TD class='REQ'>" SKIP
+                "<input type='hidden' name='h-supplid' value=" supplid " >" SKIP 
+                "<input type='hidden' name='h-supplname' value='" supplname "' >" SKIP 
+                supplname "</td>" SKIP
+                "       </TD>" SKIP
+/* *** moved in 1dot3 ***
+                "       <TD rowspan=2>Supplement Description</TD>" SKIP
+                "       <TD rowspan=2>" SKIP
+                "           <textarea rows=4 cols=50 name='h-suppldesc' DISABLED >" suppldesc "</textarea>" SKIP
+                "       </TD>" SKIP  
+    *** end of move *** */                       
+                "   </TR>" SKIP 
+                "   <TR>" SKIP
+                "         <TD>Magento SKU#</TD>" SKIP
+                "         <TD><INPUT type='text' name='h-sku' value='" sku "' DISABLED /></TD>" SKIP 
+                "   </TR>" SKIP
+                "     <TR>" SKIP
+                "         <TD>Default Dosage</TD>" SKIP
+                "         <TD><INPUT type='number' name='h-defqty' min='0' step='0.25' value=" defqty " DISABLED /></TD>" SKIP
+/* *** moved in 1dot3 ***                
+                "       <TD rowspan=2>Default Notes</TD>" SKIP
+                "       <TD rowspan=2>" SKIP
+                "           <textarea rows=4 cols=50 name='h-defnotes' DISABLED >" defnotes "</textarea>" SKIP
+                "       </TD>" SKIP 
+    *** end of move *** */                           
+                "     </TR>" SKIP
+                "     <TR>" SKIP
+                "         <TD>Default Unit Of Measure (UOM)</TD>"  SKIP
+                "           <TD><select name='h-defuom' value='" defuom "' DISABLED >" SKIP
+                "               </select>" SKIP
+                "           </TD>" SKIP
+                "   </TR>" SKIP 
+                "   <TR>" SKIP                                                                                                      /* 1dot3 */
+                "       <TD>Supplement Description</TD>" SKIP                                                                       /* 1dot3 */
+                "       <TD>" SKIP                                                                                                  /* 1dot3 */
+                "           <textarea rows=4 cols=75 name='h-suppldesc' DISABLED >" suppldesc "</textarea>" SKIP                    /* 1dot3 */
+                "       </TD>" SKIP                                                                                                 /* 1dot3 */
+                "   </TR>" SKIP                                                                                                     /* 1dot3 */
+                "   <TR>" SKIP                                                                                                      /* 1dot3 */ 
+                "       <TD>Default Notes</TD>" SKIP                                                                                /* 1dot3 */
+                "       <TD>" SKIP                                                                                                  /* 1dot3 */
+                "           <textarea rows=4 cols=75 name='h-defnotes' DISABLED >" defnotes "</textarea>" SKIP                      /* 1dot3 */
+                "       </TD>" SKIP                                                                                                 /* 1dot3 */
+                "   </TR>" SKIP                                                                                                     /* 1dot3 */          
+                "</TABLE>" SKIP
+                "</DIV>  <!-- end of table_2col -->" SKIP
+                "</DIV>         <!-- end of grid_10 -->" SKIP
+                "<DIV class='grid_1'> </DIV>" SKIP  
+                "</DIV>     <!-- end of row -->" SKIP   
+                "<div class='row'>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+                "</div>     <!-- end of row -->" SKIP       
+                "</FORM>" SKIP. 
+                
+        END.  /** of else do **/ 
+        
+    END.  /** of act = "CREATE" **/
+
+																				IF ITshowmsg = YES THEN 
+																				    {&OUT} "<P>End OF LINE.</P>".
+
+/*******************************  End of Program  **********************************/
+</SCRIPT>
+</BODY>
+</HTML>

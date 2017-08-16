@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+	<META NAME="AUTHOR" CONTENT="Doug Luttrell">
+	<TITLE>Convert SS to HHI</TITLE>
+	<link rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <link rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/    
+
+DEFINE VARIABLE hhiloc AS CHARACTER INITIAL "http://hhi-dc-4.hhi.local" NO-UNDO.
+DEFINE VARIABLE ssloc AS CHARACTER INITIAL "http://ss-dc-1.solsource.local" NO-UNDO. 
+
+DEFINE VARIABLE fromloc AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toloc AS CHARACTER NO-UNDO.
+
+{&OUT}
+    "<FORM method='post'>" skip 
+    "<DIV class='table_col'>" skip
+    "<TABLE>" skip 
+    "   <TR>" skip
+    "       <TH colspan=2>Convert Server Information</TH>" skip
+    "   </TR>" skip 
+    "   <TR>" skip
+    "       <TD>Conversion Direction</TD>" skip 
+    "       <TD><INPUT type='radio' name='h-direction' value='HHI-to-SS' />HHI to Solsource<BR>" skip
+    "           <INPUT type='radio' name='h-direction' value='SS-to-HHI' />Solsource to HHI</TD>" skip
+    "   </TR>" skip
+    "</TABLE>" skip
+    "<center><input type='reset' name='Reset' value='Cancel' />" skip
+    "<INPUT type='submit' name='Submit' value='Convert' /></center>" skip
+    "</DIV>" skip
+    "</FORM>" skip.     
+
+IF get-value('h-direction') = "HHI-to-SS" THEN 
+    ASSIGN 
+        fromloc = hhiloc
+        toloc   = ssloc.
+        
+ELSE IF get-value('h-direction') = "SS-to-HHI" THEN 
+    ASSIGN 
+        fromloc = ssloc
+        toloc   = hhiloc.
+        
+{&OUT}
+    "<div class='table_report fixed_table'>" skip
+    "<TABLE>" SKIP 
+    "   <thead>" skip
+    "       <TR>" SKIP
+    "           <TD colspan=5>Menu Conversions for System to System Differences</TD>" skip
+    "       </tr>" skip
+    "       <tr>" skip
+    "           <TH>Menu Number</TH>" SKIP 
+    "           <TH>Menu Selection</TH>" SKIP 
+    "           <TH>Module</TH>" SKIP 
+    "           <TH>Menu Title</TH>" SKIP 
+    "           <TH>New Executable Program</TH>" skip 
+    "       </TR>" SKIP
+    "   </thead>" skip
+    "   <tfoot>" skip
+    "       <tr>" skip
+    "           <td colspan=5>End of Line.</td>" skip
+    "       </tr>" skip
+    "   </tfoot>" skip(1). 
+
+IF fromloc <> "" THEN DO: 
+    
+	FOR EACH menu_mstr WHERE menu_mstr.menu_exprog BEGINS fromloc: 
+	    
+	    ASSIGN 
+	        menu_mstr.menu_exprog   = REPLACE(menu_mstr.menu_exprog, fromloc, toloc). 
+	    
+	    {&OUT}   
+	        "<TR>" SKIP 
+	        "   <TD>" menu_mstr.menu_num        "</TD>" SKIP
+	        "   <TD>" menu_mstr.menu_select     "</TD>" SKIP
+	        "   <TD>" menu_mstr.menu_module     "</TD>" SKIP 
+	        "   <TD>" menu_mstr.menu_title      "</TD>" SKIP 
+	        "   <TD>" menu_mstr.menu_exprog     "</TD>" SKIP 
+	        "</TR>" SKIP. 
+	         
+	END.  /** of 4ea. menu_mstr **/  
+        
+END.  /** of if fromloc <> "" **/
+
+{&OUT}
+    "</TABLE>" SKIP.
+     
+
+</SCRIPT> 
+</BODY>
+</HTML>

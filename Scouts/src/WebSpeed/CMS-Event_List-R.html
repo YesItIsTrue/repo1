@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+ 
+    <meta NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <title>Event Selection</title>
+    <meta NAME='VERSION' CONTENT='1.0'>
+    <meta NAME='COPYRIGHT' CONTENT='Solsource'>
+    <meta NAME='CREATE_DATE' CONTENT="20/Feb/2017">
+    <meta NAME='LAST_UPDATED' CONTENT="20/Feb/2017">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css">
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/CMS-Scout_green.css">
+        
+        
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='w3-light-grey'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE v-group AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-stake AS CHARACTER NO-UNDO.
+
+ASSIGN 
+    v-group = get-value('h-group')
+    v-stake = get-value('h-stake').
+    
+IF v-group = "" THEN 
+    v-group = "Combined".
+        
+IF v-stake = "" THEN 
+    v-stake = "Augusta Maine Stake ".
+    
+{&OUT}
+    "<header class='w3-container w3-theme-dark'>" SKIP
+    "    <h1>" v-stake v-group " Activities</h1>" SKIP
+    "</header>" SKIP
+    "<br><br>" SKIP(1)
+    
+    "<div class='w3-card-4 w3-content w3-white' style='max-width:1100px;'>" SKIP
+    "    <header class='w3-container w3-theme-dark'>" SKIP
+    "        <h1>Upcoming Events</h1>" SKIP
+    "    </header>" SKIP.
+
+    {&OUT}
+        "   <ul class='w3-ul'>" SKIP. 
+           
+FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND 
+        (event_mstr.event_category = v-group OR 
+         event_mstr.event_category = "COMBINED") AND 
+        event_mstr.event_deleted = ? NO-LOCK 
+    BREAK BY event_mstr.event_start_date BY event_mstr.event_name:
+        
+
+    
+    IF event_mstr.event_url <> "" THEN  
+        {&OUT}
+            "       <a href=~"" event_mstr.event_url "~" style='text-decoration:none;'>" SKIP
+            "           <li class='w3-padding-16 w3-white w3-hover-theme' style='border-bottom: 1px solid #ddd !important;'>" SKIP
+            "               <span class='w3-closebtn w3-padding w3-margin-right w3-medium w3-xlarge'><i class='fa fa-angle-double-right'></i></span>" SKIP
+            "               <span class='w3-xlarge'>" event_mstr.event_name " (" event_mstr.event_start_date ")</span>" SKIP
+            "           </li>" SKIP
+            "       </a>" SKIP.
+            
+    ELSE 
+        {&OUT}
+            "           <li class='w3-padding-16 w3-white w3-hover-theme' style='border-bottom: 1px solid #ddd !important;'>" SKIP
+            "               <span class='w3-xlarge'>" event_mstr.event_name " (" event_mstr.event_start_date ")</span>" SKIP
+            "           </li>" SKIP.      
+
+END.  /** of 4ea. event_mstr **/
+
+{&OUT}
+    "   </UL>" SKIP
+    "</div>     <!-- end of div --- upcoming events -->" SKIP (1)
+    
+    "<BR><BR>" SKIP
+    
+    "<div class='w3-card-4 w3-content w3-white' style='max-width:1100px;'>" SKIP
+    "   <header class='w3-container w3-theme-dark'>" SKIP
+    "       <h1>Past Events</h1>" SKIP
+    "   </header>" SKIP
+    "   <ul class='w3-ul'>" SKIP.    
+    
+ 
+FOR EACH event_mstr WHERE event_mstr.event_start_date < TODAY AND 
+        (event_mstr.event_category = v-group OR 
+         event_mstr.event_category = "COMBINED") AND
+        event_mstr.event_deleted = ? NO-LOCK 
+    BREAK BY event_mstr.event_start_date DESCENDING BY event_mstr.event_name:
+    
+    IF event_mstr.event_url <> "" THEN 
+        {&OUT}
+            "       <a href=~"" event_mstr.event_url "~" style='text-decoration:none;'>" SKIP
+            "           <li class='w3-padding-16 w3-white w3-hover-theme' style='border-bottom: 1px solid #ddd !important;'>" SKIP
+            "               <span class='w3-closebtn w3-padding w3-margin-right w3-medium w3-xlarge'><i class='fa fa-angle-double-right'></i></span>" SKIP
+            "               <span class='w3-xlarge'>" event_mstr.event_name "</span>" SKIP
+            "           </li>" SKIP
+            "       </a>" SKIP.
+            
+    ELSE 
+        {&OUT}
+            "           <li class='w3-padding-16 w3-white w3-hover-theme' style='border-bottom: 1px solid #ddd !important;'>" SKIP
+            "               <span class='w3-xlarge'>" event_mstr.event_name "</span>" SKIP
+            "           </li>" SKIP.      
+
+END.  /** of 4ea. event_mstr **/
+
+{&OUT}
+    "   </UL>" SKIP
+    "</div>     <!-- end of div --- past events -->" SKIP (1)
+
+    "<BR><BR>" SKIP
+    
+    "<!-- footer-->" SKIP 
+    "<div class='w3-container w3-center'>" SKIP
+    "   <h5>Got a question or want to make a comment?" SKIP.
+    
+IF v-group = "YM" THEN 
+    {&OUT}    
+        "       <a href='mailto:doug.luttrell@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Doug</a>, " SKIP
+        "       <a href='mailto:drmerryman@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Dave</a>, " SKIP
+        "       <a href='mailto:scott.e.pratt@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Scott</a>, or " SKIP
+        "       <a href='mailto:rpcamire@maine.rr.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Roland</a> " SKIP.
+
+ELSE IF v-group = "Combined" THEN 
+    {&OUT}
+        "       <a href='mailto:doug.luttrell@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Doug</a>, " SKIP
+        "       <a href='mailto:drmerryman@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Dave</a>, " SKIP
+        "       <a href='mailto:scott.e.pratt@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Scott</a>, " SKIP
+        "       <a href='mailto:rpcamire@maine.rr.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Roland</a>,  " SKIP   
+/*        "<BR>" SKIP*/
+/*        "OR" SKIP  */
+/*        "<BR>" SKIP*/ 
+        "       <a href='mailto:leslie.crowley@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Leslie</a>, " SKIP
+        "       <a href='mailto:rwheele1@maine.rr.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Kim</a>, " SKIP
+        "       <a href='mailto:3rdgradesthebest@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Debbie</a>, or " SKIP
+        "       <a href='mailto:sara.diai23@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Sara</a> " SKIP.         
+        
+ELSE IF v-group = "YW" OR v-group = "Combined" THEN 
+    {&OUT}
+        "       <a href='mailto:leslie.crowley@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Leslie</a>, " SKIP
+        "       <a href='mailto:rwheele1@maine.rr.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Kim</a>, " SKIP
+        "       <a href='mailto:3rdgradesthebest@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Debbie</a>, or " SKIP
+        "       <a href='mailto:sara.diai23@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Sara</a> " SKIP.    
+         
+ELSE 
+    {&OUT}
+        "       <a href='mailto:solsource.techsupport@mysolsource.com?Subject=Event%20Missing%20Group%20Type' target='_top'>Solsource Techsupport</a> " SKIP.
+        
+{&OUT}                     
+    "would love to hear from you." SKIP
+    "   </h5>" SKIP
+    "</div>     <!-- end of div --- footer -->" SKIP(1).
+    
+
+
+</SCRIPT>
+</BODY>
+</HTML>

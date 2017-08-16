@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Vendor Maintenance</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="14Jul15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           VENDmainU_MOCK.html
+    Description:    html mockup of Vendor Management Screen
+    Created:
+        
+    ---------------------------------------------------------------
+    Revision History:
+    -----------------
+    1.0 - written by R.J. LUTTRELL on 14/Jul/15.  Original version.
+    1.1 - written by DOUG LUTTRELL on 14/Aug/17.  Changed to work with 
+            the new CMC structure (Version 12).  Not checked for logic.
+            Marked by 1dot1.
+            
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE state-prov LIKE addr_mstr.addr_stateprov NO-UNDO.
+DEFINE VARIABLE stname  LIKE state_mstr.state_display_name NO-UNDO.                                     /* 1dot1 */
+DEFINE VARIABLE stabbv LIKE state_mstr.state_ISO NO-UNDO.                                               /* 1dot1 */
+DEFINE VARIABLE cntry LIKE addr_mstr.addr_country NO-UNDO.
+DEFINE VARIABLE cntryname LIKE country_mstr.country_display_name NO-UNDO.                               /* 1dot1 */
+DEFINE VARIABLE cntryabbv LIKE country_mstr.country_iso NO-UNDO.                                        /* 1dot1 */
+  
+{&OUT}
+"<div class='row'> " SKIP
+"   <div class='grid_1'></div> " SKIP
+"   <div class='grid_10'> " SKIP
+"        <div class='table_2col'> " SKIP
+"           <table> " SKIP
+"              <tr> " SKIP
+"                 <th colspan=2>Vendor Information</th> " SKIP
+"                 <th colspan=2>Address</th> " SKIP
+/*"                 <th colspan=2>Primary Contact</th> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Compony Name</td> " SKIP
+"                 <td><INPUT type='text' /></td> " SKIP
+"                 <td>Address Line 1</td> " SKIP
+"                 <td><INPUT type='text' /></td> " SKIP
+/*"                 <td>Name</td> " SKIP                 */
+/*"                 <td><INPUT type='text' /></td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>ID Number</td> " SKIP
+"                 <td>123Awesome</td> " SKIP
+"                 <td>Address Line 2</td> " SKIP
+"                 <td><INPUT type='text' /></td> " SKIP
+/*"                 <td>ID Number</td> " SKIP            */
+/*"                 <td><INPUT type='text' /></td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Email</td> " SKIP
+"                 <td><INPUT type='text' size='18'/></td> " SKIP
+"                 <td>Address Line 3</td> " SKIP
+"                 <td><INPUT type='text' /></td> " SKIP
+/*"                 <td>Email</td> " SKIP                */
+/*"                 <td><INPUT type='text' /></td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Confirm Email</td> " SKIP
+"                 <td><INPUT type='text' size='18'/></td> " SKIP
+"                 <td>City</td> " SKIP
+"                 <td><INPUT type='text' /></td> " SKIP
+/*"                 <td>Confirm Email</td> " SKIP        */
+/*"                 <td><INPUT type='text' /></td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Phone Number</td> " SKIP
+"                 <td><INPUT type='text' /></td> " SKIP
+"                 <td>State / Province</td> " SKIP
+"                 <td><select name='state' tabindex=13 > " SKIP
+/*"                 <option selected>" state-prov "</option>" SKIP*/
+"                 <option value=''></option> " SKIP.
+
+                    FOR EACH state_mstr NO-LOCK :
+                                ASSIGN
+                                    stname = state_mstr.state_display_name                                  /* 1dot1 */
+                                    stabbv = state_mstr.state_iso.                                          /* 1dot1 */
+
+{&OUT}                    
+"                  <option Value=" 'stabbv' "> " stname "  </otion> " SKIP.
+                  
+                  END.
+                 
+{&OUT} 
+"                 </td>" SKIP
+/*"                 <td>Cell Number</td> " SKIP          */
+/*"                 <td><INPUT type='text' /></td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Fax Number</td> " SKIP
+"                 <td><INPUT type='text' /></td> " SKIP
+"                 <td>Zip Code</td> " SKIP
+"                 <td><INPUT type='text' /></td> " SKIP
+/*"                 <td>Home Number</td> " SKIP          */
+/*"                 <td><INPUT type='text' /></td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Website</td> " SKIP
+"                 <td><INPUT type='text' size='18' /></td> " SKIP
+"                 <td>Country</td> " SKIP
+"                 <td><select name='Country' tabindex=13 > " SKIP
+/*"                 <option selected>" cntry "</option>" SKIP*/
+"                 <option value=''></option> " SKIP.
+
+                    FOR EACH country_mstr NO-LOCK :
+                                ASSIGN
+                                    cntryname = country_mstr.country_display_name                           /* 1dot1 */
+                                    cntryabbv = country_mstr.country_iso.                                   /* 1dot1 */
+
+{&OUT}                    
+"                  <option Value=" 'cntryabbv' "> " cntryname "  </otion> " SKIP.
+                  
+                  END.
+                 
+{&OUT} 
+"                 </td>" SKIP
+/*"                 <td>Work Number</td> " SKIP          */
+/*"                 <td><INPUT type='text' /></td> " SKIP*/
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                <td>Notes</td> " SKIP
+"                <td colspan=3><textarea rows='4' cols='50'></textarea></td> " SKIP
+"           </table> " SKIP
+"        </div><!-- table_3col --> " SKIP
+"    </div><!-- grid_10 --> " SKIP
+"    <div class='grid_1'></div> " SKIP
+"</div><!-- row --> " SKIP
+"<DIV class='row'> " SKIP
+"<div class='grid_1'></div> " SKIP
+"<div class='grid_10'> " SKIP
+"    <div class='table_report'> " SKIP
+"       <table> " SKIP
+"          <thead> " SKIP
+"             <tr> " SKIP
+"                <th colspan=4>Tags</th> " SKIP
+"             </tr> " SKIP
+"          </thead> " SKIP
+"           <tr> " SKIP
+"             <td><INPUT type='checkbox' />HCl acid</td> " SKIP
+"             <td><INPUT type='checkbox' />rock hammers</td> " SKIP
+"             <td><INPUT type='checkbox' />hand lenses</td> " SKIP
+"             <td><INPUT type='checkbox' />field books</td> " SKIP
+"          </tr> " SKIP
+"          <tr> " SKIP
+"             <td><INPUT type='checkbox' />corer</td> " SKIP
+"             <td><INPUT type='checkbox' />maps</td> " SKIP
+"             <td><INPUT type='checkbox' />stereonet photos</td> " SKIP
+"             <td><INPUT type='checkbox' />*_*</td> " SKIP
+"          </tr> " SKIP
+"       </table> " SKIP
+"    </div> " SKIP
+"</div> <!-- grid_10 --> " SKIP
+"<div class='grid_1'></div> " SKIP
+"</DIV><!-- row --> " SKIP
+"<BR/> " SKIP
+"<div class='row'> " SKIP 
+"   <div class='grid_3'> </DIV> " SKIP 
+
+"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='' class='btn'><a href='http://localhost:3333/DataHub/rcode/VENDcontU.r'>Create Vendor</a></BUTTON></div> " SKIP 
+"   <div class='grid_2'> </DIV> " SKIP
+"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div> " SKIP 
+"   <div class='grid_3'> </DIV> " SKIP
+"</div> " SKIP
+"<BR> " SKIP.
+</SCRIPT>
+
+
+
+</BODY>
+</HTML>

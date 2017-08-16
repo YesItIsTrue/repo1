@@ -1,0 +1,478 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD> 
+    
+    <TITLE>Recommendation Maintenance</TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="03/Sep/14">
+    <META NAME="LAST_UPDATED" CONTENT="22/Oct/14">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'> 
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+    Notes:
+        1.1 - written by Jacob Luttrell on 02/Mar/16. Updated tld_ fields
+                and trr_ fields to match v11.1 release. Marked by 1dot1.        
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/    
+
+/*********  Defines & Gets *********/
+DEFINE VARIABLE testtype LIKE trr_det.trr_testtype NO-UNDO. 
+DEFINE VARIABLE testitem LIKE trr_det.trr_item_ID NO-UNDO.
+DEFINE VARIABLE startrange LIKE trr_det.trr_start_range NO-UNDO.
+DEFINE VARIABLE endrange LIKE trr_det.trr_end_range NO-UNDO.
+DEFINE VARIABLE recommendation LIKE trr_det.trr_suppl_ID NO-UNDO.
+/*DEFINE VARIABLE dosage LIKE trr_det.trr_dosage NO-UNDO.*/
+
+DEFINE VARIABLE from-dosage LIKE trr_det.trr_dosage_from NO-UNDO.       /* 1dot1 */
+DEFINE VARIABLE to-dosage LIKE trr_det.trr_dosage_to NO-UNDO.           /* 1dot1 */
+
+DEFINE VARIABLE uom LIKE trr_det.trr_uom NO-UNDO.
+DEFINE VARIABLE notes LIKE trr_det.trr_notes NO-UNDO.
+DEFINE VARIABLE sortorder LIKE trr_det.trr_order NO-UNDO.
+DEFINE VARIABLE ignore LIKE trr_det.trr_group_ignore NO-UNDO.
+
+DEFINE VARIABLE itemid      LIKE tld_det.tld_item_id        NO-UNDO. 
+
+DEFINE VARIABLE sectid          LIKE tld_det.tld_sect_id    NO-UNDO. 
+DEFINE VARIABLE starteff        LIKE tld_det.tld_start_eff  NO-UNDO.
+DEFINE VARIABLE endeff          LIKE tld_det.tld_end_eff    NO-UNDO.
+/*DEFINE VARIABLE markitem        LIKE tld_det.tld_item_name  NO-UNDO.*/
+
+DEFINE VARIABLE marker_item     LIKE marker_list.marker_item NO-UNDO.
+
+DEFINE VARIABLE thismarker      AS CHARACTER                NO-UNDO.
+
+DEFINE VARIABLE testname    LIKE test_mstr.test_name        NO-UNDO.
+DEFINE VARIABLE sectdesc    LIKE tl_mstr.tl_section_desc    NO-UNDO.
+ 
+
+DEFINE VARIABLE act AS CHARACTER NO-UNDO.
+DEFINE VARIABLE progstatus AS CHARACTER NO-UNDO.
+DEFINE VARIABLE ITshowmsg AS LOG INITIAL YES NO-UNDO.
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "<OL>Pre get-value" SKIP
+                                                                                       "    <LI>ACT = " get-value('h-act') "</LI>" SKIP
+                                                                                       "    <LI>testtype = " get-value('h-testtype') "</LI>" SKIP
+                                                                                       "    <LI>sectid = " get-value('h-sectid') "</LI>" SKIP
+                                                                                       "    <LI>sectdesc = " get-value('h-sectdesc') "</LI>" SKIP
+                                                                                       "    <LI>itemid = " get-value('h-itemid') "</LI>" SKIP
+                                                                                       "    <LI>markitem = " get-value('h-markitem') "</LI>" SKIP
+                                                                                       "    <LI>sortorder = " get-value('h-sortorder') "</LI>" SKIP
+                                                                                       "</OL>" SKIP.
+
+ASSIGN        
+    testtype        = get-value('h-testtype')
+    testitem        = INTEGER (get-value('h-testitem'))
+    itemid          = INTEGER (get-value('h-itemid'))
+    startrange      = DECIMAL (get-value('h-startrange')) 
+    endrange        = DECIMAL (get-value('h-endrange')) 
+    recommendation  = INTEGER (get-value('h-recommendation'))
+/*    dosage          = DECIMAL (get-value('h-dosage'))*/
+    uom             = get-value('h-uom')
+    notes           = get-value('h-notes')
+    sortorder       = INTEGER (get-value('h-sortorder'))
+    ignore          = IF get-value('h-ignore') <> "" THEN 
+                        LOGICAL (get-value('h-ignore'))
+                      ELSE 
+                        ?    
+    act             = get-value('h-act')
+    testname        = get-value('h-testname')
+    sectdesc        = get-value('h-sectdesc') 
+    progstatus      = "<center><h2>Please enter the menu information you wish to update / create.</h2></center><br>"
+   
+    from-dosage     = DECIMAL (get-value('h-from-dosage'))                  /* 1dot1 */
+    to-dosage       = DECIMAL (get-value('h-to-dosage'))                    /* 1dot1 */        
+    .
+    
+    
+FOR FIRST tl_mstr WHERE tl_mstr.tl_testtype = testtype AND
+            (tl_mstr.tl_start_eff <= starteff OR
+             starteff = ?) AND
+            (tl_mstr.tl_end_eff >= endeff OR 
+             endeff = ?) AND
+            tl_mstr.tl_deleted = ? NO-LOCK,
+        FIRST tld_det WHERE tld_det.tld_sect_ID = tl_mstr.tl_sect_id AND 
+            tld_det.tld_item_ID = itemid AND
+            (tld_det.tld_start_eff <= starteff OR 
+             starteff = ?) AND  
+            (tld_det.tld_end_eff >= endeff OR 
+             endeff = ?) AND 
+            tld_det.tld_deleted = ? NO-LOCK, 
+        FIRST marker_list WHERE marker_list.marker_ID = tld_det.tld_item_ID AND /* 1dot1 */
+            marker_list.marker_deleted = ? NO-LOCK:                             /* 1dot1 */
+                 
+/*    markitem = tld_det.tld_item_name.*/
+
+    marker_item = marker_list.marker_item.                                      /* 1dot1 */
+      
+    IF ITshowmsg = YES THEN 
+        {&OUT}
+            "<P>I'm in here</P>" SKIP.
+    
+END.    /** of for first tl_mstr, etc. **/
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "<OL>POST get-value" SKIP
+                                                                                       "    <LI>ACT = " act "</LI>" SKIP
+                                                                                       "    <LI>testtype* = " testtype "</LI>" SKIP
+                                                                                       "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                       "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                       "    <LI>itemid* = " itemid "</LI>" SKIP
+                                                                                       "    <LI>markitem = " marker_item "</LI>" SKIP
+                                                                                       "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                       "</OL>" SKIP
+                                                                                       "<hr width=90%>" SKIP.
+        
+ IF act = "" THEN 
+    act = "INITIAL".
+    
+ ELSE IF act = "INITIAL" THEN
+    act = "INITIAL".
+    
+ ELSE IF act = "FIND TEST" THEN 
+    act = "FIND TEST".
+    
+ ELSE IF act = "FIND SECTION" THEN 
+    act = "FIND SECTION".    
+
+ ELSE IF act = "FIND ITEM" THEN 
+    act = "FIND ITEM".
+ 
+ ELSE IF act = "CREATE" THEN 
+    act = "CREATE".
+    
+ ELSE IF act = "UPDATE" THEN 
+    act = "UPDATE".
+ 
+ ELSE IF marker_item = "" THEN                                                      /* 1dot1 */
+/* ELSE IF markitem = "" THEN     /** should be markid like marker_id **/*/
+    act = "PROMPT".
+
+/*****************  Main Code *********************/
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "<OL>Pre Case" SKIP
+                                                                                       "    <LI>ACT = " act "</LI>" SKIP
+                                                                                       "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                       "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                       "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                       "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                       "    <LI>markitem = " marker_item "</LI>" SKIP
+                                                                                       "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                       "</OL>" SKIP
+                                                                                       "<hr width=90%>" SKIP.
+CASE act:  
+    
+    WHEN "INITIAL" THEN DO:       /*** initial screen ***/
+                 
+        {BM-recommend-form.i "FIND TEST" "NOTHING" "DISABLED" "DISABLED" "DISABLED" "DISABLED"}.    
+
+    END.  /*** of when act = "" --- initial screen ***/
+     
+    WHEN "FIND TEST" THEN DO:    /*** FIND TEST record ***/
+    
+        FIND test_mstr WHERE test_mstr.test_type = testtype AND   
+            test_mstr.test_deleted = ? NO-LOCK NO-ERROR.
+        IF AVAILABLE test_mstr THEN 
+            ASSIGN 
+                testname    = test_mstr.test_name. 
+                
+        {BM-recommend-form.i "FIND ITEM" "DISABLED" "NOTHING" "DISABLED" "DISABLED" "DISABLED"}. 
+        
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<OL>Post FIND TEST" SKIP
+                                                                                        "    <LI>ACT = " act "</LI>" SKIP   
+                                                                                        "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                        "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                        "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                        "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                        "    <LI>markitem = " marker_item "</LI>" SKIP
+                                                                                        "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width=90%>" SKIP.        
+            
+
+    END.  /*** of when act = "FIND" ***/
+    
+    WHEN "FIND ITEM" THEN DO:    /*** FIND ITEM record ***/
+    
+    /*
+        FIND tld_det WHERE tld_det.tld_id = sectid AND
+            tld_det.tld_item_id = itemid AND 
+            /* 
+            tld_det.tld_item = markitem AND 
+            */  
+            (tld_det.tld_start_eff <= starteff OR 
+             starteff = ?) AND  
+            (tld_det.tld_end_eff >= endeff OR 
+             endeff = ?) AND 
+            tld_det.tld_deleted = ? NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE tld_det THEN    
+            ASSIGN 
+                sortorder   = tld_det.tld_order
+                /*
+                itemid      = tld_det.tld_item_id
+                */
+                markitem    = tld_det.tld_item
+                starteff    = tld_det.tld_start_eff
+                endeff      = tld_det.tld_end_eff. 
+      */
+                
+        {BM-recommend-form.i "UPDATE" "DISABLED" "DISABLED" "NOTHING" "DISABLED" "DISABLED"}. 
+        
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<OL>Post FIND ITEM" SKIP
+                                                                                        "    <LI>ACT = " act "</LI>" SKIP
+                                                                                        "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                        "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                        "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                        "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                        "    <LI>markitem = " marker_item "</LI>" SKIP
+                                                                                        "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width=90%>" SKIP.        
+            
+        /*
+        else (if not avail)
+        {BM-recommend-form.i "CREATE" "DISABLED" "NOTHING" "DISABLED" "DISABLED"}. 
+        */
+    END.  /*** of when act = "FIND" ***/
+    
+    WHEN "UPDATE" THEN DO:      /*** UPDATE record ***/
+    
+        FIND trr_det WHERE trr_det.trr_testtype = testtype AND 
+            trr_det.trr_suppl_ID = itemid AND 
+            (trr_det.trr_start_range = startrange OR 
+             startrange = 0) AND                                                /** this seems wrong **/ 
+            (trr_det.trr_end_range = endrange OR 
+             endrange = 0) AND                                                  /** this seems wrong too **/
+            trr_det.trr_deleted = ?
+                EXCLUSIVE-LOCK NO-ERROR.
+                       
+        IF AVAILABLE trr_det THEN DO: 
+            ASSIGN 
+/*                trr_det.trr_dosage          = dosage*/
+                trr_det.trr_dosage_from     = from-dosage   /* 1dot1 */
+                trr_det.trr_dosage_to       = to-dosage     /* 1dot1 */
+                trr_det.trr_uom             = uom
+                trr_det.trr_notes           = notes
+                trr_det.trr_order           = sortorder
+                trr_det.trr_group_ignore    = ignore
+                trr_det.trr_modified_date   = TODAY
+                trr_det.trr_modified_by     = USERID("HHI").
+                
+	        ASSIGN 
+	            testtype    = ""
+	            sectid      = 0
+	            sectdesc    = ""
+	            itemid      = 0
+	            marker_item    = ""                            /* 1dot1 */
+	            starteff    = ?
+	            endeff      = ?
+	            sortorder   = 0.
+	            
+	        {BM-recommend-form.i "INITIAL" "DISABLED" "DISABLED" "DISABLED" "NOTHING" "DISABLED"}.                  
+        
+        END.  /** of if avail trr_det **/
+                 
+        ELSE DO:  
+            {&OUT} "<P>No Recommendation found for Test = " testtype " and Item (Marker) = " itemid ".  Creating a new one?</P>" SKIP
+                "<form>" skip 
+                "   <input type='hidden' name='h-testtype' value='" testtype "' />" skip 
+                "   <input type='hidden' name='h-itemid' value=" itemid " />" skip 
+                "   <input type='hidden' name='h-startrange' value=" startrange " />" skip 
+                "   <input type='hidden' name='h-endrange' value=" endrange " />" skip 
+                "   <input type='hidden' name='h-act' value='PROMPT' />" skip 
+                "   <input type='submit' name='h-submit' value='YES' />" skip
+                "</form>" skip
+                "<button value='NO' />" SKIP.
+
+        END.  /*** of else do ***/ 
+       
+        
+    END.  /*** of when act = "UPDATE" ***/
+    
+    WHEN "CREATE" THEN DO:      /*** CREATE record ***/
+    
+        /*
+        create record
+        update database
+        */
+        {BM-recommend-form.i "UPDATE" "NOTHING" "DISABLED" "DISABLED" "DISABLED" "DISABLED"}.     
+                
+    END.  /*** of when act = "CREATE" ***/ 
+    
+    WHEN "PROMPT" THEN DO:
+	    
+	                                                                            IF ITshowmsg = YES THEN 
+	                                                                                {&OUT}
+	                                                                                    "<OL>Inside PROMPT" SKIP
+	                                                                                    "    <LI>ACT = " act "</LI>" SKIP
+	                                                                                    "    <LI>testtype = " testtype "</LI>" SKIP
+	                                                                                    "    <LI>sectid = " sectid "</LI>" SKIP
+	                                                                                    "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+	                                                                                    "    <LI>itemid = " itemid "</LI>" SKIP
+	                                                                                    "    <LI>markitem = " marker_item "</LI>" SKIP
+	                                                                                    "    <LI>sortorder = " sortorder "</LI>" SKIP
+	                                                                                    "</OL>" SKIP
+	                                                                                    "<hr width=90%>" SKIP.
+	    
+	    {&OUT}
+	        "<FORM method='get' id='BM-recommend-form'>" SKIP 
+	        "<DIV class='table_col'>" SKIP
+	        "<TABLE>" SKIP 
+	        "   <TR>" SKIP
+	        "       <TH colspan=4>Test Recommendation Maintenance</TH>" SKIP
+	        "   <TR>" SKIP
+	        "       <TD>Test Type</TD>" SKIP 
+	        "       <TD class='REQ'>" SKIP
+	        "           <input type='hidden' name='h-testtype' value='" testtype "' />" testtype SKIP 
+	        "       </TD>" SKIP
+	        "       <TD>Item / Marker</TD>" SKIP
+	        "       <TD class='REQ'>" SKIP
+	        "           <select name='h-itemid' value='" itemid "' >" SKIP.
+	        
+	    FOR EACH marker_list WHERE marker_list.marker_deleted = ? NO-LOCK:         /** needs to pull just from this test **/
+	            
+	        {&OUT}
+	            "               <option value='" marker_list.marker_ID "' > " marker_list.marker_item " </option>" SKIP.
+	            
+	    END.  /** of 4ea. marker_list **/
+	        
+	        
+	    {&OUT}
+	        "           </select>" SKIP
+	        "       </TD>" SKIP
+	        "   </TR>" SKIP.
+	        
+		{&OUT}    
+		    "   <TR>" SKIP
+		    "       <TD>Range Start</TD>" SKIP
+		    "       <TD><INPUT type='number' name='h-startrange' value='" startrange "' step='.01' {4} /></TD>" SKIP
+		    "       <TD>Range End</TD>" SKIP
+		    "       <TD><INPUT type='number' name='h-endrange' value='" endrange "' step='.01' {4} /></TD>" SKIP
+		    "   </TR>" SKIP
+		    
+		    /*** uncomment if using effectivity date ranges ***
+		    "   <TR>" SKIP
+		    "       <TD>Start Effective Date</TD>" SKIP
+		    "       <TD><INPUT type='date' name='h-starteff' value='" starteff "' {4} /></TD>" SKIP
+		    "       <TD>End Effective Date</TD>" SKIP
+		    "       <TD><INPUT type='date' name='h-endeff' value='" endeff "' {4} /></TD>" SKIP
+		    "   </TR>" SKIP
+		    *******************/
+		    
+		    "   <TR>" SKIP
+		    "       <TD>Recommendation / Supplement</TD>" SKIP
+		    "       <TD class='REQ'>" SKIP
+		    "           <select type='select' name='h-recommendation' value='" recommendation "' {4} />" SKIP
+		    "               <option value=0>NOTES ONLY</option>" SKIP.
+		    
+		FOR EACH suppl_list NO-LOCK: 
+		    
+		    {&OUT}
+		        "               <option value=" suppl_list.suppl_id ">" suppl_list.suppl_name "</option>" SKIP.
+		
+		END.        /** of 4ea. **/
+		    
+		{&OUT}
+		    "           </select>" SKIP
+		    "       </TD>" SKIP  
+		    "   </TR>" SKIP
+		    "   <TR>" SKIP
+		    "       <TD>Dosage</TD>" SKIP
+		    "       <TD>From: <INPUT type='number' name='h-from-dosage' value='" from-dosage "' step='.25' {5} />" SKIP       /* 1dot1 */
+		    "       <BR>To: <INPUT type='number' name='h-to-dosage' value='" to-dosage "' step='.25' {5} /></TD>" SKIP      /* 1dot1 */   
+/*          "       <TD><INPUT type='number' name='h-dosage' value='" dosage "' step='.01' {5} /></TD>" SKIP*/
+		    "       <TD>Unit of Measure</TD>" SKIP
+		    "       <TD>" SKIP
+		    "           <select name='h-uom' value='" uom "' {5} >" SKIP
+		    "               <option value='PILL' >PILL</option>" SKIP
+		    "               <option value='SPRAY' >SPRAY</option>" SKIP
+		    "               <option value='TBSP' >TABLESPOON</option>" SKIP
+		    "               <option value='TSP' >TEASPOON</option>" SKIP
+		    "           </select>" SKIP
+		    "       </td>" SKIP
+		    "   </TR>" SKIP   
+		    "   <TR>" SKIP
+		    "       <TD>Notes</TD>" SKIP
+		    "       <TD colspan=3><INPUT type='text' name='h-notes' value='" notes "' maxlength=200 placeholder='Eat with bacon' size=100 {5} /></TD>" SKIP
+		    "   </TR>" SKIP    
+		    "   <TR>" SKIP
+		    "       <TD>Sort Order</TD>" SKIP
+		    "       <TD><INPUT type='number' name='h-sortorder' value='" sortorder "' {5} /></TD>" SKIP
+		    "       <TD>Ignore for Groups?</TD>" SKIP
+		    "       <TD>" SKIP
+		    "           <INPUT type='checkbox' name='h-ignore' value='" ignore "' {5} />" SKIP
+		    "       </TD>" SKIP
+		    "   </TR>" SKIP     
+		    "</TABLE>" SKIP
+		    "<center><INPUT type='hidden' name='h-act' value='{1}' />" SKIP
+		    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+		    "<INPUT type='submit' name='Submit' value='{1}' /></center>" SKIP
+		    "</DIV>" SKIP
+		    "</FORM>" SKIP.
+	        
+        {&OUT}
+	        "</TABLE>" SKIP
+	        "<center><INPUT type='hidden' name='h-act' value='CREATE' />" SKIP
+	        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                  /* 1dot1 */
+	        "<INPUT type='submit' name='Submit' value='Create Record' /></center>" SKIP         
+	        "</DIV>" SKIP
+	        "</FORM>" SKIP.  
+	    
+	END.  /** of act = "PROMPT" **/
+
+    WHEN "DELETE" THEN DO:      /*** of DELETE record ***/
+    
+        /*
+        find record exclusive-lock
+        delete
+        */
+        {BM-recommend-form.i "INITIAL" "DISABLED" "DISABLED" "DISABLED" "DISABLED" "DISABLED"}.     
+                
+    END.  /*** of when act = "DELETE" ***/
+    
+    OTHERWISE DO:   /*** non-planned for condition ***/
+        
+        progstatus = "<center><h2>Unexpected Condition -- Contact Solsource Techsupport.</h2></center><br />".
+        
+        {&OUT} progstatus skip 
+            "<FORM method='post'>" skip
+            "<center><INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP 
+            "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP 
+            "</FORM>" skip.               
+    
+    END.  /** of act = something else **/  
+    
+END CASE.   /** of act **/    
+
+</SCRIPT>
+</BODY>
+</HTML>

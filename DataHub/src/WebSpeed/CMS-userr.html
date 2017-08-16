@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <TITLE>User Master Report</TITLE>
+
+    <link rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <link rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+
+</head>
+<body class='inside'>
+  
+  <SCRIPT LANGUAGE="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/    
+
+{&OUT}
+    "<div class='table_report'>" skip 
+    "<TABLE>" skip
+	"  <thead>" skip
+	"      <TR>" skip
+    "           <TD colspan=5>User Master Report</TD>" skip 
+    "      </TR>" skip
+	"      <TR>" skip
+	"          <TH>Username</TH>" skip
+	"          <TH>Firstname</TH>" skip
+	"          <TH>Lastname</TH>" skip
+	"          <TH>Password</TH>" skip
+	"          <TH>Email Address</TH>" skip
+	"      </TR>" skip
+	"  </thead>" skip
+	"  <tfoot>" skip
+	"      <TR>" skip
+	"          <TD colspan=5>End of Line.</td>"
+	"      </tr>" skip
+	"  </tfoot>" skip(1).
+
+
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Author:
+    Created
+    ------------------------------------------------------------------
+
+    OVERVIEW:
+    Customized this file and call from WebSpeed as either
+    a) a custom tag in an HTML Mapping file. For example:
+
+       <!--WSTAG NAME="mytbl" FILE="table.r" -->
+
+                          -OR-
+
+       <!--WSTAG NAME="mytbl" FILE="table.w" -->
+
+    b) call directly in another SpeedScript file
+
+       RUN table.r.   -OR-  RUN table.w.
+
+    NOTE:
+    This file should not be opened up in Front Page or any other
+    authoring tool that may add an HTML, HEAD, META, and BODY tag
+    around the TABLE tag in this template.
+
+    CUSTOMIZATION:
+    The pieces of this template that should/can be customized include:
+
+	o Table Caption
+	  -location               :  top of the template file
+	  -default value          :  "Enter Your Table Caption Here"
+
+    o Table Row (for Heading Cells)
+	  -location               :  top of the template file
+	  -default attributes     :  no attributes have been specified
+      -note                   :  add row attributes as needed
+
+	o Table Heading(s)
+	  -location               :  top of the template file
+	  -default no. of headings:  2
+	  -default column headings:  "Column Heading 1" "Column Heading 2"
+      -default attributes     :  STYLE="text-align: left;"
+      -note                   :  add additional columns, headings
+                                 heading attributes
+
+    o Table Row (for Data Cells)
+	  -location               :  defined in the FOR EACH section of the
+                                 template
+	  -default attributes     :  STYLE="text-align: left; vertical-align: middle;"
+      -note                   :  add row attributes as needed
+
+    o Table Data
+      -location               :  TD-ATTRIBUTES 'SpeedScript'
+                                 PREPROCESSOR defined after this comment
+	  -default attributes     :  STYLE="text-align: left; vertical-align: middle; white-space: no-wrap;"
+                                 ROWSPAN="1", COLSPAN="1"
+	  -note                   :  add attributes as needed
+
+    o Database Table
+	  -location               :  defined in DB-TABLE 'SpeedScript'
+                                 PREPROCESSOR after this comment
+	  -default value          :  customer (from PROGRESS sports database)
+      -note                   :  modify for application database
+
+	o Database Field(s)
+      -location               :  defined in DB-FIELD1 and DB-FIELD2
+                                 'SpeedScript' PREPROCESSORS after this comment
+      -default value          :  name, phone (from the customer
+                                 table in the PROGRESS sports database)
+      -note                   :  modify for application database
+                                 and optionally define additional
+                                 fields (the number of fields defined should
+                                 match the number of columns in the table
+
+    o Output of Table Data
+      -location               :  FOR EACH section of template
+      -default value          :  DB-TABLE, DB-FIELD1, and DB-FIELD2
+                                 'SpeedScript' PREPROCESSOR values are output
+      -note                   :  add DB-FIELD# 'SpeedScript' PREPROCESSORS if
+                                 additional ones have been defined
+  -------------------------------------------------------------------*/
+
+  /* PREPROCESSOR Definitions */
+
+  /* Data Cell Attributes */
+  &SCOPED-DEFINE TD-ATTRIBUTES 'style="text-align: left; vertical-align: middle; white-space: no-wrap;"'
+
+  /* Database Table and Fields from which data is to be retrieved to
+     populate the HTML Table.  The table and field currently listed
+     are ones that are associated with the sports database.  Customize
+     these preprocessors to suit the table being output. */
+  &SCOPED-DEFINE DB-TABLE       Usr_Mstr
+  &SCOPED-DEFINE DB-FIELD1      usr_UsrName
+  &SCOPED-DEFINE DB-FIELD2      usr_FirstName
+  &SCOPED-DEFINE DB-FIELD3      usr_lastName
+  &SCOPED-DEFINE DB-FIELD4      usr_Pswrd
+  &SCOPED-DEFINE DB-FIELD5      usr_Email
+
+  /* Outputting Data Cell Tags and Data Values */
+  FOR EACH {&DB-TABLE}:
+  </SCRIPT>
+
+  <TR>
+    <TD> ` {&DB-FIELD1} ` </TD>
+    <TD> ` {&DB-FIELD2} ` </TD>
+    <TD> ` {&DB-FIELD3} ` </TD>
+    <TD> ` {&DB-FIELD4} ` </TD>
+    <TD><a href="mailto:` {&DB-FIELD5} `?Subject=User%20Report%20Email">` {&DB-FIELD5} `</a></TD>
+  </TR>
+
+  <SCRIPT LANGUAGE="SpeedScript">
+  END.   /*  of 4ea. {&DB-TABLE} */
+  
+  {&OUT}
+        "</TABLE>" skip
+        "</div>" skip
+        "</body>" skip
+        "</html>" skip.
+        
+/******  End of File  ********/

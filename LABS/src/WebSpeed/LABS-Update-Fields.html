@@ -1,0 +1,966 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML> 
+<HEAD> 
+    
+    <TITLE>LABS Update Fields</TITLE>
+     
+    <META NAME="AUTHOR" CONTENT="Harold Luttrell, Sr.">
+    <META NAME="VERSION" CONTENT="2.1">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="1/Jul/14">
+    <META NAME="LAST_UPDATED" CONTENT="10/Feb/16">
+   
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+       
+<SCRIPT LANGUAGE="SpeedScript">
+    /*------------------------------------------------------------------
+      Sub-program   : LABS-Update-fields.html
+      Description   : This program edits some of the input data and 
+                    :     actually updates or creates the Lab, Address
+                    :     and People records using the data that was entered
+                    :     on the main program (LABS-Update-Fields-html) screen.
+                    
+      Called from   : LABS-Update-Fields-html.
+      
+      - - Version History - -
+      
+          1.0 - July 2014 - Original code.
+
+          1.1 - Aug 20, 2014 - Changed layout to be 3 col with name, addr & phone
+                with email section at the bottom.  Drop-downs for State & Country.
+                Add the CSS comands to the report.  Getting the maintenance screen 
+                even if picking a blank lab - should be a selected error message.
+                Fix header rows.           
+                         
+          1.2 - Sept. 21, 2015 - by Harold Luttrell, SR.
+                Added the internal PROPATH statement and changed the
+                RUN VALUE (codetorun) code to use the new
+                RUN VALUE(SEARCH("xxxxxxxxx.r")) (yyyy, zzzz). 
+                Identified by: /* 1dot2 */ 
+          
+          1.3 - Oct. 05, 2015 - by Jacob Luttrell.
+                Corrected div's and display.
+                Marked by 1dot3.   
+          
+          1.4 - Oct. 22, 2015 - by Jacob Luttrell.
+                Changed order of email and second email fields (not marked)
+                Changed all run stuff.p to stuff.r
+                Marked by 1dot4.    
+                
+          2.0 - Jan. 11, 2016 - by Harold Luttrell, SR.
+                Added code to include the state_deleted on the find statement.
+                Market by 2dot0.    
+          2.1 - Feb. 10, 2016 - by Jacob Luttrell.
+                Added statedropdown.i and the countrydropdownlist.i and other changes 
+                for v11.1 release.  Changed all the old table fields to new fields 
+                Marked by 2dot1.  
+          2.11 - May 9, 2016 - by Jacob Luttrell. rolling back to per dropdown.i files.   
+                unmarked.                                              
+    -------------------------------------------------------------------*/
+              
+CREATE WIDGET-POOL.
+
+</SCRIPT>
+</HEAD>
+
+<BODY CLASS='inside'>
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Include code. */
+
+{../depot/src/WebSpeed/menuname.i}.       /*** menu name assignment ***/    
+
+{../depot/src/WebSpeed/o-depot-definenames.i}.     /*** depot output define variables ***/    
+  
+/* Define Variables. */
+
+DEFINE VARIABLE act                 AS INTEGER                                 NO-UNDO.
+DEFINE VARIABLE hold-ip-act         AS INTEGER                                 NO-UNDO.
+/*  
+    act values: 0 = blank screen - no data.
+                1 = changes or not: from the 1st display screen: "Current LAB Information.".
+                2 = new Lab (add): from display screen: "Enter New LAB Information below.".
+                3 = edit errors.
+                4 = edit errors corrected - re-edit the data. 
+*/
+DEFINE VARIABLE h-add-new           AS CHARACTER FORMAT "x(7)"                 NO-UNDO. 
+DEFINE VARIABLE h-Company           AS CHARACTER FORMAT "x(7)"                 NO-UNDO.                         
+DEFINE VARIABLE hold-lab-id         LIKE lab_mstr.lab_ID                   NO-UNDO.
+DEFINE VARIABLE ip-lab-people-ID    LIKE lab_mstr.lab_contact_ID           NO-UNDO. 
+DEFINE VARIABLE ip-lab-addr-ID      LIKE lab_mstr.lab_addr_ID              NO-UNDO.
+    
+DEFINE VARIABLE ip-lab-id           LIKE lab_mstr.lab_ID                   NO-UNDO.
+DEFINE VARIABLE ip-lab-acct-nbr     LIKE lab_mstr.lab_acct_nbr             NO-UNDO.
+DEFINE VARIABLE ip-lab-pay-term     LIKE lab_mstr.lab_payterm              NO-UNDO.   
+
+DEFINE VARIABLE ip-lab-name         LIKE people_mstr.people_lastname   NO-UNDO.
+DEFINE VARIABLE ip-lab-phone        LIKE people_mstr.people_workphone  NO-UNDO.
+DEFINE VARIABLE ip-lab-fax          LIKE people_mstr.people_fax        NO-UNDO.
+DEFINE VARIABLE ip-lab-email1       LIKE people_mstr.people_email      NO-UNDO.
+DEFINE VARIABLE ip-lab-email2       LIKE people_mstr.people_email2     NO-UNDO.
+DEFINE VARIABLE ip-rdemail          LIKE people_mstr.people_email      NO-UNDO.
+DEFINE VARIABLE ip-rdemail-2        LIKE people_mstr.people_email2     NO-UNDO.
+
+DEFINE VARIABLE ip-lab-address1     LIKE addr_mstr.addr_addr1          NO-UNDO.
+DEFINE VARIABLE ip-lab-address2     LIKE addr_mstr.addr_addr2          NO-UNDO.
+DEFINE VARIABLE ip-lab-address3     LIKE addr_mstr.addr_addr3          NO-UNDO.
+DEFINE VARIABLE ip-lab-city         LIKE addr_mstr.addr_city           NO-UNDO.
+DEFINE VARIABLE ip-lab-stateprov    LIKE addr_mstr.addr_stateprov      NO-UNDO.
+DEFINE VARIABLE ip-lab-stname       LIKE state_mstr.state_display_name NO-UNDO.         /* 2dot1 */
+DEFINE VARIABLE ip-lab-zip          LIKE addr_mstr.addr_zip            NO-UNDO.
+DEFINE VARIABLE ip-lab-country      LIKE addr_mstr.addr_country        NO-UNDO.
+DEFINE VARIABLE ip-coname           LIKE country_mstr.country_display_name NO-UNDO.     /* 2dot1 */
+   
+DEFINE VARIABLE look4it             AS CHARACTER                               NO-UNDO.
+DEFINE VARIABLE Undo-changes        AS CHARACTER                               NO-UNDO.
+
+DEFINE VARIABLE ip_text             AS CHARACTER  FORMAT "x(60)"               NO-UNDO.
+DEFINE VARIABLE op_text             AS CHARACTER  FORMAT "x(60)"               NO-UNDO.
+/*DEFINE VARIABLE codetorun           AS CHARACTER  FORMAT "x(60)"               NO-UNDO.*/
+DEFINE VARIABLE isselected          AS CHARACTER                               NO-UNDO.         /* 2dot1 */
+
+DEFINE VARIABLE whattorun           AS CHARACTER                               NO-UNDO.   /* to get the menu title */  
+
+/* Assign Values to Variable statements. */
+ASSIGN 
+
+/* Logical variables. */
+         
+/* Date variables. */
+      
+/* Integer variables. */        
+        act               = INTEGER (get-value ("h-act"))
+        hold-ip-act       = INTEGER (get-value ("h-hold-ip-act"))
+        ip-lab-people-ID  = INTEGER(get-field('h-lab-people-ID'))  
+        ip-lab-addr-ID    = INTEGER(get-field('h-lab-addr-ID'))
+           
+/* Character variables. */
+        whattorun         = get-value("whattorun")                 /* to get the menu title */
+        h-add-new         = get-field('h-add-new')
+        h-Company         = get-field('h-Company')
+        
+        ip-lab-id         = TRIM(get-field('h-lab-ID'))
+        ip-lab-name       = TRIM(get-field('h-people-lastname'))
+        ip-lab-phone      = TRIM(get-field('h-people-workphone'))
+        ip-lab-fax        = TRIM(get-field('h-people-fax'))
+        ip-lab-acct-nbr   = TRIM(get-field('h-lab-acct-nbr'))
+        ip-lab-pay-term   = TRIM(get-field('h-lab-pay-term'))
+        ip-lab-address1   = TRIM(get-field('h-addr-addr-1'))
+        ip-lab-address2   = TRIM(get-field('h-addr-addr-2'))
+        ip-lab-address3   = TRIM(get-field('h-addr-addr-3'))
+        ip-lab-city       = TRIM(get-field('h-addr-city'))
+        ip-lab-stateprov  = TRIM(get-field('h-addr-stateprov'))
+        ip-lab-zip        = TRIM(get-field('h-addr-zip'))
+        ip-lab-country    = TRIM(get-field('h-addr-country'))
+        ip-lab-email1     = TRIM(get-field('h-lab-email1'))
+        ip-lab-email2     = TRIM(get-field('h-lab-email2'))
+        ip-rdemail        = TRIM(get-field('h-email-redo'))
+        ip-rdemail-2      = TRIM(get-field('h-email-2-redo'))
+        .                                                                       /* 1dot2 */
+/*        codetorun = "../depot/rcode/subr_Up_Low_Case.r ".*/                   /* 1dot2 */
+
+</SCRIPT>
+
+   <H2 class='webpagetitle' >  <P STYLE='text-align: center'> LAB Information Update. </H2>   
+        
+ <SCRIPT LANGUAGE="SpeedScript">
+ 
+/*  Convert input text to case.  */
+ASSIGN ip-lab-id = CAPS(ip-lab-id).
+/*RUN VALUE (codetorun) (ip-lab-name, OUTPUT op_text).*/                        /* 1dot2 */
+RUN VALUE(SEARCH("subr_Up_Low_Case.r")) (ip-lab-name, OUTPUT op_text).          /* 1dot2 */ /* 1dot4 */
+ASSIGN ip-lab-name = op_text. 
+/*RUN VALUE (codetorun) (ip-lab-address1, OUTPUT op_text).*/                    /* 1dot2 */
+RUN VALUE(SEARCH("subr_Up_Low_Case.r")) (ip-lab-address1, OUTPUT op_text).      /* 1dot2 */ /* 1dot4 */
+ASSIGN ip-lab-address1 = op_text.       
+/*RUN VALUE (codetorun) (ip-lab-address2, OUTPUT op_text).*/                    /* 1dot2 */
+RUN VALUE(SEARCH("subr_Up_Low_Case.r")) (ip-lab-address2, OUTPUT op_text).      /* 1dot2 */ /* 1dot4 */
+ASSIGN ip-lab-address2 = op_text.
+/*RUN VALUE (codetorun) (ip-lab-address3, OUTPUT op_text).*/                    /* 1dot2 */
+RUN VALUE(SEARCH("subr_Up_Low_Case.r")) (ip-lab-address3, OUTPUT op_text).      /* 1dot2 */  /* 1dot4 */
+ASSIGN ip-lab-address3 = op_text.       
+/*RUN VALUE (codetorun) (ip-lab-city, OUTPUT op_text).*/                        /* 1dot2 */
+RUN VALUE(SEARCH("subr_Up_Low_Case.r")) (ip-lab-city, OUTPUT op_text).          /* 1dot2 */ /* 1dot4 */
+
+ASSIGN ip-lab-city = op_text. 
+        
+/*  add code for edits here <<<<<<<<<<<<<<<<<*/
+         
+IF  act = 1 OR act = 2 THEN 
+    ASSIGN hold-ip-act = act.
+    
+{&OUT}
+        "<DIV class='row'>" SKIP                                                                                                            /* 1dot3 */
+        "<DIV class='grid_1'> </DIV>" SKIP                                                                                                  /* 1dot3 */ 
+        "<DIV class='grid_10'>" SKIP                                                                                                        /* 1dot3 */
+        "<center><div><table>".
+/*    IF  act = 4 THEN DO: 
+        ASSIGN  act = 0
+                h-add-new = "".
+    END. 
+    
+    IF  act = 0 THEN 
+        ASSIGN  act = hold-ip-act
+                hold-ip-act = 0.  
+*/             
+    IF  ip-lab-id = "" THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>The lab-id is missing.</th></tr>".
+         act = 3.
+    END.
+    
+    IF  ip-lab-name = "" THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>The lab full name is missing.</th></tr>".
+         act = 3.
+    END.
+    
+    IF  ip-lab-address1 = "" THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>The first line of the address is missing.</th></tr>".
+         act = 3.
+    END.
+
+    IF  ip-lab-city = "" THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>The city is missing.</th></tr>".
+         act = 3.
+    END.
+    
+    IF  ip-lab-pay-term = "" THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>Lab's payment term is missing.</th></tr>".
+         act = 3.
+    END.
+    
+    IF  ip-lab-email1 = "" THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>The 1st email is missing.</th></tr>".
+         act = 3.
+    END.
+    
+    
+    IF  ip-rdemail <> ip-lab-email1 THEN DO:  
+                {&OUT} "<tr><th style='text-align:center;'>Both the first email entries don't match.</th></tr>".
+                act = 3.
+        END.    /**  IF  ip-rdemail <> ip-lab-email1  **/
+
+        IF  ip-rdemail-2 <> ip-lab-email2 THEN DO:  
+                {&OUT} "<tr><th style='text-align:center;'>Both the second email entries don't match.</th></tr>".
+                act = 3.
+        END.    /**  IF  ip-rdemail-2 <> ip-lab-email1  **/   
+
+
+    FIND FIRST state_mstr 
+        WHERE  state_mstr.state_ISO = ip-lab-stateprov OR 
+               state_mstr.state_display_name = ip-lab-stateprov
+           AND state_mstr.state_deleted = ?                             /* 2dot0 */
+             NO-LOCK NO-ERROR.
+             
+    FIND FIRST country_mstr 
+        WHERE  country_mstr.country_ISO = ip-lab-country OR 
+               country_mstr.country_display_name = ip-lab-country
+           AND country_mstr.country_deleted = ?                         /* 2dot0 */
+             NO-LOCK NO-ERROR.
+          
+    IF AVAILABLE (state_mstr) AND AVAILABLE (country_mstr) THEN DO: 
+        IF  state_mstr.state_country_ISO  <>  country_mstr.country_ISO THEN DO: 
+                {&OUT} "<tr><th style='text-align:center;'>The State or Province  and  Country do NOT belong with each other.</th></tr>".
+                act = 3.
+        END.    /**  IF  state_mstr.state_abbv   <> country_mstr.country_abbv  **/
+    END.    /**  IF AVAILABLE (state_mstr) AND AVAILABLE (country_mstr)  **/
+    
+    IF NOT AVAILABLE (state_mstr) OR NOT AVAILABLE (country_mstr) THEN DO:  
+                {&OUT} "<tr><th style='text-align:center;'>The State or Province  or  Country can NOT be found.</th></tr>".
+                act = 3.
+    END.    /**  IF NOT AVAILABLE (state_mstr) OR NOT AVAILABLE (country_mstr)  **/      
+
+    
+    IF  act = 4 THEN DO: 
+        ASSIGN  act = 0
+                h-add-new = "".
+    END. 
+    
+    IF  act = 0 THEN 
+        ASSIGN  act = hold-ip-act
+                hold-ip-act = 0. 
+
+{&OUT}
+       "</table></div></center>" SKIP
+       "</DIV>         <!-- end of grid_10 -->" SKIP                                                                                                                          /* 1dot3 */
+       "<DIV class='grid_1'> </DIV>" SKIP                                                                                                                                     /* 1dot3 */
+       "</DIV>     <!-- end of row -->" SKIP                                                                                                                                  /* 1dot3 */
+       "<BR>" SKIP                                                                                                                                                            /* 1dot3 */.    
+          
+/*  verify input for required data on a new add/new Lab to be able to generate the keys.   */
+    
+IF  act = 3 OR act = 4 THEN DO:     
+	          
+	          {&OUT}  "<form ACTION='LABS-Update-Fields.r' method='get' >" SKIP 
+	                        "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */    
+	                        "<input type='hidden' name='h-act'              value='4' >" SKIP
+	                        "<input type='hidden' name='h-hold-ip-act'      value='" hold-ip-act "' >" SKIP
+                            "<input type='hidden' name='h-add-new'          value='edit-errors' >" SKIP
+                            "<input type='hidden' name='h-Company'          value='Company' >" SKIP
+                            "<input type='hidden' name='h-lab-people-ID'    value='" ip-lab-people-ID "' >" SKIP
+                            "<input type='hidden' name='h-lab-addr-ID'      value='" ip-lab-addr-ID "' >" SKIP
+
+                            "<DIV class='row'>" SKIP                                                                                                            /* 1dot3 */
+                            "<DIV class='grid_1'> </DIV>" SKIP                                                                                                  /* 1dot3 */ 
+                            "<DIV class='grid_10'>" SKIP                                                                                                        /* 1dot3 */
+                
+                    "<div class='table_3col'>" SKIP               
+                     "<table>" SKIP
+                    /*    "<tr>" SKIP
+                            "<th colspan=6><center>Errors were found.  Enter New LAB Information below. </th>" SKIP
+                        "</tr>" SKIP    */
+                        "<TR>"
+                            "<TH colspan='2'>Name</TH>"
+                            "<TH colspan='2'>Address</TH>"
+                            "<TH colspan='2'>Phone, etc.</TH>"
+                        "</TR>"
+                        "<tr>" SKIP
+                            "<td>ID</td>" SKIP
+                            "<td class='req'><input type='text' name='h-lab-ID' value='" ip-lab-id "' tabindex=1  > </td>"  SKIP 
+                            "<td>Address 1</td>" SKIP
+                            "<td class='req'><input type='text' name='h-addr-addr-1' value='" ip-lab-address1 "' tabindex=3 > </td>" SKIP    
+                            "<td>Phone Nbr</td>" SKIP
+                            "<td><input type='text' name='h-people-workphone' value='" ip-lab-phone "' tabindex=10 > </td>"  SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Full Lab Name</td>" SKIP
+                            "<td class='req'><input type='text' name='h-people-lastname' value='" ip-lab-name "' autofocus tabindex=2 > </td>" SKIP
+                            "<td>Address 2</td>" SKIP
+                            "<td><input type='text' name='h-addr-addr-2' value='" ip-lab-address2 "' tabindex=4 > </td>" SKIP
+                             "<td>Fax Nbr</td>" SKIP
+                            "<td><input type='text' name='h-people-fax' value='" ip-lab-fax "' tabindex=11 > </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value=' ' disabled > </td>" SKIP
+                            "<td>Address 3</td>" SKIP
+                            "<td><input type='text' name='h-addr-addr-3' value='" ip-lab-address3 "' tabindex=5 > </td>" SKIP
+                            "<td>Lab's Payment Term</td>" SKIP
+                            "<td class='req'><input type='text' name='h-lab-pay-term' value='" ip-lab-pay-term "' tabindex=12 > </td>" SKIP
+                        "</tr>" SKIP  
+                        "<tr>" SKIP
+                            "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value=' ' disabled  > </td>" SKIP                              
+                            "<td>City</td>" SKIP
+                            "<td class='req'><input type='text' name='h-addr-city' value='" ip-lab-city "' tabindex=6 > </td>" SKIP
+                            "<td>HHI's Account Nbr with Lab</td>" SKIP
+                            "<td><input type='text' name='h-lab-acct-nbr' value='" ip-lab-acct-nbr "' tabindex=13 > </td>" SKIP
+                        "</tr>" SKIP  
+                        "<tr>" SKIP 
+                            "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value=' ' disabled > </td>" SKIP.
+                                
+ /**  look for the current input stateabbv inorder to get the state full name to be displayed on the screen.  **/                                   
+                            FIND FIRST state_mstr WHERE  state_mstr.state_ISO = ip-lab-stateprov OR
+                                                         state_mstr.state_display_name = ip-lab-stateprov
+                                                         AND state_mstr.state_primary =  YES 
+                                     AND state_mstr.state_deleted = ?                             /* 2dot0 */
+                                         NO-LOCK NO-ERROR.
+                            IF AVAILABLE (state_mstr) THEN DO:
+                               ASSIGN
+                                        ip-lab-stname = state_mstr.state_display_name
+                                        ip-lab-stateprov = state_mstr.state_ISO.
+                            END.  /** IF AVAILABLE (state_mstr) **/
+                                                                 
+                   {&OUT}    "<TD>State / Province</TD>"
+                             "<TD class='req'><SELECT name='h-addr-stateprov'     tabindex=7 </td>" SKIP 
+                                    "<OPTION selected>" ip-lab-stname "  </OPTION>" SKIP.                                                             
+
+                                FOR EACH state_mstr
+                                        WHERE state_mstr.state_deleted = ?                       /* 2dot0 */
+                                        AND state_mstr.state_primary = YES 
+                                     NO-LOCK:
+
+                                   ASSIGN
+                                        ip-lab-stname = state_mstr.state_display_name
+                                        ip-lab-stateprov = state_mstr.state_ISO.
+
+                                    {&OUT}  "<option value=" ip-lab-stateprov ">" ip-lab-stname "</option>" SKIP.
+
+                                END.  /* FOR EACH state_mstr */
+
+/*                               {../depot/src/WebSpeed/StateDropDown.i ip-lab-stateprov ip-lab-country}.                       /* 2dot1 */*/
+
+                                FIND FIRST state_mstr WHERE  state_mstr.state_ISO = ip-lab-stateprov OR
+                                                             state_mstr.state_display_name = ip-lab-stateprov
+                                                             AND state_mstr.state_primary = YES 
+                                       AND state_mstr.state_deleted = ?                             /* 2dot0 */
+                                         NO-LOCK NO-ERROR.
+	                            IF AVAILABLE (state_mstr) THEN DO:
+	                               ASSIGN
+	                                        ip-lab-stname = state_mstr.state_display_name
+	                                        ip-lab-stateprov = state_mstr.state_ISO.
+	                            END.  /** IF AVAILABLE (state_mstr) **/
+                                
+                  {&OUT}        "</select>" SKIP
+                             "</td>" SKIP
+                             "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value=' ' disabled > </td>" SKIP    
+                         "</tr>" SKIP
+                         "<tr>" SKIP 
+                            "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value=' ' disabled > </td>" SKIP                            
+                            "<td>Zip Code</td>" SKIP
+                            "<td><input type='text' name='h-addr-zip' value='" ip-lab-zip "' tabindex=8 > </td>" SKIP
+                             "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value=' ' disabled > </td>" SKIP   
+                         "</tr>" SKIP
+                         "<tr>" SKIP 
+                            "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value=' ' disabled > </td>" SKIP.   
+                            
+            /**  look for the current input stateabbv inorder to get the state full name to be displayed on the screen.  **/
+                            FIND FIRST country_mstr WHERE  country_mstr.country_ISO = ip-lab-country OR
+                                                           country_mstr.country_display_name = ip-lab-country
+                                                           AND country_mstr.Country_Primary = YES 
+                                    AND country_mstr.country_deleted = ?                             /* 2dot0 */
+                                        NO-LOCK NO-ERROR.
+                            IF AVAILABLE (country_mstr) THEN DO:
+                               ASSIGN
+                                        ip-coname = country_mstr.country_display_name
+                                        ip-lab-country = country_mstr.country_ISO.
+                            END.  /** IF AVAILABLE (country_mstr) **/
+                                                                        
+                {&OUT}        "<td>Country</td>" SKIP
+                              "<td class='req'>" SKIP
+                                        "<select name='h-addr-country' tabindex=9 </td>" SKIP.
+                                             
+/*                {../depot/src/WebSpeed/CountryDropDownList.i ip-lab-country}.                                   /* 2dot1 */*/
+                                             
+                                             
+/*                                                "<option selected>" ip-coname "</option>" SKIP.*/
+
+                        FOR EACH country_mstr
+                            WHERE country_mstr.country_deleted = ?                          /* 2dot0 */
+                            AND country_mstr.Country_Primary = YES 
+                               NO-LOCK:
+                            ASSIGN
+                                ip-coname = country_mstr.country_display_name
+                                ip-lab-country = country_mstr.country_ISO.
+
+                                {&OUT}
+                                    "<option value=" ip-lab-country ">" ip-coname "</option>" SKIP.
+
+                        END.  /* FOR EACH county_mstr */
+                        
+                        FIND FIRST country_mstr WHERE  country_mstr.country_ISO = ip-lab-country OR 
+                                                       country_mstr.country_display_name = ip-lab-country AND 
+                                                       country_mstr.Country_Primary = YES 
+                                 AND country_mstr.country_deleted = ?                       /* 2dot0 */
+                                        NO-LOCK NO-ERROR.
+                        IF AVAILABLE (country_mstr) THEN DO: 
+                               ASSIGN
+                                        ip-coname = country_mstr.country_display_name
+                                        ip-lab-country = country_mstr.country_ISO.
+                        END.  /** IF AVAILABLE (country_mstr) **/  
+                        
+					    FIND FIRST state_mstr 
+					        WHERE  state_mstr.state_ISO = ip-lab-stateprov OR 
+					               state_mstr.state_display_name = ip-lab-stateprov
+					          AND  state_mstr.state_deleted = ?                            /* 2dot0 */
+					             NO-LOCK NO-ERROR.
+					             
+					    FIND FIRST country_mstr 
+					        WHERE  country_mstr.country_ISO = ip-lab-country OR 
+					               country_mstr.country_display_name = ip-lab-country
+					          AND  country_mstr.country_deleted = ?                       /* 2dot0 */
+					             NO-LOCK NO-ERROR.
+					          
+					    IF AVAILABLE (state_mstr) AND AVAILABLE (country_mstr) THEN DO: 
+					        IF  state_mstr.state_country_ISO  <>  country_mstr.country_ISO THEN DO: 
+					                act = 4.
+					        END.    /**  IF  state_mstr.state_abbv   <> country_mstr.country_abbv  **/
+					    END.    /**  IF AVAILABLE (state_mstr) AND AVAILABLE (country_mstr)  **/
+					    
+					    IF NOT AVAILABLE (state_mstr) OR NOT AVAILABLE (country_mstr) THEN DO:  
+					                act = 4.
+					    END.    /**  IF NOT AVAILABLE (state_mstr) OR NOT AVAILABLE (country_mstr)  **/      
+					        
+                 {&OUT}        "</SELECT>" SKIP
+                            "</TD>" SKIP                                   
+                            "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value=' ' disabled > </td>" SKIP   
+                        "</tr>" SKIP 
+                        
+                        "<TH colspan='6'>Email info</TH>" SKIP
+                        "<TR>" SKIP
+                            "<TD>Email Address</TD>" SKIP
+                            "<TD colspan='2' class='req'><input size='50' type='text' name='h-lab-email1' value='" ip-lab-email1 "' tabindex=21 > </td>" SKIP
+                            "<TD>Reenter Email</TD>" SKIP
+                            "<TD colspan='2' class='req'><INPUT size='50' type='text' name='h-email-redo' value='" ip-rdemail "' tabindex=23 > </TD>" SKIP                           
+                        "</TR>" SKIP
+                        "<TR>" SKIP     
+                            "<TD>Second Email Address</TD>" SKIP
+                            "<TD colspan='2'><input size='50' type='text' name='h-lab-email2' value='" ip-lab-email2 "' tabindex=25 > </td>" SKIP
+                            "<TD>Reenter Second Email</TD>" SKIP
+                            "<TD colspan='2'><INPUT size='50' type='text' name='h-email-2-redo' value='" ip-rdemail-2 "' tabindex=27 > </TD>" SKIP
+                        "</TR>" SKIP                                        
+                     "</table>"  SKIP              
+                 "</div>" SKIP
+                 
+                 "</DIV>         <!-- end of grid_10 -->" SKIP                                                                                                                          /* 1dot3 */
+                 "<DIV class='grid_1'> </DIV>" SKIP                                                                                                                                     /* 1dot3 */
+                 "</DIV>     <!-- end of row -->" SKIP                                                                                                                                  /* 1dot3 */
+                     
+                "<br> </br>" SKIP 
+                
+                "<div class='row'>" SKIP                                                                                                                                               /* 1dot3 */
+                 "   <div class='grid_3'> </DIV>" SKIP                                                                                                                                  /* 1dot3 */
+                 "   <div class='grid_2'><BUTTON type='submit' name='s-Submit' value='Click HERE to update Lab data.' class='btn'>Click here to Re-EDIT your input changes.</BUTTON></div>" SKIP   /* 1dot3 */
+                 "</form>"                                                                                                                                                              /* 1dot3 */
+                 "   <div class='grid_2'> </DIV>" SKIP.                                                                                                                                 /* 1dot3 */
+            {&OUT}                                                                                                                                                                      /* 1dot3 */ 
+                 "   <div class='grid_2'>" SKIP                                                                                                                                         /* 1dot3 */
+                 "<form ACTION='LABs-Update-Begin.r' method='get' >" SKIP                                                                                                               /* 1dot3 */
+                                    "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */                                /* 1dot3 */
+                                    "<input type='hidden' name='h-act'              value='0' >" SKIP                                                                                   /* 1dot3 */
+                                    "<input type='hidden' name='h-add-new'          value='' >" SKIP                                                                                    /* 1dot3 */           
+                 "<BUTTON type='submit' value='Click HERE to display a different Lab.' name='s-Return' class='btn'>Click HERE to display a different Lab.</BUTTON>"                     /* 1dot3 */
+                 "</form>"                                                                                                                                                              /* 1dot3 */
+                 "</div>" SKIP                                                                                                                                                          /* 1dot3 */
+                 "   <div class='grid_3'> </DIV>" SKIP                                                                                                                                  /* 1dot3 */
+                 "</div>" SKIP                                                                                                                                                          /* 1dot3 */
+                 "<BR>" SKIP.                                                                                                                                                           /* 1dot3 */
+                 
+/* ****** removed in 1dot3 ******                    
+                 "<td><center>" SKIP
+                        "<input type='submit' value='Click here to Re-EDIT your input changes.' name='s-Submit'>" SKIP
+                 "</td>"  SKIP 
+                                                                                                         
+              "</form>".     	    
+ 	         
+	          {&OUT}  "<form ACTION='LABs-Update-Begin.r' method='get' >" SKIP
+			                "<TABLE><center>" SKIP
+			                        "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */ 
+			                        "<input type='hidden' name='h-act'              value='0' >" SKIP
+			                        "<input type='hidden' name='h-add-new'          value='' >" SKIP 
+			                        "<input type='submit' value='Click HERE to display a different Lab.' name='s-Return'>" SKIP
+			                "</TABLE>" SKIP
+			          "</form>".
+    ******* end of removal ******* */            
+	         ASSIGN  h-add-new  = get-field('h-add-new')
+	                 act        = 4.
+	         
+    END.    /**  IF  act = 3 OR act = 4  **/
+    
+/*  end of verify input for required data on a new add/new Lab to be able to generate the keys.   */
+
+IF  act = 2 THEN DO: 
+           
+        FIND FIRST state_mstr WHERE  state_mstr.state_ISO = ip-lab-stateprov OR 
+                                     state_mstr.state_display_name = ip-lab-stateprov
+                                     AND state_mstr.state_primary = YES 
+               AND  state_mstr.state_deleted = ?                            /* 2dot0 */
+                 NO-LOCK NO-ERROR.
+        IF AVAILABLE (state_mstr) THEN DO: 
+           ASSIGN
+                    ip-lab-stname = state_mstr.state_display_name      
+                    ip-lab-stateprov = state_mstr.state_ISO.
+        END.  /** IF AVAILABLE (state_mstr) **/  
+
+        FIND FIRST country_mstr WHERE  country_mstr.country_ISO = ip-lab-country OR 
+                                       country_mstr.country_display_name = ip-lab-country
+                                       AND country_mstr.Country_Primary = YES 
+                AND  country_mstr.country_deleted = ?                            /* 2dot0 */
+                        NO-LOCK NO-ERROR.
+        IF AVAILABLE (country_mstr) THEN DO: 
+               ASSIGN
+                        ip-coname = country_mstr.country_display_name
+                        ip-lab-country = country_mstr.country_ISO.
+        END.  /** IF AVAILABLE (country_mstr) **/  
+  
+        FIND lab_mstr 
+            WHERE lab_mstr.lab_id = ip-lab-id  AND  lab_mstr.lab_deleted = ?
+                NO-LOCK NO-ERROR.  
+        
+        IF NOT AVAILABLE (lab_mstr) THEN DO:
+                         
+            RUN VALUE(SEARCH("SUBaddr-findR.r"))                                /* 1dot2 */ /* 1dot4 */
+                   (ip-lab-address1, 
+                    ip-lab-address2, 
+                    ip-lab-address3,               
+                    ip-lab-city, 
+                    ip-lab-stateprov,
+                    ip-lab-zip,
+                    ip-lab-country,
+	                OUTPUT o-faddr-addrID,
+	                OUTPUT o-faddr-error, 
+	                OUTPUT o-faddr-ran).  
+            
+            IF o-faddr-error = YES  THEN DO:  
+                              
+            RUN VALUE(SEARCH("SUBaddr-ucU.r"))                                  /* 1dot2 */ /* 1dot4 */
+	                  ( 0,
+	                    ip-lab-address1, 
+	                    ip-lab-address2, 
+	                    ip-lab-address3,               
+	                    ip-lab-city, 
+	                    ip-lab-stateprov,
+	                    ip-lab-zip,
+	                    ip-lab-country,
+	                    "",
+	                    OUTPUT o-ucaddr-id,
+	                    OUTPUT o-ucaddr-create,
+	                    OUTPUT o-ucaddr-update,
+	                    OUTPUT o-ucaddr-avail,  
+	                    OUTPUT o-ucaddr-successful).
+	             
+	            IF o-ucaddr-id = 0 THEN DO:
+	                    MESSAGE "CREATE Error from pgm: upcreate-addr-mstr !  " SKIP
+	                             "  The returned o-ucaddr-id value = " o-ucaddr-id
+	                        VIEW-AS ALERT-BOX INFORMATION BUTTONS OK.
+	                    LEAVE.
+	            END.    /** IF value = 0 from utilities pgm. **/
+	            
+	            ASSIGN  o-faddr-addrID = o-ucaddr-id. 
+	            
+            END.    /**  o-faddr-addrID = 0  **/ 
+            
+            ASSIGN ip-lab-addr-ID = o-faddr-addrID.
+                       
+            RUN VALUE(SEARCH("SUBpeop-findR.r"))                                /* 1dot2 */ /* 1dot4 */
+               ( "",
+                h-Company,
+                "",
+                ip-lab-name,
+                "",
+                OUTPUT o-fpe-peopleID,
+                OUTPUT o-fpe-addr_ID,
+                OUTPUT o-fpe-error,
+                OUTPUT o-fpat-ran).
+                
+            IF o-fpe-peopleID  = 0 THEN DO:
+           
+              RUN VALUE(SEARCH("SUBpeop-ucU.r"))                                /* 1dot2 */ /* 1dot4 */
+		               ( 0,
+		                h-Company,
+		                "",
+		                ip-lab-name,
+		                "",
+		                "",
+		                ip-lab-name,
+		                ?,  
+		                ip-lab-phone,
+		                "",
+		                "",
+		                ip-lab-fax,
+		                ip-lab-email1,
+		                ip-lab-email2,
+		                o-faddr-addrID,
+		                "",
+		                ?,
+		                0,  
+		                "",       /* prefname */                                                /* 2dot1 */     
+		                "",       /* title */         
+		                OUTPUT o-ucpeople-id,
+		                OUTPUT o-ucpeople-create,
+		                OUTPUT o-ucpeople-update,
+		                OUTPUT o-ucpeople-avail,
+		                OUTPUT o-ucpeople-successful).        
+		  
+		        IF o-ucpeople-successful = NO THEN DO:
+		                MESSAGE "CREATE Error from pgm: upcreate-people-mstr !  " SKIP
+		                         "  The returned o-ucpeople-id value = " o-ucpeople-id
+		                    VIEW-AS ALERT-BOX INFORMATION BUTTONS OK.
+		        END.    /** IF value = NO from utilities pgm. **/
+		        
+		        ASSIGN  o-fpe-peopleID   = o-ucpeople-id.
+		                    
+		    END.    /**  o-fpe-peopleID  = 0  **/   
+		    
+		    ASSIGN  ip-lab-people-ID = o-fpe-peopleID.   
+          
+            CREATE lab_mstr.
+                       
+            ASSIGN  lab_mstr.lab_ID             = ip-lab-id
+                    lab_mstr.lab_name           = ip-lab-name
+                    lab_mstr.lab_contact_ID     = ip-lab-people-ID      
+                    lab_mstr.lab_addr_ID        = ip-lab-addr-ID
+                    lab_mstr.lab_created_by     = USERID ("HHI")
+                    lab_mstr.lab_create_date    = TODAY 
+                    lab_mstr.lab_modified_by    = USERID ("HHI")
+                    lab_mstr.lab_modified_date  = TODAY
+                    lab_mstr.lab_acct_nbr       = ip-lab-acct-nbr
+                    lab_mstr.lab_payterm        = ip-lab-pay-term
+                    lab_mstr.lab_prog_name      = THIS-PROCEDURE:FILE-NAME.             /* 2dot1 */
+                    
+            RELEASE lab_mstr NO-ERROR.
+            RELEASE people_mstr NO-ERROR.
+            RELEASE addr_mstr NO-ERROR. 
+                      
+            FIND FIRST lab_mstr 
+                WHERE lab_mstr.lab_id = ip-lab-id  AND  lab_mstr.lab_deleted = ?
+                    NO-LOCK NO-ERROR.
+                    
+            FIND FIRST people_mstr 
+                    WHERE people_mstr.people_id = lab_mstr.lab_contact_ID AND 
+                            people_mstr.people_deleted = ?
+                       EXCLUSIVE-LOCK NO-ERROR.
+                          
+            IF AVAILABLE (people_mstr) THEN 
+                                  
+	            ASSIGN 
+	                    people_mstr.people_firstname    = h-Company
+	                    people_mstr.people_lastname     = ip-lab-name
+	                    people_mstr.people_company      = ip-lab-name
+	                    people_mstr.people_workphone    = ip-lab-phone
+	                    people_mstr.people_fax          = ip-lab-fax
+	                    people_mstr.people_email        = ip-lab-email1
+	                    people_mstr.people_email2       = ip-lab-email2
+	                    people_mstr.people_modified_by  = USERID ("General")
+	                    people_mstr.people_modified_date = TODAY
+	                    people_mstr.people_prog_name    = THIS-PROCEDURE:FILE-NAME.    /* 2dot1 */ 
+            
+            RELEASE people_mstr NO-ERROR.
+           
+            FIND FIRST addr_mstr
+                WHERE addr_mstr.addr_id = lab_mstr.lab_addr_ID AND
+                         addr_mstr.addr_deleted = ?      
+                       EXCLUSIVE-LOCK NO-ERROR.
+                         
+            IF AVAILABLE (addr_mstr) THEN DO:
+                                        
+	            ASSIGN 
+	                    addr_mstr.addr_addr1            = ip-lab-address1
+	                    addr_mstr.addr_addr2            = ip-lab-address2
+	                    addr_mstr.addr_addr3            = ip-lab-address3
+	                    addr_mstr.addr_city             = ip-lab-city
+						addr_mstr.addr_stateprov        = ip-lab-stateprov
+						addr_mstr.addr_zip              = ip-lab-zip
+						addr_mstr.addr_country          = ip-lab-country
+	                    addr_mstr.addr_modified_by      = USERID ("General")
+	                    addr_mstr.addr_modified_date    = TODAY
+	                    addr_mstr.addr_prog_name        = THIS-PROCEDURE:FILE-NAME.        /* 2dot1 */
+	        END.  
+ 
+            RELEASE addr_mstr NO-ERROR.                               
+                       
+        END.  /**  IF NOT AVAILABLE (lab_mstr)  **/
+        
+END.     /** act = 2  **/
+
+IF act < 3  THEN DO:
+        
+        FIND FIRST state_mstr WHERE  state_mstr.state_ISO = ip-lab-stateprov OR 
+                                     state_mstr.state_display_name = ip-lab-stateprov
+               AND  state_mstr.state_deleted = ?                            /* 2dot0 */
+                 NO-LOCK NO-ERROR.
+        IF AVAILABLE (state_mstr) THEN DO: 
+           ASSIGN
+                    ip-lab-stname = state_mstr.state_display_name     
+                    ip-lab-stateprov = state_mstr.state_ISO.
+        END.  /** IF AVAILABLE (state_mstr) **/  
+
+        FIND FIRST country_mstr WHERE  country_mstr.country_ISO = ip-lab-country OR 
+                                       country_mstr.country_display_name = ip-lab-country
+               AND  country_mstr.country_deleted = ?                       /* 2dot0 */
+                        NO-LOCK NO-ERROR.
+        IF AVAILABLE (country_mstr) THEN DO: 
+               ASSIGN
+                        ip-coname = country_mstr.country_display_name
+                        ip-lab-country = country_mstr.country_ISO.
+        END.  /** IF AVAILABLE (country_mstr) **/    
+ 
+            
+        FIND FIRST lab_mstr 
+            WHERE  lab_mstr.lab_id = ip-lab-id  AND  lab_mstr.lab_deleted = ?
+                EXCLUSIVE-LOCK NO-ERROR.
+                
+        IF AVAILABLE (lab_mstr) THEN DO:
+            ASSIGN  lab_mstr.lab_name           = ip-lab-name
+                    lab_mstr.lab_modified_by    = USERID ("HHI")
+                    lab_mstr.lab_modified_date  = TODAY
+                    lab_mstr.lab_acct_nbr       = ip-lab-acct-nbr
+                    lab_mstr.lab_payterm        = ip-lab-pay-term.
+        END.
+                 
+        FIND FIRST people_mstr 
+            WHERE  people_mstr.people_id = lab_mstr.lab_contact_ID AND 
+                        people_mstr.people_deleted = ?
+                   EXCLUSIVE-LOCK NO-ERROR.
+                   
+        IF AVAILABLE (people_mstr) THEN DO:
+            ASSIGN h-Company = "Company".
+            ASSIGN 
+                        people_mstr.people_firstname    = h-Company
+                        people_mstr.people_lastname     = ip-lab-name
+                        people_mstr.people_company      = ip-lab-name
+                        people_mstr.people_workphone    = ip-lab-phone
+                        people_mstr.people_fax          = ip-lab-fax
+                        people_mstr.people_email        = ip-lab-email1
+                        people_mstr.people_email2       = ip-lab-email2
+                        people_mstr.people_modified_by  = USERID ("General")
+                        people_mstr.people_modified_date = TODAY
+                        people_mstr.people_prog_name    = THIS-PROCEDURE:FILE-NAME.    /* 2dot1 */ 
+        END.
+                   
+        FIND FIRST addr_mstr
+            WHERE  addr_mstr.addr_id = lab_mstr.lab_addr_ID AND
+                     addr_mstr.addr_deleted = ?      
+                   EXCLUSIVE-LOCK NO-ERROR. 
+                   
+        IF AVAILABLE (addr_mstr) THEN DO:
+            ASSIGN 
+                        addr_mstr.addr_addr1            = ip-lab-address1
+                        addr_mstr.addr_addr2            = ip-lab-address2
+                        addr_mstr.addr_addr3            = ip-lab-address3
+                        addr_mstr.addr_city             = ip-lab-city
+                        addr_mstr.addr_stateprov        = ip-lab-stateprov
+                        addr_mstr.addr_zip              = ip-lab-zip
+                        addr_mstr.addr_country          = ip-lab-country
+                        addr_mstr.addr_modified_by      = USERID ("General")
+                        addr_mstr.addr_modified_date    = TODAY
+                        addr_mstr.addr_prog_name        = THIS-PROCEDURE:FILE-NAME.        /* 2dot1 */
+        END.
+        
+        RELEASE lab_mstr NO-ERROR.
+        RELEASE people_mstr NO-ERROR.
+        RELEASE addr_mstr NO-ERROR. 
+        
+        FIND FIRST lab_mstr 
+            WHERE  lab_mstr.lab_id = ip-lab-id  AND  lab_mstr.lab_deleted = ?
+                NO-LOCK  NO-ERROR.
+        
+        FIND FIRST people_mstr 
+            WHERE  people_mstr.people_id = lab_mstr.lab_contact_ID AND 
+                        people_mstr.people_deleted = ?
+                   NO-LOCK NO-ERROR.
+        
+        FIND FIRST addr_mstr
+            WHERE  addr_mstr.addr_id = lab_mstr.lab_addr_ID AND
+                     addr_mstr.addr_deleted = ?      
+                   NO-LOCK NO-ERROR. 
+                                                                        
+        IF  AVAILABLE (lab_mstr) AND 
+            AVAILABLE (people_mstr) AND
+            AVAILABLE (addr_mstr)   THEN DO: 
+                
+               {&OUT}  "<form ACTION='' method='get' >" SKIP 
+                           "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */ 
+                           "<input type='hidden' name='h-act'              value='0' >" SKIP
+                           "<input type='hidden' name='h-add-new'          value='' >" SKIP                                                   
+
+                            "<DIV class='row'>" SKIP                                                                                                            /* 1dot3 */
+                            "<DIV class='grid_1'> </DIV>" SKIP                                                                                                  /* 1dot3 */ 
+                            "<DIV class='grid_10'>" SKIP                                                                                                        /* 1dot3 */
+
+                           "<div class='table_3col'>" SKIP               
+                             "<table>" SKIP
+                                "<TR>"
+                                    "<TH colspan='2'>Name</TH>"
+                                    "<TH colspan='2'>Address</TH>"
+                                    "<TH colspan='2'>Phone, etc.</TH>"
+                                "</TR>"
+                                "<tr>" SKIP
+                                "<tr>" SKIP
+                                    "<td>ID</td>" SKIP
+                                    "<td><input type='text' name='h-lab-ID' value='" lab_mstr.lab_ID "' disabled </td>"  SKIP 
+                                    "<td>Address 1</td>" SKIP
+                                    "<td><input type='text' name='h-addr-addr-1' value='" addr_mstr.addr_addr1 "' disabled </td>" SKIP    
+                                    "<td>Phone Nbr</td>" SKIP
+                                    "<td><input type='text' name='h-people-workphone' value='" people_mstr.people_workphone "' disabled > </td>"  SKIP
+                                "</tr>" SKIP
+                                "<tr>" SKIP
+                                    "<td>Full Lab Name</td>" SKIP
+                                    "<td><input type='text' name='h-people-lastname' value='" people_mstr.people_lastname "' disabled </td>" SKIP
+                                    "<td>Address 2</td>" SKIP
+                                    "<td><input type='text' name='h-addr-addr-2' value='" addr_mstr.addr_addr2 "' disabled > </td>" SKIP
+                                     "<td>Fax Nbr</td>" SKIP
+                                    "<td><input type='text' name='h-people-fax' value='" people_mstr.people_fax "' disabled > </td>" SKIP
+                                "</tr>" SKIP
+                                "<tr>" SKIP
+                                    "<td></td>" SKIP
+                                    "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP
+                                    "<td>Address 3</td>" SKIP
+                                    "<td><input type='text' name='h-addr-addr-3' value='" addr_mstr.addr_addr3 "' disabled > </td>" SKIP
+                                    "<td>Lab's Payment Term</td>" SKIP
+                                    "<td><input type='text' name='h-lab-pay-term' value='" lab_mstr.lab_payterm "' disabled > </td>" SKIP
+                                "</tr>" SKIP  
+                                "<tr>" SKIP
+                                    "<td></td>" SKIP
+                                    "<td><input type='hidden' name='h-not-used' value= '' disabled  > </td>" SKIP                              
+                                    "<td>City</td>" SKIP
+                                    "<td><input type='text' name='h-addr-city' value='" addr_mstr.addr_city "' disabled </td>" SKIP
+                                    "<td>HHI's Account Nbr with Lab</td>" SKIP
+                                    "<td><input type='text' name='h-lab-acct-nbr' value='" lab_mstr.lab_acct_nbr "' disabled > </td>" SKIP
+                                "</tr>" SKIP  
+                                "<tr>" SKIP 
+                                    "<td></td>" SKIP
+                                    "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP.                                
+    
+            /**  look for the current input stateabbv inorder to get the state full name to be displayed on the screen.  **/                                   
+                            FIND FIRST state_mstr WHERE  state_mstr.state_ISO = addr_mstr.addr_stateprov
+                                     AND  state_mstr.state_deleted = ?                                          /* 2dot0 */
+                                  NO-LOCK NO-ERROR.
+                            IF AVAILABLE (state_mstr) THEN DO:
+                               ASSIGN
+                                        ip-lab-stname = state_mstr.state_display_name
+                                        ip-lab-stateprov = state_mstr.state_ISO.
+                            END.  /** IF AVAILABLE (state_mstr) **/
+                                                                
+                     {&OUT}         "<TD>State / Province</TD>"
+                                    "<td><input type='text' name='h-addr-stateprov' value='" ip-lab-stname "' disabled > </td>" SKIP
+                                    "<td></td>" SKIP
+                                    "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP    
+                                 "</tr>" SKIP
+                                 "<tr>" SKIP 
+                                    "<td></td>" SKIP
+                                    "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP                            
+                                    "<td>Zip Code</td>" SKIP
+                                    "<td><input type='text' name='h-addr-zip' value='" addr_mstr.addr_zip "' disabled > </td>" SKIP
+                                    "<td></td>" SKIP
+                                    "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP   
+                                 "</tr>" SKIP
+                                 "<tr>" SKIP 
+                                    "<td></td>" SKIP
+                                    "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP. 
+                                                                        
+            /**  look for the current input stateabbv inorder to get the state full name to be displayed on the screen.  **/
+                          FIND FIRST country_mstr WHERE  country_mstr.country_ISO = addr_mstr.addr_country
+                                     AND  country_mstr.country_deleted = ?                                      /* 2dot0 */
+                                NO-LOCK NO-ERROR.
+
+                          IF AVAILABLE (country_mstr) THEN DO:
+                               ASSIGN
+                                        ip-coname = country_mstr.country_display_name
+                                        ip-lab-country = country_mstr.country_ISO.
+                          END.  /** IF AVAILABLE (country_mstr) **/
+                                                                   
+                     {&OUT}         "<td>Country</td>" SKIP
+                                    "<td><input type='text' name='h-addr-country' value='" ip-coname "' disabled > </td>" SKIP                                                                                                             
+                                    "<td></td>" SKIP
+                                    "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP                         
+                                 "</tr>" SKIP
+                                 "<TH colspan='6'>Email info</TH>" SKIP
+                                 "<TR>" SKIP
+                                    "<TD>Email Address</TD>" SKIP
+                                    "<TD colspan='2'><input size='50' type='text' name='h-lab-email1' value='" people_mstr.people_email "' disabled  </td>" SKIP
+                                    "<TD>Second Email Address</TD>" SKIP
+                                    "<TD colspan='2'><input size='50' type='text' name='h-lab-email2' value='" people_mstr.people_email2 "' disabled </td>" SKIP
+                                 "</TR>" SKIP                                         
+                               "</table>"  SKIP             
+                             "</div>" SKIP                                                                                                                       
+            "</form>".                                  
+                     
+                            
+        END.    /**  IF  AVAILABLE (lab_mstr) AND AVAILABLE (people_mstr) AND AVAILABLE (addr_mstr)  **/ 
+        
+END.    /** IF  act < 3  **/
+
+IF  act < 3  THEN DO:
+                            
+    {&OUT} 
+        "<BR>" SKIP                                                                                                                             /* 1dot3 */
+        "<form ACTION='LABs-Update-Begin.r' method='get' >" SKIP
+        "<div class='row'>" SKIP                                                                                                                /* 1dot3 */
+		"   <div class='grid_5'> </DIV>" SKIP                                                                                                   /* 1dot3 */
+		"<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP                                                           /* 1dot3 */
+		"   <div class='grid_2'><button type='submit' name='s-Return' value='0' class='btn'>Lab has been updated.  Click HERE to RETURN to main LAB~'s Information screen.</BUTTON></div>" SKIP /* 1dot3 */
+		"   <div class='grid_5'> </DIV>" SKIP                                                                                                   /* 1dot3 */
+		"</div>" SKIP                                                                                                                           /* 1dot3 */
+		"</form>" SKIP.
+
+END.   /**  IF  act < 3   **/
+            
+</SCRIPT>     
+</BODY>
+</HTML>

@@ -1,0 +1,214 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Country State Picker Test</TITLE>
+    <META NAME='AUTHOR' CONTENT='Jacob Luttrell'>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT='07/Jan/16'>
+    <META NAME='LAST_UPDATED' CONTENT='07/Jan/16'>    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+
+  /*********************************************************************
+    File:           ADDRcount_stateP.html
+    Description:    Test Screen to view Countries and States
+    Created:        Jacob Luttrell
+    Version History:
+        1.0 - Created by Jacob Luttrell on 07/Jan/16.
+   **********************************************************************/
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+DEFINE VARIABLE v-country       LIKE addr_mstr.addr_country NO-UNDO.
+DEFINE VARIABLE v-state         LIKE addr_mstr.addr_stateprov NO-UNDO.
+DEFINE VARIABLE act             AS CHARACTER NO-UNDO. 
+
+ASSIGN 
+    v-state             = get-value("h-state")
+    v-country           = get-value("h-country")
+    act                 = get-value("h-act").
+
+IF act = "" THEN 
+    ASSIGN 
+        act = "COUNTRY".
+
+CASE act: 
+ WHEN "COUNTRY" THEN DO: 
+        
+         {&OUT}
+                "<div class='row'>"                 SKIP
+                "<div class='grid_3'></div>"        SKIP
+                "<div class='grid_6'>"              SKIP
+                "<div class='table_col'>"          SKIP
+                "<form>"        SKIP
+                "   <table>"    SKIP
+                "       <tr>"   SKIP
+                "           <th colspan=2>Select a Country</th>" SKIP
+                "       </tr>"  SKIP
+                "       <td>Country</td>" SKIP
+                "       <TD>" SKIP
+                "           <SELECT name='h-country'>" SKIP
+                "               <option value=''></option>".
+            
+        FOR EACH country_mstr WHERE 
+                 country_mstr.country_deleted = ? NO-LOCK      
+            BREAK BY country_mstr.Country_Display_Name:
+        
+            ASSIGN v-country = country_mstr.Country_ISO.
+
+                
+            {&OUT}
+                "<option value=~"" v-country "~" >" country_mstr.Country_Display_Name "</option>" SKIP.
+ 
+        END.  /* FOR EACH country_mstr */
+
+              {&OUT}
+                "           </SELECT>" SKIP
+                "       </TD>" SKIP
+                "       </tr>" SKIP             
+                "   </table>"   SKIP
+                "</div>" SKIP                                                                                                      
+                "</div><!-- end of grid_6 -->" SKIP                                                                                
+                "<div class='grid_3'></div>" SKIP                                                                                      
+                "</div>" SKIP                                                                                                      
+                "<BR>" SKIP
+                "<div class='row'>" SKIP                                                                                           
+                "   <div class='grid_5'> </DIV>" SKIP                                                                                
+                "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                                                                                
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='STATE' class='btn'>Select</BUTTON></div>" SKIP                                        
+                "   <div class='grid_5'> </DIV>" SKIP                                                                              
+                "</div>" SKIP.              
+    
+    END. /* of when COUNTRY */
+    WHEN "STATE" THEN DO:
+
+        {&OUT}
+                "<div class='row'>"                 SKIP
+                "<div class='grid_3'></div>"        SKIP
+                "<div class='grid_6'>"              SKIP
+                "<div class='table_col'>"          SKIP
+                "<form>"        SKIP
+                "   <table>"    SKIP
+                "       <tr>"   SKIP
+                "           <th colspan=2>Select a State</th>" SKIP
+                "       </tr>"  SKIP
+                "       <td>State</td>" SKIP
+                "       <TD>" SKIP
+                "           <SELECT name='h-state'>" SKIP
+                "               <option value=''></option>".
+
+        FOR EACH state_mstr WHERE state_mstr.state_country = v-country AND 
+                                  state_mstr.state_deleted = ? NO-LOCK 
+                            BREAK BY state_mstr.State_Display_Name:
+                
+                    ASSIGN 
+                    v-state = state_mstr.State_ISO.
+
+                
+            {&OUT}
+                "<option value=~"" v-state "~" >" state_mstr.State_Display_Name "</option>" SKIP.
+ 
+        END.  /* FOR EACH country_mstr */
+
+              {&OUT}
+                "           </SELECT>" SKIP
+                "       </TD>" SKIP
+                "       </tr>" SKIP             
+                "   </table>"   SKIP
+                "</div>" SKIP                                                                                                      
+                "</div><!-- end of grid_6 -->" SKIP                                                                                
+                "<div class='grid_3'></div>" SKIP                                                                                      
+                "</div>" SKIP                                                                                                      
+                "<BR>" SKIP
+                "<div class='row'>" SKIP                                                                                           
+                "   <div class='grid_5'> </DIV>" SKIP     
+                "       <input type='hidden' name='h-country'   value='" v-country "'/>"    SKIP                                                                                            
+                "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                                                                                   
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='DISPLAY' class='btn'>Select</BUTTON></div>" SKIP                                         
+                "   <div class='grid_5'> </DIV>" SKIP                                                                              
+                "</div>" SKIP.                                                    
+    END. /* of when STATE */
+    WHEN "DISPLAY" THEN DO:
+         
+         {&OUT}
+            "<div class='row'>"                 SKIP
+            "<div class='grid_2'></div>"        SKIP
+            "<div class='grid_8'>"              SKIP
+            "<div class='table_report_short'>"          SKIP         
+            "   <table>"    SKIP
+            "       <thead>" SKIP
+            "       <tr>"   SKIP
+            "           <th colspan=8>Display Page</th>" SKIP
+            "       </tr>"  SKIP         
+            "       <tr>"   SKIP
+            "           <TD>State</TD>" SKIP
+            "           <TD>State Abbv</TD>" SKIP
+            "           <TD>Country State Belongs To</TD>" SKIP
+            "           <TD class='col'></TD>" SKIP
+            "           <td>Country</td>" skip
+            "           <td>Country Abbv</td>"
+            "           <td>country_from<BR>(name that might have been used)</td>" SKIP
+            "           <td>country_to<br>(name that 'should' have been used)</td>" SKIP
+            "       </tr>"  SKIP 
+            "       </thead>" SKIP         
+            "       <tr>"   SKIP.
+        FOR FIRST state_mstr WHERE state_mstr.State_ISO = v-state AND 
+                                   state_mstr.state_deleted = ?
+                                   NO-LOCK:
+                                       
+            {&OUT}     
+                "       <TD>" state_mstr.State_Display_Name "</td>" SKIP
+                "       <td>" state_mstr.State_ISO "</td>" SKIP
+                "       <td>" state_mstr.state_country "</td>" SKIP
+                .
+        END. 
+       
+        FOR FIRST country_mstr WHERE country_mstr.Country_ISO = v-country AND 
+                                     country_mstr.country_deleted = ?
+                                     NO-LOCK: 
+                                         
+            {&OUT} 
+                "       <TD class='col'></TD>" SKIP                  
+                "       <TD>" country_mstr.Country_Display_Name "</td>" SKIP
+                "       <td>" country_mstr.Country_ISO "</td>" SKIP
+                "       <td>" country_mstr.country_from "</TD>" SKIP
+                "       <td>" country_mstr.country_to "</td>" SKIP
+                .
+        END. 
+        
+        {&OUT}
+            
+            
+            "       </tr>" SKIP             
+            "   </table>"   SKIP
+            "</div>" SKIP                                                                                                      
+            "</div><!-- end of grid_8 -->" SKIP                                                                                
+            "<div class='grid_2'></div>" SKIP                                                                                      
+            "</div>" SKIP                                                                                                      
+            "<BR>" SKIP
+            "<form>"        SKIP
+            "<div class='row'>" SKIP                                                                                           
+            "   <div class='grid_5'> </DIV>" SKIP                                                                             
+            "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                                                                                    
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='COUNTRY' class='btn'>Search Again</BUTTON></div>" SKIP         
+                                           
+            "   <div class='grid_3'> </DIV>" SKIP                                                                              
+            "</div>" SKIP
+            "</form>"        SKIP .        
+        
+    END. /* of when DISPLAY */
+END CASE.    
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,780 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.51">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="27/Sep/15">
+    <META NAME="LAST_UPDATED" CONTENT="19/Mar/16">
+    <TITLE>Testkit Creation</TITLE>
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and 
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+
+  /*------------------------------------------------------------------
+    File:           TKcreateU.html
+    Description:    File to replace TKmakerU.html that combines TKmakerU and fix-extra-testkits.p
+    Created:        9/22/2015
+    Notes:          
+                
+    Revision History:
+    -----------------
+    1.0 - written by Jacob LUTTRELL on 27/Sep/15.  Based on original TKmakerU.html 
+            (which we still need because of the bartender) and fix-extra-testkits.p
+    1.1 - written by DOUG LUTTRELL on 28/Sep/15.  Marked by 1dot1.  Problem running 1.0 
+            in the production environment.
+            a)  Corrected grid issues that were causing problems with the buttons lining 
+                up properly.
+            b)  Fixed forms to pass data properly.  They were dropping values when
+                certain buttons were pushed because they were in different forms.
+            c)  Fixed the comments.
+            d)  Corrected spelling for on screen elements.
+            e)  Found that the RUN VALUE(SEARCH("progname.p")) stuff works fine as a *.r
+                in the production environment and not as a *.p.  Changed that and
+                resolved the issue Chrissy was having.
+     1.2 - written by Jacob Luttrell on 12/Oct/15.  Changed the location of assigning 
+                destionation and professional variables to be based off of test_mstr rather 
+                than tk_mstr. marked by 1dot2.  
+     1.3 - written by Jacob Luttrell on 22/Oct/15.  Changed the ability to create 1 record.
+                Changed display of destination and prof fields in REVIEW.
+                marked by 1dot3.  
+     1.31 - written by Jacob Luttrell on 20/Jan/16. Create TK's based on test-group qty.
+                Marked by 1dot31.
+     1.4 - wrtten by Jacob Luttrell on 24/Feb/16.  Changed TK_testtype to TK_test_type 
+                (unmarked).  Added fields to SUBtrh-RstP-ucU to work with new v11.1 updates.
+                Removed minimum requirements from to field, and change SUBtrh-RStP-ucU to
+                SUBtrh-ucU. Marked by 1dot4.
+     1.5 - written by Jacob Luttrell on 11/Mar/16. Added SUBtrh_findR and added prog_name
+                to the SUBtrh-ucU. marked by 1dot5
+     1.51 - written by Jacob Luttrell on 19/Mar/16. Testtype dropdown respects effective dates
+                marked by 1dot51           
+  -------------------------------------------------------------------*/
+/* ***************************  Definitions  ************************** */
+  
+{../depot/src/WebSpeed/menuname.i}.
+
+DEFINE VARIABLE v-testtype          LIKE TK_mstr.TK_test_type NO-UNDO.
+DEFINE VARIABLE v-firstid           AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-lastid            AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE v-tkid              LIKE TK_mstr.TK_ID NO-UNDO.
+DEFINE VARIABLE v-currseq           LIKE TK_mstr.TK_test_seq NO-UNDO.                               /* 1dot31 */
+DEFINE VARIABLE v-qty               AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-lastkit           AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE v-domestic          LIKE TK_mstr.TK_domestic INITIAL YES NO-UNDO.
+DEFINE VARIABLE v-prof              LIKE TK_mstr.TK_prof NO-UNDO.
+
+DEFINE VARIABLE ischecked           AS CHARACTER NO-UNDO.
+DEFINE VARIABLE x                   AS INTEGER NO-UNDO.
+DEFINE VARIABLE act                 AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE o-uctkm-id          LIKE TK_mstr.TK_id     NO-UNDO.
+DEFINE VARIABLE o-uctkm-create      AS LOGICAL INITIAL NO  NO-UNDO.
+DEFINE VARIABLE o-uctkm-update      AS LOGICAL INITIAL NO  NO-UNDO.
+DEFINE VARIABLE o-uctkm-avail       AS LOGICAL INITIAL YES NO-UNDO.
+DEFINE VARIABLE o-uctkm-successful  AS LOGICAL INITIAL NO  NO-UNDO.
+
+DEFINE VARIABLE o-ctrh-id           LIKE trh_hist.trh_id        NO-UNDO.
+DEFINE VARIABLE o-ctrh-error        AS LOGICAL INITIAL YES      NO-UNDO.
+
+DEFINE VARIABLE itmessage           AS LOGICAL INITIAL NO  NO-UNDO.
+DEFINE VARIABLE errorcount1         AS INTEGER NO-UNDO.
+DEFINE VARIABLE errorcount2         AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE over-ride           AS LOGICAL NO-UNDO.                                  /* 1dot4 */
+DEFINE VARIABLE v-trhid             AS INTEGER                  NO-UNDO.                 /* 1dot5 */ 
+DEFINE VARIABLE v-trhfound          AS LOG INITIAL NO           NO-UNDO.                 /* 1dot5 */
+/* ********************  Preprocessor Definitions  ******************** */
+
+ASSIGN 
+    act         = get-value("h-act")
+    v-testtype  = get-value("h-testtype")
+    v-firstid   = INTEGER(get-value("h-firstid"))
+    v-lastid    = INTEGER(get-value("h-lastid"))
+    v-domestic  = IF get-value("h-domestic") = "YES" 
+                            THEN 
+                                YES 
+                  ELSE IF get-value("h-domestic") = "NO" 
+                            THEN 
+                                NO 
+                  ELSE 
+                                ?
+    v-prof      = IF GET-value ("h-prof") = "YES" 
+                            THEN
+                                 YES
+                            ELSE
+                                 NO
+
+    v-qty      = INTEGER(get-value("h-qty"))
+    over-ride  = IF get-value("h-over-ride") = "YES"                                            /* 1dot4 */
+                        THEN                                                                    /* 1dot4 */
+                            YES                                                                 /* 1dot4 */
+                        ELSE                                                                    /* 1dot4 */    
+                            NO                                                                  /* 1dot4 */
+    . 
+                                  
+/*                  LOGICAL(get-value("h-prof")).*/
+                     
+IF act = "" THEN 
+    act = "INITIAL".
+     
+IF act = "INITIAL"  THEN 
+     ASSIGN 
+        v-testtype  = ""
+        v-firstid   = 0
+        v-lastid    = 0
+        v-currseq   = 0.                                                                                /* 1dot31 */
+    
+
+/* ***************************  Main Block  *************************** */
+CASE act: 
+
+/* *************************** Initial Act  *************************** */
+  
+    WHEN "INITIAL" THEN DO:
+        
+        {&OUT}
+		    "<div class='row'>" SKIP
+		    "<div class='grid_2'></div>" SKIP                                                             /* 1dot1 */
+		    "<div class='grid_8'>" SKIP                                                                   /* 1dot1 */
+		    "<form>" SKIP
+		        "<div class='table_2col'>" SKIP
+		            "<TABLE>" SKIP
+		               "<tr>" SKIP
+		                   "<th colspan=4>Testkit Creation Criteria</th>" SKIP                            /* 1dot1 */
+		               "</tr>" SKIP
+		                "<tr>" SKIP
+		                    "<td>Testkit Type </td>" SKIP                                                 /* 1dot1 */
+		                    "<td "/* colspan=3 */" class='req'><select name='h-testtype' required>" SKIP
+	            "<option value='" v-testtype "' selected>Select Type</option>" SKIP.
+
+	
+	    FOR EACH test_mstr WHERE
+	         test_mstr.test_type <> "" AND                                                                 /* 1dot51 */     
+	        (test_mstr.test_starteff <= TODAY OR                                                           /* 1dot51 */
+            test_mstr.test_starteff = ?) AND                                                               /* 1dot51 */ 
+            (test_mstr.test_endeff >= TODAY OR                                                             /* 1dot51 */     
+            test_mstr.test_endeff = ?) AND                                                                 /* 1dot51 */ 
+            test_mstr.test_deleted = ? NO-LOCK                                                             /* 1dot51 */ 
+            BY test_mstr.test_type:                                                                        /* 1dot51 */
+                
+	       {&OUT}
+	            "<option Value='" test_mstr.test_type "'>" test_mstr.test_type "</option>" SKIP.
+	
+	
+	    END. /* for each */                                                                                                                                      
+		
+		{&OUT} 
+	           "</td>" SKIP
+	           "<td>Test Number Create Override</td>" SKIP                                                 /* 1dot4 */
+	           "<td><input type='checkbox' name='h-over-ride' value='YES' ></td>" SKIP                     /* 1dot4 */ 
+	        "</tr>" SKIP
+	        "<tr>" SKIP
+            "    <td> From Test Number </td><td><input type='text' name='h-firstid' value='" v-firstid "' disabled></td>" SKIP
+	        "   <td> To </td><td><input type='text' name='h-last' value='" v-lastid "' disabled></td>" SKIP
+	        "</tr>" SKIP
+	        "<tr>" SKIP
+	        "    <td> Destination </td>" SKIP
+	        "    <td colspan=3><input type='radio' name='h-domestic' value='Yes' disabled> Domestic" SKIP
+	        "    <br><input type='radio' name='h-domestic' value='No' disabled> International </td>"    SKIP
+	        "<tr>" SKIP
+	        "    <td> Professional? </td><td colspan=3><input type='checkbox'  name='h-prof' value=YES disabled></td>" SKIP
+		    "</tr>" SKIP
+		    "<tr>" SKIP
+		    "    <td> Quantity </td><td colspan=3>0</td>" SKIP
+		    "</tr>" SKIP
+		    "</TABLE>" SKIP
+		    "</div>" /* class='table_col' */ SKIP
+		    "</div>" /* class='grid_8' */ SKIP                                                            /* 1dot1 */
+		    "<div class='grid_2'></div>" SKIP                                                             /* 1dot1 */
+		    "</div>" /* class='row' */ SKIP
+		    "<br>" SKIP. 
+		    
+		                                                                                                                              IF itmessage = YES THEN
+                                                                                                                                       {&OUT}
+                                                                                                                                            "act = " act "<br>" SKIP
+                                                                                                                                            "v-testtype = " v-testtype "<br>" SKIP
+                                                                                                                                            "v-firstid = " v-firstid "<br>" SKIP
+                                                                                                                                            "v-lastid = " v-lastid "<br>" SKIP 
+                                                                                                                                            "v-domestic = " v-domestic "<br>" SKIP
+                                                                                                                                            "v-prof = " v-prof "<br>" SKIP
+                                                                                                                                            "v-qty = " v-qty "<br>" SKIP. 
+		
+            {&OUT}    
+		      "<div class='row'>" SKIP
+		      "   <div class='grid_3'></div>" SKIP                                                         /* 1dot1 */
+		      "   <div class='grid_2'>" SKIP		      
+		      "       <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+		      "       <INPUT type='hidden' name='h-domestic'  value='" v-domestic "' />" SKIP
+              "       <INPUT type='hidden' name='h-prof' value='" v-prof "' />" SKIP		      
+		      "       <button type='submit' name='h-act' value='PROMPT' class='btn'>Search</button>" SKIP
+		      "   </div>" /* class='grid_2' */ SKIP
+		      "   <div class='grid_2'></div>" SKIP
+		      "   <div class='grid_2'>" SKIP
+		      "       <button type='submit' name='h-act' value='INITIAL' class='btn'>Reset</button></td>" SKIP
+		      "   </form>" SKIP
+		      "   </div>" /* class='grid_2' */ SKIP
+		      "   <div class='grid_3'></div>" SKIP                                                          /* 1dot1 */
+		      "</div>" /* class='row' */ SKIP.
+	   
+    END. /** INITIAL **/
+ 
+/* ***************************  Prompt Act   *************************** */ 
+      
+    WHEN "PROMPT" THEN DO:
+/*    {TKcreateU-header.i "DISABLED" "NOTHING"}.*/
+
+                                                                                                                                      IF itmessage = YES THEN
+                                                                                                                                       {&OUT}
+                                                                                                                                            "act = " act "<br>" SKIP
+                                                                                                                                            "v-testtype = " v-testtype "<br>" SKIP
+                                                                                                                                            "v-firstid = " v-firstid "<br>" SKIP
+                                                                                                                                            "v-lastid = " v-lastid "<br>" SKIP 
+                                                                                                                                            "v-domestic = " v-domestic "<br>" SKIP
+                                                                                                                                            "v-prof = " v-prof "<br>" SKIP
+                                                                                                                                            "v-qty = " v-qty "<br>" SKIP.
+
+    {&OUT}
+            "<div class='row'>" SKIP
+            "<div class='grid_2'></div>" SKIP                                                               /* 1dot1 */
+            "<div class='grid_8'>" SKIP                                                                     /* 1dot1 */
+            "<form method='get'>" SKIP
+                "<div class='table_2col'>" SKIP
+                    "<TABLE>" SKIP
+                       "<tr>" SKIP
+                           "<th colspan=4>Testkit Creation Criteria</th>" SKIP                              /* 1dot1 */
+                       "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Testkit Type </td>" SKIP                                                   /* 1dot1 */
+                            "<td "/* colspan=3 */" ><select name='h-type' disabled>" SKIP
+                "<option value='" v-testtype "' selected>" v-testtype "</option>" SKIP.
+
+    FIND test_mstr WHERE test_mstr.test_type = v-testtype NO-LOCK NO-ERROR.
+
+        ASSIGN                                                                                              /* 1dot2 */
+            v-domestic  = test_mstr.test_def_dom                                                            /* 1dot2 */
+            v-prof      = test_mstr.test_def_prof.                                                          /* 1dot2 */
+
+    FIND LAST TK_mstr WHERE TK_mstr.TK_test_type = v-testtype AND
+        TK_mstr.TK_ID BEGINS STRING(v-testtype + "-")
+        USE-INDEX TK-main-idx
+        NO-LOCK NO-ERROR.
+
+    IF AVAILABLE (TK_mstr) THEN
+
+    ASSIGN
+        v-firstid   = IF tk_id BEGINS v-testtype THEN
+                            INTEGER(SUBSTRING(TK_mstr.tk_id,LENGTH(TK_mstr.TK_test_type) + 2)) + 1
+                        ELSE
+                            INTEGER(TK_mstr.tk_id) + 1
+        v-lastid    = v-firstid + (30 / test_mstr.test_lblpertest) - 1.                                         /* 1dot51 - added " - 1 " */
+
+    
+    {&OUT}
+            "</td>" SKIP
+            "<td>Test Number Create Override</td>" SKIP.                                                        /* 1dot4 */
+    IF over-ride = YES THEN                                                                                     /* 1dot4 */
+        ischecked = "CHECKED".                                                                                  /* 1dot4 */
+    ELSE                                                                                                        /* 1dot4 */
+        ischecked = "".                                                                                         /* 1dot4 */
+    {&out}                                                                                                      /* 1dot4 */
+               "<td><input type='checkbox' name='h-over-ride' value='Yes' " ischecked " Disabled></td>" SKIP    /* 1dot4 */
+            "</tr>" SKIP
+            "<tr>" SKIP
+            "    <td> From Test Number </td><td class='req'><input type='number' name='h-firstid' value='" v-firstid "' required></td>" SKIP
+            "   <td> To </td><td class='req'>" SKIP.
+    IF over-ride = YES THEN                                                                                                     /* 1dot4 */
+        {&out}                                                                                                                  /* 1dot4 */
+            "<input type='number' name='h-lastid' value='" v-lastid /*"' min='" v-firstid /* + 1 */ */"' required>" SKIP.       /* 1dot4 */
+    ELSE                                                                                                                        /* 1dot4 */
+        {&OUT}                                                                                                                  /* 1dot4 */
+            "<input type='number' name='h-lastid' value='" v-lastid "' min='" v-firstid /* + 1 */ "' required>" SKIP.           /* 1dot4 */    
+            
+    {&OUT}
+            "</td>" SKIP /* 1dot3 */ 
+            "</tr>" SKIP
+             "<tr>" SKIP
+            "    <td> Destination </td>" SKIP
+            "    <td colspan=3 class='req'>".
+   
+    IF v-domestic = YES THEN
+        ischecked = "CHECKED".
+    ELSE
+        ischecked = "". 
+        
+        {&OUT}
+            "<input type='radio' name='h-domestic' value='Yes' " ischecked "> Domestic" SKIP.
+     
+    IF v-domestic = NO THEN
+        ischecked = "CHECKED".
+    ELSE
+        ischecked = "".
+        {&OUT}  
+            "    <br><input type='radio' name='h-domestic' value='No' " ischecked "> International </td>"    SKIP
+            "</tr>" SKIP
+            "<tr>" SKIP.
+            
+    IF v-prof = YES THEN
+         ischecked = "CHECKED".
+    ELSE
+        ischecked = "".
+        
+    {&OUT}
+                "    <td> Professional? </td><td colspan=3><input type='checkbox'  name='h-prof' value=YES " ischecked "></td>" SKIP 
+            "<tr>" SKIP
+            "    <td> Quantity </td><td colspan=3>0</td>" SKIP
+            "</tr>" SKIP
+            "</TABLE>" SKIP
+            "</div>" /* class='table_col' */ SKIP
+            "</div>" /* class='grid_8' */ SKIP
+            "<div class='grid_2'></div>" SKIP
+            "</div>" /* class='row' */ SKIP
+            "<br>" SKIP.
+            
+                                                                                                                                      IF itmessage = YES THEN
+                                                                                                                                       {&OUT}
+                                                                                                                                            "act = " act "<br>" SKIP
+                                                                                                                                            "v-testtype = " v-testtype "<br>" SKIP
+                                                                                                                                            "v-firstid = " v-firstid "<br>" SKIP
+                                                                                                                                            "v-lastid = " v-lastid "<br>" SKIP 
+                                                                                                                                            "v-domestic = " v-domestic "<br>" SKIP
+                                                                                                                                            "v-prof = " v-prof "<br>" SKIP
+                                                                                                                                            "v-qty = " v-qty "<br>" SKIP.
+       
+       {&OUT}    
+        "<div class='row'>" SKIP
+            "<div class='grid_3'></div>" SKIP
+            "<div class='grid_2'>" SKIP
+                    "<input type='hidden' name='h-testtype'  value='" v-testtype "' />" SKIP
+                    "<input type='hidden' name='h-over-ride'  value='" over-ride "' />" SKIP                      /* 1dot4 */
+                    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+                "<button type='submit' name='h-act' value='REVIEW' class='btn'>Submit</button>" SKIP
+            "</div>" /* class='grid_2' */ SKIP
+            "<div class='grid_2'></div>" SKIP
+            "<div class='grid_2'>" SKIP
+                "<button type='submit' name='h-act' value='INITIAL' class='btn'>Reset</button></td>" SKIP
+            "</form>" SKIP
+            "</div>" /* class='grid_2' */ SKIP
+            "<div class='grid_3'></div>" SKIP
+        "</div>" /* class='row' */ SKIP.
+    
+    END. /** PROMPT **/
+    
+/* ***************************  REVIEW Act   *************************** */
+    
+    WHEN "REVIEW" THEN DO:
+
+                                                                                      IF itmessage = YES THEN
+                                                                                       {&OUT}
+                                                                                            "act = " act "<br>" SKIP
+                                                                                            "v-testtype = " v-testtype "<br>" SKIP
+                                                                                            "v-firstid = " v-firstid "<br>" SKIP
+                                                                                            "v-lastid = " v-lastid "<br>" SKIP 
+                                                                                            "v-domestic = " v-domestic "<br>" SKIP
+                                                                                            "v-prof = " v-prof "<br>" SKIP 
+                                                                                            "v-qty = " v-qty "<br>" SKIP.
+        
+    v-qty = v-lastid - v-firstid + 1.                                                                           /* 1dot1 */ 
+        
+        {&OUT}
+            "<div class='row'>" SKIP
+            "<div class='grid_2'></div>" SKIP                                                                   /* 1dot1 */
+            "<div class='grid_8'>" SKIP                                                                         /* 1dot1 */
+            "<form method='get'>" SKIP
+                "<div class='table_2col'>" SKIP
+                    "<TABLE>" SKIP
+                       "<tr>" SKIP
+                           "<th colspan=4>Testkit Creation Criteria</th>" SKIP                                  /* 1dot1 */
+                       "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Testkit Type </td>" SKIP                                                       /* 1dot1 */
+                            "<td "/* colspan=3 */" ><select name='h-type' disabled>" SKIP
+                "<option value='" v-testtype "' selected>" v-testtype "</option>" SKIP                                                       
+            "</td>" skip
+            "<td>Test Number Create Override</td>" SKIP.                                                        /* 1dot4 */
+    IF over-ride = YES THEN                                                                                     /* 1dot4 */
+        ischecked = "CHECKED".                                                                                  /* 1dot4 */
+    ELSE                                                                                                        /* 1dot4 */
+        ischecked = "".                                                                                         /* 1dot4 */
+    {&out}                                                                                                      /* 1dot4 */
+               "<td><input type='checkbox' name='h-over-ride' value='Yes' " ischecked " Disabled></td>" SKIP    /* 1dot4 */
+            "</tr>" SKIP
+            "<tr>" SKIP
+            "    <td> From Test Number </td><td><input type='text' name='h-firstid' value='" v-firstid "' disabled></td>" SKIP
+            "   <td> To </td><td><input type='text' name='h-lastid' value='" v-lastid "' disabled></td>" SKIP
+            "</tr>" SKIP
+            "<tr>" SKIP
+            "    <td> Destination </td>" SKIP
+            "    <td colspan=3>".
+            
+        IF v-domestic = YES THEN                                                                                                        /* 1dot3 */
+            ischecked = "CHECKED".                                                                                                      /* 1dot3 */
+        ELSE                                                                                                                            /* 1dot3 */    
+            ischecked = "".                                                                                                             /* 1dot3 */
+                
+        {&OUT}                                                                                                                          /* 1dot3 */
+            "       <input type='radio' name='h-domestic' value='Yes' " ischecked " disabled> Domestic" SKIP.                           /* 1dot3 */
+     
+        IF v-domestic = NO THEN                                                                                                         /* 1dot3 */
+            ischecked = "CHECKED".                                                                                                      /* 1dot3 */
+        ELSE                                                                                                                            /* 1dot3 */
+            ischecked = "".                                                                                                             /* 1dot3 */
+        {&OUT}                                                                                                                          /* 1dot3 */
+            "       <br><input type='radio' name='h-domestic' value='No' " ischecked " disabled> International" SKIP                    /* 1dot3 */
+            "   </td>"    SKIP                                                                                                          /* 1dot3 */
+            "</tr>" SKIP.                                                                                                               /* 1dot3 */
+        
+        IF v-prof = YES THEN                                                                                                            /* 1dot3 */
+            ischecked = "CHECKED".                                                                                                      /* 1dot3 */
+	    ELSE                                                                                                                            /* 1dot3 */
+	        ischecked = "".                                                                                                             /* 1dot3 */
+	                                                                                                                  
+	       {&OUT}
+	            "<tr>" SKIP
+	            "    <td> Professional? </td><td colspan=3><input type='checkbox'  name='h-prof' value=YES " ischecked " disabled></td>" SKIP
+	            "</tr>" SKIP
+	            "<tr>" SKIP
+	            "    <td> Quantity </td><td colspan=3>" v-qty "</td>" SKIP
+	            "</tr>" SKIP
+	            "</TABLE>" SKIP
+	            "</div>" /* class='table_col' */ SKIP
+	            "</div>" /* class='grid_8' */ SKIP                                                             /* 1dot1 */
+	            "<div class='grid_2'></div>" SKIP                                                              /* 1dot1 */
+	            "</div>" /* class='row' */ SKIP
+	            "<br>" SKIP.
+	            
+                                                                                    IF itmessage = YES THEN
+                                                                                     {&OUT}
+                                                                                          "act = " act "<br>" SKIP
+                                                                                          "v-testtype = " v-testtype "<br>" SKIP
+                                                                                          "v-firstid = " v-firstid "<br>" SKIP
+                                                                                          "v-lastid = " v-lastid "<br>" SKIP 
+                                                                                          "v-domestic = " v-domestic "<br>" SKIP
+                                                                                          "v-prof = " v-prof "<br>" SKIP
+                                                                                          "v-qty = " v-qty "<br>" SKIP.
+	           
+	       {&OUT} 
+	           "<div class='row'>" SKIP
+	            "<div class='grid_3'></div>" SKIP
+	            "<div class='grid_2'>" SKIP
+	                "<input type='hidden' name='h-testtype'  value='" v-testtype "' />" SKIP
+	                "<input type='hidden' name='h-over-ride'  value='" over-ride "' />" SKIP                                           /* 1dot4 */
+                    "<input type='hidden' name='h-domestic'  value='" v-domestic "' />" SKIP
+                    "<input type='hidden' name='h-prof'      value=YES />"     SKIP
+                    "<input type='hidden' name='h-qty'       value='" v-qty "' />"     SKIP
+                    "<input type='hidden' name='h-lastid'    value='" v-lastid "' />"   SKIP
+                    "<input type='hidden' name='h-firstid'   value='" v-firstid "'/>"  SKIP
+                    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+	                "<button type='submit' name='h-act' value='CREATE' class='btn'>Create</button>" SKIP
+	            "</div>" /* class='grid_2' */ SKIP
+	            "<div class='grid_2'></div>" SKIP
+	            "<div class='grid_2'>" SKIP
+	                "<button type='submit' name='h-act' value='INITIAL' class='btn'>Reset</button></td>" SKIP
+	            "</form>" SKIP
+	            "</div>" /* class='grid_2' */ SKIP
+	            "<div class='grid_3'></div>" SKIP
+            "</div>" /* class='row' */ SKIP.
+    END. /** REVIEW **/
+    
+/* ***************************  Create Act   *************************** */    
+    
+    WHEN "CREATE" THEN DO: 
+    
+                                                                                     IF itmessage = YES THEN
+                                                                                      {&OUT}
+                                                                                           "act = " act "<br>" SKIP
+                                                                                           "v-testtype = " v-testtype "<br>" SKIP
+                                                                                           "v-firstid = " v-firstid "<br>" SKIP
+                                                                                           "v-lastid = " v-lastid "<br>" SKIP 
+                                                                                           "v-domestic = " v-domestic "<br>" SKIP
+                                                                                           "v-prof = " v-prof "<br>" SKIP
+                                                                                           "v-qty = " v-qty "<br>" SKIP.
+        FIND test_mstr WHERE test_mstr.test_type = v-testtype NO-LOCK NO-ERROR.                                                 /* 1dot31 */   
+        IF AVAILABLE (test_mstr) THEN DO:                                                                                       /* 1dot31 */
+     
+	        DO x = v-firstid TO v-lastid:
+	           DO v-currseq = 1 TO test_mstr.test_group_qty:                                                                    /* 1dot31 */
+	            v-tkid  = STRING(v-testtype + "-" + STRING(x)).
+	
+	            FIND /* FIRST */ TK_mstr WHERE                                                                                  /* removed in 1dot31 */
+	                                     TK_mstr.TK_ID = v-tkid AND 
+	                                     TK_mstr.TK_test_seq = v-currseq                                                        /* 1dot31 */
+	                                     NO-LOCK NO-ERROR.
+
+                                                                                  IF itmessage = YES THEN
+                                                                                   {&OUT}
+                                                                                        "DO x... before IF NOT AVAIL... <br>" SKIP
+                                                                                        "act = " act "<br>" SKIP
+                                                                                        "v-testtype = " v-testtype "<br>" SKIP
+                                                                                        "v-firstid = " v-firstid "<br>" SKIP
+                                                                                        "v-lastid = " v-lastid "<br>" SKIP 
+                                                                                        "v-domestic = " v-domestic "<br>" SKIP
+                                                                                        "v-prof = " v-prof "<br>" SKIP
+                                                                                        "v-qty = " v-qty "<br>" SKIP
+                                                                                        "v-tkid = " v-tkid "<br>" SKIP.
+
+            IF NOT AVAILABLE (tk_mstr) THEN DO:
+
+                                                                                IF itmessage = YES THEN
+                                                                                   {&OUT}
+                                                                                        "IF NOT AVAIL... before RUN... <br>" SKIP
+                                                                                        "act = " act "<br>" SKIP
+                                                                                        "v-testtype = " v-testtype "<br>" SKIP
+                                                                                        "v-firstid = " v-firstid "<br>" SKIP
+                                                                                        "v-lastid = " v-lastid "<br>" SKIP 
+                                                                                        "v-domestic = " v-domestic "<br>" SKIP
+                                                                                        "v-prof = " v-prof "<br>" SKIP
+                                                                                        "v-qty = " v-qty "<br>" SKIP
+                                                                                        "v-tkid = " v-tkid "<br>" SKIP
+                                                                                        SEARCH("SUBtkmstrRSTPucU.r") "<br>" SKIP
+                                                                                        SEARCH("SUBtkmstrRSTPucU.p") "<br>" SKIP.
+
+
+                    
+/*                    RUN VALUE(SEARCH("SUBtkmstrRSTPucU.r"))                                                      /* 1dot5 */*/
+		            RUN VALUE(SEARCH("SUBtkmstrRSTPucU.r"))                                                   /* 1dot1 */
+		              (
+						v-tkid,								    /* TK_mstr.TK_ID            */
+						v-testtype,           					/* TK_mstr.TK_test_type     */
+						v-prof,									/* TK_mstr.TK_prof          */
+						v-currseq,								/* TK_mstr.TK_test_seq      */                /* 1dot31 */
+						v-domestic,								/* TK_mstr.TK_domestic      */
+						0,										/* TK_mstr.TK_cust_ID       */
+						0,										/* TK_mstr.TK_patient_ID    */
+						"",										/* TK_mstr.TK_lab_sample_ID */
+						0,										/* TK_mstr.TK_lab_seq       */
+						0,										/* TK_mstr.TK_test_age      */
+					    test_mstr.test_lab_ID,  				/* TK_mstr.TK_lab_ID        */
+						"CREATED",								/* TK_mstr.TK_status        */
+						"",										/* TK_mstr.TK_comments      */
+						"",										/* TK_mstr.TK_notes         */
+						YES,                    				/* TK_mstr.tk_cust_paid     */
+						?,										/* TK_mstr.tk_lbl_print     */
+						?,										/* TK_mstr.tk_lab_paid      */
+						"",                                     /* magento order */                              /* 1dot5 */
+                        ?,                                      /* cust paid date */                             /* 1dot5 */     
+								           
+						OUTPUT o-uctkm-id, 
+                        OUTPUT o-uctkm-create,         
+                        OUTPUT o-uctkm-update,  
+                        OUTPUT o-uctkm-avail,           
+                        OUTPUT o-uctkm-successful
+		            ).
+		           
+																	IF itmessage = YES THEN
+																	   {&OUT}
+																	        "<br><br>RUN VALUE(SEARCH('SUBtkmstrRSTPucU.p')) <br>" SKIP
+																	        "act = " act "<br>" SKIP
+																	        "v-testtype = " v-testtype "<br>" SKIP
+																	        "v-firstid = " v-firstid "<br>" SKIP
+																	        "v-lastid = " v-lastid "<br>" SKIP 
+																	        "v-domestic = " v-domestic "<br>" SKIP
+																	        "v-prof = " v-prof "<br>" SKIP
+																	        "v-qty = " v-qty "<br>" SKIP
+																	        "o-uctkm-id = " o-uctkm-id "<br>" SKIP 
+																			"o-uctkm-create = " o-uctkm-create "<br>" SKIP         
+																			"o-uctkm-update = " o-uctkm-update "<br>" SKIP  
+																			"o-uctkm-avail = " o-uctkm-avail "<br>" SKIP           
+																			"o-uctkm-successful = " o-uctkm-successful "<br>" SKIP
+																			SEARCH('SUBtrh-ucU.r') "<br>" SKIP
+																			SEARCH('SUBtrh-ucU.p') "<br>" SKIP.		           		           
+
+                  ASSIGN                                                               /* 1dot5 */
+                       v-trhid     = 0                                                 /* 1dot5 */
+                       v-trhfound  = NO.                                               /* 1dot5 */
+                  
+                   RUN VALUE(SEARCH("SUBtrh-findR.r"))                                 /* 1dot5 */
+                       (v-testtype,                                                    /* 1dot5 */
+                        "CREATED",                                                    /* 1dot5 */
+                        v-tkid,                                                        /* 1dot5 */
+                        v-currseq,                                                     /* 1dot5 */
+                        OUTPUT v-trhid,                                                /* 1dot5 */
+                        OUTPUT v-trhfound).                                            /* 1dot5 */
+
+                                                                    IF itmessage = YES THEN
+                                                                       {&OUT}
+                                                                            "<br><br>RUN VALUE(SEARCH('SUBtrh-findR.r')) <br>" SKIP
+                                                                            "act = " act "<br>" SKIP
+                                                                            "v-testtype = " v-testtype "<br>" SKIP
+                                                                            "v-firstid = " v-firstid "<br>" SKIP
+                                                                            "v-lastid = " v-lastid "<br>" SKIP 
+                                                                            "v-domestic = " v-domestic "<br>" SKIP
+                                                                            "v-prof = " v-prof "<br>" SKIP
+                                                                            "v-qty = " v-qty "<br>" SKIP
+                                                                            "o-uctkm-id = " o-uctkm-id "<br>" SKIP 
+                                                                            "o-uctkm-create = " o-uctkm-create "<br>" SKIP         
+                                                                            "o-uctkm-update = " o-uctkm-update "<br>" SKIP  
+                                                                            "o-uctkm-avail = " o-uctkm-avail "<br>" SKIP           
+                                                                            "o-uctkm-successful = " o-uctkm-successful "<br>" SKIP
+                                                                            "v-trhid = " v-trhid "<br>"
+                                                                            "v-trhfound = " v-trhfound "<br>" SKIP
+                                                                            SEARCH('SUBtrh-ucU.r') "<br>" SKIP
+                                                                            SEARCH('SUBtrh-ucU.p') "<br>" SKIP.                         
+
+                    IF v-trhfound = NO THEN 
+		            
+		              
+		            RUN VALUE(SEARCH("SUBtrh-ucU.r"))  /* "SUBtrh-RStPucU.r" */   /* 1dot1 */ /* 1dot4 */
+		              (
+						v-trhid,      		                    /* trh_hist.trh_id          */                      /* 1dot5 */
+						v-testtype,           					/* trh_hist.trh_item        */
+						"CREATED",        						/* trh_hist.trh_action      */
+						1,										/* trh_hist.trh_qty         */
+						"",										/* trh_hist.trh_loc         */
+						"",										/* trh_hist.trh_lot         */
+						o-uctkm-id /*v-tkid*/,    				/* trh_hist.trh_serial      */
+						"",										/* trh_hist.trh_site        */
+						v-currseq,             					/* trh_hist.trh_sequence    */                /* 1dot31 */
+/*						TODAY,                                  /* trh_hist.trh_create_date */*/
+                        
+                    /* 1dot4 --> */   
+						"",                                     /*i-ctrh-comments*/
+						"",                                     /*i-ctrh-other   */
+						0,                                      /*i-ctrh-people  */
+						STRING("WO-" + STRING(YEAR(TODAY))
+                               + "-" + STRING(MONTH(TODAY))
+                               + "-" + STRING(DAY(TODAY))),     /*i-ctrh-order   */
+						TODAY,                                  /*i-ctrh-date    */
+						STRING(TIME,"HH:MM AM"),                /*i-ctrh-time    */
+						"",                                     /*i-ctrh-ref     */
+                    /* <-- 1dot4 */ 
+                        "", /* warehouse */        
+						OUTPUT o-ctrh-id,
+						OUTPUT o-ctrh-error
+								            ).
+						
+						ELSE 
+						{&OUT}
+		                "<div class='row'>" SKIP
+		                    "<div class='grid_2'></div>" SKIP                                                               /* 1dot1 */
+		                    "<div class='grid_8'>" SKIP                                                                     /* 1dot1 */
+		                    "<center>" SKIP   
+		                       "<h2>The transaction history already exists for " TK_mstr.TK_ID ". Please Contact Solsource.</h2>" SKIP
+		                    "</center>" SKIP
+		                    "</div>" /* class='grid_8' */ SKIP                                                              /* 1dot1 */
+		                    "<div class='grid_2'></div>" SKIP                                                               /* 1dot1 */
+		                "</div>" /* class='row' */ SKIP
+		                "<br>" SKIP
+		                "<div class='row'>" SKIP
+		                   "<div class='grid_5'></div>" SKIP
+		                   "<div class='grid_2'>" SKIP
+		                       "<form method='get'>" SKIP
+		                           "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+		                           "<button type='submit' name='h-act' value='INITIAL' class='btn'>Create More Records</button>" SKIP
+		                       "</form>" SKIP
+		                   "</div>" /* class='grid_2' */ SKIP
+		                   "<div class='grid_5'></div>" SKIP
+		               "</div>" /* class='row' */ SKIP.
+								        
+                                                                         IF itmessage = YES THEN
+                                                                            {&OUT}
+                                                                                 " RUN VALUE(SEARCH('SUBtrh-ucU.p')) <br>" SKIP
+                                                                                 "act = " act "<br>" SKIP
+                                                                                 "v-testtype = " v-testtype "<br>" SKIP
+                                                                                 "v-firstid = " v-firstid "<br>" SKIP
+                                                                                 "v-lastid = " v-lastid "<br>" SKIP 
+                                                                                 "v-domestic = " v-domestic "<br>" SKIP
+                                                                                 "v-prof = " v-prof "<br>" SKIP
+                                                                                 "v-qty = " v-qty "<br>" SKIP
+                                                                                 "o-ctrh-id = " o-ctrh-id "<br>" SKIP 
+                                                                                 "o-ctrh-create = " o-ctrh-error "<br>" SKIP         
+                                                                                 "o-uctkm-update = " o-uctkm-update "<br>" SKIP.								        
+		
+		            IF o-uctkm-successful = NO OR o-ctrh-error = YES THEN
+		                 errorcount1 = errorcount1 + 1. 
+
+/* ********************************************************* Procedure to write to BarTender goes here *********************************************************** */
+	                
+				    END.  /** if not avail tk_mstr **/
+				
+				    ELSE
+		                errorcount2 = errorcount2 + 1. 
+	            END. /* of do v-currseq = 1 to test_group_qty */                                                    /* 1dot31 */
+	        END.  /** of DO x = v-firstid TO v-lastid --- v-makekits = NO **/
+        END. /* of if avail test_mstr */                                                                            /* 1dot31 */           
+        IF errorcount1 > 0 THEN 
+            {&OUT}
+                "<div class='row'>" SKIP
+                    "<div class='grid_2'></div>" SKIP                                                               /* 1dot1 */
+                    "<div class='grid_8'>" SKIP                                                                     /* 1dot1 */
+                    "<center>" SKIP   
+                       "<h2>" errorcount1 " errors occured whiled creating records in the database.</h2>" SKIP
+                    "</center>" SKIP
+                    "</div>" /* class='grid_8' */ SKIP                                                              /* 1dot1 */
+                    "<div class='grid_2'></div>" SKIP                                                               /* 1dot1 */
+                "</div>" /* class='row' */ SKIP
+                "<br>" SKIP
+                "<div class='row'>" SKIP
+                   "<div class='grid_5'></div>" SKIP
+                   "<div class='grid_2'>" SKIP
+                       "<form method='get'>" SKIP
+                           "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+                           "<button type='submit' name='h-act' value='INITIAL' class='btn'>Create More Records</button>" SKIP
+                       "</form>" SKIP
+                   "</div>" /* class='grid_2' */ SKIP
+                   "<div class='grid_5'></div>" SKIP
+               "</div>" /* class='row' */ SKIP.
+          
+          IF errorcount2 > 0 THEN  
+            {&OUT}
+	             "<div class='row'>" SKIP
+	                    "<div class='grid_2'></div>" SKIP                                                      /* 1dot1 */
+	                    "<div class='grid_8'>" SKIP                                                            /* 1dot1 */
+	                    "<center>" SKIP   
+	                       "<h2>" errorcount2 " testkits already exist in the database.</h2>" SKIP
+	                    "</center>" SKIP
+	                    "</div>" /* class='grid_8' */ SKIP                                                     /* 1dot1 */
+	                    "<div class='grid_2'></div>" SKIP                                                      /* 1dot1 */
+	               "</div>" /* class='row' */ SKIP
+	               "<br>" SKIP
+	               "<div class='row'>" SKIP
+	                   "<div class='grid_5'></div>" SKIP
+	                   "<div class='grid_2'>" SKIP
+	                       "<form method='get'>" SKIP
+	                           "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+	                           "<button type='submit' name='h-act' value='INITIAL' class='btn'>Create More Records</button>" SKIP
+	                       "</form>" SKIP
+	                   "</div>" /* class='grid_2' */ SKIP
+	                   "<div class='grid_5'></div>" SKIP
+	               "</div>" /* class='row' */ SKIP.
+               
+          IF errorcount1 = 0 AND errorcount2 = 0 THEN     
+	          {&OUT}
+	               "<div class='row'>" SKIP
+	                    "<div class='grid_2'></div>" SKIP                                                          /* 1dot1 */
+	                    "<div class='grid_8'>" SKIP                                                                /* 1dot1 */
+	                    "<center>" SKIP   
+	                       "<h2>Data created successfully! Created " v-qty " testkits of the " v-testtype " test type.</h2>" SKIP   /* 1dot1 */
+	                    "</center>" SKIP
+	                    "</div>" /* class='grid_8' */ SKIP                                                         /* 1dot1 */
+	                    "<div class='grid_2'></div>" SKIP                                                          /* 1dot1 */
+	               "</div>" /* class='row' */ SKIP
+	               "<br>" SKIP
+	               "<div class='row'>" SKIP
+	                   "<div class='grid_5'></div>" SKIP
+	                   "<div class='grid_2'>" SKIP
+	                       "<form method='get'>" SKIP
+	                           "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+	                           "<button type='submit' name='h-act' value='INITIAL' class='btn'>Create More Records</button>" SKIP
+	                       "</form>" SKIP
+	                   "</div>" /* class='grid_2' */ SKIP
+	                   "<div class='grid_5'></div>" SKIP
+	               "</div>" /* class='row' */ SKIP.
+               
+    END. /** CREATE **/
+   
+END CASE.   /** act **/
+
+</SCRIPT>
+</BODY>
+</HTML>

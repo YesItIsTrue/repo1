@@ -1,0 +1,310 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+ 
+    <title>TimeSheet-Home</title>
+    <META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.00">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="14/Jul/15">
+    <META NAME="LAST_UPDATED" CONTENT="14/Jul/15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<script LANGUAGE="SpeedScript">
+
+/*------------------------------------------------------------------
+ * File: TimeSheet-Home.html
+ * Description: HTML mockup of the Home page (user side) of the TimeSheet Project.  
+ * Created: Mark Jacobs
+ *-------------------------------------------------------------------
+ * Revision History:    
+ * ---------------------
+ * 1.00 - Changed name from time–tracker–Pg1 to TimeSheet-Entry.
+ *      - 
+ *
+ *
+ *
+ *-------------------------------------------------------------------- */
+</SCRIPT>
+</HEAD>
+
+<body class='inside'>
+<script LANGUAGE="SpeedScript">
+
+
+{&OUT}
+        "<br>" skip
+        "<div>" skip
+        "       <h1 align='center' >TIMESHEET HOME PAGE</h1>" skip
+        "</div>" skip.
+
+        
+{&OUT}
+        "<br>" skip
+        "<div class='row'>" skip
+        "   <div class='grid_3'></div>" skip
+        "       <div class='grid_6'>" skip
+        "           <form method='post' ACTION=''>" SKIP          
+        "               <div class='table_2col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='4'>Login</th>" skip
+        "                       </tr>" skip 
+         
+        "                       <tr>" skip
+        "                           <td>First Name</td><td><input type='text' name='h-fname'></td>" skip
+        "                           <td>Last Name</td><td><input type='text' name='h-lname'></td" skip
+        "                       </tr>" skip  
+        
+        "                       <tr>" skip
+        "                           <td>Password</td><td><input type='password' name='h-password'></td>" skip  
+        "                           <td colspan='2'></td>" skip
+        "                       </tr>" skip     
+        
+/*        "                       <tr>" skip                                                           */
+/*        "                           <td>Translation</td>" skip                                       */
+/*        "                           <td><input type='checkbox' name=h-bare>TimeSheet Entry Page" skip*/
+/*        "                           <br><input type='checkbox' name=h-trans>Admin</option>" SKIP     */
+/*        "                           <td colspan='2'></td>" skip                                      */
+/*        "                       </tr>" skip                                                          */
+
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_3'></div>" skip
+        "</div>" skip.  
+               
+{&OUT}  
+        " <div class='row'>" SKIP
+        "   <div class='grid_4-5'></DIV>" SKIP
+        "      <div class='grid_1'><BUTTON type='submit'class='btn' name='h-in' value='Record-Entry'>Sign In</BUTTON></div>" SKIP                                  
+        "      <div class='grid_1'></DIV>" SKIP
+        "      <div class='grid_1'><BUTTON type='reset' class='btn'>Clear Entry</BUTTON></div>" SKIP
+        "      <div class='grid_4-5'></DIV>" SKIP
+        "   </div>" SKIP
+        "</div>" SKIP
+        "           </form>" SKIP.
+        
+        
+/*-------------------- If Signed in as a payee ------------------------*/        
+ 
+ 
+{&OUT}
+        "<br>" skip
+        "<div>" skip       
+        "       <h3 align='center' >(If Signed in as a Payee, just the Welcome Table would be visible)</h3>" skip      
+        "</div>" skip.
+        
+{&OUT}      
+        "<div class='row'>" skip
+        "   <div class='grid_3'></div>" skip
+        "       <div class='grid_6'>" skip
+        "           <form method='post' ACTION='TimeSheet-Entry.r'>" SKIP          
+        "               <div class='table_3col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='6'>Welcome What do you want to do</th>" skip
+        "                       </tr>" skip        
+        "                       <tr>" skip
+        "                           <td></td>" skip
+        "                           <td><input type='radio' name='h-do'>Make a TimeSheet Entry" skip
+        "                           <td colspan='4'></td>" skip
+        "                       </tr>" skip
+        "                       <tr>" skip
+        "                           <td><td><input type='radio' name='h-do'>Edit a TimeSheet Entry</option>" SKIP  
+        "                           <td>From</td>" skip
+        "                           <td><input type='date' name='h-from-date'></td>" skip
+        "                           <td>TO</td>" skip             
+        "                           <td><input type='date' name='h-to-date'></td>" skip                             
+        "                       </tr>" skip  
+        
+         "                       <tr>" skip
+        "                           <td><td><input type='radio' name='h-do' vlue='YES'>Make a Status Report</option>" SKIP  
+        "                           <td>From</td>" skip
+        "                           <td><input type='date' name='h-from-date' vlue='YES'></td>" skip
+        "                           <td>TO</td>" skip             
+        "                           <td><input type='date' name='h-to-date' vlue='YES'></td>" skip                             
+        "                       </tr>" skip  
+
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_3'></div>" skip
+        "</div>" skip.    
+               
+{&OUT}        
+        " <div class='row'>" SKIP
+        "   <div class='grid_4-5'></DIV>" SKIP
+        "      <div class='grid_1'><BUTTON type='submit'class='btn' name='h-go'>GO</BUTTON></div>" SKIP                                  
+        "      <div class='grid_1'></DIV>" SKIP
+        "      <div class='grid_1'><BUTTON type='reset' class='btn'>Clear Entry</BUTTON></div>" SKIP
+        "      <div class='grid_4-5'></DIV>" SKIP
+        "   </div>" SKIP
+        "</div>" SKIP
+        "           </form>" SKIP.
+        
+        
+   /*--------------- If signed in with privileges --------------------*/     
+
+             
+{&OUT}
+        "<br>" skip
+        "<div>" skip       
+        "       <h3 align='center' >(If Signed in With privileges for the admin side these tables and buttons would be included)</h3>" skip      
+        "</div>" skip.
+        
+        {&OUT}
+        "<br>" skip
+        "<div class='row'>" skip
+        "   <div class='grid_3'></div>" skip
+        "       <div class='grid_6'>" skip
+        "           <form method='post' >" SKIP   /* onclick= */       
+        "               <div class='table_2col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='4'>Timesheet Entrys / Paymentr Report</th>" skip
+        "                       </tr>" skip 
+        
+        "                       <tr>" skip
+        "                           <td>From Date</td>" skip
+        "                           <td><input type='date' name='h-from-date'></td>" skip
+        "                           <td>TO</td>" skip
+        "                           <td><input type='date' name='h-to-date'></td>" skip
+        "                       </tr>" skip 
+        
+        "                       <tr>" skip
+        "                           <td>Select a Payee</td>" skip
+        "                           <td><select name='h-payee' multiple>" skip 
+        "                               <option value='all'>All</option>" SKIP                        
+        "                               <option value='Mark'>Mark Jacobs</option>" SKIP
+        "                               <option value='Trae'>Trae Luttrell</option>" SKIP
+        "                               <option value='Jacob'>Jacob Luttrell</option>" SKIP
+        "                               <option value='Harold'>Harold Luttrell</option></td>" SKIP
+        "                           <td colspan='2'></td>" skip 
+        "                       </tr>" skip        
+        
+
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_3'></div>" skip
+        "</div>" skip.  
+               
+{&OUT}  
+        " <div class='row'>" SKIP
+        "      <div class='grid_3'></DIV>" SKIP.        
+</script>        
+                  <div class='grid_2'><BUTTON type='submit'class='btn' name='h-get-time-entries' value='timesheet-entrys'  onclick="this.form.action='TimeSheet-Entry-admin.r'">Retrieve TimeSheet Entries</BUTTON></div> 
+ 
+                  <div class='grid_2'><BUTTON type='submit'class='btn' name='h-pay-report' value='create-payment' onclick="this.form.action='Payment-Report.r'">Create Paymentr Report</BUTTON></DIV>                  
+<script LANGUAGE="SpeedScript">
+{&OUT} 
+        "      <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Entry</BUTTON></div>" SKIP
+        "      <div class='grid_3'></DIV>" SKIP
+        "   </div>" SKIP
+        "</div>" SKIP
+        "           </form>" SKIP. 
+        
+
+{&OUT}
+        "<br>" skip
+        "<div class='row'>" skip
+        "   <div class='grid_3'></div>" skip
+        "       <div class='grid_6'>" skip
+        "           <form method='post' ACTION='Status-Report.r'>" SKIP          
+        "               <div class='table_2col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='4'>Status Log </th>" skip
+        "                       </tr>" skip    
+                      
+        "                       <tr>" skip
+        "                          <td>Select a Client</td>" skip
+        "                           <td><select name='h-client'>" skip 
+        "                               <option value=''></option>" SKIP                        
+        "                               <option value='HHI'>HHI</option>" SKIP
+        "                               <option value='Solsource'>Solsource</option>" SKIP
+        "                               <option value='DRQ'>DRQ 250</option></td>" SKIP
+        "                           <td colspan='2'></td>" skip 
+        "                       </tr>" skip        
+
+        "                       <tr>" skip
+        "                           <td>From Date</td>" skip
+        "                           <td><input type='date' name='h-form-date'></td>" skip
+        "                           <td>TO</td>" skip             
+        "                           <td><input type='date' name='h-to-time'></td>" skip                         
+        "                       </tr>" skip  
+        
+        "                       <tr>" skip
+        "                           <td>Select a Payee</td>" skip
+        "                           <td><select name='h-payee' multiple>" skip 
+        "                               <option value='all'>All</option>" SKIP                        
+        "                               <option value='Mark'>Mark Jacobs</option>" SKIP
+        "                               <option value='Trae' >Trae Luttrell</option>" SKIP
+        "                               <option value='Jacob' >Jacob Luttrell</option>" SKIP
+        "                               <option value='Harold'>Harold Luttrell</option></td>" SKIP
+        "                           <td colspan='2'></td>" skip 
+        "                       </tr>" skip        
+        
+/*        "                       <tr>" skip                                                                      */
+/*        "                           <td>Select a Payee</td>" skip                                               */
+/*        "                           <td><input type='checkbox' name=paye>All" skip                              */
+/*        "                               <br><input type='checkbox' name=paye>Mark Jacobs</option>" SKIP         */
+/*        "                               <br><input type='checkbox' name=paye>Trae Luttrell</option>" SKIP       */
+/*        "                               <br><input type='checkbox' name=paye>Jacob Luttrell</option>" SKIP      */
+/*        "                               <br><input type='checkbox' name=paye>Harold Luttrell</option></td>" SKIP*/
+/*        "                           <td colspan='2'></td>" skip                                                 */
+/*        "                       </tr>" skip                                                                     */
+        
+        "                       <tr>" skip 
+        "                           <td>Create as</td>" skip
+        "                           <td><input type='radio' name='h-run-as' vlue='YES'>Flagged" skip
+        "                           <br><input type='radio' name='h-run-as' vlue='YES'>Translated" skip
+        "                           <br><input type='radio' name='h-run-as' vlue='YES'>Not Translated</td>" skip
+        "                           <td colspan='2'></td>" skip                     
+        "                       </tr>" skip      
+             
+
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_3'></div>" skip
+        "</div>" skip.  
+               
+{&OUT}  
+        " <div class='row'>" SKIP
+        "   <div class='grid_4'></DIV>" SKIP
+        "      <div class='grid_1-5'><BUTTON type='submit'class='btn' name='h-creat-log' value='status-log'>Create Log</BUTTON></div>" SKIP                                  
+        "      <div class='grid_1'></DIV>" SKIP
+        "      <div class='grid_1-5'><BUTTON type='reset' class='btn'>Clear Entry</BUTTON></div>" SKIP
+        "      <div class='grid_4'></DIV>" SKIP
+        "   </div>" SKIP
+        "</div>" SKIP
+        "           </form>" SKIP
+        "<br>" skip.
+        
+                                                                                                     
+        
+{&OUT}   
+         "<br>" skip
+         "<div class='row'>" SKIP
+         "   <div class='grid_3'> </div>" SKIP
+         "   <div class='grid_2'>" SKIP
+         "     <form method='post' ACTION='client-admin.r'>" SKIP 
+         "       <BUTTON type='submit' class='btn' >Create / Edit Client Stats</div>" SKIP
+         "     </form>" SKIP           
+         "   <div class='grid_7'></DIV>" SKIP 
+         "</div>" skip         
+
+         "<div class='row'>" SKIP 
+         "   <div class='grid_3'> </div>" SKIP    
+         "   <div class='grid_2'>" SKIP                                                
+         "     <form method='post' ACTION='payee-admin.r'>" SKIP
+         "       <BUTTON type='submit' class='btn' >Create / Edit Payee Stats</BUTTON></div>" SKIP
+         "     </form>" SKIP
+         "   <div class='grid_7'> </DIV>" SKIP
+         "</div>" SKIP
+         "<br>" skip.
+
+</SCRIPT>
+</BODY>
+</HTML>

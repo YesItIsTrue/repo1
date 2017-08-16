@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Conditions Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="13/Nov/14">
+    <META NAME="CREATE_DATE" CONTENT="03/Nov/15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:           ConditionsR.html
+    Description:    Report page search by doctor to find customers
+    Created:        11/13/14
+    Notes:
+        1.1 - written by Jacob Luttrell on 06/Oct/15.
+                corrected divs and buttons.  Marked by 1dot1.    
+        1.2 - written by Jacob Luttrell on 03/Nov/15
+                corrected tfoot, order of display and search.
+                Marked by 1dot2.      
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE f-con-name  LIKE condition_mstr.condition_name NO-UNDO.
+DEFINE VARIABLE t-con-name  LIKE condition_mstr.condition_name NO-UNDO.
+DEFINE VARIABLE con-desc    LIKE condition_mstr.condition_desc NO-UNDO.
+DEFINE VARIABLE con-com     LIKE condition_mstr.condition_common NO-UNDO.
+
+DEFINE VARIABLE com-display AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE act         AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE bugger      AS CHARACTER INITIAL "off" NO-UNDO.
+/****************************** assigning ***************************/
+ASSIGN 
+    act         = get-value("s-act")
+    
+    f-con-name  = get-value("s-f-con-name")
+    t-con-name  = get-value("s-t-con-name")
+    con-desc    = get-value("s-con-desc")
+    con-com     = LOGICAL(get-value("s-con-com")).
+    
+IF act = "" THEN 
+    ASSIGN act = "Search".
+/****************************** body ******************************/
+IF act = "Search" THEN DO:
+   {&OUT}
+/*        "<center>                                                                                                               " SKIP*/
+        "<form>                                                                                                                  " SKIP
+        "<DIV class='row'>" SKIP                                                              /* 1dot1 */
+		"<DIV class='grid_3'> </DIV>" SKIP                                                    /* 1dot1 */
+		"<DIV class='grid_6'>" SKIP                                                           /* 1dot1 */
+        "   <div class='table_2col'>                                                                                            " SKIP 
+        "           <table>                                                                                                     " SKIP
+        "               <tr>                                                                                                    " SKIP
+        "                   <th colspan=4> Search Criteria</th>                                                                 " SKIP 
+	    "               </tr>                                                                                                   " SKIP
+	    "               <tr>                                                                                                    " SKIP
+	    "                   <td>Condition</td><td><INPUT type='text' name='s-f-con-name'/></td>                                 " SKIP 
+	    "                   <td>To</td><td><INPUT type='text' name='s-t-con-name'/></td>                                        " SKIP 
+	    "               </tr>                                                                                                   " SKIP
+	    "               <tr>                                                                                                    " SKIP
+	    "                    <td>Description Containing</td><td colspan=3><INPUT type='text' size='98' name='s-con-desc'/></td> " SKIP 
+	    "               </tr>                                                                                                   " SKIP
+	    "               <tr>                                                                                                    " SKIP
+	    "                   <td>Common</td>                                                                                     " SKIP
+	    "                   <td colspan=3>Yes<INPUT type='radio' name='s-con-com' value= 'Yes' />                               " SKIP 
+	    "                   No<INPUT type='radio' name='s-con-com' value= 'No' /></td>                                          " SKIP 
+	    "               </tr>                                                                                                   " SKIP
+        "           </table>                                                                                                    " SKIP
+/* *** removed in 1dot1 ***
+        "       <INPUT type='hidden' name='s-act' value='Results' />                                                            " SKIP 
+        "       <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />                                     " SKIP 
+        "       <INPUT type='submit' name='s-submit' value='Submit'/>                                                           " SKIP 
+        "       <INPUT type='reset' name='s-reset' value='Reset'/>                                                              " SKIP
+        "    </FORM>                                                                                                            " SKIP
+    *** end of removal *** */
+        "  </div>                                                                                                               " SKIP
+        "</DIV>         <!-- end of grid_6 -->" SKIP                                            /* 1dot1 */
+		"<DIV class='grid_3'> </DIV>" SKIP                                                      /* 1dot1 */
+		"</DIV>     <!-- end of row -->" SKIP                                                   /* 1dot1 */
+		"<BR>" SKIP                                                                             /* 1dot1 */
+		"<div class='row'>" SKIP                                                                /* 1dot1 */
+		"   <div class='grid_3'> </DIV>" SKIP                                                   /* 1dot1 */
+		"       <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />                                     " SKIP 		
+		"   <div class='grid_2'><BUTTON type='submit' name='s-act' value='Results' class='btn'>Submit</BUTTON></div>" SKIP /* 1dot1 */
+		"   <div class='grid_2'> </DIV>" SKIP                                                   /* 1dot1 */  
+		"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP     /* 1dot1 */
+		"   <div class='grid_3'> </DIV>" SKIP                                                   /* 1dot1 */
+		"</div>" SKIP                                                                           /* 1dot1 */
+
+		"    </FORM>                                                                                                            " SKIP
+		.
+/*        "</CENTER>                                                                                                              ".*/
+END. /*** act 0 ***/
+/***************************** Act Result *********************************************/
+IF bugger = "ON" THEN DO:
+{&OUT}
+    "finished search, before Results".
+end. /*** bugger ***/
+
+IF act = "Results" THEN DO:
+
+    IF con-com = ? THEN 
+    ASSIGN 
+        com-display = "".
+    ELSE IF con-com = YES THEN
+    ASSIGN 
+        com-display = "Yes".
+    ELSE 
+    ASSIGN 
+        com-display = "No".
+           
+     {&OUT}
+/*        "<CENTER>                                                   " SKIP*/
+        "   <form>                                                  " SKIP
+        "<DIV class='row'>" SKIP                                                                /* 1dot1 */                                                            
+		"<DIV class='grid_1'> </DIV>" SKIP                                                      /* 1dot1 */
+		"<DIV class='grid_10'>" SKIP                                                            /* 1dot1 */
+        "       <div class='table_report_FromTo'>                   " SKIP 
+        "           <table>                                         " SKIP
+        "               <thead>                                     " SKIP
+        "                  <tr>                                     " SKIP
+        "                       <td colspan=4>Conditions</td>       " SKIP 
+        "                  </tr>                                    " SKIP
+        "                  <tr>                                     " SKIP
+        "                       <th>From</th>                       " SKIP 
+        "                       <th>" f-con-name "</th>             " SKIP 
+        "                       <th rowspan=2>" con-desc "</th>     " SKIP
+        "                       <th rowspan=2>" com-display "</th>  " SKIP
+        "                  </tr>                                    " SKIP
+        "                  <tr>                                     " SKIP
+        "                       <th>To</th>                         " SKIP
+        "                       <th>" t-con-name "</th>             " SKIP 
+        "                  </tr>                                    " SKIP   
+        "                  <tr>                                     " SKIP
+        "                       <td></td>                           " SKIP
+        "                       <td>Condition</td>                  " SKIP 
+        "                       <td>Description</td>                " SKIP 
+        "                       <td>Common</td>                     " SKIP 
+        "                  </tr>                                    " SKIP
+        "               </thead>                                    " SKIP.      
+    
+    FOR EACH condition_mstr WHERE 
+        ((condition_mstr.condition_name >= f-con-name) OR
+         (f-con-name = "")) AND
+        ((condition_mstr.condition_name <= t-con-name) OR
+         (t-con-name = "")) AND
+        ((condition_mstr.condition_desc CONTAINS con-desc) OR 
+         (con-desc = "")) AND 
+        ((condition_mstr.condition_common = con-com) OR 
+         (con-com = ?)) AND 
+         condition_mstr.condition_deleted = ?                                                   /* 1dot2 */
+         NO-LOCK 
+         BY condition_mstr.condition_name:                                                  /* 1dot2 */
+   
+    {&OUT}
+        "<tr>                                                " SKIP
+        "   <td></td>                                        " SKIP 
+        "   <td>" condition_mstr.condition_name "</td>   " SKIP   
+        "   <td>" condition_mstr.condition_desc "</td>   " SKIP   
+        "   <td>" condition_mstr.condition_common "</td> " SKIP 
+        "</tr>                                               " SKIP.
+   
+    END.  /*** for each ***/
+  
+  {&OUT}
+   "    <tfoot>                                                                        " SKIP   /* 1dot2 */
+   "        <tr>                                                                       " SKIP
+   "            <td colspan=4>End of Report</td>                                       " SKIP 
+   "        </tr>                                                                      " SKIP
+   "    </tfoot>                                                                       " SKIP   /* 1dot2 */
+   "    </table>                                                                       " SKIP
+   "</div>" SKIP                                                                                /* 1dot1 */
+   "</DIV>         <!-- end of grid_10 -->" SKIP                                                /* 1dot1 */
+   "<DIV class='grid_1'> </DIV>" SKIP                                                           /* 1dot1 */
+   "</DIV>     <!-- end of row -->" SKIP                                                        /* 1dot1 */
+/* *** removed in 1dot1 ***   
+   "    <form>                                                                         " SKIP
+   "        <input type='hidden' name='s-act' value='Search' />                        " SKIP
+   "        <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP 
+   "        <input type='submit' name='submit' value='Search Again' />                 " SKIP 
+   "    </form>                                                                        " SKIP
+   "</div>                                                                             ".  
+    *** END OF removal *** */
+    "<BR>" SKIP                                                                                 /* 1dot1 */
+    "<div class='row'>" SKIP                                                                    /* 1dot1 */
+	"   <div class='grid_5'> </DIV>" SKIP                                                       /* 1dot1 */
+   "        <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP 	/* 1dot1 */ 
+	"   <div class='grid_2'><button type='submit' name='s-act' value='Search' class='btn'>Search Again</BUTTON></div>" SKIP /* 1dot1 */
+	"   <div class='grid_5'> </DIV>" SKIP                                                       /* 1dot1 */
+	"</div>" SKIP.                                                                              /* 1dot1 */
+        
+    END.
+</SCRIPT>
+</BODY>
+</HTML>

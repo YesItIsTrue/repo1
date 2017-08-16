@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+    <TITLE>Country Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Sara Luttrell">
+    <META NAME="VERSION" CONTENT="1.3">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="2/Feb/15">
+    <META NAME="MODIFIED_DATE" CONTENT="21/Mar/16">
+    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+
+{&OUT}
+    "</HEAD>" SKIP
+    "<BODY class='inside'>".
+
+
+ /*------------------------------------------------------------------
+    File: Country-Report.html  (COUN-R)
+    Description: The report for countries 
+    Created: Saturday December 6th 2014 4:17 PM - Sara Luttrell
+    Notes: 1.1 - Jacob Luttrell 30/Sep/15 Div corrections 1dot1
+    1.2 - Jacob Luttrell 30/Oct/15 fixed tfoot and added an apostraphe, added break by for
+          sorting. marked by 1dot2
+    1.3 - Jacob Luttrell on 21/Mar/16.  Added Primary Column. Marked by /* 1dot3 */      
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+
+/********************************************  Variable Definitions  ****************************************************/
+
+DEFINE VARIABLE v-from-Country_ISO LIKE country_mstr.country_ISO NO-UNDO.
+DEFINE VARIABLE v-to-Country_ISO   LIKE country_mstr.country_ISO NO-UNDO.
+DEFINE VARIABLE v-from-Country_Display_Name LIKE country_mstr.country_Display_name NO-UNDO.
+DEFINE VARIABLE v-to-Country_Display_Name   LIKE country_mstr.country_Display_name NO-UNDO.
+
+DEFINE VARIABLE v-act               AS INTEGER                     NO-UNDO. 
+
+
+ASSIGN 
+
+    v-from-Country_ISO     = get-value ("h-from-Country_ISO")
+    v-to-Country_ISO       = get-value ("h-to-Country_ISO")   
+    v-from-Country_Display_Name     = get-value ("h-from-Country_Display_Name")     
+    v-to-Country_Display_Name       = get-value ("h-to-Country_Display_Name")
+    
+    v-act                    = INTEGER (get-value ("h-act")).
+
+
+/* ********************************************  Act - 0 "Search" Criteria  ************************************************** */
+IF v-act = 0 THEN DO:
+
+{&OUT}
+        "<div class='row'>"                 SKIP                                                                        /* 1dot1 */
+        "<div class='grid_3'></div>"        SKIP                                                                        /* 1dot1 */
+        "<div class='grid_6'>"              SKIP                                                                        /* 1dot1 */        
+        "<div class='table_2col'>"          SKIP
+        "<form>"                            SKIP
+        "   <table>"    SKIP
+        "       <tr>"   SKIP
+        "           <th colspan=4>Search Criteria</th>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Country ISO Code:</td>" SKIP
+        "           <td><input type='text' name='h-from-Country_ISO' value='" v-from-Country_ISO "'/></td>" SKIP      /* 1dot2 */
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-Country_ISO' value='" v-to-Country_ISO "'/></td>" SKIP
+        "       </tr>"  SKIP  
+        "       <tr>"   SKIP
+        "           <td>Country Name:</td>" SKIP
+        "           <td><input type='text' name='h-from-Country_Display_Name' value='" v-from-Country_Display_Name "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-Country_Display_Name' value='" v-to-Country_Display_Name "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "   </table>"   SKIP
+        "</div>" SKIP
+        "</DIV>         <!-- end of grid_6 -->" SKIP                                                                    /* 1dot1 */
+		"<DIV class='grid_3'> </DIV>" SKIP                                                                              /* 1dot1 */  
+		"</DIV>     <!-- end of row -->" SKIP                                                                           /* 1dot1 */  
+		"<div class='row'>" SKIP                                                                                        /* 1dot1 */  
+		"   <div class='grid_3'> </DIV>" SKIP                                                                           /* 1dot1 */  
+		"       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                            /* 1dot1 */  
+		"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='1' class='btn'>Search</BUTTON></div>" SKIP    /* 1dot1 */
+		"   <div class='grid_2'> </DIV>" SKIP                                                                           /* 1dot1 */  
+		"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP                             /* 1dot1 */
+		"   <div class='grid_3'> </DIV>" SKIP                                                                           /* 1dot1 */
+		"</div>" SKIP                                                                                                   /* 1dot1 */  
+/*		"<BR>" SKIP*/
+/*        "   <center>" SKIP                                                                  */
+/*        "       <input type='hidden' name='h-act'       value=1>"        SKIP               */
+/*        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP*/
+/*        "       <input type='submit' name='submit'      value='Search'>" SKIP               */
+/*        "       <input type='reset'  name='reset'       value='Reset'>"  SKIP               */
+/*        "   </center>" SKIP           */
+/*        "</form>"                     */
+/*        "</div>" SKIP                 */
+/*        "</div><!-- end of grid_6 -->"*/
+/*        "<div class='grid_3'></div>"  */
+/*        "</div>"                      */
+        .
+END. /*** of v-act = "Search" Then DO: ***/
+
+
+/* *************************************************  Act - 1 "Report"  ****************************************************** */
+IF v-act = 1 THEN DO:
+
+    {&OUT}
+        "<div class='row'>"                                 SKIP
+        "<div class='grid_1'></div>"                        SKIP
+        "<div class='grid_10'>"                             SKIP
+        "<form>"        SKIP
+        "<div class='table_report_FromTo'>" SKIP
+        "   <table>"    SKIP
+        "       <thead>"    SKIP
+        "           <tr>"   SKIP
+        "               <th colspan=4>Country Report</th>" SKIP
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <td>From</td>"                      SKIP
+        "               <td>" v-from-Country_ISO "</td>"    SKIP
+        "               <td>" v-from-Country_Display_Name "</td>"    SKIP
+        "               <td rowspan='2'></td>"                       SKIP       /* 1dot3 */
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <td>To</td>"                        SKIP
+        "               <td>" v-to-Country_ISO "</td>"      SKIP
+        "               <td>" v-to-Country_Display_Name "</td>"      SKIP
+        "           </tr>"  SKIP        
+        "           <tr>"   SKIP
+        "               <th></th>"          SKIP
+        "               <th>Country ISO Code</th>"      SKIP
+        "               <th>Country Name</th>"  SKIP
+        "               <th>Primary?</th>"  SKIP
+        "           </tr>"  SKIP
+        "       </thead>"   SKIP.
+    
+/***********************************************************************/
+    FOR EACH country_mstr WHERE 
+        (country_mstr.Country_ISO >= v-from-Country_ISO   OR v-from-Country_ISO  = "") AND 
+        (country_mstr.Country_ISO <= v-to-Country_ISO     OR v-to-Country_ISO    = "") AND     
+        (country_mstr.Country_Display_Name >= v-from-Country_Display_Name   OR v-from-Country_Display_Name  = "") AND
+        (country_mstr.Country_Display_Name <= v-to-Country_Display_Name     OR v-to-Country_Display_Name    = "") AND
+        country_mstr.country_deleted = ?
+        NO-LOCK BREAK BY country_mstr.Country_ISO:                                                                             /* 1dot2 */
+
+            {&OUT}
+        "       <tr>" SKIP
+        "           <td></td>" SKIP
+        "           <td>" country_mstr.Country_ISO "</td>"   SKIP
+        "           <td>" country_mstr.Country_Display_Name "</td>"   SKIP
+        "           <td>" country_mstr.Country_Primary "</td>" SKIP
+        "       </tr>" SKIP.
+
+    END. /* of FOR EACH */
+    
+    {&OUT}
+        "   <tfoot>" SKIP                                                                                                       /* 1dot2 */
+        "       <tr>"   SKIP                                                                        
+        "               <td colspan=4>End of Report</td>" SKIP
+        "       </tr>"  SKIP
+        "   </tfoot>" SKIP                                                                                                      /* 1dot2 */
+        "   </table>"       SKIP
+        "</div> "       SKIP                                                                                                    /* 1dot1 */
+        "</div><!-- of grid_10 -->" SKIP                                                                                        /* 1dot1 */
+        "<div class='grid_1'></div>"                                                                                            /* 1dot1 */    
+        "</div>"                                                                                                                /* 1dot1 */
+/*        "   <center>"       SKIP*/    
+        "   <form>"         SKIP                                                                                                /* 1dot1 */
+        "<div class='row'>" SKIP                                                                                                /* 1dot1 */
+		"   <div class='grid_5'> </DIV>" SKIP                                                                                   /* 1dot1 */  
+        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP		                            /* 1dot1 */
+		"   <div class='grid_2'><button type='submit' name='h-act' value='0' class='btn'>Search Again</BUTTON></div>" SKIP      /* 1dot1 */  
+		"   <div class='grid_5'> </DIV>" SKIP                                                                                   /* 1dot1 */  
+		"</div>" SKIP                                                                                                           /* 1dot1 */  
+/*        "       <input type='hidden' name='h-act' value=0> "                            SKIP*/
+/*        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP*/
+/*        "       <input type='submit' name='submit' value='Search Again'>"               SKIP*/
+        "   </form>"    SKIP
+/*        "   </cener>"   SKIP*/
+/*        "</div> "       SKIP            */
+/*        "</div><!-- of grid_10 -->" SKIP*/
+/*        "<div class='grid_1'></div>"    */
+/*        "</div>"                       */
+        .
+END. /*** of If Act = "SEARCH" THEN DO: ***/  
+
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,1057 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"><!-- <a href="patient_browse.html" target="_blank">YES</a> -->
+          <h3></h3>
+	 	                            
+<html> 
+<head> 
+
+    <title>Patient_RP</title>
+    <META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="23/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<script LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File: patient_RP.html
+    Description: Used to select RP for patient record update. This runs from a hyperlink in patient_update4.html.  
+    Created:  
+  -------------------------------------------------------------------*/
+ 
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</script>
+  
+<script type="text/javascript">
+// Popup window code
+function patientPopup(url) {
+    popupWindow = window.open(
+        url,'popUpWindow','height=500,width=400,left=100,top=100,resizable=yes,scrollbars=yes,toolbar=yes,menubar=no,location=no,directories=no,status=yes')
+}
+
+</script>
+</head>
+<body class='inside'>
+
+<script LANGUAGE="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}. 
+
+	DEFINE VARIABLE patID    LIKE patient_ID NO-UNDO.
+	DEFINE VARIABLE patfstn  LIKE people_firstname NO-UNDO.
+	DEFINE VARIABLE patlstn  LIKE people_lastname NO-UNDO.
+	DEFINE VARIABLE patmidn  LIKE people_midname NO-UNDO.
+	DEFINE VARIABLE pattitle LIKE people_prefix NO-UNDO.
+	DEFINE VARIABLE patsuf   LIKE people_suffix NO-UNDO.
+	
+	DEFINE VARIABLE pat-doc      LIKE patient_mstr.patient_doctor_ID NO-UNDO.
+	DEFINE VARIABLE pat-cust-id  LIKE patient_mstr.patient_cust_ID NO-UNDO.
+	DEFINE VARIABLE pat-verified LIKE patient_mstr.patient_verified NO-UNDO.
+	
+	 DEFINE VARIABLE pat-contact LIKE people_contact NO-UNDO.
+	
+	DEFINE VARIABLE add1 LIKE addr_addr1 NO-UNDO.
+	DEFINE VARIABLE add2 LIKE addr_addr2 NO-UNDO.
+	DEFINE VARIABLE add3 LIKE addr_addr3 NO-UNDO.
+	DEFINE VARIABLE city LIKE addr_city NO-UNDO.
+	DEFINE VARIABLE state-prov LIKE addr_stateprov NO-UNDO.
+	DEFINE VARIABLE patzip LIKE addr_zip NO-UNDO.
+	DEFINE VARIABLE county-type LIKE addr_mstr.addr_type NO-UNDO.
+	DEFINE VARIABLE second-addr LIKE people_mstr.people_second_addr_ID NO-UNDO.
+	
+	
+	DEFINE VARIABLE h-phone LIKE people_homephone NO-UNDO.
+	DEFINE VARIABLE c-phone LIKE people_cellphone NO-UNDO.
+	DEFINE VARIABLE w-phone LIKE people_workphone NO-UNDO.	
+	DEFINE VARIABLE fax-phone LIKE people_fax NO-UNDO.
+	
+	DEFINE VARIABLE patgen LIKE people_gender NO-UNDO.
+	DEFINE VARIABLE Gender   AS CHARACTER     NO-UNDO.
+	
+	DEFINE VARIABLE t-gender AS CHARACTER NO-UNDO.
+	
+	DEFINE VARIABLE patdob LIKE people_DOB NO-UNDO.
+	DEFINE VARIABLE patage AS INTEGER NO-UNDO. /* patient_age */ 
+	
+	DEFINE VARIABLE patcon LIKE patient_condition NO-UNDO.
+	DEFINE VARIABLE patcp LIKE patient_RP_ID NO-UNDO.  
+	DEFINE VARIABLE patnotes LIKE patient_notes NO-UNDO.
+	
+	DEFINE VARIABLE patemail LIKE people_email NO-UNDO.
+	DEFINE VARIABLE patRPemail LIKE people_email NO-UNDO. /** @@@ This needs to be associated with the responsible party people record patient_RP_ID */
+	DEFINE VARIABLE patdoc AS INTEGER  NO-UNDO. /* patient_doctorID */ 
+	DEFINE VARIABLE patcomp LIKE people_company NO-UNDO.		
+	DEFINE VARIABLE country LIKE addr_country NO-UNDO.
+	DEFINE VARIABLE patvflag AS LOGICAL  NO-UNDO. /* patient_verify_flag */			
+		                 
+	DEFINE VARIABLE email LIKE people_email NO-UNDO.
+	DEFINE VARIABLE email2 LIKE people_email2 NO-UNDO.  	
+
+	DEFINE VARIABLE male-ck AS CHARACTER NO-UNDO.
+	DEFINE VARIABLE female-ck AS CHARACTER NO-UNDO.	
+	DEFINE VARIABLE doc	LIKE patient_doctor_id NO-UNDO.      	
+	DEFINE VARIABLE ddate LIKE patient_create_date NO-UNDO.
+	DEFINE VARIABLE moddate LIKE patient_modified_date NO-UNDO.
+	DEFINE VARIABLE cust-id LIKE cust_id NO-UNDO.  		 
+     
+	/**************************************************/	
+	DEFINE VARIABLE act AS INTEGER NO-UNDO.
+	DEFINE VARIABLE deleteblock AS INTEGER NO-UNDO.
+	DEFINE VARIABLE un86 AS INTEGER NO-UNDO.
+	DEFINE VARIABLE edit AS INTEGER NO-UNDO.
+	DEFINE VARIABLE make AS INTEGER NO-UNDO.
+	DEFINE VARIABLE crt AS INTEGER NO-UNDO.
+	DEFINE VARIABLE sent-edit AS INTEGER NO-UNDO.
+	/***************************************************/	
+	
+    DEFINE VARIABLE t-patID LIKE people_ID NO-UNDO.
+    DEFINE VARIABLE t-patfstn LIKE people_firstname NO-UNDO.
+    DEFINE VARIABLE t-patlstn LIKE people_lastname NO-UNDO.
+    DEFINE VARIABLE t-patmidn LIKE people_midname NO-UNDO.
+    DEFINE VARIABLE t-pattitle LIKE people_prefix NO-UNDO.
+    DEFINE VARIABLE t-patsuf LIKE people_suffix NO-UNDO.
+    
+    DEFINE VARIABLE t-add1 LIKE addr_addr1 NO-UNDO.
+    DEFINE VARIABLE t-add2 LIKE addr_addr2 NO-UNDO.
+    DEFINE VARIABLE t-add3 LIKE addr_addr3 NO-UNDO.
+    DEFINE VARIABLE t-city LIKE addr_city NO-UNDO.
+    DEFINE VARIABLE t-state-prov LIKE addr_stateprov NO-UNDO.
+    DEFINE VARIABLE t-zip LIKE addr_zip NO-UNDO.
+    DEFINE VARIABLE t-country LIKE addr_country NO-UNDO.
+    
+    DEFINE VARIABLE t-h-phone LIKE people_homephone NO-UNDO.
+    DEFINE VARIABLE t-c-phone LIKE people_cellphone NO-UNDO.
+    DEFINE VARIABLE t-w-phone LIKE people_workphone NO-UNDO.    
+    DEFINE VARIABLE t-fax-phone LIKE people_fax NO-UNDO.
+    
+    DEFINE VARIABLE t-patgen LIKE people_gender NO-UNDO.    
+    DEFINE VARIABLE t-patdob LIKE people_DOB NO-UNDO.
+    DEFINE VARIABLE t-patage AS INTEGER NO-UNDO. /* patient_age */ 
+    
+    DEFINE VARIABLE t-patcon LIKE patient_condition NO-UNDO.
+    DEFINE VARIABLE t-patcp LIKE patient_RP_ID NO-UNDO.  /* This needs to be made into a people record */
+    DEFINE VARIABLE t-patnotes LIKE patient_notes NO-UNDO.
+    
+    DEFINE VARIABLE t-email LIKE people_email NO-UNDO.
+    DEFINE VARIABLE t-email2 LIKE people_email NO-UNDO.
+    
+    DEFINE VARIABLE t-patRPemail LIKE people_email NO-UNDO. /* This needs to be associated with the responsible party people record patient_RP_ID */
+    DEFINE VARIABLE t-doc AS INTEGER  NO-UNDO. /* patient_doctorID */ 
+
+    DEFINE VARIABLE t-patcomp LIKE people_company NO-UNDO.
+    DEFINE VARIABLE t-patdum AS LOGICAL NO-UNDO. /*patient_dummy1 */
+    DEFINE VARIABLE t-patwho AS CHARACTER  NO-UNDO. /* patient_whopay */ 
+    
+    DEFINE VARIABLE t-patcntry LIKE addr_country NO-UNDO.
+    DEFINE VARIABLE t-patdoc LIKE patient_mstr.patient_doctor_ID NO-UNDO.
+    
+    DEFINE VARIABLE t-patvflag AS LOGICAL  NO-UNDO. /* patient_verify_flag */    
+    
+    DEFINE VARIABLE t-male-ck LIKE people_gender NO-UNDO.
+    DEFINE VARIABLE t-female-ck LIKE people_gender NO-UNDO.
+    
+    DEFINE VARIABLE t-doc-fname LIKE people_mstr.people_firstname NO-UNDO.
+    DEFINE VARIABLE t-doc-lname LIKE people_mstr.people_lastname NO-UNDO. 
+ 
+ /*-------------------------------------------------------------------*/
+    DEFINE VARIABLE c-patID LIKE people_ID NO-UNDO.
+    DEFINE VARIABLE c-patfstn LIKE people_firstname NO-UNDO.
+    DEFINE VARIABLE c-patlstn LIKE people_lastname NO-UNDO.
+    DEFINE VARIABLE c-patmidn LIKE people_midname NO-UNDO.
+    DEFINE VARIABLE c-pattitle LIKE people_prefix NO-UNDO.
+    DEFINE VARIABLE c-patsuf LIKE people_suffix NO-UNDO.
+    
+    DEFINE VARIABLE c-add1 LIKE addr_addr1 NO-UNDO.
+    DEFINE VARIABLE c-add2 LIKE addr_addr2 NO-UNDO.
+    DEFINE VARIABLE c-add3 LIKE addr_addr3 NO-UNDO.
+    DEFINE VARIABLE c-city LIKE addr_city NO-UNDO.
+    DEFINE VARIABLE c-state-prov LIKE addr_stateprov NO-UNDO.
+    DEFINE VARIABLE c-zip LIKE addr_zip NO-UNDO.
+    
+    DEFINE VARIABLE c-h-phone LIKE people_homephone NO-UNDO.
+    DEFINE VARIABLE c-c-phone LIKE people_cellphone NO-UNDO.
+    DEFINE VARIABLE c-w-phone LIKE people_workphone NO-UNDO.    
+    DEFINE VARIABLE c-fax-phone LIKE people_fax NO-UNDO.
+    
+    DEFINE VARIABLE c-patgen LIKE people_gender NO-UNDO.
+    DEFINE VARIABLE c-patdob LIKE people_DOB NO-UNDO.
+    DEFINE VARIABLE c-patage AS INTEGER NO-UNDO. /* patient_age */ 
+    
+    DEFINE VARIABLE c-patcon LIKE patient_condition NO-UNDO.
+    DEFINE VARIABLE c-patcp LIKE patient_RP_ID NO-UNDO.  /* This needs to be made into a people record */
+    DEFINE VARIABLE c-patnotes LIKE patient_notes NO-UNDO.
+    
+    DEFINE VARIABLE c-email LIKE people_email NO-UNDO.
+    DEFINE VARIABLE c-email2 LIKE people_email NO-UNDO.
+    
+    DEFINE VARIABLE c-patRPemail LIKE people_email NO-UNDO. /* This needs to be associated with the responsible party people record patient_RP_ID */
+    
+    DEFINE VARIABLE c-patdoc AS INTEGER  NO-UNDO. /* patient_doctorID */ 
+
+    DEFINE VARIABLE c-patcomp LIKE people_company NO-UNDO.  
+    DEFINE VARIABLE c-country LIKE addr_country NO-UNDO.    
+    DEFINE VARIABLE c-patvflag AS LOGICAL  NO-UNDO. /* patient_verify_flag */
+    
+    DEFINE VARIABLE c-male-ck LIKE people_gender NO-UNDO.
+    DEFINE VARIABLE c-female-ck LIKE people_gender NO-UNDO.
+    DEFINE VARIABLE c-space AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE c-doc-fname LIKE t-doc-fname NO-UNDO.
+    DEFINE VARIABLE c-doc-lname LIKE t-doc-lname NO-UNDO.
+    
+    /*---------------------------------------------------------------------------------------*/ 
+ 
+    DEFINE VARIABLE sent-back AS INTEGER NO-UNDO. /* Am I going to keep this ???? YES*/
+    DEFINE VARIABLE re-title AS INTEGER NO-UNDO.
+    DEFINE VARIABLE brows AS INTEGER NO-UNDO. 
+        
+    DEFINE VARIABLE coname LIKE Country_Display_Name NO-UNDO.
+    DEFINE VARIABLE coabbv LIKE Country_ISO NO-UNDO.
+    
+    DEFINE VARIABLE stname LIKE State_Display_Name NO-UNDO.
+    DEFINE VARIABLE stabbv LIKE State_ISO NO-UNDO.
+    
+   /******************************* For age calculation *****************/
+	DEFINE VARIABLE thisday AS DATE NO-UNDO.
+    DEFINE VARIABLE thatday AS DATE NO-UNDO.
+    DEFINE VARIABLE patientage AS DECIMAL FORMAT "->>9.99" NO-UNDO.
+    DEFINE VARIABLE cont AS INTEGER NO-UNDO.
+    DEFINE VARIABLE days AS INTEGER NO-UNDO.
+    DEFINE VARIABLE formdate AS DATE NO-UNDO.   
+  
+	/********************************************************************/
+	
+	/*---------------------- Responsible party variable definitions -----------------------------*/
+    DEFINE VARIABLE RP-peop-ID LIKE people_id NO-UNDO.
+    DEFINE VARIABLE RP-fstn LIKE people_firstname NO-UNDO.
+    DEFINE VARIABLE RP-lstn LIKE people_lastname NO-UNDO.
+    DEFINE VARIABLE RP-midn LIKE people_midname NO-UNDO.
+    DEFINE VARIABLE RP-title LIKE people_prefix NO-UNDO.
+    DEFINE VARIABLE RP-suf LIKE people_suffix NO-UNDO.
+    
+    DEFINE VARIABLE RP-company LIKE people_mstr.people_company NO-UNDO.
+    
+    DEFINE VARIABLE RP-add1 LIKE addr_addr1 NO-UNDO.
+    DEFINE VARIABLE RP-add2 LIKE addr_addr2 NO-UNDO.
+    DEFINE VARIABLE RP-add3 LIKE addr_addr3 NO-UNDO.
+    DEFINE VARIABLE RP-city LIKE addr_city NO-UNDO.
+    DEFINE VARIABLE RP-state-prov LIKE addr_stateprov NO-UNDO.
+    DEFINE VARIABLE RP-zip LIKE addr_zip NO-UNDO.
+    DEFINE VARIABLE RP-country LIKE addr_country NO-UNDO.
+    
+    DEFINE VARIABLE RP-h-phone LIKE people_homephone NO-UNDO.
+    DEFINE VARIABLE RP-c-phone LIKE people_cellphone NO-UNDO.
+    DEFINE VARIABLE RP-w-phone LIKE people_workphone NO-UNDO.  
+    DEFINE VARIABLE Rp-fax-phone LIKE people_fax NO-UNDO.
+    DEFINE VARIABLE RP-email LIKE people_email NO-UNDO.
+    DEFINE VARIABLE RP-email2 LIKE people_email2 NO-UNDO.
+    
+    DEFINE VARIABLE RP-add-id LIKE people_addr_id NO-UNDO.    
+    DEFINE VARIABLE RP-patcon LIKE patient_mstr.patient_condition NO-UNDO.    
+    DEFINE VARIABLE RP-dob LIKE people_mstr.people_DOB NO-UNDO.
+    
+    
+    DEFINE VARIABLE RP-comp LIKE patient_condition NO-UNDO.
+    DEFINE VARIABLE RP-gen LIKE people_gender NO-UNDO.
+    DEFINE VARIABLE RP-peop-contact LIKE people_contact NO-UNDO.
+    
+    DEFINE VARIABLE RP-peop-addr-ID LIKE people_mstr.people_addr_id NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-id LIKE people_id NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-crate AS LOGICAL NO-UNDO. 
+    DEFINE VARIABLE o-RP-peop-update AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-avail AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-success AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-addr-ID LIKE people_mstr.people_addr_id NO-UNDO.
+    
+    DEFINE VARIABLE o-RP-addr-id LIKE addr_id NO-UNDO.
+    DEFINE VARIABLE o-RP-addr-create AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-addr-update AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-addr-avail AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-addr-success AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-error AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-RP-peop-ran AS LOGICAL NO-UNDO.
+    
+    DEFINE VARIABLE o-f-RP-addr-id LIKE addr_id NO-UNDO.
+    DEFINE VARIABLE o-f-RP-addr-error AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-f-RP-addr-ran AS LOGICAL NO-UNDO.
+       
+  /*-------------------------------------------------------*/
+    DEFINE VARIABLE t-RP-peop-ID LIKE people_id NO-UNDO.
+    DEFINE VARIABLE t-RP-fstn LIKE people_firstname NO-UNDO.
+    DEFINE VARIABLE t-RP-lstn LIKE people_lastname NO-UNDO.
+    DEFINE VARIABLE t-RP-midn LIKE people_midname NO-UNDO.
+    DEFINE VARIABLE t-RP-title LIKE people_prefix NO-UNDO.
+    DEFINE VARIABLE t-RP-suf LIKE people_suffix NO-UNDO.
+    
+    DEFINE VARIABLE t-RP-add1 LIKE addr_addr1 NO-UNDO.
+    DEFINE VARIABLE t-RP-add2 LIKE addr_addr2 NO-UNDO.
+    DEFINE VARIABLE t-RP-add3 LIKE addr_addr3 NO-UNDO.
+    DEFINE VARIABLE t-RP-city LIKE addr_city NO-UNDO.
+    DEFINE VARIABLE t-RP-state-prov LIKE addr_stateprov NO-UNDO.
+    DEFINE VARIABLE t-RP-zip LIKE addr_zip NO-UNDO.
+    DEFINE VARIABLE t-RP-country LIKE addr_country NO-UNDO.
+    
+    DEFINE VARIABLE t-RP-h-phone LIKE people_homephone NO-UNDO.
+    DEFINE VARIABLE t-RP-c-phone LIKE people_cellphone NO-UNDO.
+    DEFINE VARIABLE t-RP-w-phone LIKE people_workphone NO-UNDO.  
+    DEFINE VARIABLE t-Rp-fax-phone LIKE people_fax NO-UNDO.
+    DEFINE VARIABLE t-RP-email LIKE people_email NO-UNDO.
+    DEFINE VARIABLE t-RP-email2 LIKE people_email2 NO-UNDO.
+    DEFINE VARIABLE t-RP-add-id LIKE people_addr_id NO-UNDO.
+    DEFINE VARIABLE t-RP-dob LIKE people_dob NO-UNDO.               
+    /*------------------------------------------------------*/
+    DEFINE VARIABLE c-RP-peop-ID LIKE people_id NO-UNDO.
+    DEFINE VARIABLE c-RP-fstn LIKE people_firstname NO-UNDO.
+    DEFINE VARIABLE c-RP-lstn LIKE people_lastname NO-UNDO.
+    DEFINE VARIABLE c-RP-midn LIKE people_midname NO-UNDO.
+    DEFINE VARIABLE c-RP-title LIKE people_prefix NO-UNDO.
+    DEFINE VARIABLE c-RP-suf LIKE people_suffix NO-UNDO.
+    
+    DEFINE VARIABLE c-RP-add1 LIKE addr_addr1 NO-UNDO.
+    DEFINE VARIABLE c-RP-add2 LIKE addr_addr2 NO-UNDO.
+    DEFINE VARIABLE c-RP-add3 LIKE addr_addr3 NO-UNDO.
+    DEFINE VARIABLE c-RP-city LIKE addr_city NO-UNDO.
+    DEFINE VARIABLE c-RP-state-prov LIKE addr_stateprov NO-UNDO.
+    DEFINE VARIABLE c-RP-zip LIKE addr_zip NO-UNDO.
+    DEFINE VARIABLE c-RP-country LIKE addr_country NO-UNDO.
+    
+    DEFINE VARIABLE c-RP-h-phone LIKE people_homephone NO-UNDO.
+    DEFINE VARIABLE c-RP-c-phone LIKE people_cellphone NO-UNDO.
+    DEFINE VARIABLE c-RP-w-phone LIKE people_workphone NO-UNDO.  
+    DEFINE VARIABLE c-Rp-fax-phone LIKE people_fax NO-UNDO.
+    DEFINE VARIABLE c-RP-email LIKE people_email NO-UNDO.
+    DEFINE VARIABLE c-RP-email2 LIKE people_email2 NO-UNDO.
+    DEFINE VARIABLE c-RP-add-id LIKE people_addr_id NO-UNDO.  
+    DEFINE VARIABLE c-RP-dob LIKE people_dob NO-UNDO.               
+    
+    DEFINE VARIABLE old-doc-fname AS CHAR NO-UNDO.
+    DEFINE VARIABLE old-doc-lname AS CHAR NO-UNDO.
+    
+    /*-------------------- End of Responsible party variable definitions -----------------------*/
+    DEFINE VARIABLE peop-ID      LIKE people_mstr.people_id NO-UNDO.
+    DEFINE VARIABLE peop-addr-ID LIKE people_mstr.people_addr_id NO-UNDO.
+    DEFINE VARIABLE pat-exist AS LOGICAL INITIAL NO NO-UNDO.
+   
+    
+    DEFINE VARIABLE o-addr-id LIKE people_mstr.people_addr_id NO-UNDO.
+    DEFINE VARIABLE o-addr-create  AS  LOGICAL INITIAL NO NO-UNDO.
+    DEFINE VARIABLE o-addr-update  AS  LOGICAL INITIAL NO NO-UNDO.
+    DEFINE VARIABLE o-addr-success AS LOGICAL INITIAL NO NO-UNDO. 
+    DEFINE VARIABLE o-addr-avail   AS   LOGICAL INITIAL NO NO-UNDO.
+    
+    DEFINE VARIABLE o-f-addr-id LIKE addr_mstr.addr_id NO-UNDO.
+    DEFINE VARIABLE o-f-addr-error   AS  LOGICAL INITIAL NO NO-UNDO.
+    DEFINE VARIABLE o-f-addr-ran     AS  LOGICAL INITIAL NO NO-UNDO.
+    
+    DEFINE VARIABLE o-pat-id LIKE people_mstr.people_addr_id NO-UNDO.
+    DEFINE VARIABLE o-pat-create AS LOGICAL INITIAL NO NO-UNDO.
+    DEFINE VARIABLE o-pat-updat  AS  LOGICAL INITIAL NO NO-UNDO.
+    DEFINE VARIABLE o-pat-error  AS  LOGICAL INITIAL NO NO-UNDO.
+    DEFINE VARIABLE o-patsuccess AS LOGICAL INITIAL NO NO-UNDO. 
+    
+    DEFINE VARIABLE o-peop-id LIKE people_mstr.people_addr_id NO-UNDO.    
+    DEFINE VARIABLE o-peop-crate   AS  LOGICAL INITIAL NO NO-UNDO.
+    DEFINE VARIABLE o-peop-update  AS LOGICAL INITIAL NO NO-UNDO.
+    DEFINE VARIABLE o-peop-avail   AS LOGICAL INITIAL NO NO-UNDO.
+    DEFINE VARIABLE o-peop-success AS LOGICAL INITIAL NO NO-UNDO.     
+    
+	DEFINE VARIABLE peeprec AS RECID NO-UNDO. /* this NEW to me, and cool */
+		
+	DEFINE VARIABLE doc-fname LIKE people_mstr.people_firstname NO-UNDO.
+    DEFINE VARIABLE doc-lname LIKE people_mstr.people_lastname  NO-UNDO.  
+    DEFINE VARIABLE whattorun AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE new-rp    AS LOGICAL NO-UNDO. 
+    DEFINE VARIABLE rp-stop   AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE old-RP  LIKE patient_mstr.patient_RP_ID NO-UNDO.
+    DEFINE VARIABLE cout       AS INTEGER INITIAL 0  NO-UNDO.          /* added 4/17/15 */
+    
+     /*---------------------------------------------------------------*/
+    DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.        /*---< ITfeedback (YES or NO)  */
+    /* --------------------------------------------------------------*/
+    
+    
+			ASSIGN 
+			
+			new-rp          =  IF(LOGICAL (get-value("h-new-rp"))) = YES then 
+                                  yes
+                                  else
+                                  no  
+                                  
+            rp-stop    = LOGICAL (get-value ("h-rp-stop"))                      
+                                    
+			whattorun       = get-value ("whattorun")			
+			peop-ID         = INTEGER (get-value ("pep-id"))
+		    peop-addr-ID    = INTEGER (get-value ("pep-addr"))
+		    pat-exist       = LOGICAL (get-value ("pep-exist"))
+		    sent-edit       = INTEGER (get-value ("sentedit"))  
+			
+		    patID       = INTEGER (get-value ("ID"))
+		    patfstn     = TRIM(get-value ("fstn"))
+		    patlstn     = TRIM(get-value ("lstn"))
+		    patmidn     = TRIM(get-value ("midn"))
+		    pattitle    = TRIM(get-value ("title"))
+		    patsuf      = TRIM(get-value ("suffix"))
+		    
+		    add1        = TRIM(get-value ("addr1")) 
+		    add2        = TRIM(get-value ("addr2"))
+		    add3        = TRIM(get-value ("addr3"))
+		    city        = TRIM(get-value ("patcity"))
+		    state-prov  = get-value ("st")
+		    patzip      = TRIM(get-value ("zip"))
+		    
+		    country     = get-value ("co")
+		    
+		    h-phone     = get-value ("home")
+		    c-phone     = get-value ("cell")
+		    w-phone     = get-value ("work")
+		    fax-phone   = get-value ("fax")
+		    
+		    patgen      = LOGICAL (get-value ("gender")) /* This used to be a character datatype */ 
+		                             
+		    patdob      = DATE (get-value ("dob")) 
+		    patage      = INTEGER (get-value ("age"))  
+		    patcon      = get-value ("condition")
+		    patnotes    = get-value ("notes")
+		    patcp       =  INTEGER (get-value ("contactperson"))
+	
+	        email       = get-value ("e-mail")
+            email2      = get-value ("e-mail2")               
+              	    
+     	    patdoc      = INTEGER (get-value ("doctor")) /* doctor */
+
+		    patcomp     = get-value ("company")
+		    	   
+		    patvflag    = LOGICAL (get-value ("flag"))
+		    deleteblock = INTEGER (get-value("dblock"))
+		    un86        = INTEGER (get-value("undorec"))
+		    edit        = INTEGER (get-value("mod"))
+		    thisday     = TODAY
+		    c-space     =   "-"
+		    sent-back   = INTEGER (get-value("sent"))
+		    re-title    = INTEGER (get-value("undoth"))
+		    brows       = INTEGER (get-value("browse"))
+		    sent-back   = 0
+		    new-rp      =  IF(LOGICAL (get-value("h-new-rp"))) = YES then 
+                                  yes
+                                  else
+                                  no  
+                                  
+            rp-stop    = LOGICAL (get-value ("h-rp-stop"))                      
+                                    
+            whattorun       = get-value ("whattorun")           
+            peop-ID         = INTEGER (get-value ("pep-id"))
+            peop-addr-ID    = INTEGER (get-value ("pep-addr"))
+
+            make        = INTEGER (get-value("make-rec")) 
+            crt         = INTEGER (get-value("crt-rec"))
+          /*------------------------------------------------*/
+            RP-add-id      = INTEGER   (get-value("RP-addr"))          
+            RP-peop-id     = INTEGER   (get-value ("RP-id"))
+            RP-fstn        = get-value ("rpfstn")
+            RP-lstn        = get-value ("rplstn")
+            RP-midn        = get-value ("rpmidn")
+            RP-title       = get-value ("rptitle")
+            RP-suf         = get-value ("rpsuffix")
+            RP-add1        = get-value ("rpaddr1")
+            RP-add2        = get-value ("rpaddr2")
+            RP-add3        = get-value ("rpaddr3")
+            RP-city        = get-value ("rpcity")
+            RP-state-prov  = get-value ("rpst")  /* rpstate */
+            RP-zip         = get-value ("rpzip")
+            RP-h-phone     = get-value ("rphome")
+            RP-c-phone     = get-value ("rpcell")
+            RP-w-phone     = get-value ("rpwork")
+            RP-fax-phone   = get-value ("rpfax")
+            RP-country     = get-value ("rpcount")
+            RP-email       = get-value ("rpemail")
+            RP-email2      = get-value ("rpemail2")
+            
+            RP-dob         = DATE (get-value("h-RP-dob")).                                              
+  					     
+         
+             IF patgen = ? THEN 
+			    ASSIGN
+			    gender = "" .
+			    
+			    ELSE
+			    
+			    IF patgen = TRUE THEN
+			    ASSIGN
+			    gender = "Male".
+			    
+			    ELSE
+			    
+			    IF patgen = FALSE THEN
+			    ASSIGN
+			    gender = "Female".
+	
+
+  
+            /*--------------------------------- start of New RP ASSIGN block -----------------------------------*/
+		
+	                                                                                IF ITfeedback = YES THEN 
+                                                                                             {&OUT} "<p>Here's what your sending from patient_update4.html" SKIP
+                                                                                                    "<br>peop-id-- " peop-id SKIP
+                                                                                                    "<br>peop-addr-id -- " peop-addr-id SKIP
+                                                                                                    "<br>RP-peop-id --" RP-peop-id SKIP
+                                                                                                    "<br>RP-add-id -- "RP-add-id SKIP
+                                                                                                    "<br>RP-fstn -- " RP-fstn SKIP
+                                                                                                    "<br>RP-lstn -- " RP-lstn SKIP                                                                                                                                                                                                
+                                                                                                    "<br>patnotes is --" patnotes "</p>" SKIP .
+                     /*-----------------------------------------------------------------------------------------------------------------------------------------------*/                                                                               
+                                           FIND patient_mstr  WHERE patient_mstr.patient_ID = peop-id NO-LOCK NO-ERROR. 
+                                            IF AVAILABLE (patient_mstr) THEN DO:
+                                            ASSIGN
+                                            old-RP = patient_mstr.patient_RP_ID.                                                        
+                                                                                    IF ITfeedback = YES THEN 
+                                                                                             {&OUT} "<p>Here's old-RP -- " old-RP  SKIP 
+                                                                                                    "<br>peop-id -- " peop-id SKIP
+                                                                                                    "<br>patient_id -- " patient_id SKIP
+                                                                                                    "<br>patient_RP_ID -- " patient_RP_ID SKIP
+                                                                                                    "<br>paient_created_by -- " patient_created_by SKIP
+                                                                                                    "<br>patient_create_date -- " patient_create_date SKIP
+                                                                                                    "</p>"  SKIP.   
+                                            END. /* IF AVAILABLE (patient_mstr) THEN DO: */                                                        
+                     /*-----------------------------------------------------------------------------------------------------------------------------------------------*/                                                                                    
+                                                                                                    
+                                                                                                                                           
+                                          FIND people_mstr WHERE people_mstr.people_id = RP-peop-id NO-LOCK NO-ERROR .
+                                          IF AVAILABLE (people_mstr) THEN
+                                                                                   
+	                                          ASSIGN                                              
+	                                          RP-fstn        = people_firstname 
+	                                          RP-lstn        = people_lastname 
+	                                          RP-midn        = people_midname 
+	                                          RP-title       = people_prefix 
+	                                          RP-suf         = people_suffix
+	                                          RP-h-phone     = people_homephone 
+	                                          RP-c-phone     = people_cellphone 
+	                                          RP-w-phone     = people_workphone   
+	                                          Rp-fax-phone   = people_fax 
+	                                          RP-email       = people_email
+	                                          RP-email2      = people_email2 
+	                                          RP-add-id      = people_addr_id
+	                                          RP-dob         = people_dob
+	                                          act              = 2. 
+                                                                                      IF ITfeedback = YES THEN 
+                                                                                            {&OUT} "<p>Frond a RP-people Rec using RP-peop-id -- " RP-peop-id SKIP
+                                                                                                   "<br>Made assigns to RP vars RP-fstn is-- " RP-fstn SKIP
+                                                                                                   "<br>*Has a RP-add-id  of -- " RP-add-id  .
+                                      
+                                      FIND addr_mstr WHERE addr_id = people_addr_id NO-LOCK NO-ERROR.
+                                      
+                                      IF AVAILABLE (addr_mstr) THEN DO:
+                                          ASSIGN
+	                                       RP-add1        = addr_addr1 
+	                                       RP-add2        = addr_addr2 
+	                                       RP-add3        = addr_addr3 
+	                                       RP-city        = addr_city 
+	                                       RP-state-prov  = addr_stateprov 
+	                                       RP-zip         = addr_zip 
+	                                       RP-country     = addr_country. 
+	                                                                                   IF ITfeedback = YES THEN 
+                                                                                         {&OUT} "<p>Just assigned RP-addr Variables</p>".
+                                       END. /* IF AVAILABLE (addr_mstr) THEN DO: */   
+                                       
+                                       
+      /*-------------------------------------- Patient info for Assigning Variables -------------------------------------------------------------*/      
+                                                                              
+                                                                                         
+                                       FIND people_mstr WHERE people_mstr.people_id = peop-id NO-LOCK NO-ERROR.
+                                       IF AVAILABLE (people_mstr) THEN DO:
+                                          ASSIGN                                                     
+	                                       patsuf      = people_suffix  
+	                                       pattitle    = people_prefix                                        
+	                                       patfstn     = people_firstname                                                 
+	                                       patlstn     = people_lastname  
+	                                       patmidn     = people_midname                                         
+	                                       patdob      = people_DOB                                                
+	                                       patgen      = people_gender 
+	                                       email       = people_email  
+	                                       email2      = people_email2 
+	                                       h-phone     = people_homephone                         
+	                                       fax-phone   = people_fax  
+	                                       w-phone     = people_workphone 
+	                                       c-phone     = people_cellphone 
+	                                       patcomp     = people_company.      
+	                                                                                     IF ITfeedback = YES THEN 
+                                                                                         {&OUT} "<p>Just assigned Patient - people Variables" SKIP
+                                                                                                "<br>Useing peop-id of -- " peop-id SKIP
+                                                                                                "<br>This is my first name--" patfstn "</p>".                                              
+                                                                                         
+                                       END.  /* IF AVAILABLE (people_mstr) THEN DO: */                                                  
+                                                                                         
+                                                                                         
+                                       FIND addr_mstr WHERE addr_mstr.addr_id = people_mstr.people_addr_id NO-LOCK NO-ERROR.           
+                     
+                                        IF AVAILABLE (addr_mstr) THEN DO:
+                                          ASSIGN                    
+                                           add1        = addr_addr1                
+                                           add2        = addr_addr2 
+                                           add3        = addr_addr3  
+                                           city        = addr_city 
+                                           patzip      = addr_zip 
+                                           state-prov  = addr_stateprov                                     
+                                           country     = addr_country.                                                  
+                                                                                        IF ITfeedback = YES THEN 
+                                                                                         {&OUT} "<p>Just assigned Patient - addr Variables" SKIP
+                                                                                                "<br>Useing people_addr_id of -- " people_addr_id SKIP
+                                                                                                "<br>This is my add1--" add1 "</p>". 
+                                                                                         
+                                       END.   /* IF AVAILABLE (addr_mstr) THEN DO: */           
+                                                               
+              
+                                         FIND patient_mstr WHERE patient_id = peop-id AND
+                                               patient_mstr.patient_deleted = ? NO-ERROR.
+                                            
+								                                                        IF ITfeedback = YES THEN  
+								                                                        {&OUT} "<p>Assiging RP ID to patient ID" SKIP 
+								                                                                "<br>This is patient ID--" peop-id  SKIP
+								                                                                "<br>This is RP id--" o-RP-peop-id SKIP
+								                                                                "<br>This is the RP addr ID--" RP-add-id SKIP
+								                                                                "<br>new-rp --" new-rp SKIP
+								                                                                "<br>rp-stop -- " rp-stop  "</p>" SKIP.	                                                               
+                             
+                                            IF AVAILABLE (patient_mstr) THEN DO:                            
+                            
+                                            ASSIGN
+                                            patient_RP_ID  = RP-peop-ID.   /* was this  (o-RP-peop-ID) */                                     
+                                            
+										                                                IF ITfeedback = YES THEN  
+										                                                    {&OUT} "<p>Added RP-ID to patient_RP_ID" SKIP
+										                                                           "<br>This is the RP-peop-ID -- " RP-peop-ID SKIP
+										                                                           "<br>This is old-RP -- " old-RP "</p>" SKIP.								                                                          
+                                          
+                                            END. /* IF AVAILABLE (patient_mstr) */  
+                                            
+                                            
+                                         FIND people_mstr WHERE people_mstr.people_id = patient_mstr.patient_doctor_ID AND  
+                                                             people_mstr.people_deleted = ? NO-LOCK NO-ERROR.
+                                                             
+	                                                                                    IF ITfeedback = YES THEN            
+	                                                                                      {&OUT} "<p>Looking for a Doc Rec</p>". 
+                                                              
+                                           IF AVAILABLE (people_mstr) THEN DO:
+                                               ASSIGN
+                                               doc-fname = people_mstr.people_firstname     /* (doc names) */  
+                                               doc-lname = people_mstr.people_lastname. 
+	                                                                                    IF ITfeedback = YES THEN            
+	                                                                                      {&OUT} "<p>Assigned doc names" SKIP
+	                                                                                             "<br>doc-fname -- " doc-fname SKIP
+	                                                                                             "<br>doc-lname -- " doc-lname "</p>".
+               
+                                           END. /* IF AVAILABLE (people_mstr) THEN DO: */   
+                                           
+                                            
+              /*------------------------------------------------ Start of Old RP Assign Block -----------------------------------------*/   
+                                                                       
+                                     
+                                        FIND people_mstr WHERE people_mstr.people_id = old-RP NO-LOCK NO-ERROR.
+                                        
+                                            IF AVAILABLE (people_mstr) THEN DO:
+                                                ASSIGN 
+                                                t-RP-fstn        = people_firstname 
+                                                t-RP-lstn        = people_lastname 
+                                                t-RP-midn        = people_midname 
+                                                t-RP-title       = people_prefix 
+                                                t-RP-suf         = people_suffix
+                                                t-RP-h-phone     = people_homephone 
+                                                t-RP-c-phone     = people_cellphone 
+                                                t-RP-w-phone     = people_workphone   
+                                                t-Rp-fax-phone   = people_fax 
+                                                t-RP-email       = people_email
+                                                t-RP-email2      = people_email2 
+                                                t-RP-add-id      = people_addr_id
+                                                t-RP-dob         = people_dob.  
+                                                                                        IF ITfeedback = YES THEN  
+                                                                                            {&OUT} "<p>Added old RP-people to t-Variables" SKIP
+                                                                                                   "<br>t-patfstn is--" t-RP-fstn  "<p>".                                         
+                                            END. /* IF AVAILABLE (people_mstr) THEN DO: */   
+                                            
+                                            
+                                        FIND addr_mstr WHERE addr_mstr.addr_id = people_addr_id NO-LOCK NO-ERROR. /* t-RP-add-id */
+                                        
+                                            IF AVAILABLE (addr_mstr) THEN DO:
+                                                ASSIGN
+                                                t-RP-add1        = addr_addr1 
+	                                            t-RP-add2        = addr_addr2 
+	                                            t-RP-add3        = addr_addr3 
+	                                            t-RP-city        = addr_city 
+	                                            t-RP-state-prov  = addr_stateprov 
+	                                            t-RP-zip         = addr_zip 
+	                                            t-RP-country     = addr_country. 
+	                                            
+                                            END. /* IF AVAILABLE (addr_mstr) THEN DO: */
+             
+											                                            IF ITfeedback = YES THEN  
+											                                                   {&OUT} "<p>(just befor user feedback assign) New-RP = --" new-RP SKIP.
+ 
+		                            
+/*-------------------------------------------------------------------- Start of RP Assigned -------------------------- */
+		    
+		            IF t-RP-add1 <> RP-add1 THEN
+                        ASSIGN
+                            c-RP-add1  = " - " + RP-add1
+                            RP-add1    = t-RP-add1.
+                            
+                   IF t-RP-add2 <> RP-add2 THEN
+                        ASSIGN
+                            c-RP-add2  = " - " + RP-add2
+                            RP-add2    = t-RP-add2.
+                            
+                   IF t-RP-add3 <> RP-add3 THEN
+                        ASSIGN
+                            c-RP-add3  = " - " + RP-add3
+                            RP-add3    = t-RP-add3.                      
+                            
+                   IF t-RP-city <> RP-city THEN
+                        ASSIGN
+                            c-RP-city  = " - " + RP-city
+                            RP-city    = t-RP-city.  
+                            
+                    IF t-RP-state-prov <> RP-state-prov THEN
+                        ASSIGN
+                            c-RP-state-prov = " - " + RP-state-prov  
+                            RP-state-prov = t-RP-state-prov.         
+                            
+                   IF t-RP-zip <> RP-zip THEN
+                        ASSIGN
+                            c-RP-zip = " - " + RP-zip
+                            RP-zip = t-RP-zip.    
+                            
+                    IF t-RP-country <> RP-country THEN
+                        ASSIGN
+                            c-RP-country   = " - " + RP-country
+                            RP-country     = t-RP-country.                
+                 
+                            
+                   IF t-RP-email <> RP-email THEN
+                        ASSIGN
+                            c-RP-email = " - " + RP-email
+                            RP-email   = t-RP-email.
+         
+                    IF t-RP-email2 <> RP-email2 THEN
+                        ASSIGN
+                            c-RP-email2 = " - " + RP-email2
+                            RP-email2   = t-RP-email2.
+           
+                    IF t-RP-c-phone <> RP-c-phone THEN 
+                        ASSIGN
+                            c-RP-c-phone   = " - " + RP-c-phone
+                            RP-c-phone     = t-RP-c-phone. 
+                         
+                    IF t-RP-w-phone <> RP-w-phone THEN
+                        ASSIGN
+                            c-RP-w-phone = " - " + RP-w-phone
+                            RP-w-phone = t-RP-w-phone.
+                             
+                   IF t-RP-fax-phone <> RP-fax-phone THEN  
+                        ASSIGN
+                            c-RP-fax-phone = " - " + RP-fax-phone
+                            RP-fax-phone   = t-RP-fax-phone.                                              
+                          
+                   IF t-RP-h-phone <> RP-h-phone THEN
+                        ASSIGN
+                            c-RP-h-phone  = " - " + RP-h-phone
+                            RP-h-phone    = t-RP-h-phone.
+                            
+                            
+                   IF t-RP-fstn <> RP-fstn THEN
+                        ASSIGN
+                            c-RP-fstn   = " - " + RP-fstn
+                            RP-fstn     = t-RP-fstn.
+                            
+                   IF t-RP-lstn <> RP-lstn THEN
+                        ASSIGN
+                            c-RP-lstn  = " - " + RP-lstn
+                            RP-lstn    = t-RP-lstn.
+                            
+                   IF t-RP-midn <> RP-midn THEN
+                        ASSIGN
+                            c-RP-midn  = " - " + RP-midn
+                            RP-midn    = t-RP-midn.                   
+                  /*
+                   IF t-patRPemail <> patRPemail THEN
+                        ASSIGN
+                            c-patRPemail = " - " + patRPemail
+                            patRPemail = t-patRPemail.
+                   */
+                             
+/*                   IF t-RP-state-prov <> RP-state-prov THEN        */
+/*                        ASSIGN                                     */
+/*                            c-RP-state-prov = " - " + RP-state-prov*/
+/*                            RP-state-prov = t-RP-state-prov.       */
+                              
+                   IF t-RP-suf <> RP-suf THEN
+                        ASSIGN
+                            c-RP-suf = " - " + RP-suf
+                            RP-suf = t-RP-suf.
+                              
+                   IF t-RP-title <> RP-title THEN
+                        ASSIGN
+                            c-RP-title = " - " + RP-title
+                            RP-title = t-RP-title. 
+                                                    
+
+                            
+    /*               IF t-RP-dob <> RP-dob then
+                        assign
+                            c-RP-dob = "-" + RP-dob
+                            RP-dob = t-RP-dob.         	    
+		*/    
+		    /* --------------- End of RP Addign ------------------*/                                                             
+		    
+																                        IF ITfeedback = YES THEN  
+																                        {&OUT} "<p>I'm at the end of checking what to display" SKIP
+																                                "<br>This is patient ID--" peop-id  SKIP
+																                                "<br> with a peop-addr-id of -- " peop-addr-id SKIP
+																                                "<br>with a o-f-addr-id of -- " o-f-addr-id SKIP
+																                                "<br>This is RP-peop-id--" RP-peop-id SKIP
+																                                "<br>with a RP-add-id of -- " RP-add-id SKIP
+																                                "<br>t-doc-fname is--" t-doc-fname " and c-doc-fname is-- " c-doc-fname SKIP
+																                                "<br>t-doc-lname is--" t-doc-lname " and c-doc-lname is-- " c-doc-lname  SKIP
+																                                "<br>act is--" act  SKIP 
+																                                "<br>patnotes is --" patnotes "</p>" SKIP .
+                                
+       
+        
+    /**************************************** User feedback after updating a record *****************************/			
+                  
+    IF act     = 2  /* AND 
+    RP-update  = YES */ THEN DO:
+                  
+{&OUT} "    <div class='table_3col'>" SKIP
+       "        <TABLE>" SKIP
+       "            <TR>" SKIP
+       "            <TH colspan='6' style='text-align: center;'>Original Record in Black : Updates in Blue</TH>" SKIP
+       "            <T></T>" SKIP
+       "            </TR>" SKIP
+       "            <TR>" SKIP.                
+{&OUT} "            <TR>" SKIP.
+{&OUT} "            <TH colspan='6' style='text-align: center;'>RP Record</TH>" SKIP.
+{&OUT} "            </tr>" SKIP.
+ 
+{&OUT} "            <TR>" SKIP.
+{&OUT} "                <TD style='text-align:left;' colspan='6'><B>Responsible Personal Information</B></TD>" SKIP.
+{&OUT} "            </TR>" SKIP.
+            /* -- ----------------------------------------------RP End of Row 1 ---------------------------------------------------------- -*/
+{&OUT} "                <td>Prefix</td>" SKIP.          
+                            IF c-RP-title <> "" THEN
+{&OUT} "                <td class='col'>" RP-title  "<font color='#0000FF'>" c-RP-title   "</font></td>" SKIP.                              
+                            ELSE   
+{&OUT} "                <td>" RP-title "</td>" SKIP.                                     
+{&OUT} "                <td>Address</td>" SKIP.                                
+                            IF c-RP-add1 <> "" THEN
+{&OUT} "                <td class='col'>" RP-add1 "<font color='#0000FF'>" c-RP-add1 "</font></td>" SKIP.
+                            ELSE
+{&OUT} "                <td>" RP-add1  "</td>" SKIP.  
+                                                                  
+{&OUT} "                <td>Home Phone Number</td>" SKIP.
+                            IF c-RP-h-phone <> "" THEN
+{&OUT} "                <td class='col'>" RP-h-phone "<font color='#0000FF'>" c-RP-h-phone "</font></td></tr>" SKIP.
+                            ELSE
+{&OUT} "                <td>" RP-h-phone "</td></tr>" SKIP.           
+{&OUT} "            </TR>" SKIP.
+                /*----------------------------------------------RP End of Row 2 ------------------------------------------------------------*/ 
+{&OUT} "            <TR>" SKIP.
+                                
+{&OUT} "                <td>First Name</td>" SKIP.               
+                            IF c-RP-fstn <> "" THEN
+{&OUT} "                <td class='col'>" RP-fstn  "<font color='#0000FF'>" c-RP-fstn   "</font></td>" SKIP.
+                            ELSE
+{&OUT} "                <td>" RP-fstn "</td>" SKIP.
+                                   
+{&OUT} "                <td>Address2</td>" SKIP.
+                            IF c-RP-add2 <> "" THEN
+{&OUT} "                <td class='col'>" RP-add2 "<font color='#0000FF'>" c-RP-add2 "</font></td>" SKIP.
+                            ELSE
+{&OUT} "                <td>" RP-add2 "</td>".  
+{&OUT} "                <td>Work Phone Number</td>" SKIP.
+                            IF c-RP-w-phone <> "" THEN
+{&OUT} "                <td class='col'>" RP-w-phone "<font color='#0000FF'>" c-RP-w-phone "</font></td>" SKIP.
+                            ELSE
+{&OUT} "                <td>" RP-w-phone "</td>" SKIP.    
+{&OUT} "            </TR>" SKIP.   
+                /*-----------------------------------------------RP End of Row 3 -----------------------------------------------------------*/                
+{&OUT} "            <TR>" SKIP.                                
+{&OUT} "                <td>Middle Name</td>" SKIP.
+                            IF c-RP-midn <> "" THEN
+{&OUT} "                <td class='col'>" RP-midn  "<font color='#0000FF'>" c-RP-midn   "</font></td>" SKIP.                              
+                            ELSE
+{&OUT} "                <td>" RP-midn "</td>" SKIP.
+{&OUT} "                <td>Address3</td>" SKIP.
+                            IF c-RP-add3 <> "" THEN
+{&OUT} "                <td class='col'>" RP-add3 "<font color='#0000FF'>" c-RP-add3 "</font></td>" SKIP.
+                            ELSE
+{&OUT} "                <td>" RP-add3 "</td>" SKIP.
+{&OUT} "                <td>Cell Phone Number</td>" SKIP.
+                            IF c-RP-c-phone <> "" THEN
+{&OUT} "                <td class='col'>" RP-c-phone "<font color='#0000FF'>" c-RP-c-phone "</font></td></tr>" SKIP.
+                            ELSE 
+{&OUT} "                <td>" RP-c-phone "</td></tr>" SKIP. 
+{&OUT} "            </TR>" SKIP.
+               /*--------------------------------------------------RP End of Row 4 ----------------------------------------------------------*/                             
+{&OUT} "                <TR>" SKIP.     
+{&OUT} "                <td>Last Name</td>" SKIP.
+                            IF c-RP-lstn <> "" THEN
+{&OUT} "                <td class='col'>" RP-lstn "<font color='#0000FF'>" c-RP-lstn   "</font></td>" SKIP.
+                            ELSE
+{&OUT} "                <td>" RP-lstn "</td>" SKIP. 
+{&OUT} "                <td>City</td>" SKIP.
+                            IF c-RP-city <> "" THEN
+{&OUT} "                <td class='col'>" RP-city "<font color='#0000FF'>" c-RP-city "</font></td>" SKIP.                              
+                            ELSE 
+{&OUT} "                <td>" RP-city "</td>" SKIP. 
+{&OUT} "                <td>Fax Number</td>" SKIP.
+                            IF c-RP-fax-phone <> "" THEN
+{&OUT} "                <td class='col'>" RP-fax-phone "<font color='#0000FF'>" c-RP-fax-phone "</font></td></tr>" SKIP.                              
+                            ELSE 
+{&OUT} "                <td>" RP-fax-phone "</td></tr>" SKIP.     
+{&OUT} "            </TR>" SKIP.
+               /*---------------------------------------------------RP End of Row 5 -----------------------------------------------------------*/
+{&OUT} "            <TR>" SKIP.
+{&OUT} "                <td>Suffix</td>" SKIP.
+                            IF c-RP-suf <> "" THEN
+{&OUT} "                <td class='col'>" RP-suf  "<font color='#0000FF'>" c-RP-suf   "</font></td>" SKIP.
+                            ELSE 
+{&OUT} "                <td>" RP-suf "</td>" SKIP.
+{&OUT} "                <td>State</td>" SKIP. 
+                            IF c-RP-state-prov <> "" THEN
+{&OUT} "                <td class='col'>" RP-state-prov "<font color='#0000FF'>" c-RP-state-prov "</font></td>" SKIP.                              
+                            ELSE 
+{&OUT} "                <td>" RP-state-prov "</td>" SKIP.                                    
+{&OUT} "                <td>Email Address</td>" SKIP.
+                            IF c-RP-email <> "" THEN
+{&OUT} "                <td class='col'>" RP-email "<font color='#0000FF'>" c-RP-email "</font></td></tr>" SKIP.                              
+                            ELSE 
+{&OUT} "                <td>" RP-email "</td></tr>" SKIP.         
+{&OUT} "            </TR>" SKIP.
+               /*---------------------------------------------------RP End of Row 6 -----------------------------------------------------------*/    
+               
+{&OUT} "            <TR>" SKIP.
+{&OUT} "                <td>Date of Birth</td>" SKIP.
+              
+                            IF RP-dob <> ? THEN DO:
+                                                 
+                            IF RP-dob <> t-RP-dob AND
+                               t-RP-dob <> ? THEN
+{&OUT} "                <td class='col'>"t-RP-dob "<font color='#0000FF'>" c-space RP-dob "</font></td>" SKIP.
+                                                         
+                            ELSE
+                            IF RP-dob <> t-RP-dob AND
+                            t-RP-dob = ? THEN
+{&OUT} "                <td class='col'><font color='#0000FF'>" c-space RP-dob "</font></td>" SKIP.
+                                                                 
+                            ELSE
+{&OUT} "                <td>" RP-dob "</td>" SKIP.
+                                         
+                            END. /* IF RP-dob <> ? THEN DO: */  
+                                          
+                            ELSE
+{&OUT} "                <td></td>" SKIP.                                    
+{&OUT} "                <td>Zip Code</td>" SKIP.
+                            IF c-RP-zip <> "" THEN
+{&OUT} "                <td class='col'>" RP-zip "<font color='#0000FF'>" c-RP-zip "</font></td>" SKIP.
+                            ELSE 
+{&OUT} "                <td>" RP-zip "</td>" SKIP.      
+                        
+{&OUT} "                <td>Second Email</td>" SKIP. 
+                            IF c-RP-email2 <> "" THEN
+{&OUT} "                <td class='col'>" RP-email2 "<font color='#0000FF'>" c-RP-email2 "</font></td></tr>" SKIP.                              
+                            ELSE 
+{&OUT} "                <td>" RP-email2 "</td>" SKIP.                                      
+                                               
+{&OUT} "            </TR>" SKIP.
+               /*---------------------------------------------------RP End of Row 7 -----------------------------------------------------------*/    
+{&OUT} "            <TR>" SKIP.                               
+{&OUT} "                <td></td><td></td>" SKIP.                              
+                    
+{&OUT} "                <td>Country</td>" SKIP.
+                            IF c-RP-country <> "" THEN
+{&OUT} "                <td class='col'>" RP-country "<font color='#0000FF'>" c-RP-country "</font></td>" SKIP.                              
+                            ELSE 
+{&OUT} "                <td>" RP-country "</td>" SKIP.
+{&OUT} "                <td></td><td></td>" SKIP.         
+{&OUT} "            </TR>" SKIP.
+               /*---------------------------------------------------RP End of Row 8 -----------------------------------------------------------*/   
+{&OUT} "            </TR>" SKIP.
+{&OUT} "                <td colspan='6'></td>" SKIP.         
+                                    
+{&OUT} "            </tr>" SKIP.
+{&OUT} "        </TABLE>" SKIP.
+{&OUT} "    </div>" SKIP.
+
+
+ /* ---------------------------------Two Button side by side -----------------------------------------------*/
+{&OUT} 
+       "<br>" skip 
+       
+       "<div class='grid_12'>" SKIP         
+       "  <div class='row'>" SKIP
+                    
+       "<div class='grid_1-5'></div>" SKIP
+       "   <div class='grid_5'>" SKIP
+       "     <form method='post' ACTION='patient.r'>" SKIP          
+       "       <input type='hidden' name='h-keep-going' value='YES' >" SKIP
+       "       <input type='hidden' name='h-first-stop'   value='1' >" SKIP                
+       "       <input type='hidden' name='pep-id' value='" peop-id "'>" SKIP 
+       "       <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP                             
+       "       <BUTTON type='submit' class='btn'>Return to Patient<i> " patfstn ", " patlstn "</i> Update</BUTTON>" SKIP               
+       "     </form>" SKIP
+       "   </div>" SKIP
+       "<div class='grid_1'> </DIV>" SKIP 
+       "   <div class='grid_5'>" SKIP
+       "     <form method='post' ACTION='RP_edit.r'>" SKIP          
+       "       <input type='hidden' name='h-keep-going' value='YES' >" SKIP
+       "       <input type='hidden' name='h-first-stop'   value='1' >" SKIP                
+       "       <input type='hidden' name='pep-id' value='" peop-id "'>" SKIP 
+       "       <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP                             
+       "       <BUTTON type='submit' class='btn'>Return to Patient RP<i> " c-RP-fstn ", " c-RP-lstn "</i> Update</BUTTON>" SKIP               
+       "     </form>" SKIP
+       "   </div>" SKIP
+       "<div class='grid_1-5'> </DIV>" SKIP
+       "</div>" skip
+       "</div>" skip 
+       "<br>" SKIP.
+                
+                /* ---------------------------------------------------------------------------------*/
+ 
+{&OUT}
+                "<br>" SKIP
+                "<div class='grid_12'>" SKIP   
+                "<div class='row'>" SKIP                  
+                "  <div class='grid_5'></div>" SKIP
+                "   <div class='grid_2'>" SKIP
+                "     <form method='post' ACTION='patient.r'>" SKIP 
+                "       <input type='hidden' name='whattorun' value='" whattorun "'>" SKIP                             
+                "       <BUTTON type='submit' class='btn'>New Patient Update</BUTTON>" SKIP               
+                "     </form>" SKIP
+                "   </div>" SKIP
+                "  <div class='grid_5'> </DIV>" SKIP
+                "</div>" SKIP.             
+                
+
+
+/*{&OUT} "<div align='center'>" skip                                                                                                                                                                 */
+/*       "<br></b><a href='patient.r?pep-id=" peop-id "&h-keep-going=yes&h-first-stop=1&whattorun=3.4 '>Click Here to return to Patient Record " patfstn "&nbsp" patlstn " Update </a>" skip         */
+/*       "<br></b><br></b><a href=RP_edit.r?pep-id=" peop-id "&h-keep-going=yes&h-first-stop=1&whattorun=3.4 '>Click Here to return to Patient RP Record "RP-fstn "&nbsp" RP-lstn " Update </a>" skip*/
+/*       "</div>" skip.                                                                                                                                                                              */
+  
+ /*------------------------------------------------ End of user feedback ----------------------------------------------------------*/
+                
+         
+    END. /* IF act = 2  AND RP-update = YES THEN DO:*/
+			
+			
+
+			ELSE DO:			       
+</SCRIPT>
+		        <H1 align="center"><SPAN style="COLOR: #E60000;">No Updates were made to this Patient Record.</SPAN><BR></H1>
+		         <p align='center'><b>If you thought you had made changes to this record, use the link below to return to the record and try again.</b></p>
+ <SCRIPT LANGUAGE="SpeedScript"> 
+            END. /* else do: */
+
+</SCRIPT>               
+</BODY>      
+</HTML>

@@ -1,0 +1,474 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD> 
+    
+    <TITLE>Testkits Void Maintence Update</TITLE> 
+    
+    <META NAME="AUTHOR" CONTENT="Harold Luttrell, Sr.">
+    <META NAME="VERSION" CONTENT="1.3">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="07/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="05/Oct/15">
+    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+ 
+<SCRIPT LANGUAGE="SpeedScript">
+    /*------------------------------------------------------------------
+      Main-program  : TKvoidmaintU.html.
+      Description   : This is the main User-Interface for Voiding the  
+                    :     Test Kits.
+                  
+      Sub-programs  : none.
+      Description   : This program voids the Test Kit where the status 
+                    :     is NOT equal to "CREATED", "IN_STOCK", "COMPLETE", "DELETED" OR "VOID".
+                    :     Only the NOTES field is allowed for inputing data into. 
+                    :     All other updates are under program control. 
+             
+      - - Version History - -
+      
+          1.0 - Oct. 7, 2014 - Original code.
+          
+          1.1 - Oct 25, 2014 - removed all '../..' from the html code and 
+                                    changed '.html' to '.r' and
+                                    added the META & css.
+          1.2 - Feb 25, 2015 - By Harold Luttrell.
+                Change Test Kit Nbr to Testkit ID on the displays. 
+                
+          1.3 - Oct 5, 2015 - By Harold Luttrell, Sr.
+                Changed the old pathing RUN statements to the 
+                new RUN VALUE(SEARCH  )))   statement and
+                added the sequence-ID on the report for the 
+                TestKit and Lab-Sample.
+                Identified by /* 1dot3 */
+                                              
+    -------------------------------------------------------------------*/
+              
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+ 
+<BODY CLASS='inside'>
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Include code. */
+
+{../depot/src/WebSpeed/menuname.i}.                 /*** menu name assignment ***/    
+{../depot/src/WebSpeed/o-depot-definenames.i}.      /*** depot output define variables ***/    
+
+/* Database Table and Fields from which data is to be retrieved. */
+&SCOPED-DEFINE DB-TABLE       TK_mstr
+&SCOPED-DEFINE DB-FIELD1      TK_ID
+&SCOPED-DEFINE DB-FIELD2      TK_test_seq
+
+/* 1dot3 */
+&SCOPED-DEFINE Display-Fields "<TR><TD><a href='TKvoidmaintU.r?h-act=2 &whattorun=" whattorun " &h-TK-id=" {&DB-FIELD1} " &h-tk-seq-ID=" {&DB-FIELD2} " '>" {&DB-FIELD1} " / " {&DB-FIELD2}  "</a></TD><TD>" TK_status "</TD><TD>" TK_lab_sample_ID ' / ' TK_lab_seq  "</TD></TR>"      
+/* 1dot3 */
+
+/* Define Variables. */
+DEFINE VARIABLE whattorun           AS CHARACTER                        NO-UNDO.   /* to get the menu title */ 
+DEFINE VARIABLE act                 AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE found-TK-ID         AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE h-Submit            AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE h-Cancel            AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE h-Update            AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE status-list         AS CHARACTER                        NO-UNDO.
+
+DEFINE VARIABLE h-TK-id             LIKE TK_mstr.TK_ID              NO-UNDO.
+DEFINE VARIABLE h-tk-seq-ID         LIKE TK_mstr.TK_test_seq        NO-UNDO.
+DEFINE VARIABLE CCYY-Date           AS CHARACTER  FORMAT "x(10)"        NO-UNDO.
+DEFINE VARIABLE cust-name           AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE patient-name        AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE updated-tk-notes    LIKE TK_mstr.TK_notes           NO-UNDO.
+ 
+/* Assign Values to Variable statements. */
+ASSIGN 
+ 
+/* Logical variables. */
+         
+/* Date variables. */
+      
+/* Integer variables. */        
+      
+/* Character variables. */
+      
+        whattorun           = get-value("whattorun")                 /* to get the menu title */
+/*  lookup(tk_status,status-list) > 0 :  means did find IT   or = 0 :  means did NOT find it  */
+        status-list         = "CREATED,IN_STOCK,COMPLETE,DELETED,VOID"
+        act                 = int(get-value("h-act"))
+        h-Submit            = get-value("h-Submit")
+        h-Update            = get-value("h-Update")
+        h-Cancel            = get-value("h-Cancel")
+        h-TK-id             = get-value("h-TK-id")
+        h-tk-seq-ID         = int(get-value("h-tk-seq-ID"))
+        cust-name           = get-field("h-cust-name")
+        patient-name        = get-field("h-patient-name").
+
+/*  Start the code. */
+
+IF act = 0 OR h-Cancel = "Cancel" THEN  
+    {&OUT}  "<form  method='post' >" SKIP
+            
+            "<DIV class='row'>" SKIP                                            /* 1dot3 */
+            "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+            "<DIV class='grid_8'>" SKIP                                         /* 1dot3 */
+            
+            "<input type='hidden' name='h-act'              value='1' />" SKIP 
+            "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */
+            "<center>" SKIP
+                "<table_2col>" SKIP 
+                    "<tr>" SKIP
+                        "<th>" 'Enter a Testkit ID to Void' "</th>"  SKIP                       
+                        "<td><input type='text' name='h-TK-id' value='' autofocus > </td>" SKIP
+                    "</tr>" SKIP
+                    "<BR></BR>" SKIP
+                    "<td><center><input type='image' src='/depot/src/HTMLContent/images/submit_image.gif'  
+                                        alt='Submit' value='Select' name='s-Submit'> </td>" SKIP
+                "</table>" SKIP
+            "</center>" SKIP
+            
+            "</DIV>         <!-- end of grid_8 -->" SKIP                        /* 1dot3 */
+            "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+            "</DIV>     <!-- end of row -->" SKIP                               /* 1dot3 */ 
+                
+        "</form>" SKIP.   
+
+ASSIGN  act                 = int(get-value("h-act"))
+        whattorun           = get-value("whattorun")                 /* to get the menu title */
+        h-Submit            = get-value("h-Submit")
+        h-Update            = get-value("h-Update")
+        h-Cancel            = get-value("h-Cancel")      
+        h-TK-id             = get-value("h-TK-id")
+        h-tk-seq-ID         = int(get-value("h-tk-seq-ID"))
+        found-TK-ID         = 0.
+                    
+IF act = 1 THEN DO:  
+ 
+	ASSIGN h-TK-id = TRIM(h-TK-id). 
+		  
+	IF h-TK-id = "" THEN
+	
+	    {&OUT} "<form  method='post' >" SKIP
+	                
+            "<DIV class='row'>" SKIP                                            /* 1dot3 */
+            "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+            "<DIV class='grid_8'>" SKIP                                         /* 1dot3 */
+  
+                    "<input type='hidden' name='h-act'              value='2' />" SKIP 
+                    "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */ 
+	                "<center>" SKIP 
+	                "<h3>NO Testkit ID was entered. &nbsp; <BR>
+	                       <span style='COLOR: #FF0000;' <B><font size=6> Please enter a Testkit ID</font></B></span> </h3>" SKIP
+	        
+	        "</DIV>         <!-- end of grid_8 -->" SKIP                        /* 1dot3 */
+            "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+            "</DIV>     <!-- end of row -->" SKIP                               /* 1dot3 */ 
+            .
+	ELSE 
+	    {&OUT} "<form  method='post' >" SKIP
+	                
+            "<DIV class='row'>" SKIP                                            /* 1dot3 */
+            "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+            "<DIV class='grid_8'>" SKIP                                         /* 1dot3 */
+  
+		            "<input type='hidden' name='h-act'              value='2' />" SKIP 
+		            "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */ 
+		            "<DIV class='table_report' >" SKIP     
+		                "<TABLE>" SKIP
+		                  "<th colspan='3'>Select a Testkit ID to VOID.</th>" SKIP
+		                  "<TR>" SKIP
+		                      "<TH>Testkit ID / Seq</TH>" SKIP                                                /* 1dot3 */
+		                      "<TH>Status</TH>" SKIP                             
+		                      "<TH>Lab Sample ID / Seq</TH>" SKIP                                             /* 1dot3 */
+		                  "</TR>" SKIP
+		                  
+		             "</DIV>         <!-- end of grid_8 -->" SKIP                        /* 1dot3 */
+                     "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+                     "</DIV>     <!-- end of row -->" SKIP                               /* 1dot3 */      
+		             .           
+			     
+	FOR EACH {&DB-TABLE}
+		      WHERE {&DB-FIELD1} = h-TK-id AND TK_mstr.TK_deleted = ? AND 
+		            lookup(TK_status,status-list) = 0  :      /* > 0 :  means did find IT   or = 0 :  means did NOT find it  */		               	          
+			    
+		    {&OUT} {&Display-Fields} SKIP.	
+		      		  
+            ASSIGN found-TK-ID = 1.
+            
+    END.  /**  FOR EACH {&DB-TABLE} **/
+    
+    IF found-TK-ID = 0 AND h-TK-id <> "" THEN 
+        {&OUT} "<center>" SKIP "<h3>Testkit ID : " h-TK-id " was not found or is void. &nbsp; <BR>
+            <span style='COLOR: #FF0000;' <B> Please enter a Testkit ID.</B></span> </h3>" SKIP.
+  
+    {&OUT}     "<Tr>" SKIP
+                     "<th colspan='3'>"
+                        "<input type='submit' name='h-Cancel' value='Cancel'  /> </th>"  SKIP                           
+               "</Tr>" SKIP
+              "</TABLE>" SKIP
+            "</DIV>" SKIP
+          "</form>" SKIP.
+            
+END.  /** IF act = 1 **/                                
+
+            
+ASSIGN  act                 = int(get-value("h-act"))
+        whattorun           = get-value("whattorun")                 /* to get the menu title */
+        h-Submit            = get-value("h-Submit")
+        h-Update            = get-value("h-Update")
+        h-Cancel            = get-value("h-Cancel").   
+
+IF h-Cancel = "Cancel" THEN 
+    ASSIGN act = 0.
+ 
+IF act = 2 THEN DO: 
+    
+    ASSIGN  cust-name       = ""
+            patient-name    = "".
+                
+    FIND FIRST TK_mstr 
+        WHERE TK_mstr.TK_ID = h-TK-id  AND TK_mstr.TK_test_seq = h-tk-seq-ID AND  TK_mstr.TK_deleted = ?
+            NO-LOCK NO-ERROR. 
+
+    ASSIGN  updated-tk-notes    = TK_mstr.TK_notes.
+                             
+    FIND FIRST people_mstr
+        WHERE people_mstr.people_id     = TK_mstr.TK_patient_ID
+            NO-LOCK NO-ERROR.   
+    
+    IF AVAILABLE (people_mstr) THEN 
+            ASSIGN patient-name     = (people_mstr.people_firstname + ' ' + people_mstr.people_lastname).
+    
+    FIND FIRST people_mstr
+        WHERE people_mstr.people_id     = TK_mstr.TK_cust_ID
+            NO-LOCK NO-ERROR.   
+    
+    IF AVAILABLE (people_mstr) THEN 
+            ASSIGN cust-name     = (people_mstr.people_firstname + ' ' + people_mstr.people_lastname). 
+                    
+/*    RUN "./depot/rcode/subr_YY_to_CCYY.r"*/                                   /* 1dot3 */
+    RUN VALUE(SEARCH("subr_YY_to_CCYY.r"))                                      /* 1dot3 */   
+            (TK_mstr.TK_lab_paid, OUTPUT CCYY-Date).       
+    
+    IF AVAILABLE (TK_mstr) THEN 
+        {&OUT}  "<form  ACTION='TKvoidmaintU.r' method='get' >" SKIP
+                    
+            "<DIV class='row'>" SKIP                                            /* 1dot3 */
+            "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+            "<DIV class='grid_8'>" SKIP                                         /* 1dot3 */
+  
+                    "<input type='hidden' name='h-act'              value='3' />" SKIP  
+                    "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */  
+                    "<input type='hidden' name='h-TK-id'            value='" h-TK-id "' >" SKIP
+                    "<input type='hidden' name='h-tk-seq-ID'        value='" h-tk-seq-ID "' >" SKIP
+                    "<input type='hidden' name='h-cust-name'        value='" cust-name "' >" SKIP
+                    "<input type='hidden' name='h-patient-name'     value='" patient-name "' >" SKIP 
+                "<DIV class='table_3col'>" SKIP 
+                "<TABLE>" SKIP
+                "<TH colspan=6>Testkit VOID Maintenance</TH>" SKIP
+                        "<TR>" SKIP
+                            "<Td>Testkit ID / Seq</Td>" SKIP                                                                                                    /* 1dot3 */
+                            "<td><input type='text' name='h-TK-id' value='" TK_mstr.TK_ID ' / ' TK_mstr.TK_test_seq "' disabled </td>" SKIP             /* 1dot3 */
+                            "<Td>Customer</Td>" SKIP
+                            "<td><input type='text' name='h-cust-name' value='" cust-name "' disabled </td>" SKIP
+                            "<Td>Patient</Td>" SKIP
+                            "<td><input type='text' name='h-patient-name' value='" patient-name "' disabled </td>" SKIP          
+                        "</TR>" SKIP
+                        "<TR>" SKIP
+                            "<Td>Test Type</Td>" SKIP
+                            "<td><input type='text' name='h-dummy' value='" TK_mstr.TK_testtype "' disabled </td>" SKIP    
+                            "<Td>Current Status</Td>" SKIP
+                            "<td><input type='text' name='h-dummy' value='" TK_mstr.TK_status "' disabled </td>" SKIP
+                            "<Td>Domestic</Td>" SKIP 
+                            "<td><input type='text' name='h-dummy' value='" TK_mstr.TK_domestic "' disabled </td>" SKIP 
+                        "</TR>" SKIP
+                        "<TR>" SKIP
+                            "<Td>Lab Sample ID / Seq</Td>" SKIP                                                                                                 /* 1dot3 */
+                            "<td><input type='text' name='h-dummy' value='" TK_mstr.TK_lab_sample_ID ' / ' TK_mstr.TK_lab_seq "' disabled </td>" SKIP   /* 1dot3 */
+                            "<Td>Lab ID</Td>" SKIP
+                            "<td><input type='text' name='h-dummy' value='" TK_mstr.TK_lab_ID "' disabled </td>" SKIP
+                            "<Td>Lab Paid</Td>" SKIP 
+                            "<td>" "<input type='date' name='h-dummy' value='" CCYY-Date "' disabled </td>" SKIP 
+                        "</TR>" SKIP
+                        "<TR>" SKIP                            
+                            "<Td>Comments</Td>" SKIP 
+                            "<td colspan='5'><input type='text' name='h-dummy' size=78 value='" TK_mstr.TK_comments "' disabled </td>" SKIP
+                        "</TR>" SKIP
+                        "<TR>" SKIP 
+                            "<Td>Notes</Td>"
+                            "<td colspan='5'><input type='text' name='h-tk-notes' size=78 value='" updated-tk-notes "' autofocus </td>" SKIP
+                        "</TR>" SKIP
+
+                    "</table>"  SKIP 
+                    "<center>" SKIP 
+                                 "<input type='submit' name='h-Update' value='Update' />"  SKIP 
+                                 "<input type='submit' name='h-Cancel' value='Cancel' />"  SKIP  
+                 "</div>" SKIP   
+                 
+                 "</DIV>         <!-- end of grid_8 -->" SKIP                        /* 1dot3 */
+                 "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+                 "</DIV>     <!-- end of row -->" SKIP                               /* 1dot3 */ 
+                  
+              "</form>". 
+                     
+END.  /** IF act = 2  **/
+
+ASSIGN  act                 = int(get-value("h-act"))
+        whattorun           = get-value("whattorun")                 /* to get the menu title */
+        h-Submit            = get-value("h-Submit")
+        h-Update            = get-value("h-Update")
+        h-Cancel            = get-value("h-Cancel")
+        updated-tk-notes    = get-value("h-tk-notes")
+        cust-name           = get-field("h-cust-name")
+        patient-name        = get-field("h-patient-name").  
+
+IF h-Cancel = "Cancel" THEN 
+    ASSIGN act = 0.
+                
+IF act = 3 AND updated-tk-notes = "" THEN DO:
+
+    ASSIGN act = 0.
+
+    {&OUT}  "<form  method='post' >" SKIP
+                
+            "<DIV class='row'>" SKIP                                            /* 1dot3 */
+            "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+            "<DIV class='grid_8'>" SKIP                                         /* 1dot3 */
+  
+	            "<input type='hidden' name='h-act'              value='0' />" SKIP 
+	            "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */
+	            "<input type='hidden' name='h-Submit'           value='' />"  SKIP 
+	            "<input type='hidden' name='h-Update'           value='' />"  SKIP      
+                "<input type='hidden' name='h-TK-id'            value='" h-TK-id "' >" SKIP
+                "<input type='hidden' name='h-tk-seq-ID'        value='" h-tk-seq-ID "' >" SKIP
+	            "<center>" SKIP 
+	                "<span style='COLOR: #FFffFF;' <B><font size=8> You did not enter any information in the <BR>
+	                   NOTES field for <u> " h-TK-id "</u>:  Not Updated.</font></B></span>" "<BR>" SKIP
+	                "<td><input type='Submit' value='Return'  name='h-Return' /></td>" SKIP
+	            "</center>" SKIP
+	            
+	        "</DIV>         <!-- end of grid_8 -->" SKIP                        /* 1dot3 */
+            "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+            "</DIV>     <!-- end of row -->" SKIP                               /* 1dot3 */ 
+            
+            "</form>" SKIP.   
+        
+END.  /** IF act = 3 AND updated-tk-notes = "" **/
+
+ASSIGN  act                 = int(get-value("h-act"))
+        whattorun           = get-value("whattorun").                 /* to get the menu title */
+
+IF h-Cancel = "Cancel" THEN 
+    ASSIGN act = 0.
+            
+IF act = 3  THEN DO:
+DO TRANSACTION:
+
+    FIND FIRST TK_mstr 
+        WHERE TK_mstr.TK_ID = h-TK-id  AND TK_mstr.TK_test_seq = h-tk-seq-ID AND  TK_mstr.TK_deleted = ?
+            EXCLUSIVE-LOCK NO-ERROR. 
+            
+    ASSIGN updated-tk-notes    = get-field("h-tk-notes").
+           
+    IF  updated-tk-notes <> "" THEN DO: 
+        IF AVAILABLE (TK_mstr) THEN 
+		      ASSIGN  TK_mstr.TK_status           = "VOID"                    /* 1dot3 */
+		              TK_mstr.TK_notes            = updated-tk-notes 
+		              TK_mstr.TK_modified_by      = USERID ("HHI")
+		              TK_mstr.TK_modified_date    = TODAY.  
+		                                            
+/*  CREATE a hist for VOIDing the Test Kit.......... */ 
+
+/*	     RUN "./depot/rcode/create-trh-hist.r "*/                               /* 1dot3 */
+        RUN VALUE(SEARCH("SUBtrh-ucU.r"))                                       /* 1dot3 */
+	            (0,                              /**  i-ctrh-id   **/
+	             TK_mstr.TK_testtype,
+	             "VOID",                                                        /* 1dot3 */
+	             1,
+	             "",
+	             "",
+	             h-TK-id,
+	             "",
+	             h-tk-seq-ID, 
+	             OUTPUT o-ctrh-id,
+	             OUTPUT o-ctrh-error).  
+	
+	     IF o-ctrh-error = YES THEN DO:
+	             MESSAGE "1-CREATE Error from pgm: create-trh-hist !  " SKIP
+	                      "  The returned o-ctrh-id value = " o-ctrh-id
+	                 VIEW-AS ALERT-BOX INFORMATION BUTTONS OK.
+	     END.    /** IF value = NO from utilities pgm. **/        
+       
+/*         RUN "./depot/rcode/subr_YY_to_CCYY.r"*/                                   /* 1dot3 */
+         RUN VALUE(SEARCH("subr_YY_to_CCYY.r"))                                      /* 1dot3 */
+                (TK_mstr.TK_lab_paid, OUTPUT CCYY-Date). 
+                  
+	     {&OUT}  "<form  ACTION='TKvoidmaintU.r' method='get' >" SKIP 
+	                 
+            "<DIV class='row'>" SKIP                                            /* 1dot3 */
+            "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+            "<DIV class='grid_8'>" SKIP                                         /* 1dot3 */
+  
+	               "<input type='hidden' name='h-act'              value='0' />" SKIP 
+	               "<input type='hidden' name='whattorun'          value='" whattorun "' />" SKIP            /* to get the menu title */  
+	               "<input type='hidden' name='h-TK-id'            value='' />" SKIP
+	               "<input type='hidden' name='h-tk-seq-ID'        value='' />" SKIP
+	              
+	               "<DIV class='table_3col'>" SKIP 
+	                  "<TABLE>" SKIP 
+	                  "<TH colspan=6>Testkit VOID Maintenance</TH>" SKIP
+	                     "<TR>" SKIP
+                            "<Td>Testkit ID / Seq</Td>" SKIP                                                                                                    /* 1dot3 */
+                            "<td><input type='text' name='h-TK-id' value='" TK_mstr.TK_ID ' / ' TK_mstr.TK_test_seq "' disabled </td>" SKIP             /* 1dot3 */
+                            "<Td>Customer</Td>" SKIP
+                            "<td><input type='text' name='h-dummy' value='" cust-name "' disabled </td>" SKIP
+                            "<Td>Patient</Td>" SKIP
+                            "<td><input type='text' name='h-dummy' value='" patient-name "' disabled </td>" SKIP          
+                        "</TR>" SKIP
+                        "<TR>" SKIP
+                            "<Td>Test Type</Td>" SKIP
+                            "<td><input type='text' name='h-dummy' value='" TK_mstr.TK_testtype "' disabled </td>" SKIP    
+                            "<Td>Current Status</Td>" SKIP
+                            "<td><input type='text' name='h-dummy' value='" TK_mstr.TK_status "' disabled </td>" SKIP
+                            "<Td>Domestic</Td>" SKIP 
+                            "<td><input type='text' name='h-dummy' value='" TK_mstr.TK_domestic "' disabled </td>" SKIP 
+                        "</TR>" SKIP
+                        "<TR>" SKIP
+                            "<Td>Lab Sample ID / Seq</Td>" SKIP                                                                                                     /* 1dot3 */
+                            "<td><input type='text' name='h-dummy' value='" TK_mstr.TK_lab_sample_ID ' / ' TK_mstr.TK_lab_seq "' disabled </td>" SKIP       /* 1dot3 */
+                            "<Td>Lab ID</Td>" SKIP
+                            "<td><input type='text' name='h-dummy' value='" TK_mstr.TK_lab_ID "' disabled </td>" SKIP
+                            "<Td>Lab Paid</Td>" SKIP 
+                            "<td>" "<input type='date' name='h-dummy' value='" CCYY-Date "' disabled </td>" SKIP 
+                        "</TR>" SKIP
+                        "<TR>" SKIP                            
+                            "<Td>Comments</Td>" SKIP 
+                            "<td colspan='5'><input type='text' name='h-dummy' size=78 value='" TK_mstr.TK_comments "' disabled </td>" SKIP
+                        "</TR>" SKIP
+                        "<TR>" SKIP 
+                            "<Td>Notes</Td>"
+                            "<td colspan='5'><input type='text' name='h-tk-notes' size=78 value='" updated-tk-notes "' autofocus </td>" SKIP
+                        "</TR>" SKIP
+
+                    "</table>"  SKIP 
+                    "<center>" SKIP 
+                       "<input type='hidden' name='h-Update'           value='' />"  SKIP 
+	                   "<input type='hidden' name='h-Cancel'           value='' />"  SKIP
+	                   "<input type='hidden' name='h-tk-notes'         value='' />"  SKIP 
+	                   "<center><input type='Submit' name='s-Return' value=' NOTES has been updated.  Click HERE to Return to the main screen. ' />"  SKIP 
+                 "</div>" SKIP   
+              
+              "</DIV>         <!-- end of grid_8 -->" SKIP                        /* 1dot3 */
+              "<DIV class='grid_2'> </DIV>" SKIP                                  /* 1dot3 */
+              "</DIV>     <!-- end of row -->" SKIP                               /* 1dot3 */ 
+                     
+              "</form>".   
+                                
+         RELEASE TK_mstr NO-ERROR.
+         	            
+    END.      /**  IF  updated-tk-notes <> "" **/ 
+END.  /** DO TRANSACTION: **/                  
+END.  /** IF act = 3  **/
+                     
+</SCRIPT>
+</BODY>
+</HTML>

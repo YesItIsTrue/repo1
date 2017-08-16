@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Your Name">
+<TITLE>WebSpeed Script</TITLE>
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE tottests AS INTEGER LABEL "Total Tests" NO-UNDO.
+DEFINE VARIABLE totpeep AS INTEGER LABEL "Found People" NO-UNDO.
+DEFINE VARIABLE totpats AS INTEGER LABEL "Found Patient" NO-UNDO.
+DEFINE VARIABLE inRS AS INTEGER LABEL "Found in RS" NO-UNDO.
+DEFINE VARIABLE peepexist AS INTEGER LABEL "Found Names" NO-UNDO.
+
+DEFINE VARIABLE i-fullname AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE o-prefix AS CHARACTER NO-UNDO.
+DEFINE VARIABLE o-firstname AS CHARACTER NO-UNDO.
+DEFINE VARIABLE o-middlename AS CHARACTER NO-UNDO.
+DEFINE VARIABLE o-lastname AS CHARACTER NO-UNDO.
+DEFINE VARIABLE o-suffix AS CHARACTER NO-UNDO.
+DEFINE VARIABLE o-title_desc AS CHARACTER NO-UNDO.
+DEFINE VARIABLE o-prefname AS CHARACTER NO-UNDO.
+DEFINE VARIABLE o-gender AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-unstring-error AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-field-in-error AS CHARACTER NO-UNDO.
+  
+DEFINE VARIABLE i-fpe-prefix     LIKE people_mstr.people_prefix      NO-UNDO.
+DEFINE VARIABLE i-fpe-firstname  LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE i-fpe-midname    LIKE people_mstr.people_midname     NO-UNDO.
+DEFINE VARIABLE i-fpe-lastname   LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE i-fpe-suffix     LIKE people_mstr.people_suffix      NO-UNDO.
+
+DEFINE VARIABLE o-fpe-peopleID  LIKE people_mstr.people_id          NO-UNDO.
+DEFINE VARIABLE o-fpe-addr_ID   LIKE people_mstr.people_addr_id     NO-UNDO.
+DEFINE VARIABLE o-fpe-error     AS LOGICAL INITIAL NO               NO-UNDO.
+DEFINE VARIABLE o-fpat-ran      AS LOGICAL INITIAL NO               NO-UNDO.
+
+FORM skip(1) 
+          tottests COLON 20 
+          totpeep COLON 20 peepexist COLON 60
+          totpats COLON 20 inRS COLON 60 skip(1)
+               WITH FRAME a WIDTH 80 SIDE-LABELS.
+
+FOR EACH TK_mstr WHERE tk_patient_id <> 0 NO-LOCK: 
+    
+    tottests = tottests + 1.
+    
+    FIND people_mstr WHERE people_id = tk_patient_id NO-LOCK NO-ERROR.
+    
+    IF avail(people_mstr) THEN 
+             totpeep = totpeep + 1.
+             
+        FIND patient_mstr WHERE patient_id = tk_patient_id NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (patient_mstr) THEN 
+                 totpats = totpats + 1.
+            ELSE DO:
+                
+                FIND FIRST PATIENT_RCD WHERE patientid = tk_patient_id NO-LOCK NO-ERROR.
+                
+                IF AVAILABLE (patient_Rcd) THEN DO: 
+                    
+                             inRS = inRS + 1.
+                     
+                     i-fullname = patprefix + " " + patfirstname + " " + patmiddlename + " " + patlastname + " " + patsuffix.
+                     
+                                     RUN value(search("SUB-UnString-Name.p")) 
+                        (i-fullname,
+                         NO,                        /* logical NO or YES. A YES displays the results at the end of this program. */
+                         OUTPUT o-prefix,
+                         OUTPUT o-firstname,
+                         OUTPUT o-middlename,
+                         OUTPUT o-lastname,
+                         OUTPUT o-suffix,
+                         OUTPUT o-title_desc,
+                         OUTPUT o-prefname,
+                         OUTPUT o-gender,
+                         OUTPUT o-unstring-error,           /*  YES = errors / NO = no errors. */
+                         OUTPUT o-field-in-error).          /*  Field input name in error, if any. */
+                
+                         ASSIGN i-fpe-prefix     = o-prefix
+                              i-fpe-firstname = o-firstname
+                              i-fpe-midname = o-middlename
+                              i-fpe-lastname = o-lastname
+                              i-fpe-suffix = o-suffix.
+                
+                             RUN value(search("SUBpeop-findR.p"))
+                                   (i-fpe-prefix,
+                                    i-fpe-firstname,
+                                    i-fpe-midname,
+                                    i-fpe-lastname,
+                                    i-fpe-suffix,
+                                    o-fpe-peopleID,
+                                    o-fpe-addr_ID,
+                                    o-fpe-error,
+                                    o-fpat-ran).
+                
+                         IF o-fpe-peopleID <> 0 THEN 
+                              peepexist = peepexist + 1.
+                
+                END.  /** of if avail patient_rcd **/
+                
+            END.  /** of else do -- if not avail patient_mstr **/     
+                 
+    DISPLAY tottests totpeep totpats inRS peepexist
+         WITH FRAME a.
+    
+END.
+
+</SCRIPT>
+</BODY>
+</HTML>

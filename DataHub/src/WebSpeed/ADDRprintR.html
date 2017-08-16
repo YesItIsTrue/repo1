@@ -1,0 +1,351 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>HHI Label Print</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.3">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <META NAME="CREATE_DATE" CONTENT="18/Mar/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL. 
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<center>
+<div class='row'>
+    <div class='grid_3'></div>
+    <div class='grid_6'>
+ <!-- Need a white box around the following statement -->
+<h3>Your labels will be printed to your default printer.<br>See email for further details on labels.</h3>
+    </div>
+    <div class='grid_3'></div>
+</div>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:           hhi_label_print.html -> ADRSprintR.html
+    Description:    3 of 3 pages to create labels
+    Created:        7/1/2014
+    Author:         Jacob Luttrell 
+    
+    Version History:
+        1.1 - Written by Jacob Luttrell on 05/Nov/15
+                fixed button divs unmarked.
+        1.2 - Written by Jacob Luttrell on 17/Feb/16 added new
+                country and state display sub procedures for v11.1
+                release. Changes to code occur on ADDRdisplayR.i.
+                Marked by /* 1dot2 */               
+        1.3 - Written by Jacob Luttrell on 18/Mar/16. Added SUBtrh procedures
+                to update the trh_hist. Marked by 1dot3.        
+  -------------------------------------------------------------------*/
+  
+/*****************************************************************************
+X make sure that the sendmail is available before calling it / error capture
+X OS-COMMAND -silent
+X if RP is not avail then use the Patient info
+               X also if NEW PATIENT is in RP then use Patient info
+X update code to use the email group or the person running the code?
+    X need a group at HHI for this (MPA_Results@holistichealth.com) contact eric to set this up
+X give them the ability to only print sub-sections of the list
+X space out # from names on emailed report
+X drop TK_testtype from emailed report
+X cleanup messages
+X work with labelline FORMAT and Colons to fit labels
+X fix the page length with PAGE-size value
+X selection criteria for WHERE clause (from - to's)
+    X tk_ID
+    X lastname
+    X firstname
+X Print to page margins (prints right at the top of the page)
+*****************************************************************************/
+/*************************** Define Vars *****************************/ 
+/** you may have to change the labelline format **/
+DEFINE VARIABLE labelline       AS CHARACTER FORMAT "x(25)" EXTENT 18 NO-UNDO.
+
+DEFINE VARIABLE showmsg         AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE showmsg2        AS LOGICAL INITIAL NO NO-UNDO.
+
+DEFINE VARIABLE x               AS INTEGER NO-UNDO.
+DEFINE VARIABLE y               AS INTEGER NO-UNDO.
+DEFINE VARIABLE z               AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE testkitcount    AS INTEGER NO-UNDO.
+DEFINE VARIABLE confirm         AS CHARACTER NO-UNDO.
+DEFINE VARIABLE denied          AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE emailaddr       AS CHARACTER INITIAL "-r MPA_Printing_Results@holistichealth.com" NO-UNDO.
+DEFINE VARIABLE messagetxt      AS CHARACTER INITIAL "-m test message." NO-UNDO.
+DEFINE VARIABLE subjtxt         AS CHARACTER INITIAL "-s subject test." NO-UNDO.
+DEFINE VARIABLE outfile         AS CHARACTER INITIAL "C:\Temp\labels_printed.txt" NO-UNDO.
+
+DEFINE VARIABLE labelcount      AS INTEGER NO-UNDO.             
+DEFINE VARIABLE numpgs          AS INTEGER NO-UNDO.
+DEFINE VARIABLE pagecount       AS INTEGER NO-UNDO.
+DEFINE VARIABLE pagebreak       AS INTEGER INITIAL 1 NO-UNDO.
+DEFINE VARIABLE fromTK          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toTK            AS CHARACTER NO-UNDO.
+DEFINE VARIABLE fromLN          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toLN            AS CHARACTER NO-UNDO.
+DEFINE VARIABLE fromFN          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toFN            AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE o-fstate-disp-name AS CHARACTER NO-UNDO.                                    /* 1dot2 */
+DEFINE VARIABLE o-fstate-disp-error AS LOGICAL NO-UNDO.                                     /* 1dot2 */
+DEFINE VARIABLE o-fcountry-disp-name AS CHARACTER NO-UNDO.                                  /* 1dot2 */
+DEFINE VARIABLE o-fcountry-disp-error AS LOGICAL NO-UNDO.                                   /* 1dot2 */
+DEFINE VARIABLE o-fstate-ISO AS CHARACTER NO-UNDO.                                          /* 1dot2 */
+DEFINE VARIABLE o-fstate-error AS LOGICAL NO-UNDO.                                          /* 1dot2 */
+DEFINE VARIABLE o-fcountry-ISO AS CHARACTER NO-UNDO.                                        /* 1dot2 */
+DEFINE VARIABLE o-fcountry-error AS LOGICAL NO-UNDO.                                        /* 1dot2 */
+
+DEFINE VARIABLE v-trhid         AS INTEGER                  NO-UNDO. /* 1dot3 */ 
+DEFINE VARIABLE v-trhfound      AS LOGICAL INITIAL NO       NO-UNDO. /* 1dot3 */
+DEFINE VARIABLE o-ctrh-id       LIKE trh_hist.trh_id        NO-UNDO. /* 1dot3 */   
+DEFINE VARIABLE o-ctrh-error    AS LOGICAL INITIAL YES      NO-UNDO. /* 1dot3 */
+
+DEFINE BUFFER morepeople        FOR people_mstr.
+DEFINE STREAM outstream. 
+DEFINE STREAM labelprints.
+
+DEFINE VARIABLE out-id          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE out-create      AS LOGICAL NO-UNDO.
+DEFINE VARIABLE out-update      AS LOGICAL NO-UNDO.
+DEFINE VARIABLE out-avail       AS LOGICAL NO-UNDO.
+DEFINE VARIABLE out-success     AS LOGICAL NO-UNDO.
+
+FORM 
+    TK_mstr.TK_ID TK_mstr.TK_lbl_print SPACE(2) patient_mstr.patient_ID   
+    people_mstr.people_firstname
+    people_mstr.people_lastname SPACE(2)
+    patient_mstr.patient_RP_ID SPACE(2)
+    morepeople.people_firstname
+    morepeople.people_lastname 
+    WITH FRAME emailout DOWN WIDTH 180.
+
+    IF showmsg = YES THEN
+    {&OUT}
+        "Before assigning<br>"
+        "s-Submit = " get-value('s-Submit') "<br>"
+        "b-fromTK = " get-value('b-fromTK') "<br>"
+        "b-toTK = " get-value('b-toTK') "<br>"
+        "b-fromLN = " get-value('b-fromLN') "<br>"
+        "b-toLN = " get-value('b-toLN') "<br>"
+        "b-numpgs = " get-value('b-numpgs') "<br>"
+        "numpgs = " numpgs "<br>".
+
+ASSIGN
+    confirm     = get-value('s-Submit')
+    denied      = get-value('s-Submit')
+    fromTK      = get-value('b-fromTK')
+    toTK        = get-value('b-toTK')
+    fromLN      = get-value('b-fromLN')
+    toLN        = get-value('b-toLN')
+    fromFN      = get-value('b-fromFN')
+    toFN        = get-value('b-toFN')
+    numpgs      = INTEGER(get-value('b-numpgs')).
+    
+    IF showmsg = YES THEN
+    {&OUT}
+        "after assigning<br>"
+        "b-numpgs = " get-value('b-numpgs') "<br>"
+        "numpgs = " numpgs "<br>".
+    
+/*************************** Main Body ******************************/
+OUTPUT STREAM outstream TO PRINTER PAGE-SIZE VALUE (72).  
+PUT STREAM outstream
+    SKIP(3).
+OUTPUT STREAM labelprints TO VALUE (outfile).
+
+froot_loop:                                                                
+    {ADDRsearchR.i}.
+       
+	x = y * 6.      
+	y = y + 1.     
+   
+   
+   IF showmsg = YES THEN  
+        {&OUT}
+            " firstname = " people_mstr.people_firstname "<br>" skip
+            " lastname = " people_mstr.people_lastname "<br>" skip
+            " tk_id = " tk_id "<br>" skip(1). 
+              
+    {ADDRdisplayR.i}. 
+      
+    IF y = 3 THEN DO: /*** you may have to adjust the AT points ***/
+    PUT STREAM outstream         
+        labelline[1] AT 1 labelline[7] AT 29 labelline[13] AT 57
+        labelline[2] AT 1 labelline[8] AT 29 labelline[14] AT 57
+        labelline[3] AT 1 labelline[9] AT 29 labelline[15] AT 57
+        labelline[4] AT 1 labelline[10] AT 29 labelline[16] AT 57
+        labelline[5] AT 1 labelline[11] AT 29 labelline[17] AT 57
+        labelline[6] AT 1 labelline[12] AT 29 labelline[18] AT 57
+        SKIP(1).
+    
+    DO z = 1 TO 18:
+        labelline[z] = "" .
+        
+    END. /** do x = 1 to 18 **/
+    
+    x = 0.
+    y = 0.     
+    
+    END.  /*** do put statement ***/   
+
+    RUN VALUE(SEARCH("../depot/rcode/SUBtkmstrRSTPucU.r"))
+		( TK_mstr.TK_ID,              
+		  TK_mstr.TK_test_type,         
+		  ?,            
+		  TK_mstr.TK_test_seq,         
+		  ?,         
+		  0,         
+		  0,       
+		  "",    
+		  0,          
+		  0,        
+		  "",           
+		  "PRINTED",           
+		  "",         
+		  "",            
+		  ?,        
+		  TODAY,        
+		  ?,
+		  "",             /* 1dot2 */
+		  ?,              /* 1dot2 */
+		  
+		  OUTPUT out-id, 
+		  OUTPUT out-create,
+		  OUTPUT out-update,
+		  OUTPUT out-avail,
+		  OUTPUT out-success         
+		). 
+    
+    /* 1dot3 --> */
+	       ASSIGN                                                               
+	          v-trhid     = 0                                                
+	          v-trhfound  = NO.                                       
+            
+            RUN VALUE(SEARCH("SUBtrh-findR.r"))                          
+                (TK_mstr.tk_test_type,                               
+                 TK_mstr.TK_status,                                    
+                 TK_mstr.TK_ID,                                           
+                 TK_mstr.TK_test_seq,                                   
+                 OUTPUT v-trhid,                                        
+                 OUTPUT v-trhfound).                                        
+            
+            RUN VALUE(SEARCH("SUBtrh-ucU.r"))
+                    (v-trhid,                        /**  i-ctrh-id   **/
+                     TK_mstr.TK_test_type,       /**  i-ctrh-item **/
+                     TK_mstr.TK_status,          /**  i-ctrh-action **/
+                     1,                              /**  i-ctrh-qty  **/
+                     "",                             /**  i-ctrh-loc  **/
+                     "",                             /**  i-ctrh-lot  **/
+                     TK_mstr.TK_ID,              /**  i-ctrh-serial  **/
+                     "",                             /**  i-ctrh-site  **/
+                     TK_mstr.TK_test_seq,        /**  i-ctrh-sequence **/ 
+   
+                     "",                            /*i-ctrh-comments*/
+                     TK_mstr.TK_magento_order,      /*i-ctrh-other   */
+                     TK_mstr.Tk_cust_id,            /*i-ctrh-people  */
+                     STRING("WO-" + TK_mstr.TK_magento_order),     /*i-ctrh-order   */
+                     TODAY,                         /*i-ctrh-date    */           
+                     STRING(TIME,"HH:MM:SS"),       /*i-ctrh-time    */
+                     (TK_mstr.TK_lab_sample_ID + " / " + STRING(TK_mstr.TK_lab_seq)),      /*i-ctrh-ref     */
+                     "", /* warehouse */                     
+
+                     OUTPUT o-ctrh-id,
+                     OUTPUT o-ctrh-error).  
+        
+            IF o-ctrh-error = YES THEN DO:                
+                    MESSAGE "0-CREATE Error from pgm: create-trh-hist !  " SKIP
+                             "  The returned o-ctrh-id value = " o-ctrh-id
+                        VIEW-AS ALERT-BOX INFORMATION BUTTONS OK.                        
+            END.    /** IF value = NO from utilities pgm. **/  
+      /* <-- 1dot3 */   
+    labelcount = labelcount + 1.
+  
+    pagecount = labelcount MODULO 30.
+  
+	  IF pagecount = 0 AND 
+	     (pagebreak < numpgs OR numpgs = 0)  THEN
+	      DO:
+	          PAGE STREAM outstream.
+	          PUT STREAM outstream " " SKIP(2).
+	          pagebreak = pagebreak + 1.
+	      END. 
+	  
+	  
+	      
+	  IF numpgs > 0 AND
+	    labelcount >= (30 * numpgs) THEN
+	        LEAVE froot_loop.                 
+	  
+	  IF showmsg2 = YES THEN DO:
+	      {&OUT}
+	            "Patient Name = " people_mstr.people_firstname " " people_mstr.people_lastname "<br>" SKIP 
+	            "TK ID = " TK_mstr.TK_ID "<br>" SKIP 
+	            "Date Printed = " TK_mstr.TK_lbl_print "<br>" SKIP 
+	            "Status = " TK_mstr.TK_status "<br>" SKIP(1).
+	  END. /*** showmsg2 ***/
+	     
+	  DISPLAY STREAM labelprints
+	    TK_mstr.TK_ID
+	    TK_mstr.TK_test_seq
+	    TK_mstr.TK_lbl_print
+	    patient_mstr.patient_ID    
+	    people_mstr.people_firstname
+	    people_mstr.people_lastname
+	    patient_mstr.patient_RP_ID
+	    morepeople.people_firstname
+	    morepeople.people_lastname   
+	    SKIP(1)
+	        WITH FRAME emailout DOWN.
+	        DOWN WITH FRAME emailout.
+	        
+END. /** for each - froot_loop **/
+    
+IF y <> 0 THEN DO:
+    
+    PUT STREAM outstream         
+        labelline[1] AT 1 labelline[7] AT 29 labelline[13] AT 57
+        labelline[2] AT 1 labelline[8] AT 29 labelline[14] AT 57
+        labelline[3] AT 1 labelline[9] AT 29 labelline[15] AT 57
+        labelline[4] AT 1 labelline[10] AT 29 labelline[16] AT 57
+        labelline[5] AT 1 labelline[11] AT 29 labelline[17] AT 57
+        labelline[6] AT 1 labelline[12] AT 29 labelline[18] AT 57
+        SKIP(1).
+             
+END. /** y <> 0 **/  
+    
+OUTPUT STREAM outstream CLOSE. 
+OUTPUT STREAM labelprints CLOSE.
+ 
+
+OS-COMMAND SILENT "C:\apps\biomed\batch-files\errormail" VALUE (emailaddr)
+    VALUE (messagetxt) VALUE (subjtxt) "-a" VALUE (outfile).
+    
+{&OUT}
+    "<FORM method='post' action='ADDRcriteriaR.r' >
+        <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />
+        <INPUT type='hidden' name='h-act' value='INITIAL' />" 
+/*        <INPUT type='submit' name='s-Sqwubmit' value='Return to Search Criteria' />*/
+      "<BR>" SKIP  
+        "<div class='row'>" SKIP
+		"   <div class='grid_5'> </DIV>" SKIP
+		"   <div class='grid_2'><button type='submit' name='s-Sqwubmit' value='Return to Search Criteria' class='btn'>Return to Search Criteria</BUTTON></div>" SKIP
+		"   <div class='grid_5'> </DIV>" SKIP
+		"</div>" SKIP
+		"<BR>" SKIP
+    "</FORM> ".
+</SCRIPT>
+</center>
+</BODY>
+</HTML>

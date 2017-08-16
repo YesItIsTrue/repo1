@@ -1,0 +1,723 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Test Detail Maintenance / Add Marker</TITLE>
+    <META NAME="AUTHOR" CONTENT="TRAE LUTTRELL">
+    <META NAME="VERSION" CONTENT="1.8">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="24/Feb/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+     
+<SCRIPT LANGUAGE="SpeedScript">
+
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+/**********************************************************************************
+ *
+ *  TLitemmaintU.html   -   Version 1.5
+ *
+ *  This program is designed to allow users to create items (markers) within sections
+ *  of various testtypes.
+ *
+ *  ----------------------------------------------------------------------------
+ *
+ *  Revision History: 
+ *  -----------------
+ *  1.0 - written by Doug Luttrell on 09/Oct/14.  Original Version.
+ *  1.1 - written by DOUG LUTTRELL on 26/Oct/14.  Some sort of problem after you select
+ *          the item / marker.  Marked by 1dot1.
+ *  1.2 - written by DOUG LUTTRELL on 19/Nov/14.  Changed the way that Items are
+ *          added to a Test / Section to use a button instead of the drop-down per
+ *          Danielle's request.  Marked by 1dot2.
+ *  1.3 - written by DOUG LUTTRELL on 05/Jan/15.  Changed the FINDs in the tl_mstr.
+ *          Marked by 1dot3.
+ *  1.4 - written by DOUG LUTTRELL on 08/Jan/15.  There are some problems with the 
+ *          program flow, with adding a 2nd marker during the same usage of the 
+ *          program, with dropping the menutitle.  Also fixed up the CSS a little.
+ *          Marked by 1dot4.
+ *  1.5 - written by TRAE LUTTRELL on 02/Jun/15.  Adding in the bar-type variable,
+ *          html code, and image links. Also made the code "printable" by making sure 
+ *          nothing extends past the landscape print margin. Marked by 1dot5.
+ *  1.6 - written by Jacob Luttrell on 06/Oct/15.  Corrected divs around buttons.
+ *          Fixed the Prompt act divs. Added code to allow dates to be displayed.
+ *          Marked by 1dot6.
+ *  1.7 - written by Jacob Luttrell on 22/Oct/15. removed code to handle adding start 
+ *          and end effective to existing records.
+ *          Added divs to better control the error screen.
+ *          Marked by 1dot7.
+ *  1.8 - written by Jacob Luttrell on 24/Feb/16. changed TLitemmaintU-form.i to be in
+ *          line with the new database fields in v11.1. Marked by 1dot8. 
+
+ ***********************************************************************************/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/  
+
+/***************************  Variable Definition Section  *************************/
+DEFINE VARIABLE sectid      LIKE tld_det.tld_sect_id        NO-UNDO.
+DEFINE VARIABLE testtype    LIKE tl_mstr.tl_testtype        NO-UNDO.
+DEFINE VARIABLE testname    LIKE test_mstr.test_name        NO-UNDO.
+DEFINE VARIABLE sectdesc    LIKE tl_mstr.tl_section_desc    NO-UNDO.
+DEFINE VARIABLE starteff    LIKE tld_det.tld_start_eff      NO-UNDO.
+
+DEFINE VARIABLE disp-start  AS CHARACTER                 NO-UNDO.                   /* 1dot6 */
+DEFINE VARIABLE disp-end    AS CHARACTER                 NO-UNDO.                   /* 1dot6 */
+DEFINE VARIABLE out-start   AS CHARACTER                 NO-UNDO.                   /* 1dot6 */
+DEFINE VARIABLE out-end     AS CHARACTER                 NO-UNDO.                   /* 1dot6 */
+
+
+DEFINE VARIABLE endeff      LIKE tld_det.tld_end_eff        NO-UNDO.
+DEFINE VARIABLE sortorder   LIKE tld_det.tld_order          NO-UNDO. 
+DEFINE VARIABLE markitem    LIKE marker_list.marker_item    NO-UNDO.
+DEFINE VARIABLE itemid      LIKE tld_det.tld_item_id        NO-UNDO.
+DEFINE VARIABLE bartype     LIKE tld_det.tld_bar_type       NO-UNDO.        /* 1dot5 */
+ 
+DEFINE VARIABLE act        AS CHARACTER                     NO-UNDO. 
+DEFINE VARIABLE ITshowmsg  AS LOG INITIAL NO                NO-UNDO.
+ 
+DEFINE VARIABLE thismarker AS CHARACTER                     NO-UNDO. 
+
+  
+                                                                    IF ITshowmsg = YES THEN 
+                                                                       {&OUT}
+                                                                           "<OL>Pre get-value" SKIP
+                                                                                   "    <LI>ACT = " get-value('h-act') "</LI>" SKIP
+                                                                         "    <LI>testtype = " get-value('h-testtype') "</LI>" SKIP
+                                                                             "    <LI>sectid = " get-value('h-sectid') "</LI>" SKIP
+                                                                         "    <LI>sectdesc = " get-value('h-sectdesc') "</LI>" SKIP
+                                                                             "    <LI>itemid = " get-value('h-itemid') "</LI>" SKIP
+                                                                         "    <LI>markitem = " get-value('h-markitem') "</LI>" SKIP
+                                                                       "    <LI>sortorder = " get-value('h-sortorder') "</LI>" SKIP
+                                                                           "</OL>" SKIP. 
+         
+ ASSIGN 
+    act         = get-value('h-act')
+    sectid      = INTEGER(get-value('h-sectid'))
+    testtype    = get-value('h-testtype')
+    sectdesc    = get-value('h-sectdesc')
+    sortorder   = INTEGER(get-value('h-sortorder'))
+    markitem    = get-value('h-markitem')
+    itemid      = IF SUBSTRING(get-value('h-itemid'),1,4) = "null" THEN         /* 1dot2 */ 
+                    0                                                           /* 1dot2 */
+                  ELSE                                                          /* 1dot2 */
+                    INTEGER(get-value('h-itemid'))                              /* 1dot2 */
+    bartype     = get-value('h-bartype')                                       /* 1dot5 */
+    disp-start  = get-value('html5-start')                                              /* 1dot6 */
+    disp-end    = get-value('html5-end').                                               /* 1dot6 */
+    
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                            /* 1dot6 */
+            disp-start,                                                                 /* 1dot6 */
+            OUTPUT starteff                                                             /* 1dot6 */    
+            ).                                                                          /* 1dot6 */
+        
+        RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                        /* 1dot6 */
+            disp-end,                                                                   /* 1dot6 */
+            OUTPUT endeff                                                               /* 1dot6 */
+            ).                                                                          /* 1dot6 */
+    
+    /*** also need to get-value on h-starteff and h-endeff, but need to run them through date converter ***/
+    
+                                                                                IF ITshowmsg = YES THEN
+                                                                                   {&OUT}
+                                                                                       "<OL>POST get-value" SKIP
+                                                                                       "    <LI>ACT = " act "</LI>" SKIP
+                                                                                       "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                       "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                       "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                       "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                       "    <LI>markitem = " markitem "</LI>" SKIP
+                                                                                      "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                       "</OL>" SKIP
+                                                                                       "<hr width=90%>" SKIP.
+           
+IF act = "" THEN  
+    act = "INITIAL".
+    
+ELSE IF act = "INITIAL" THEN
+    ASSIGN 
+        sectid      = 0                                                         /* 1dot6 */
+        testtype    = ""                                                        /* 1dot6 */
+        sectdesc    = ""                                                        /* 1dot6 */
+        sortorder   = 0                                                         /* 1dot6 */    
+        markitem    = ""                                                        /* 1dot6 */
+        itemid      = 0                                                         /* 1dot6 */    
+        bartype     = ?.                                                        /* 1dot6 */
+
+ELSE IF act = "PROMPT" THEN                                                     /* 1dot6 */
+    ASSIGN                                                                      /* 1dot6 */
+        itemid = 0.                                                             /* 1dot6 */
+    
+ELSE IF get-value('h-newitem') = "WIPE-itemid" THEN                             /* 1dot4 */
+    ASSIGN                                                                      /* 1dot4 */
+        itemid  = 0                                                             /* 1dot4 */
+        act     = "PROMPT".                                                     /* 1dot4 */    
+
+ELSE IF act = "FIND TEST" THEN
+    act = "FIND TEST".
+
+ELSE IF act = "FIND SECTION" THEN
+    act = "FIND SECTION".
+     
+/* 
+ ELSE IF act = "FIND ITEM" THEN
+    act = "FIND ITEM".
+ */
+
+ELSE IF act = "CREATE" THEN
+    act = "CREATE".
+
+ELSE IF act = "UPDATE" THEN
+    act = "UPDATE".
+
+
+      
+ELSE IF itemid = 0 THEN     /** was else if markitem = "" then **/ 
+    ASSIGN 
+        act     = "PROMPT"
+        itemid  = 0.  
+          
+IF markitem = "" AND itemid <> 0 THEN DO:  
+    
+    FIND marker_list WHERE marker_list.marker_ID = itemid NO-LOCK NO-ERROR.
+    IF AVAILABLE marker_list THEN 
+        markitem    = marker_list.marker_item.
+        
+END.  /*** of if markitem = "" and itemid <> 0 ***/      
+     
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "<OL>Pre Case" SKIP
+                                                                                       "    <LI>ACT = " act "</LI>" SKIP
+                                                                                       "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                       "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                       "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                       "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                       "    <LI>markitem = " markitem "</LI>" SKIP
+                                                                                     "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                       "</OL>" SKIP
+                                                                                       "<hr width=90%>" SKIP.
+        
+/********************************  Main Program  ***********************************/
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:     
+        
+        {TLitemmaintU-form.i "FIND TEST" "Required" "DISABLED" "DISABLED" "DISABLED" "DISABLED" "NOTHING" "Maintenance"}. 
+        
+    END.  /** of act = "INITIAL" **/ 
+    
+    WHEN "FIND TEST" THEN DO:
+        
+        FIND test_mstr WHERE test_mstr.test_type = testtype AND 
+            test_mstr.test_deleted = ? NO-LOCK NO-ERROR.
+        IF AVAILABLE test_mstr THEN 
+            ASSIGN 
+                testname    = test_mstr.test_name.   
+ 
+        {TLitemmaintU-form.i "FIND SECTION" "DISABLED" "Required" "DISABLED" "DISABLED" "DISABLED" "NOTHING" "Maintenance"}.   
+                
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+																						"<OL>Post FIND TEST" SKIP
+																						"    <LI>ACT = " act "</LI>" SKIP
+																						"    <LI>testtype = " testtype "</LI>" SKIP
+																						"    <LI>sectid = " sectid "</LI>" SKIP
+																						"    <LI>sectdesc = " sectdesc "</LI>" SKIP
+																						"    <LI>itemid = " itemid "</LI>" SKIP
+																						"    <LI>markitem = " markitem "</LI>" SKIP
+																					  "    <LI>sortorder = " sortorder "</LI>" SKIP
+																						"</OL>" SKIP 
+																						"<hr width=90%>" SKIP.
+         
+    END.  /** of act = "FIND TEST" **/
+
+    WHEN "FIND SECTION" THEN DO:
+        
+        FIND tl_mstr WHERE tl_mstr.tl_sect_id = sectid AND 
+            tl_mstr.tl_testtype = testtype AND                                  /* 1dot3 */
+            tl_mstr.tl_deleted = ? NO-LOCK NO-ERROR.
+        IF AVAILABLE tl_mstr THEN  
+            ASSIGN 
+                sectdesc    = tl_mstr.tl_section_desc. 
+ 
+        {TLitemmaintU-form.i "FIND ITEM" "DISABLED" "DISABLED" "NOTHING" "DISABLED" "DISABLED" "NOTHING" "Maintenance"}.        
+                
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<OL>Post FIND SECTION" SKIP
+                                                                                        "    <LI>ACT = " act "</LI>" SKIP
+                                                                                        "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                        "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                        "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                        "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                        "    <LI>markitem = " markitem "</LI>" SKIP
+                                                                                      "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+         
+    END.  /** of act = "FIND SECTION" **/
+
+    WHEN "FIND ITEM" THEN DO:     
+              
+        FIND tld_det WHERE tld_det.tld_sect_id = sectid AND
+            tld_det.tld_item_id = itemid AND 
+            (tld_det.tld_start_eff <= starteff OR 
+             starteff = ?) AND  
+            (tld_det.tld_end_eff >= endeff OR 
+             endeff = ?) AND  
+            tld_det.tld_deleted = ? NO-LOCK NO-ERROR.
+             
+        IF AVAILABLE tld_det THEN   
+            ASSIGN 
+                sortorder   = tld_det.tld_order
+/*                markitem    = tld_det.tld_item_name*/                                         /* removed in 1dot8 */
+                starteff    = tld_det.tld_start_eff
+                endeff      = tld_det.tld_end_eff
+                bartype     = tld_det.tld_bar_type. 
+        
+        FIND marker_list WHERE marker_list.marker_ID = itemid AND                               /* 1dot8 */
+                               marker_list.marker_deleted = ? NO-LOCK NO-ERROR.                 /* 1dot8 */
+           
+           IF AVAILABLE (marker_list) THEN                                                      /* 1dot8 */                   
+            ASSIGN markitem = marker_list.marker_item.                                          /* 1dot8 */
+        
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot6 */
+            starteff,                                                                           /* 1dot6 */
+            OUTPUT out-start                                                                    /* 1dot6 */    
+            ).                                                                                  /* 1dot6 */
+ 
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot6 */
+            endeff,                                                                             /* 1dot6 */
+            OUTPUT out-end                                                                      /* 1dot6 */    
+            ).                                                                                  /* 1dot6 */
+    
+        ASSIGN                                                                                  /* 1dot6 */ 
+            disp-start = out-start                                                              /* 1dot6 */    
+            disp-end   = out-end.                                                               /* 1dot6 */    
+
+        {TLitemmaintU-form.i "UPDATE" "DISABLED" "DISABLED" "DISABLED" "DISABLED" "NOTHING" "NOTHING" "Maintenance"}.        
+                
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<OL>Post FIND ITEM" SKIP
+                                                                                        "    <LI>ACT = " act "</LI>" SKIP
+                                                                                        "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                        "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                        "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                        "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                        "    <LI>markitem = " markitem "</LI>" SKIP
+                                                                                      "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+         
+    END.  /** of act = "FIND ITEM" **/
+    
+    WHEN "UPDATE" THEN DO:
+         
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<OL>Inside UPDATE" SKIP
+                                                                                        "    <LI>ACT = " act "</LI>" SKIP
+                                                                                        "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                        "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                        "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                        "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                        "    <LI>markitem = " markitem "</LI>" SKIP
+                                                                                      "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+        
+        FIND tld_det WHERE tld_det.tld_sect_id = sectid AND  
+            tld_det.tld_item_id = itemid AND 
+/*            ((tld_det.tld_start_eff <= starteff) OR (starteff = ?)) AND                        /* 1dot7 */*/
+/*            ((tld_det.tld_end_eff >= endeff) OR (endeff = ?)) AND                              /* 1dot7 */*/
+            tld_det.tld_deleted = ? 
+                EXCLUSIVE-LOCK NO-ERROR.     
+            
+        IF AVAILABLE tld_det THEN DO:
+            ASSIGN 
+                tld_det.tld_start_eff       = starteff
+                tld_det.tld_end_eff         = endeff
+                tld_det.tld_order           = sortorder
+                tld_det.tld_item_id         = itemid
+/*                tld_det.tld_item_name       = markitem*/                                      /* removed in 1dot8 */
+                tld_det.tld_bar_type        = bartype
+                tld_det.tld_modified_date   = TODAY 
+                tld_det.tld_modified_by     = USERID("HHI")
+                tld_det.tld_prog_name       = THIS-PROCEDURE:FILE-NAME.                         /* 1dot8 */
+          
+        FIND marker_list WHERE marker_list.marker_ID = itemid AND                               /* 1dot8 */
+                               marker_list.marker_deleted = ? NO-LOCK NO-ERROR.                 /* 1dot8 */
+           
+           IF AVAILABLE (marker_list) THEN                                                      /* 1dot8 */                   
+            ASSIGN markitem = marker_list.marker_item.                                          /* 1dot8 */     
+        END.        
+        ELSE 
+            {&OUT} "<P>ERROR - tld_det not found for Section = " sectid " and Item (Marker) = " itemid " Start date = " starteff " End date = " endeff ".</P>" SKIP.
+ 
+ /* commented out for 1dot4 */
+/*        ASSIGN              */
+/*            testtype    = ""*/
+/*            sectid      = 0 */
+/*            sectdesc    = ""*/  
+/*            itemid      = 0 */
+/*            markitem    = ""*/
+/*            starteff    = ? */
+/*            endeff      = ? */
+/*            sortorder   = 0.*/
+
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot6 */
+            starteff,                                                                           /* 1dot6 */
+            OUTPUT out-start                                                                    /* 1dot6 */    
+            ).                                                                                  /* 1dot6 */
+ 
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot6 */
+            endeff,                                                                             /* 1dot6 */
+            OUTPUT out-end                                                                      /* 1dot6 */    
+            ).                                                                                  /* 1dot6 */
+    
+        ASSIGN                                                                                  /* 1dot6 */ 
+            disp-start = out-start                                                              /* 1dot6 */    
+            disp-end   = out-end.                                                               /* 1dot6 */  
+            
+        {TLitemmaintU-form.i "INITIAL" "DISABLED" "DISABLED" "DISABLED" "DISABLED" "DISABLED" "NOTHING" "Maintenance"}.                
+        
+    END.  /** of act = "UPDATE" **/
+     
+    WHEN "PROMPT" THEN DO:
+        
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<OL>Inside PROMPT" SKIP
+                                                                                        "    <LI>ACT = " act "</LI>" SKIP
+                                                                                        "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                        "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                        "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                        "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                        "    <LI>markitem = " markitem "</LI>" SKIP
+                                                                                      "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+       
+       
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot6 */
+            starteff,                                                                           /* 1dot6 */
+            OUTPUT out-start                                                                    /* 1dot6 */    
+            ).                                                                                  /* 1dot6 */
+ 
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot6 */
+            endeff,                                                                             /* 1dot6 */
+            OUTPUT out-end                                                                      /* 1dot6 */    
+            ).                                                                                  /* 1dot6 */
+    
+        ASSIGN                                                                                  /* 1dot6 */ 
+            disp-start = out-start                                                              /* 1dot6 */    
+            disp-end   = out-end.                                                               /* 1dot6 */ 
+        
+        
+        {&OUT}
+            "<FORM method='get' id='TLitemmaintU-form'>" SKIP
+            "<DIV class='row'>" SKIP                                                                                                /* 1dot6 */
+		    "<DIV class='grid_1'> </DIV>" SKIP                                                                                      /* 1dot6 */                                       
+		    "<DIV class='grid_10'>" SKIP                                                                                            /* 1dot6 */
+            "<DIV class='table_col'>" SKIP
+            "<TABLE>" SKIP 
+            "   <TR>" SKIP
+            "       <TH colspan=4>Test Layout Maintenance (Sections)</TH>" SKIP
+            "   <TR>" SKIP 
+            "       <TD>Test Type</TD>" SKIP 
+            "       <TD class='REQ'>" SKIP
+            "           <input type='hidden' name='h-testtype' value='" testtype "' />" testtype SKIP 
+            "       </TD>" SKIP
+            "   </TR>" SKIP 
+            "   <TR>" SKIP
+            "       <TD>Section Description</TD>" SKIP
+            "       <TD class='REQ'>" SKIP
+            "           <input type='hidden' name='h-sectid' value='" sectid "' />" SKIP
+            "           <input type='hidden' name='h-sectdesc' value='" sectdesc "' />" sectdesc SKIP
+            "       </TD>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" skip
+            "       <TD>Item / Marker</TD>" SKIP
+            "       <TD class='REQ'>" SKIP
+            "           <select name='h-itemid' value='" itemid "' >" SKIP.
+            
+	    FOR EACH marker_list WHERE marker_list.marker_deleted = ? NO-LOCK
+	        BY marker_list.marker_item:                                                              /* 1dot2 - bonus sorting */
+	            
+	        {&OUT}
+	            "               <option value='" marker_list.marker_ID "' > " marker_list.marker_display " (" marker_list.marker_item ")</option>" SKIP.
+	            
+	    END.  /** of 4ea. marker_list **/
+
+        {&OUT}
+            "           </select>" SKIP
+            "       </TD>" SKIP
+            "   </TR>" SKIP         
+		    "   <TR>" SKIP
+		    "       <TD>Start Effective Date</TD>" SKIP
+		    "       <TD><input type='date' name='html5-start' value='" disp-start "' /></TD>" SKIP
+		    "   </TR>" SKIP
+		    "   <TR>" SKIP
+		    "       <TD>End Effective Date</TD>" SKIP
+		    "       <TD><input type='date' name='html5-end' value='" disp-end "'  /></TD>" SKIP    
+		    "   </TR>" SKIP 
+            "   <TR>" SKIP
+            "       <TD>Sort Order</TD>" SKIP
+            "       <TD><input type='number' name='h-sortorder' value='" sortorder "' /></TD>" SKIP
+            "   </TR>" SKIP
+		    "   <tr>" SKIP                                                                                                        /* 1dot6 - bonus fix */ 
+            "       <td>Bar Type</TD>" SKIP.                                                                                      /* 1dot6 - bonus fix */ 
+    
+		    IF bartype = "centerBar" THEN                                                                                         /* 1dot6 - bonus fix */ 
+		    
+		    {&OUT}                                                                                                                /* 1dot6 - bonus fix */ 
+		    "       <td>" SKIP                                                                                                    /* 1dot6 - bonus fix */ 
+		    "<input style='vertical-align:75%;' type='radio' name='h-bartype' value='centerBar' checked />" SKIP                  /* 1dot6 - bonus fix */ 
+		    "<img style='padding:5px;' src='/depot/src/HTMLContent/images/Center_Bar.PNG' alt='From Center Out'/>" SKIP           /* 1dot6 - bonus fix */ 
+		    "<br>" SKIP                                                                                                           /* 1dot6 - bonus fix */ 
+		    "<input style='vertical-align:75%;' type='radio' name='h-bartype' value='bar' />" SKIP                                /* 1dot6 - bonus fix */ 
+		    "<img style='padding:5px;' src='/depot/src/HTMLContent/images/Left2Right_Bar.PNG' alt='Left to right'/>" SKIP         /* 1dot6 - bonus fix */ 
+		    "       </td>" SKIP.                                                                                                  /* 1dot6 - bonus fix */     
+		      
+		    ELSE IF bartype = "bar" THEN                                                                                          /* 1dot6 - bonus fix */ 
+		    
+		    {&OUT}                                                                                                                /* 1dot6 - bonus fix */ 
+		    "       <td>" SKIP                                                                                                    /* 1dot6 - bonus fix */     
+		    "<input style='vertical-align:75%;' type='radio' name='h-bartype' value='centerBar' />" SKIP                          /* 1dot6 - bonus fix */           
+		    "<img style='padding:5px;' src='/depot/src/HTMLContent/images/Center_Bar.PNG' alt='From Center Out'/>" SKIP           /* 1dot6 - bonus fix */ 
+		    "<br>" SKIP                                                                                                           /* 1dot6 - bonus fix */                
+		    "<input style='vertical-align:75%;' type='radio' name='h-bartype' value='bar' checked />" SKIP                        /* 1dot6 - bonus fix */     
+		    "<img style='padding:5px;' src='/depot/src/HTMLContent/images/Left2Right_Bar.PNG' alt='Left to right'/>" SKIP         /* 1dot6 - bonus fix */ 
+		    "       </td>" SKIP.                                                                                                  /* 1dot6 - bonus fix */ 
+		    
+		    ELSE                                                                                                                  /* 1dot6 - bonus fix */ 
+		    
+		    {&OUT}                                                                                                                /* 1dot6 - bonus fix */ 
+		    "       <td>" SKIP                                                                                                    /* 1dot6 - bonus fix */ 
+		    "<input style='vertical-align:75%;' type='radio' name='h-bartype' value='centerBar' />" SKIP                          /* 1dot6 - bonus fix */   
+		    "<img style='padding:5px;' src='/depot/src/HTMLContent/images/Center_Bar.PNG' alt='From Center Out'/>" SKIP           /* 1dot6 - bonus fix */ 
+		    "<br>" SKIP                                                                                                           /* 1dot6 - bonus fix */ 
+		    "<input style='vertical-align:75%;' type='radio' name='h-bartype' value='bar' />" SKIP                                /* 1dot6 - bonus fix */ 
+		    "<img style='padding:5px;' src='/depot/src/HTMLContent/images/Left2Right_Bar.PNG' alt='Left to right'/>" SKIP         /* 1dot6 - bonus fix */ 
+		    "       </td>" SKIP.                                                                                                  /* 1dot6 - bonus fix */ 
+		    
+
+		    
+		    {&OUT}
+		    "   </TR>" SKIP  
+            "</TABLE>" SKIP
+            "</DIV>" SKIP
+            "</DIV>         <!-- end of grid_10 -->" SKIP                                                           /* 1dot6 */
+			"<DIV class='grid_1'> </DIV>" SKIP                                                                      /* 1dot6 */
+			"</DIV>     <!-- end of row -->" SKIP                                                                   /* 1dot6 */
+			"<BR>" SKIP                                                                                             /* 1dot6 */ 
+			"<div class='row'>" SKIP                                                                                /* 1dot6 */
+			"   <div class='grid_5'> </DIV>" SKIP                                                                   /* 1dot6 */ 
+			"<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                      /* 1dot6 */
+			"   <div class='grid_2'><button type='submit' name='h-act' value='CREATE' class='btn'>Create Record</BUTTON></div>" SKIP /* 1dot6 */
+			"   <div class='grid_5'> </DIV>" SKIP                                                                   /* 1dot6 */
+			"</div>" SKIP.                                                                                          /* 1dot6 */
+/* *** removed in 1dot6 ***
+            "<center><INPUT type='hidden' name='h-act' value='CREATE' />" SKIP
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                  /* 1dot1 */
+            "<INPUT type='submit' name='Submit' value='Create Record' /></center>" SKIP         
+            "</DIV>" SKIP
+            "</FORM>" SKIP.  
+    *** end of removal *** */        
+    END.  /** of act = "PROMPT" **/
+    
+    WHEN "CREATE" THEN DO:
+        
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Create</P>" SKIP
+                                                                                        "<OL>Inside CREATE" SKIP
+                                                                                        "    <LI>ACT = " act "</LI>" SKIP
+                                                                                        "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                        "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                        "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                        "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                        "    <LI>markitem = " markitem "</LI>" SKIP
+                                                                                      "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+                
+        FIND FIRST tld_det WHERE tld_det.tld_sect_id = sectid AND 
+            tld_det.tld_item_id = itemid AND
+            /*
+            tld_det.tld_item = markitem AND 
+            */
+/* *** removed in 1dot7 *** */
+/*            (tld_det.tld_start_eff <= starteff OR*/                                                          
+/*             starteff = ?) AND                   */                                           
+/*            (tld_det.tld_end_eff >= endeff OR    */
+/*             endeff = ?) AND                     */
+/* *** end of removal *** */
+            tld_det.tld_deleted = ? NO-LOCK NO-ERROR.
+        IF AVAILABLE tld_det THEN DO: 
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Avail tld_det</P>" SKIP
+                                                                                        "<OL>Inside AVAIL tld_det" SKIP
+                                                                                        "    <LI>ACT = " act "</LI>" SKIP
+                                                                                        "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                        "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                        "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                        "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                        "    <LI>markitem = " markitem "</LI>" SKIP
+                                                                                      "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+            {&OUT}
+	            "<DIV class='row'>" SKIP                                                                           /* 1dot7 */
+				"<DIV class='grid_2'> </DIV>" SKIP                                                                 /* 1dot7 */
+				"<DIV class='grid_8'>" SKIP                                                                        /* 1dot7 */
+	                "<CENTER><P class='errmsg'>ERROR! Section " sectid " already exists with Item (Marker) of "    /* 1dot7 */
+	                 markitem ".  Would you like to update the existing record?</P>" SKIP                          /* 1dot7 */
+	                "</CENTER>" SKIP                                                                               /* 1dot7 */
+	            "</DIV>         <!-- end of grid_8 -->" SKIP                                                       /* 1dot7 */
+				"<DIV class='grid_2'> </DIV>" SKIP                                                                 /* 1dot7 */
+				"</DIV>     <!-- end of row -->" SKIP                                                              /* 1dot7 */
+				"<BR>" SKIP                                                                                        /* 1dot7 */
+                "<div class='row'>" SKIP                                                                           /* 1dot7 */
+				"   <div class='grid_3'> </DIV>" SKIP                                                              /* 1dot7 */
+				"   <div class='grid_2'>" SKIP                                                                     /* 1dot7 */
+				"       <FORM>" SKIP                                                                               /* 1dot7 */
+				"           <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP      /* 1dot7 */
+                "           <INPUT type='hidden' name='h-sectid' value='" tld_det.tld_sect_id "' />" SKIP          /* 1dot7 */
+                "           <INPUT type='hidden' name='h-testtype' value='" testtype "' />" SKIP                   /* 1dot7 */
+                "           <INPUT type='hidden' name='h-sectdesc' value='" sectdesc "' />" SKIP                   /* 1dot7 */
+                "           <INPUT type='hidden' name='h-itemid' value='" tld_det.tld_item_ID "' />" SKIP          /* 1dot7 */
+				"           <BUTTON type='submit' name='h-act' value='FIND ITEM' class='btn'>Yes</BUTTON>" SKIP    /* 1dot7 */
+				"       </FORM>" SKIP                                                                              /* 1dot7 */
+				"   </div>" SKIP                                                                                   /* 1dot7 */
+				"   <div class='grid_2'> </DIV>" SKIP                                                              /* 1dot7 */
+				"   <div class='grid_2'>" SKIP                                                                     /* 1dot7 */
+				"       <FORM>" SKIP                                                                               /* 1dot7 */
+                "           <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP	   /* 1dot7 */
+				"           <BUTTON type='submit' name='h-act' value='INITIAL'  class='btn'>No</BUTTON>" SKIP      /* 1dot7 */
+				"       </FORM>" SKIP                                                                              /* 1dot7 */
+				"   </div>" SKIP                                                                                   /* 1dot7 */
+				"   <div class='grid_3'> </DIV>" SKIP                                                              /* 1dot7 */
+				"</div>" SKIP                                                                                      /* 1dot7 */
+				.
+/*                "    <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP */
+/*                "<button name='h-sectid' value=" tld_det.tld_sect_id " type='submit'>Yes</button>" SKIP*/
+/*                "<button name='h-sectid' value=0 type='submit'>No</button>" SKIP                       */                
+                                                                                                    
+            act = "ITEM EXISTS".  /* not actually used.  Was originally going to be tied to the OTHERWISE condition in the email */
+        
+        END.  /** of if avail tld_det **/
+        
+        ELSE DO:
+            
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Not Avail tld_det</P>" SKIP
+                                                                                        "<OL>Inside NOT AVAIL tld_det" SKIP
+                                                                                        "    <LI>ACT = " act "</LI>" SKIP
+                                                                                        "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                        "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                        "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                        "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                        "    <LI>markitem = " markitem "</LI>" SKIP
+                                                                                      "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+                    
+            CREATE tld_det.
+            ASSIGN 
+                tld_det.tld_sect_id         = sectid
+/*                tld_det.tld_item_name       = markitem*/                                     /* removed in 1dot8 */
+                tld_det.tld_item_id         = itemid
+                tld_det.tld_start_eff       = starteff
+                tld_det.tld_end_eff         = endeff
+                tld_det.tld_order           = sortorder
+                tld_det.tld_bar_type        = bartype
+                tld_det.tld_created_by      = USERID("HHI")
+                tld_det.tld_create_date     = TODAY 
+                tld_det.tld_modified_by     = USERID("HHI")
+                tld_det.tld_modified_date   = TODAY
+                tld_det.tld_prog_name       = THIS-PROCEDURE:FILE-NAME.                         /* 1dot8 */
+             
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot6 */
+            starteff,                                                                           /* 1dot6 */
+            OUTPUT out-start                                                                    /* 1dot6 */    
+            ).                                                                                  /* 1dot6 */
+ 
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot6 */
+            endeff,                                                                             /* 1dot6 */
+            OUTPUT out-end                                                                      /* 1dot6 */    
+            ).                                                                                  /* 1dot6 */
+    
+        ASSIGN                                                                                  /* 1dot6 */ 
+            disp-start = out-start                                                              /* 1dot6 */    
+            disp-end   = out-end.                                                               /* 1dot6 */  
+                 
+            {TLitemmaintU-form.i "INITIAL" "DISABLED" "DISABLED" "DISABLED" "DISABLED" "DISABLED" "NOTHING" "Maintenance"}.     
+                
+        END.  /** of else do **/
+        
+    END.  /** of act = "CREATE" **/
+      
+    OTHERWISE DO: 
+                       
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<P>Inside Otherwise Do</P>" SKIP
+                                                                                        "<OL>Inside OTHERWISE DO" SKIP
+                                                                                        "    <LI>ACT = " act "</LI>" SKIP
+                                                                                        "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                        "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                        "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                        "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                        "    <LI>markitem = " markitem "</LI>" SKIP
+                                                                                      "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+                                           
+        {&OUT} 
+            "<DIV class='row'>" SKIP                                                                        /* 1dot7 */
+			"<DIV class='grid_2'> </DIV>" SKIP                                                              /* 1dot7 */
+			"<DIV class='grid_8'>" SKIP                                                                     /* 1dot7 */
+            "<P class='errmsg'>Unexpected Condition!  Please contact "                                  
+                "<a href='mailto:hhi.techsupport@mysolsource.com?subject=Error with TLitemmaintU.html -- "
+                act "'>Solsource</a> immediately.</P>" SKIP 
+            "</DIV>         <!-- end of grid_8 -->" SKIP                                                    /* 1dot7 */
+			"<DIV class='grid_2'> </DIV>" SKIP                                                              /* 1dot7 */
+			"</DIV>     <!-- end of row -->" SKIP                                                           /* 1dot7 */
+			"<BR>" SKIP                                                                                     /* 1dot7 */  
+            "<FORM method='post'>" SKIP                                                 
+            "<div class='row'>" SKIP                                                                        /* 1dot7 */
+			"   <div class='grid_5'> </DIV>" SKIP                                                           /* 1dot7 */ 
+            "       <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP   	/* 1dot7 */		
+			"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Menu</BUTTON></div>" SKIP /* 1dot7 */
+			"   <div class='grid_5'> </DIV>" SKIP                                                           /* 1dot7 */
+			"</div>" SKIP                                                                                   /* 1dot7 */
+			
+/*            "<center><INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP               */
+/*            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP*/
+/*            "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP      */
+            "</FORM>" SKIP.     
+        
+    END.  /** of otherwise **/
+    
+END CASE.  /*** case of act ***/
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT} "<P>End OF LINE.</P>".
+
+/*******************************  End of Program  **********************************/
+
+
+</SCRIPT>
+</BODY>
+</HTML>

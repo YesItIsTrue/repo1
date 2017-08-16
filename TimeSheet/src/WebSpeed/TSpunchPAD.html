@@ -1,0 +1,308 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+<TITLE>Time Clock Punch Pad</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="07/Jul/16">
+    <META NAME='LAST_UPDATED' CONTENT="07/Jul/16">    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+<script language="javascript">
+    function inputNumber(button) {
+        var fieldValue = $("#id-number").val();
+        $("#id-number").val(fieldValue + $(button).val());
+    }
+    
+    function clearNumber() {
+        $("#id-number").val("");
+    }
+</script>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Template Notes: 
+        This template is designed to be used with a simple search report.
+        It has a link designed to send the user to a more advanced (From
+        To) search. The validation act allows you to decide weather the 
+        criteria the user is inputting is valid for your table to search
+        by (outside date range for example).  Quoted areas are either
+        instuctions or place holders for your variables and fields. 
+    
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-pad           AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE v-hold          AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE v-clock         AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE v-message       AS CHARACTER            NO-UNDO.
+
+DEFINE VARIABLE o-clientid      AS INTEGER              NO-UNDO.        
+DEFINE VARIABLE o-projname      AS CHARACTER            NO-UNDO.  
+DEFINE VARIABLE o-empid         AS INTEGER              NO-UNDO.              
+DEFINE VARIABLE o-hours-date    AS DATE                 NO-UNDO.  
+DEFINE VARIABLE o-create      AS LOGICAL                NO-UNDO.
+DEFINE VARIABLE o-update      AS LOGICAL                NO-UNDO.
+DEFINE VARIABLE o-avail       AS LOGICAL                NO-UNDO. 
+DEFINE VARIABLE o-successful  AS LOGICAL                NO-UNDO.
+DEFINE VARIABLE o-error       AS LOGICAL                NO-UNDO.
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act     = get-value("h-act")
+    v-pad   = get-value("h-pad")
+    v-hold  = get-value("h-hold") + v-pad  
+    v-clock = get-value("h-clock")      
+    .
+
+    v-hold = SUBSTRING(v-hold,R-INDEX(v-hold,",") + 1,LENGTH(v-hold)).
+
+IF v-clock <> "" THEN DO:
+           
+	FIND Emp_Mstr WHERE Emp_Mstr.Emp_ID = INTEGER(v-hold) NO-LOCK NO-ERROR.
+	
+		IF AVAILABLE (Emp_Mstr) THEN DO:
+		
+		    FIND Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = Emp_Mstr.Emp_ID AND 
+		                          Hours_Mstr.Hours_client_ID = Emp_Mstr.Emp_def_client AND 
+		                          Hours_Mstr.Hours_project_name = Emp_Mstr.Emp_def_proj AND 
+		                          Hours_Mstr.Hours_time = NOW
+		                          EXCLUSIVE-LOCK NO-ERROR.
+	
+            IF NOT AVAILABLE (Hours_Mstr) THEN DO: 
+            
+                RUN VALUE(SEARCH("SUBhours-ucU.r")) (
+		            0,                            /*Hours_Mstr.Hours_amount      */
+		            Emp_Mstr.Emp_def_client,      /*Hours_Mstr.Hours_client_ID   */
+		            Emp_Mstr.Emp_def_proj,        /*Hours_Mstr.Hours_project_name*/
+		            TODAY,                        /*Hours_Mstr.Hours_date        */
+		            "",                           /*Hours_Mstr.Hours_description */
+		            Emp_Mstr.Emp_ID,              /*Hours_Mstr.Hours_employee_ID */
+		            "",                           /*Hours_Mstr.Hours_translation */
+		            ?,                            /*Hours_Mstr.Hours_billed      */  
+		            NOW,                          /*Hours_Mstr.Hours_time        */
+		            v-clock,                      /*Hours_Mstr.Hours_time_desc   */
+		            
+		            Emp_Mstr.Emp_def_client, 
+		            "Regulary / Salary",
+		            TODAY,
+		            NOW,
+		            "",
+
+		            
+		            OUTPUT o-clientid,        
+		            OUTPUT o-projname,        
+		            OUTPUT o-empid,          
+		            OUTPUT o-hours-date,            
+		            OUTPUT o-create,                           
+		            OUTPUT o-update,                           
+		            OUTPUT o-avail,                          
+		            OUTPUT o-successful,                        
+		            OUTPUT o-error                                
+		            ).
+             
+                IF o-successful = YES THEN 
+                
+                ASSIGN 
+                    v-message = "Time successfully logged."  
+                    v-clock = ""  
+                    act = "MESSAGE"
+                    .
+                    
+                 ELSE 
+                 
+                    ASSIGN 
+                        v-message = "Time was not logged. Contact your adminstrator."  
+                        v-clock = "" 
+                        act = "MESSAGE"
+                        .
+                    
+            END. 			    
+	END.
+	ELSE 
+	    ASSIGN 
+	        v-message = "Record already exists. Contact your adminstrator." 
+	        v-clock = ""  
+	        act = "MESSAGE"
+	        .
+       
+END. /* v-clock */  
+
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+IF act = "VALIDATION" THEN DO:
+
+    /* add a validation for the search criteria based off of the table(s) you
+    are searching by. */
+
+    FIND Emp_Mstr WHERE Emp_Mstr.Emp_ID = INTEGER(v-hold) NO-LOCK NO-ERROR.
+
+    IF AVAILABLE (Emp_Mstr) THEN
+
+        ASSIGN
+            act = "CLOCK".
+
+    ELSE DO:
+        {&OUT}
+        	"<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP
+                "<center><h2>Access Denied!<BR>Reenter ID.</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</DIV>".
+        ASSIGN
+            act = "INITIAL".
+
+    END. /* else do not avail */
+END. /* validation */
+        
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:         
+         
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='h-hold' value='" v-hold "' />" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_4-5'> </DIV>" SKIP
+            "   <div class='grid_3'><center><h2><input type='number' name='h-hold' id='id-number' autocomplete='off' value='" v-hold "' /></h2></center></div>" SKIP                       
+            "<DIV class='grid_4-5'> </DIV>" SKIP   
+            "</DIV>     <!-- end of row -->" SKIP  
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_4-5'> </DIV>" SKIP
+            "   <div class='grid_1'><BUTTON type='button' onclick='inputNumber(this)' name='h-pad' value='1' class='btn'>1</BUTTON></div>" SKIP            
+            "   <div class='grid_1'><BUTTON type='button' onclick='inputNumber(this)' name='h-pad' value='2' class='btn'>2</BUTTON></div>" SKIP
+            "   <div class='grid_1'><BUTTON type='button' onclick='inputNumber(this)' name='h-pad' value='3' class='btn'>3</BUTTON></div>" SKIP           
+            "<DIV class='grid_4-5'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP            
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_4-5'> </DIV>" SKIP
+            "   <div class='grid_1'><BUTTON type='button' onclick='inputNumber(this)' name='h-pad' value='4' class='btn'>4</BUTTON></div>" SKIP            
+            "   <div class='grid_1'><BUTTON type='button' onclick='inputNumber(this)' name='h-pad' value='5' class='btn'>5</BUTTON></div>" SKIP
+            "   <div class='grid_1'><BUTTON type='button' onclick='inputNumber(this)' name='h-pad' value='6' class='btn'>6</BUTTON></div>" SKIP           
+            "<DIV class='grid_4-5'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP            
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_4-5'> </DIV>" SKIP
+            "   <div class='grid_1'><BUTTON type='button' onclick='inputNumber(this)' name='h-pad' value='7' class='btn'>7</BUTTON></div>" SKIP            
+            "   <div class='grid_1'><BUTTON type='button' onclick='inputNumber(this)' name='h-pad' value='8' class='btn'>8</BUTTON></div>" SKIP
+            "   <div class='grid_1'><BUTTON type='button' onclick='inputNumber(this)' name='h-pad' value='9' class='btn'>9</BUTTON></div>" SKIP           
+            "<DIV class='grid_4-5'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP            
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_4-5'> </DIV>" SKIP
+            "   <div class='grid_1'><BUTTON type='button' onclick='clearNumber()' name='h-act' value='CLEAR' class='btn'>Clear</BUTTON></div>" SKIP            
+            "   <div class='grid_1'><BUTTON type='button' onclick='inputNumber(this)' name='h-pad' value='0' class='btn'>0</BUTTON></div>" SKIP
+            "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Login</BUTTON></div>" SKIP           
+            "<DIV class='grid_4-5'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP                        
+			"</form>" SKIP.  
+                                                                                                                                           
+    END. /* INITIAL */
+    WHEN "CLOCK" THEN DO:
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='h-hold' value='" v-hold "' />" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_5'></DIV>" SKIP
+            "<DIV class='grid_2'><BUTTON type='submit' name='h-clock' value='CLOCKED_IN' class='btn'>Clock In</BUTTON></DIV>" SKIP
+            "<DIV class='grid_5'></DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_5'></DIV>" SKIP
+            "<DIV class='grid_2'><BUTTON type='submit' name='h-clock' value='CLOCKED_OUT' class='btn'>Clock Out</BUTTON></DIV>" SKIP
+            "<DIV class='grid_5'></DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_5'></DIV>" SKIP
+            "<DIV class='grid_1'><BUTTON type='submit' name='h-clock' value='BREAK_OUT' class='btn'>Start Break</BUTTON></DIV>" SKIP
+            "<DIV class='grid_1'><BUTTON type='submit' name='h-clock' value='BREAK_IN' class='btn'>End Break</BUTTON></DIV>" SKIP
+            "<DIV class='grid_5'></DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP            
+            "</form>" SKIP.
+    
+    END. /* CLOCK */
+    WHEN "MESSAGE" THEN DO:
+    
+            {&OUT}
+                "<form>" SKIP
+                "   <INPUT type='hidden' name='h-hold' value='' />" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_4'> </DIV>" SKIP
+                "<DIV class='grid_4'>" SKIP
+                "   <center><H2>" v-message "</H2></center>" SKIP 
+                "</DIV>         <!-- end of grid_4 -->" SKIP
+                "<DIV class='grid_4'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<div class='row'>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "</div>" SKIP
+	            "</form>" SKIP.
+                                
+    END. /* MESSAGE */    
+    OTHERWISE DO: 
+    
+        {&OUT}
+        	"<DIV class='row'>" SKIP
+            "<DIV class='grid_4'> </DIV>" SKIP
+            "<DIV class='grid_4'>" SKIP 
+                "<h2>Could not find act " act ".</h2>" SKIP
+            "</DIV>         <!-- end of grid_4 -->" SKIP
+            "<DIV class='grid_4'> </DIV>" SKIP
+            "</DIV>" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

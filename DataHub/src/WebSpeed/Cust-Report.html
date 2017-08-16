@@ -1,0 +1,442 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Customer Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <META NAME="VERSION" CONTENT="1.61">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="6/Jan/15">
+    <META NAME="LAST_UPDATED" CONTENT="25/Aug/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+
+CREATE WIDGET-POOL.
+
+{&OUT}
+    "</HEAD>
+    <BODY class='inside'>".
+
+  /*------------------------------------------------------------------
+    File        : Cust-Report.html
+    Description : A report for the cust_mstr table.
+    Created     : August 11th 2014
+    Vesion      : 1.3
+    Updated     : August 26th 2014
+    
+        - - Version History - -
+        
+        1.3 added the patient firstname and lastname search fields. 
+        1.4 added the email search fields.
+        1.5 added the extra hidden variable to try and make the menuname.i work.
+        
+        1/6/15 Updated by Sara Luttrell - combined the first and last name displayed results into one field
+                                        - add hyperlink for patient name
+                                        
+* 1.6 - written by Mark Jacobs on 02/Oct/15. Added in the code snippets for grid_* div, code snippets for Buttons,TFOOT 
+*       and  META tags updated. Marked with 1dot6 
+*       Removed ":" from input field names . Not marked.   
+* 1.61 - written by Jacob Luttrell on 25/Aug/16.  Reordered first name last name in display. Unmarked.                                     
+                                        
+        
+        
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+
+/********************************************  Variable Definitions  ****************************************************/
+
+/***  Database Variable  ***/
+
+DEFINE VARIABLE v-low-firstname         LIKE people_mstr.people_firstname       NO-UNDO.
+DEFINE VARIABLE v-high-firstname        LIKE people_mstr.people_firstname       NO-UNDO.
+DEFINE VARIABLE v-low-lastname          LIKE people_mstr.people_lastname        NO-UNDO.
+DEFINE VARIABLE v-high-lastname         LIKE people_mstr.people_lastname        NO-UNDO.   
+DEFINE VARIABLE v-low-company           LIKE people_mstr.people_company         NO-UNDO.
+DEFINE VARIABLE v-high-company          LIKE people_mstr.people_company         NO-UNDO.
+/*DEFINE VARIABLE v-low-email             LIKE people_mstr.people_email           NO-UNDO.
+DEFINE VARIABLE v-high-email            LIKE people_mstr.people_email           NO-UNDO.*/
+
+DEFINE VARIABLE v-low-pat-firstname     LIKE people_mstr.people_firstname       NO-UNDO.
+DEFINE VARIABLE v-high-pat-firstname    LIKE people_mstr.people_firstname       NO-UNDO.
+DEFINE VARIABLE v-low-pat-lastname      LIKE people_mstr.people_lastname        NO-UNDO.
+DEFINE VARIABLE v-high-pat-lastname     LIKE people_mstr.people_lastname        NO-UNDO. 
+
+DEFINE VARIABLE v-low-stateprov         LIKE addr_mstr.addr_stateprov           NO-UNDO.
+DEFINE VARIABLE v-high-stateprov        LIKE addr_mstr.addr_stateprov           NO-UNDO.
+DEFINE VARIABLE v-low-country           LIKE addr_mstr.addr_country             NO-UNDO.
+DEFINE VARIABLE v-high-country          LIKE addr_mstr.addr_country             NO-UNDO.
+
+DEFINE VARIABLE dis-pat-firstname       LIKE people_mstr.people_firstname       NO-UNDO.
+DEFINE VARIABLE dis-pat-lastname        LIKE people_mstr.people_lastname        NO-UNDO.
+
+/***  Administrator Variables  ***/
+
+DEFINE BUFFER people_mstr2 FOR people_mstr. 
+
+DEFINE VARIABLE v-act           AS INTEGER                              NO-UNDO.  /***  controls flow of program  ***/
+DEFINE VARIABLE v-ITfeedback    AS LOGICAL INITIAL NO                   NO-UNDO.  /***  debug messages  ***/
+DEFINE VARIABLE v-other         AS LOGICAL INITIAL NO                   NO-UNDO.  /***  the other path of the program for when they search by patient name  ***/
+
+/* ************************************************  HTML get-values  ********************************************************* */
+
+IF v-ITfeedback = YES THEN 
+    {&OUT} "<h3>After Progress Variable Definations, before HTML Assigns</h3>".
+        
+ASSIGN
+
+    v-act               = INTEGER (get-value ("h-act"))
+
+    v-low-firstname     = get-value ("h-low-firstname")
+    v-high-firstname    = get-value ("h-high-firstname")
+    v-low-lastname      = get-value ("h-low-lastname")
+    v-high-lastname     = get-value ("h-high-lastname")
+    v-low-company       = get-value ("h-low-company")
+    v-high-company      = get-value ("h-high-company")
+    /*v-low-email         = get-value ("h-low-email")
+    v-high-email        = get-value ("h-high-email")*/    
+    v-low-stateprov     = get-value ("h-low-stateprov")
+    v-high-stateprov    = get-value ('h-high-stateprov')
+    v-low-country       = get-value ("h-low-country")
+    v-high-country      = get-value ("h-high-country")
+    v-low-pat-firstname = get-value ("h-low-pat-firstname")
+    v-high-pat-firstname= get-value ("h-high-pat-firstname")
+    v-low-pat-lastname  = get-value ("h-low-pat-lastname")
+    v-high-pat-lastname = get-value ("h-high-pat-lastname")
+    .
+
+IF v-ITfeedback = YES THEN 
+    {&OUT} "<h3>After  HTML Assigns</h3><br><h3>Act = "v-act "... </h3>".
+
+/* ***********************************************  Act - 2 Input Check  ***************************************************** */ 
+IF v-act = 2 THEN DO:
+    
+    ASSIGN v-act = 1.
+    
+    IF v-ITfeedback = YES THEN 
+        {&OUT} "<h3>Inside Act 2, Start</h3><br><h3>Act = "v-act "...</h3> ".
+    
+    /*IF  v-low-firstname =  THEN DO:
+             {&OUT} "<tr><th style='text-align:center;'>You are missing the First name.</th></tr>".
+             v-act = 0.
+        END.  */
+
+END. /***  of v-act = 2  ***/        
+
+/* ********************************************  Act - 0 "Search" Criteria  ************************************************** */
+IF v-act = 0 THEN DO:
+    
+    IF v-ITfeedback = YES THEN 
+    {&OUT} "<h3>Inside Act 0, Start</h3><br><h3>Act = "v-act "...</h3> ".
+    
+    {&OUT}
+        "<DIV class='row'>" SKIP                              /* 1dot6 */
+        "<DIV class='grid_2'> </DIV>" SKIP
+        "<DIV class='grid_8'>" SKIP     
+    
+        "<div class='table_2col'>" SKIP
+        "<form>" SKIP
+        "   <table>"    SKIP
+        "       <tr>"   SKIP
+        "           <th colspan=4>Search Criteria</th>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Last Name</td>" SKIP
+        "           <td><input type='text' name='h-low-lastname'    value='" v-low-lastname "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-lastname'   value='" v-high-lastname "'/></td>" SKIP
+        "       </tr>"  SKIP        
+        "       <tr>"   SKIP
+        "           <td>First Name</td>" SKIP
+        "           <td><input type='text' name='h-low-firstname'   value='" v-low-firstname "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-firstname'  value='" v-high-firstname "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Company</td>" SKIP
+        "           <td><input type='text' name='h-low-company'     value='" v-low-company "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-company'    value='" v-high-company "'/></td>" SKIP
+        "       </tr>"  SKIP
+        /*"       <tr>"   SKIP
+        "           <td>Email:</td>" SKIP
+        "           <td><input type='text' name='h-low-email'       value='" v-low-email "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-email'      value='" v-high-email "'/></td>" SKIP
+        "       </tr>"  SKIP*/
+        "       <tr>"   SKIP
+        "           <td>State or Province</td>" SKIP
+        "           <td><input type='text' name='h-low-stateprov'   value='" v-low-stateprov "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-stateprov'  value='" v-high-stateprov "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Country</td>" SKIP
+        "           <td><input type='text' name='h-low-country'     value='" v-low-country "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-country'    value='" v-high-country "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Last Name of Patient</td>" SKIP
+        "           <td><input type='text' name='h-low-pat-lastname'    value='" v-low-pat-lastname "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-pat-lastname'   value='" v-high-pat-lastname "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>First Name of Patient</td>" SKIP
+        "           <td><input type='text' name='h-low-pat-firstname'   value='" v-low-pat-firstname "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-pat-firstname'  value='" v-high-pat-firstname "'/></td>" SKIP
+        "       </tr>"  SKIP        
+        "   </table>"   SKIP
+        
+        "</DIV>         <!-- end of grid_8 -->" SKIP          /* 1dot6 */
+        "<DIV class='grid_2'> </DIV>" SKIP  
+        "</DIV>     <!-- end of row -->" SKIP
+      
+        "</div>" skip                                                                       /* 1dot6 */
+        
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "   <div class='grid_2'>" skip
+        "   <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP
+        "   <BUTTON type='submit' name='h-act' value=2 class='btn'>Search</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+		"   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+		"   <div class='grid_3'> </DIV>" SKIP
+		"</div>" SKIP
+		"<BR>" SKIP
+ 
+       
+/*        "   <center>" SKIP                                                                  */
+/*        "       <input type='hidden' name='h-act'       value=2>"        SKIP               */
+/*        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP*/
+/*        "       <input type='submit' name='submit'      value='Search'>" SKIP               */
+/*        "       <input type='reset'  name='reset'       value='Reset'>"  SKIP               */
+/*        "   </center>" SKIP                                                                 */
+/*        "</div>" SKIP                                                                       */
+        "</form>"
+        .
+
+END. /*** of v-act = "Search" Then DO: ***/
+
+IF v-ITfeedback = YES THEN 
+    {&OUT} "<h3>Just after END. /** v-act = 0 **/ about to start Act 1</h3><br><h3>Act = "v-act "... </h3>".
+
+/* *************************************************  Act - 1 "Report"  ****************************************************** */
+IF v-act = 1 THEN DO:
+    
+    IF v-ITfeedback = YES THEN 
+    {&OUT} "<h3>Inside Act 1</h3><br><h3>Act = "v-act "... </h3>".
+    
+    IF  v-low-pat-firstname <> "" OR
+        v-low-pat-lastname  <> "" OR
+        v-high-pat-firstname<> "" OR
+        v-high-pat-lastname <> "" THEN 
+        ASSIGN v-other = YES.
+   
+    {&OUT}
+    
+        "<DIV class='row'>" SKIP                                        /* 1dot6 */
+        "<DIV class='grid_12'>" SKIP
+    
+        "<form>"        SKIP
+        "<div class='table_report_FromTo'>" SKIP
+        "   <table>"    SKIP
+        "       <thead>"    SKIP
+        "           <tr>"   SKIP
+        "               <td colspan=". 
+        IF v-other = YES THEN 
+        {&OUT} "11". 
+        ELSE {&OUT} "9".
+        {&OUT}
+        ">Customer Report</td>" SKIP
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <th>From</th>"                  SKIP.
+        IF v-other = YES THEN
+        {&OUT}
+        "               <th>"v-low-pat-lastname + ", " + v-low-pat-firstname "</th>"  SKIP. 
+        {&OUT}
+        "               <th>"v-low-lastname + ", " + v-low-firstname "</th>"     SKIP
+        "               <th>"v-low-company "</th>"      SKIP
+        "               <th>-</th>"                     SKIP
+        "               <th>-</th>"                     SKIP
+        "               <th>"v-low-stateprov "</th>"    SKIP
+        "               <th>"v-low-country "</th>"      SKIP
+        "           </tr>"                              SKIP
+        "           <tr>"                               SKIP
+        "               <th>To</th>"                    SKIP.
+        
+        IF v-other = YES THEN DO:
+        {&OUT}
+        "               <th>". 
+            /*IF v-high-pat-lastname = "" AND v-high-pat-firstname = "" THEN
+                {&OUT} "</th>" SKIP .
+                ELSE IF v-high-pat-lastname = "" THEN              
+                {&OUT} v-high-pat-firstname "</th>" SKIP.
+                ELSE IF v-high-pat-firstname = "" THEN 
+                {&OUT} v-high-pat-lastname "</th>" SKIP.
+                ELSE */
+                {&OUT} v-high-pat-lastname + ", " + v-high-pat-firstname "</th>".
+        END.
+        {&OUT}
+        "               <th>"v-high-lastname + ", " + v-high-firstname "</th>"    SKIP
+        "               <th>"v-high-company "</th>"     SKIP
+        "               <th>-</th>"                     SKIP
+        "               <th>-</th>"                     SKIP
+        "               <th>"v-high-stateprov "</th>"   SKIP
+        "               <th>"v-high-country "</th>"     SKIP
+        "           </tr>"                              SKIP        
+        "           <tr>"                               SKIP
+        "               <td></td>"                      SKIP.
+        
+        IF v-other = YES THEN
+        {&OUT}
+        "               <td>Patient Name</td>"          SKIP.
+        
+        {&OUT}
+        "               <td>Customer Name</td>"         SKIP
+        "               <td>Company</td>"               SKIP
+        "               <td>Address</td>"               SKIP
+        "               <td>City</td>"                  SKIP
+        "               <td>State</td>"                 SKIP
+        "               <td>Country</td>"               SKIP
+        "           </tr>"                              SKIP
+        "       </thead>"                               SKIP.
+
+    
+    /* 4ea of doom*/
+    FOR EACH people_mstr WHERE 
+        (people_mstr.people_firstname   >= v-low-firstname  OR v-low-firstname  = "")   AND
+        (people_mstr.people_firstname   <= v-high-firstname OR v-high-firstname = "")   AND 
+        (people_mstr.people_lastname    >= v-low-lastname   OR v-low-lastname   = "")   AND
+        (people_mstr.people_lastname    <= v-high-lastname  OR v-high-lastname  = "")   AND 
+        (people_mstr.people_company     >= v-low-company    OR v-low-company    = "")   AND
+        (people_mstr.people_company     <= v-high-company   OR v-high-company   = "")   /*AND
+        (people_mstr.people_email       >= v-low-email      OR v-low-email      = "")   AND 
+        (people_mstr.people_email       <= v-high-email     OR v-high-email     = "")*/
+        NO-LOCK,
+      FIRST cust_mstr WHERE 
+        cust_mstr.cust_id = people_mstr.people_id 
+        NO-LOCK,
+      FIRST addr_mstr WHERE
+        addr_mstr.addr_id = people_mstr.people_addr_id                              AND
+        (addr_mstr.addr_stateprov   >= v-low-stateprov  OR v-low-stateprov  = "")   AND
+        (addr_mstr.addr_stateprov   <= v-high-stateprov OR v-high-stateprov = "")   AND 
+        (addr_mstr.addr_country     >= v-low-country    OR v-low-country    = "")   AND
+        (addr_mstr.addr_country     <= v-high-country   OR v-high-country   = "")
+        NO-LOCK BY people_mstr.people_lastname:
+            
+        IF v-ITfeedback = YES THEN {&OUT} "<h3> Post First For Each. <br> v-other =" v-other "</h3>".
+            
+        IF v-other = YES THEN DO:
+                     
+            FOR EACH patient_mstr WHERE 
+                patient_mstr.patient_cust_ID = cust_mstr.cust_id 
+                NO-LOCK,
+              FIRST people_mstr2 WHERE
+                people_mstr2.people_ID = patient_mstr.patient_ID AND  
+                (people_mstr2.people_firstname   >= v-low-pat-firstname  OR v-low-pat-firstname  = "")   AND 
+                (people_mstr2.people_firstname   <= v-high-pat-firstname OR v-high-pat-firstname = "")   AND
+                (people_mstr2.people_lastname    >= v-low-pat-lastname   OR v-low-pat-lastname   = "")   AND 
+                (people_mstr2.people_lastname    <= v-high-pat-lastname  OR v-high-pat-lastname  = "")
+                NO-LOCK:
+                
+                {&OUT}
+                "       <tr>" SKIP
+                "           <td></td>" SKIP    
+                "           <td><a href=~"../../TK/rcode/patient.r?e-mail=" people_mstr2.people_email 
+                "&fstn=" people_mstr2.people_firstname 
+                "&lstn=" people_mstr2.people_lastname 
+                "&whattorun=3.4
+                &pep-id=" people_mstr2.people_id 
+                "&h-keep-going=YES
+                &h-first-stop=1  
+                "~" >" people_mstr2.people_lastname + ", " + people_mstr2.people_firstname "</a></td>" SKIP
+                "           <td>" people_mstr.people_lastname + ", " +  people_mstr.people_firstname "</td>" SKIP 
+                "           <td>" people_mstr.people_company    "</td>" SKIP
+                "           <td>" addr_mstr.addr_addr1          "</td>" SKIP
+                "           <td>" addr_mstr.addr_city           "</td>" SKIP
+                "           <td>" addr_mstr.addr_stateprov      "</td>" SKIP
+                "           <td>" addr_mstr.addr_country        "</td>" SKIP
+                "       </tr>" SKIP.   
+                   
+            END. /* of for first patient */
+            
+        END. /* of if v-pat's exist */
+        
+        ELSE DO: /** v-pat does not exist **/
+               
+        {&OUT}
+        "       <tr>" SKIP
+        "           <td></td>" SKIP
+        "           <td>" people_mstr.people_lastname + ", " +  people_mstr.people_firstname "</td>" SKIP 
+        "           <td>" people_mstr.people_company    "</td>" SKIP
+        "           <td>" addr_mstr.addr_addr1          "</td>" SKIP
+        "           <td>" addr_mstr.addr_city           "</td>" SKIP
+        "           <td>" addr_mstr.addr_stateprov      "</td>" SKIP
+        "           <td>" addr_mstr.addr_country        "</td>" SKIP
+        "       </tr>" SKIP
+        .
+        
+        END. /** ELSE v-pat does not exist **/
+        
+        IF v-ITfeedback = YES THEN 
+            {&OUT} "<h3>Inside 4ea of doom</h3>".
+        
+    END. /* of 4ea of doom */
+    
+/*    {&OUT}                        */
+/*        "       <tr>"       SKIP  */
+/*        "           <td colspan=".*/
+/*        IF v-other = YES THEN     */
+/*        {&OUT} "10".              */
+/*        ELSE {&OUT} "8".          */
+/*        {&OUT}                    */
+/*        ">End of Report</td>" SKIP*/
+/*        "       </tr>"      SKIP  */
+/*        "   </table>"       SKIP  */
+
+{&OUT}        
+"   <TFOOT>" SKIP                                                  /* 1dot6 */
+"       <TR>" SKIP
+"           <TD COLSPAN=7>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+"       </TR>" SKIP
+"   </TFOOT>" SKIP
+"   </TABLE>" SKIP
+"</DIV>                 <!-- end of table_report -->" SKIP(1)
+        
+        "   <center>"       SKIP
+        "   <form>"         SKIP
+        "</div>" skip
+        
+        "</DIV>         <!-- end of grid_12 -->" SKIP            /* 1dot6 */
+        "</DIV>     <!-- end of row -->" SKIP
+        
+        "<div class='row'>" SKIP                                 /* 1dot6 */
+        "   <div class='grid_5'></DIV>" SKIP
+        "   <div class='grid_2'>" skip
+        "   <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP
+        "   <button type='submit' name='h-act' value=0 class='btn'>Search Again</BUTTON></div>" SKIP
+        "   <div class='grid_5'></DIV>" SKIP
+        "</div>" SKIP
+        "<BR>" SKIP
+        
+        
+        
+        
+/*        "       <input type='hidden' name='h-act' value=0> " SKIP            */
+/*        "       <input type='submit' name='submit' value='Search Again'>"SKIP*/
+        "   </form>"    SKIP
+        "   </cener>"   SKIP
+        "</div> "       SKIP
+        "" SKIP
+        "".
+
+END. /*** of If Act = "SEARCH" THEN DO: ***/ 
+
+</SCRIPT>
+</BODY>
+</HTML>

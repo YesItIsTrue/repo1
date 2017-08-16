@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+<TITLE>Startup Parameters Test</TITLE>
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}. /* 1dot1 */
+/*------------------------------------------------------------------
+  File:           session startup parameters test
+  Description:    
+  Created:
+      Version 1.1 - by Jacob Luttrell 01Oct15
+                    - Div's
+                    - menuname.i
+                    - marked by 1dot1
+                    - removed emailing feature
+-------------------------------------------------------------------*/
+DEFINE VARIABLE x          AS INTEGER   NO-UNDO.
+
+/*DEFINE VARIABLE emailaddr  AS CHARACTER INITIAL "-r hhi.techsupport@mysolsource.com" NO-UNDO.*/
+/*DEFINE VARIABLE messagetxt AS CHARACTER INITIAL "-m Session Test." NO-UNDO.                  */
+/*DEFINE VARIABLE subjtxt    AS CHARACTER INITIAL "-s SESSION:STARTUP-PARAMETERS." NO-UNDO.    */
+/*DEFINE VARIABLE outfile    AS CHARACTER INITIAL "C:\Temp\Session_startup_param.txt" NO-UNDO. */
+
+/*DEFINE STREAM outward.*/
+
+/*DEFINE VARIABLE drive_letter AS CHARACTER FORMAT "x(01)" NO-UNDO.*/
+
+/*ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1).*/
+
+/*{emailaddr-USERID.i}.*/
+
+/*OUTPUT STREAM outward TO VALUE(outfile).*/
+
+/*EXPORT STREAM outward DELIMITER ";"              */
+/*    "This Procedure = " THIS-PROCEDURE:FILE-NAME.*/
+    
+{&OUT}
+    "<DIV class='row'>" SKIP                                           /* 1dot1 */
+    "<DIV class='grid_3'> </DIV>" SKIP                                 /* 1dot1 */
+    "<DIV class='grid_6'>" SKIP                                        /* 1dot1 */
+    "<div class='table_report'>" SKIP                                  /* 1dot1 */
+    "<table>" SKIP                                                     /* 1dot1 */
+    "<thead>" SKIP                                                     /* 1dot1 */
+    "<tr><th>Startup Parameters Test</th></tr>" SKIP                   /* 1dot1 */
+    "<tr>" SKIP                                                        /* 1dot1 */
+    "<td> This Procedure = " THIS-PROCEDURE:FILE-NAME "</td>" SKIP
+    "</tr>" SKIP                                                       /* 1dot1 */
+    "</thead>" SKIP.                                                   /* 1dot1 */ 
+    
+DO x = 1 TO NUM-ENTRIES(SESSION:STARTUP-PARAMETERS):
+    
+    
+/*    EXPORT STREAM outward DELIMITER ";"     */
+/*        ENTRY(x,SESSION:STARTUP-PARAMETERS).*/
+    
+    {&OUT}
+    "<tr>" SKIP                                                        /* 1dot1 */
+    "<td>" ENTRY(x,SESSION:STARTUP-PARAMETERS) "</td>" SKIP
+    "</tr>" SKIP.                                                      /* 1dot1 */
+            
+    
+END.
+
+    {&OUT}
+    "<thead>" SKIP                                                     /* 1dot1 */
+    "<td>End of Report</td>" SKIP                                      /* 1dot1 */
+    "</tr>" SKIP                                                       /* 1dot1 */
+    "</thead>" SKIP                                                    /* 1dot1 */
+    "</table>" SKIP                                                    /* 1dot1 */
+    "</div>" SKIP                                                      /* 1dot1 */ 
+    "</DIV>         <!-- end of grid_6 -->" SKIP                       /* 1dot1 */ 
+    "<DIV class='grid_3'> </DIV>" SKIP                                 /* 1dot1 */        
+    "</DIV>     <!-- end of row -->" SKIP.                             /* 1dot1 */
+
+/*EXPORT STREAM outward DELIMITER ";"                                       */
+/*    999999999                                                             */
+/*    999999999                                                             */
+/*    999999999                                                             */
+/*    999999999                                                             */
+/*    999999999                                                             */
+/*    999999999                                                             */
+/*    "END OF LINE".                                                        */
+/*EXPORT STREAM outward DELIMITER ";"                                       */
+/*    "End Run at " TODAY STRING(TIME, "HH:MM:SS").                         */
+/*                                                                          */
+/*OUTPUT STREAM outward CLOSE.                                              */
+/*                                                                          */
+/*OS-COMMAND SILENT "C:\apps\biomed\batch-files\errormail" VALUE (emailaddr)*/
+/*    VALUE (messagetxt) VALUE (subjtxt) "-a" VALUE (outfile).              */
+
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>InforMatrix - DEV</TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="29/Apr/16">
+    <META NAME="LAST_UPDATED" CONTENT="29/Apr/16">    
+   
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+DEFINE VARIABLE ITmessages AS LOGICAL INITIAL YES NO-UNDO.
+
+DEFINE VARIABLE v-actualfile AS MEMPTR NO-UNDO. 
+DEFINE VARIABLE v-filename AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO. 
+DEFINE VARIABLE v-ID AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE v-newspot AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-newspot2 AS CHARACTER NO-UNDO.
+
+
+
+ASSIGN 
+    v-ID            = INTEGER(get-value ('h-ID')) 
+    v-act           = get-value ('h-act')    
+    v-filename      = get-value('h-filename')
+    v-actualfile    = GET-BINARY-DATA('h-filename')
+    v-newspot       = "C:\progress\wrk\filed\" + string(v-ID) + ".txt".
+    
+IF ITmessages = YES THEN DO: 
+    {&OUT}
+        "<UL><B>After ASSIGN, before other stuff</B>" SKIP
+        "<LI>v-filename = " v-filename "</LI>" SKIP.
+
+/*    {&out}                                                                                                   */
+/*        "<LI>PRE Uploaded to: " get-config('fileUploadDirectory') "</LI>" SKIP.                              */
+/*                                                                                                             */
+/*    ASSIGN                                                                                                   */
+/*        v-newspot2 = get-config('fileUploadDirectory') + '\' + entry(num-entries(v-filename),v-filename,'\').*/
+    
+    {&out}
+        "<LI>Uploaded as: " v-newspot "</LI>" SKIP.
+        
+END.  /** of ITmessages = YES **/        
+        
+{&OUT}
+    "About to enter v-actualfile DNE question<br>" SKIP. 
+    
+IF v-actualfile = ? THEN 
+    {&OUT}
+        "Not this time<br>" SKIP.
+            
+IF v-actualfile <> ? THEN DO: 
+    
+    IF ITmessages = YES THEN 
+	    {&out} 
+	        'Inside v-actualfile DNE question<br>' SKIP 
+	        '<LI>IN Uploaded to: ' get-config('fileUploadDirectory') "</LI>" SKIP.
+    
+    ASSIGN
+        v-newspot2 = get-config('fileUploadDirectory') + '\' + entry(num-entries(v-filename),v-filename,'\').
+    
+    IF ITmessages = YES THEN 
+        {&out}
+            "<LI>Uploaded as: " v-newspot2 "</LI>" SKIP. 
+    
+    COPY-LOB FROM v-actualfile TO FILE v-filename NO-CONVERT.
+    OS-COPY value(v-filename) value(v-newspot2).
+    
+END. /** of if v-actualfile <> ? --- copy uploaded file **/
+
+IF ITmessages = YES THEN 
+    {&OUT} "</UL>" SKIP.
+
+
+
+IF v-act = "" THEN 
+    v-act = "INITIAL".
+    
+CASE v-act: 
+    
+    WHEN "INITIAL" THEN DO: 
+
+		{&OUT}
+		    "<H1>File Upload Test</H1>" SKIP
+		    "<FORM formenctype='multipart/form-data'>" SKIP
+		    "   <input type='text' name='h-ID'>" SKIP
+		    "   <input type='file' name='h-filename'>" SKIP
+		    "   <button type='submit' name='h-act' value='SHOW'>Upload</button>" SKIP
+		    "</FORM>" SKIP.        
+    
+    END.  /** of when v-act = INITIAL **/
+    
+    WHEN "SHOW" THEN DO:
+        
+        {&OUT}
+            "<H1>Here's what I think happened</H1>" SKIP
+            "<H3>" v-filename "</H3>" SKIP
+            "Upload version <BR><PRE>" SKIP 
+            "   <embed src='" v-filename "' alt='test_orig' /><br>" SKIP
+            "Final version <img src='" v-newspot "' alt='test' /><br>" SKIP
+            "<H3>Post Picture</H3>" SKIP.
+            
+        
+    END.  /** of when v-act = SHOW **/
+    
+    OTHERWISE DO: 
+        
+        {&OUT}
+            "<H1>Unknown Act</H1>" SKIP 
+            "<H3>Step back, bubba jack!</H3>" SKIP.
+            
+    END.  /** of otherwise **/
+        
+END CASE. /* v-act */            
+
+</SCRIPT>
+</BODY>
+</HTML>

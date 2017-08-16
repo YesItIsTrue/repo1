@@ -1,0 +1,915 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <META http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/sliding_bars.css" type="text/css" />
+  </head>
+  <body>
+<div id="container">
+<div>
+	<table id="patientInfo">
+	    <tr>
+	        <td>LAB #:</td>
+	        <td>CLIENT #:</td>
+	        <td>DOCTOR:</td>
+	    </tr>    
+	    <tr>
+	        <td>PATIENT:</td>
+	        <td>SEX:</td>
+	        <td>AGE:</td>
+	    </tr>
+	</table>
+</div>
+<br>
+<div>
+<table class="tables">
+    <thead>
+        <tr>
+            <td colspan="5">Specimen Validity</td>
+        </tr>
+    <tr>
+        <th rowspan="2">SPECIMEN MARKERS</th>
+        <th rowspan="2">RESULTS</th>
+        <th colspan="2" rowspan="2">REFERENCE RANGE</th>
+        <th width="52%">PERCENTILE</th>
+     </tr>
+     <tr> 
+        <td style="background-color:#98cdde;background-image:none">
+            <table width="100%">
+                <tr>
+                    <th>2.5th</th>
+                    <th>16th</th>
+                    <th>50th</th>
+                    <th>84th</th>
+                    <th>97.5th</th>
+                </tr>
+            </table>
+        </td>
+     </tr>
+  </thead>
+     <tr>
+        <td width="21%">Creatinine</td>
+        <td width="11%">48</td>
+        <td width="8%">45</td>
+        <td width="8%">225 mg/dL</td>
+       <td class="leftToRightBar"><div class="bar" id="bar1"></div></td></tr>
+     <tr>
+        <td rowspan="2" width="21%">Kynurenic/Quinolinic Ratio</td>
+        <td width="11%">13</td>
+        <td width="8%">5</td>
+        <td width="8%">160</td>
+        <td class="leftToRightBar"><div class="bar" id="bar2"></div></td>  
+     <tr>
+        <td width="11%">23000</td>
+        <td width="8%">10000</td>
+        <td width="8%">48000μM</td>
+        <td class="leftToRightBar"><div class="bar" id="bar3"></div></td></tr>  
+     </tr>
+     
+     <tr>
+        <td colspan="4">SPECIMEN VALIDITY INDEX</td>
+        <td class="leftToRightBar"><div class="bar" id="bar4"></div></td></tr>
+        
+</table>
+</div>
+<br>
+<div>
+	<table class="tables">
+	    <thead>
+	        <tr>
+	            <td colspan="5">BACTERIAL YEAST DYSBIOSIS MARKERS</td>
+	        </tr>
+	
+		    <tr>
+		        <th rowspan="2">SPECIMEN MARKERS</th>
+		        <th rowspan="2">RESULTS</th>
+		        <th colspan="2" rowspan="2">REFERENCE RANGE</th>
+		        <th width="52%">PERCENTILE</th>
+		     </tr>
+		     
+		     <tr> 
+		        <td style="background-color:#98cdde;background-image:none">
+		           <table width="100%">
+		               <tr>
+		                    <th>2.5th</th>
+		                    <th>16th</th>
+		                    <th>50th</th>
+		                    <th>84th</th>
+		                    <th>97.5th</th>
+		               </tr>
+		            </table>
+		        </td>
+		     </tr>  
+	  </thead> 
+	      
+	    <tr>
+	        <td width="21%">Indoleacetic Acid (IAA)</td>
+	        <td width="11%"> </td>
+	        <td width="8%">8</td>
+	        <td width="8%">55</td>
+        <td class="leftToRightBar"><div class="bar" id="bar5"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="21%">Phenylacelic Acid (PAA)</td>
+	        <td width="11%"> </td>
+	        <td width="8%">32</td>
+	        <td width="8%">300</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar6"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="21%">Arabinose</td>
+	        <td width="11%"> </td>
+	        <td width="8%">75</td>
+	        <td width="8%">330</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar7"></div></td>
+	    </tr>    
+	    <tr>
+	        <td width="21%">Citramalic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">24</td>
+	        <td width="8%">80</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar8"></div></td>
+	    </tr>    
+	    <tr>
+	        <td width="21%">Tartaric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar9"></div></td>
+	    </tr>  
+	    <tr>
+	        <td width="21%">DHPP acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar10"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">3-hydroxy phenylacetic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar11"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="21%">4-hydoxy phenylacetic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar12"></div></td>
+	    </tr>      
+	    <tr>
+	        <td width="21%">Benzoic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar13"></div></td>
+	    </tr>       
+	    <tr>
+	        <td width="21%">Hippuric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar14"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="21%">3-Hydroxypropionic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar15"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="21%">Kynurenic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar16"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="21%">Quinolinic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar17"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="21%">Glutaric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar18"></div></td>
+	    </tr>      
+	    <tr>
+	        <td width="21%">α-Ketoadipic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar19"></div></td>
+	    </tr>             
+	</table>
+</div>
+
+<br>
+
+<div>
+	<table class="tables">
+	    <thead>
+	        <tr>
+	            <td colspan="5">NONESSENTIAL AMINO ACIDS</td>
+	        </tr>       
+		    <tr>
+		        <th rowspan="2" width="21%">SPECIMEN MARKERS</th>
+		        <th rowspan="2" width="11%">RESULTS</th>
+		        <th colspan="2" rowspan="2" width="16%">REFERENCE RANGE</th>
+		        <th width="52%">PERCENTILE</th>
+		     </tr>
+		     <tr style="background-image:none;background-color:#98cdde"> 
+		        <td style="background-image:none;background-color:#98cdde">
+		           <table width="100%" style="background-image:none">
+		               <tr>
+		                   <th>2.5th</th>
+		                   <th>16th</th>
+		                   <th>50th</th>
+		                   <th>84th</th>
+		                   <th>97.5th</th>
+		               </tr>
+	               </table>
+	            </td>
+		     </tr>        
+		</thead>        
+	</table>
+</div>
+
+<br>
+
+<div>
+	<table class="tables">
+	    <thead>
+	        <tr>
+	            <td colspan="5">FATTY ACID METABOLISM</td>
+	        </tr>    
+		    <tr>
+		        <th rowspan="2">SPECIMEN MARKERS</th>
+		        <th rowspan="2">RESULTS</th>
+		        <th rowspan="2">REFERENCE RANGE</th>
+		        <th width="52%">PERCENTILE</th>
+		    </tr>
+	        <tr> 
+	            <td style="background-color:#98cdde;background-image:none">
+	                <table width="100%">
+	                    <tr>
+		                    <th>2.5th</th>
+		                    <th> 16th</th>
+					        <th> 50th</th>
+					        <th> 84th</th>
+					        <th> 97.5th</th>
+	                    </tr>
+	                </table>
+	            </td>
+	        </tr>
+	    </thead>
+	         
+	    <tr>
+	        <td width="21%">Adipic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥5.0</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar20"></div></td>
+	    </tr> 
+	    <tr>
+	        <td width="21%">Suberic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥4.2</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar21"></div></td>
+	    </tr> 
+	    <tr>
+	        <td width="21%">β-OH-Butyric Acid (BHBA)</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥3.4</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar22"></div></td>
+	    </tr> 
+	    <tr>
+	        <td width="21%">3-hydroxyisovaleric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥38</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar23"></div></td>
+	    </tr> 
+	    <tr>
+	        <td width="21%">Isovalerylglycine</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥5.4</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar24"></div></td>
+	    </tr> 
+	    <tr>
+	        <td width="21%">β-OH-β-methylutaric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥19</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar25"></div></td>
+	    </tr>       
+	</table>
+</div>
+
+<br>
+
+<div>
+	<table class="tables">
+	    <thead>
+	        <tr>
+	            <td colspan="5">TOXIN AND DETOXIFICATION MARKERS</td>
+	        </tr>
+		    <tr>
+		        <th rowspan="2">SPECIMEN MARKERS</th>
+		        <th rowspan="2">RESULTS</th>
+		        <th rowspan="2">REFERENCE RANGE</th>
+		        <th width="52%">PERCENTILE</th>
+		    </tr>
+		    <tr> 
+		        <td style="background-color:#98cdde;background-image:none">
+		            <table width="100%">
+		                <tr>
+		                    <th>2.5th</th>
+		                    <th>16th</th>
+		                    <th>50th</th>
+		                    <th>84th</th>
+		                    <th>97.5th</th>
+		                </tr>
+		            </table>
+		        </td>
+		    </tr>                   
+		</thead>       
+	    <tr>
+	        <td width="21%">α-Kelophenylacetic Acid (Styrene)</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥.5</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar26"></div></td>
+	    </tr>        
+	    <tr>
+	        <td width="21%">α-Hydroxyisobutyric Acid (MTBE)</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥8.7</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar27"></div></td>
+	    </tr>       
+	    <tr>
+	        <td width="21%">α-Ketoisovaleric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar28"></div></td>
+	    </tr>           
+	    <tr>
+	        <td width="21%">α-Ketoisocaproic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar29"></div></td>
+	    </tr>       
+	    <tr>
+	        <td width="21%">α-keto-β-Methylvaleric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar30"></div></td>
+	    </tr>                
+	</table>
+</div>
+
+<br>
+
+<div>
+	<table class="tables">
+	    <thead>
+	        <tr>
+	            <td colspan="5">CITRIC ACID METABOLITES</td>
+	        </tr>
+		    <tr>
+		        <th rowspan="2">SPECIMEN MARKERS</th>
+		        <th rowspan="2">RESULTS</th>
+		        <th rowspan="2">REFERENCE RANGE</th>
+		        <th width="52%">PERCENTILE</th>
+		     </tr>
+		     <tr> 
+		         <td style="background-color:#98cdde;background-image:none">
+			         <table width="100%">
+			            <tr>
+			                <th>2.5th</th>
+			                <th>16th</th>
+					         <th>50th</th>
+					         <th>84th</th>
+					         <th>97.5th</th>
+			            </tr>
+		            </table>
+		         </td>
+		     </tr>                   
+		 </thead> 
+	               
+	    <tr>
+	        <td width="21%">Citric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">62-648</td>
+	        <td class="centerBar"><div class="centerToLeft" id="bar31"></div></td>
+	    </tr>         
+	    <tr>
+	        <td width="21%">Cis-Aconitic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">13-33</td>
+	        <td class="centerBar"><div class="centerToRight" id="bar32"></div></td>
+	    </tr>         
+	    <tr>
+	        <td width="21%">Isocitric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">38-97</td>
+	        <td class="centerBar"><div class="centerToLeft" id="bar33"></div></td>
+	    </tr>         
+	    <tr>
+	        <td width="21%">αKetoglutaric Acid (AKG)</td>
+	        <td width="11%"> </td>
+	        <td width="16%">12-55</td>
+	        <td class="centerBar"><div class="centerToLeft" id="bar34"></div></td>
+	    </tr>         
+	    <tr>
+	        <td width="21%">Succinic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">.8-10.4</td>
+	        <td class="centerBar"><div class="centerToRight" id="bar35"></div></td>
+	    </tr> 
+	    <tr>
+	        <td width="21%">Malic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥2.7</td>
+	        <td class="centerBar"><div class="centerToRight" id="bar36"></div></td>
+	    </tr>         
+	</table>
+</div>
+
+<br>
+
+<div>
+	<table class="tables">
+	    <thead>
+	        <tr>
+	            <td colspan="5">METHYLATION CYCLE MARKERS</td> 
+	        </tr>
+		    <tr>
+		        <th rowspan="2">SPECIMEN MARKERS</th>
+		        <th rowspan="2">RESULTS</th>
+		        <th colspan="2" rowspan="2">REFERENCE RANGE</th>
+		        <th width="52%">PERCENTILE</th>
+		     </tr>
+		     <tr> 
+		        <td style="background-color:#98cdde;background-image:none">
+		           <table width="100%">
+		               <tr>
+	                        <th>2.5th</th>
+					        <th>16th</th>
+					        <th>50th</th>
+					        <th>84th</th>
+					        <th>97.5th</th>
+		               </tr>
+		           </table>
+		        </td>
+		   </tr>
+	    </thead>
+	                       
+	    <tr>
+	        <td width="21%">Formiminoglutamic Acid (FIGlu)</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar37"></div></td>
+	    </tr>         
+	    <tr>
+	        <td width="21%">Methylmalonic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar38"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Hippuric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar39"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Tartaric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar40"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Orolic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar41"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Pyroglutamic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">xx</td>
+	        <td width="8%">xx</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar42"></div></td>
+	    </tr>   
+	</table>
+</div>
+
+<br>
+
+<div>
+	<table class="tables">
+	    <thead>
+	        <tr>
+	            <td colspan="5">VITAMIN MARKERS</td>
+	        </tr>
+		    <tr>
+		        <th rowspan="2">SPECIMEN MARKERS</th>
+		        <th rowspan="2">RESULTS</th>
+		        <th rowspan="2">REFERENCE RANGE</th>
+		        <th width="52%">PERCENTILE</th>
+		     </tr>
+		     <tr> 
+		        <td style="background-color:#98cdde;background-image:none">
+		           <table width="100%">
+		               <tr>
+					        <th>2.5th</th>
+					        <th>16th</th>
+					        <th>50th</th>
+					        <th>84th</th>
+					        <th>97.5th</th>
+		               </tr>
+		           </table>
+		        </td>
+		     </tr>    
+	    </thead>
+	
+	    <tr>
+	        <td width="21%">α-Ketoadipic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥2.1</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar43"></div></td>
+	    </tr>         
+	    <tr>
+	        <td width="21%">α-ketoisovaleric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥.85</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar44"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">α-Ketoisocaproic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥.91</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar45"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">α-Keto-β-Methylmaleric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥2.3</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar46"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Formiminoglutamic Acid (FIGlu)</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥2.7</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar47"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Glutaric Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥.92</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar48"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Methylmalonic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥2.2</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar49"></div></td>
+	    </tr>         
+	    <tr>
+	        <td width="21%">Xanthurenic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥1.07</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar50"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Orotic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">.38-.91</td>
+	        <td class="centerBar"><div class="centerToLeft" id="bar51"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Pyroglutamic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">22-64</td>
+	        <td class="centerBar"><div class="centerToRight" id="bar52"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">2-Hydroxyphenylacetic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥.99</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar53"></div></td>
+	    </tr>   
+	</table>
+</div>
+
+<br>
+
+<div>
+	<table class="tables">
+	    <thead>
+	        <tr>
+	            <td colspan="5">NEUROSTRANSMITTER METABOLITES</td>
+	        </tr>
+		    <tr>
+		        <th rowspan="2">SPECIMEN MARKERS</th>
+		        <th rowspan="2">RESULTS</th>
+		        <th rowspan="2">REFERENCE RANGE</th>
+		        <th width="52%">PERCENTILE</th>
+		    </tr>
+		     <tr> 
+		         <td style="background-color:#98cdde;background-image:none">
+		            <table width="100%">
+		                <tr>
+		                    <th>2.5th</th>
+		                    <th>16th</th>
+		                    <th>50th</th>
+		                    <th>84th</th>
+		                    <th>97.5th</th>
+		                </tr>
+		            </table>
+	            </td>
+	        </tr>    
+	    </thead>
+	    <tr>
+	        <td width="21%">Vanilmandelic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">1.5-5.0</td>
+	        <td class="centerBar"><div class="centerToLeft" id="bar54"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Homovanillic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">1.8-8.6</td>
+	        <td class="centerBar"><div class="centerToLeft" id="bar55"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">5-OH-indoleacetic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">6.4-24.3</td>
+	        <td class="centerBar"><div class="centerToRight" id="bar56"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">3-Methyl-4-OH-phenylglycol</td>
+	        <td width="11%"> </td>
+	        <td width="16%">.07-.41</td>
+	        <td class="centerBar"><div class="centerToRight" id="bar57"></div></td>
+	    </tr>         
+	    <tr>
+	        <td width="21%">Kynurenic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥9.2</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar58"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Quinolinic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥9.2</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar59"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Homogentisic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">≥33</td>
+	        <td class="leftToRightBar"><div class="bar" id="bar60"></div></td>
+	    </tr>   
+	    <tr>
+	        <td width="21%">Xanthurenic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="16%">xx-xx</td>
+	        <td class="centerBar"><div class="centerToLeft" id="bar61"></div></td>
+	    </tr>  
+	</table>
+</div>
+
+<br>
+
+<div>
+	<table class="tables">
+	    <thead>
+	        <tr>
+	            <td colspan="5">GLYCOLYSIS MARKERS</td>
+	        </tr>   
+		    <tr>
+		        <th rowspan="2">SPECIMEN MARKERS</th>
+		        <th rowspan="2">RESULTS</th>
+		        <th colspan="2" rowspan="2">REFERENCE RANGE</th>
+		        <th width="52%">PERCENTILE</th>
+		    </tr>
+	        <tr> 
+	            <td style="background-color:#98cdde;background-image:none">
+		           <table width="100%">
+		               <tr>
+		                   <th>2.5th</th>
+		                   <th>16th</th>
+		                   <th>50th</th>
+		                   <th>84th</th>
+		                   <th>97.5th</th>
+		               </tr>
+		           </table>
+	            </td>
+	        </tr>    
+	    </thead>
+	    <tr>
+	        <td width="21%">Lactic Acid</td>
+	        <td width="11%"> </td>
+	        <td width="8%">3.7</td>
+	        <td width="8%">14.6</td>
+	        <td class="centerBar"><div class="centerToRight" id="bar62"></div></td>
+	    </tr>         
+	</table>
+</div>
+
+<br>
+
+<div>
+    <table style="width:650px;float:left">
+		<thead>
+		    <tr>
+                <th width="60%" style="height:70px">Supplements</th>
+		        <th width="20%" style="height:70px">Daily Recommended Value (DRI)</th>
+		        <th width="20%" style="height:70px">Patient&#39;s Daily Recommendations</th>
+		    </tr>
+		</thead>
+		    <tr>
+		        <th colspan="3">ANTIOXIDANTS</th>
+		    </tr>
+		    
+		    <tr>
+		        <td width="60%">Vitamin A/Carotenolds</td>
+		        <td width="20%">1,333 IU</td>
+		        <td width="20%">1,500 IU</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Vitamin C</td>
+		        <td width="20%">25mg</td>
+		        <td width="20%">50mg</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Vitamin E/Tocopherols</td>
+		        <td width="20%">10 IU</td>
+		        <td width="20%">50 IU</td>
+		    </tr>
+		    <tr>
+		        <th colspan="3">B-VITAMINS</th>
+		    </tr>
+		    <tr>
+		        <td width="60%">Thiamin B1</td>
+		        <td width="20%">0.6 mg</td>
+		        <td width="20%">5 mg</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Riboflavin B2</td>
+		        <td width="20%">0.6 mg</td>
+		        <td width="20%">5 mg</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Niacine B3</td>
+		        <td width="20%">8 mg</td>
+		        <td width="20%">20 mg</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Pyridoxine B6</td>
+		        <td width="20%">0.6 mg</td>
+		        <td width="20%">5 mg</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Biotin B7</td>
+		        <td width="20%">12 mcg</td>
+		        <td width="20%">50 mcg</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Folic Acid B9</td>
+		        <td width="20%">200 mcg</td>
+		        <td width="20%">300 mcg</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Cobalamin B12</td>
+		        <td width="20%">1.2 mcg</td>
+		        <td width="20%">50 mcg</td>
+		    </tr>
+		    <tr>
+		        <th colspan="3">MINERALS</th>
+		    </tr>
+		    <tr>
+		        <td width="60%">Magnesium</td>
+		        <td width="20%">130 mg</td>
+		        <td width="20%">150 mg</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Manganese</td>
+		        <td width="20%">1.5 mg</td>
+		        <td width="20%">1.5 mg</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Molybdenum</td>
+		        <td width="20%">22 mcg</td>
+		        <td width="20%">25 mcg</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Zinc</td>
+		        <td width="20%">5 mg</td>
+		        <td width="20%">5 mg</td>
+		    </tr>
+		    <tr>
+		        <th colspan="3">DIGESTIVE SUPPORT</th>
+		    </tr>
+		    <tr>
+		        <td width="60%">Probiotics</td>
+		        <td width="20%"></td>
+		        <td width="20%">10 B CFU</td>
+		    </tr>
+		    <tr>
+		        <td width="60%">Pancreatic Enzymes</td>
+		        <td width="20%"></td>
+		        <td width="20%">5,000 IU</td>
+		    </tr>
+		</table>
+    <table style="width:650px;float:right">
+		<thead>
+		    <tr>
+		        <th colspan="2" style="height:70px">PRESUMPTIVE NEEDS/IMPLIED CONDITIONS</th>
+	        </tr>
+	    </thead>
+        <tr>
+	        <th colspan="2">ANTIOXIDANTS</th>
+	    </tr>
+	    <tr>   
+	        <td width="40%">Vitamin A/Carotenoids</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar63"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="40%"> Vitamin E/Tocopherols</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar64"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="40%"> Vitamin C</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar65"></div></td>
+	    </tr>    
+	    <th colspan="2">B-VITAMINS</th>
+	    <tr>   
+	        <td width="40%">Thiamin -B1</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar66"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="40%">Riboflavin -B2</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar67"></div></td>     
+	    </tr>    
+	    <tr>
+	        <td width="40%">Niacin -B3</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar68"></div></td>
+	    </tr>      
+	    <tr>
+	        <td width="40%">Pyridoxine -B6</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar69"></div></td>
+	    </tr> 
+	    <tr>
+            <td width="40%">Biotin -B7</td>
+            <td width="60%" class="leftToRightBar"><div class="bar" id="bar70"></div></td>
+        </tr>
+        <tr>
+            <td width="40%">Folic Acid -B9</td>
+            <td width="60%" class="leftToRightBar"><div class="bar" id="bar71"></div></td>
+        </tr> 
+	    <tr>
+	        <td width="40%">Cobalamin -B12</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar72"></div></td>
+	    </tr> 
+	    <th colspan="2">MINERALS</th>
+	    <tr>
+               <td width="40%">Magnesium</td>
+               <td width="60%" class="leftToRightBar"><div class="bar" id="bar73"></div></td></tr> 
+	    <tr>   
+	        <td width="40%">Manganese</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar74"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="40%">Molybdenum</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar75"></div></td>     
+	    </tr>        
+	    <tr>
+	        <td width="40%">Zinc</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar76"></div></td>
+	    </tr> 
+	    <th colspan="2">DIGESTIVE SUPPORT</th>
+	    <tr>   
+	        <td width="40%">Need for Probiotics</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar77"></div></td>
+	    </tr>
+	    <tr>
+	        <td width="40%">Need for Pancreatic Enzymes</td>
+	        <td width="60%" class="leftToRightBar"> <div class="bar" id="bar78"></div></td>     
+	    </tr>   
+	</table>
+</div>
+
+</div>
+</body>
+</html>

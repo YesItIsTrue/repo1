@@ -1,0 +1,1083 @@
+/***********************************************************************
+	Base Style and Table Style
+
+	CMS - Trae Luttrell
+	May 15, 2014 - v 2.6
+
+	Update - Quinton Schafer
+	Dec, 2014 - v 2.7
+	core.css now contains all of table.css, all gradient images have been
+	replaced with css gradients. A new grid system has been added, with a
+	simple explanation of implementation, with an example. Sample gradients
+	have been added as classes at the bottom for future gradient use. The
+	Wee_table class has been added with its own section.
+
+************************************************************************
+  Stole/ Merged needed pieces from Mark Jacobs'
+  "style2.css" and "grid.css" in order
+  to reduce lines of code.
+
+***********************************************************************/
+body.outside{
+  height: 100%;
+  background-color:#ccd1d7;
+  margin:0;
+}
+body.outside div:first-child{
+
+}
+body.outside div:first-child h1{
+  font-size: xx-large;
+  font-family: Arial, Helvetica, sans-serif;
+  text-align: center;
+  font-style: italic;
+  color: black;
+  background-color: #ccd1d7;
+  /** gradient-lt-blue**/
+  background: -moz-linear-gradient(top, rgba(255,255,255,1) 15%, rgba(173,225,255,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(15%,rgba(255,255,255,1)), color-stop(100%,rgba(173,225,255,1)));
+  background: -webkit-linear-gradient(top, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+  background: -o-linear-gradient(top, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+  background: -ms-linear-gradient(top, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+  background: linear-gradient(to bottom, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+  width:100%;
+  padding:0;
+  margin:0;
+}
+body.inside{
+  /** gradient-inverse-blue **/
+  background: -moz-linear-gradient(top, rgba(63,147,168,1) 0%, rgba(255,255,255,1) 100vh);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(63,147,168,1)), color-stop(100vh,rgba(255,255,255,1)));
+  background: -webkit-linear-gradient(top, rgba(63,147,168,1) 0%,rgba(255,255,255,1) 100vh);
+  background: -o-linear-gradient(top, rgba(63,147,168,1) 0%,rgba(255,255,255,1) 100vh);
+  background: -ms-linear-gradient(top, rgba(63,147,168,1) 0%,rgba(255,255,255,1) 100vh);
+  background: linear-gradient(to bottom, rgba(63,147,168,1) 0%,rgba(255,255,255,1) 100vh);
+}
+body.inside h1{
+  font-size:xx-large;
+  font-family:Arial, Helvetica, sans-serif;
+  font-style:italic;
+  color:#ccd1d7;
+}
+.iframe-wrapper{
+  Width: 100%;
+}
+iframe{
+  width:100%;
+  scrolling:auto;
+}
+.titlebar{
+  width:100%;
+  height:82px;
+}
+.footer{
+	font-size:small;
+	font-family:Arial, Helvetica, sans-serif;
+	text-align:right;
+	color:#000000;
+	background-color:inheirit;
+	bottom:0;
+	right:0;
+	position:absolute;
+}
+.leftlogo{
+  Display:inline;
+  Float:left;
+}
+.rightlogo{
+  Display:inline;
+  Float:right;
+}
+.centerheader{
+  Display:inline;
+  Width:80%;
+}
+/**************************************************************************
+
+    This is the start of the classes used by the menuwalk procedure.
+
+**************************************************************************/
+.glossymenu{ /*** outside div ***/
+  padding: 0;
+  border: 1px solid #ccd1d7;
+  border-bottom-width: 0;
+  float:left;
+  margin:0;
+}
+.glossymenu a.menuitem{ /*** level 1 ***/
+  /** gradient-lt-blue**/
+  background: -moz-linear-gradient(top, rgba(255,255,255,1) 15%, rgba(173,225,255,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(15%,rgba(255,255,255,1)), color-stop(100%,rgba(173,225,255,1)));
+  background: -webkit-linear-gradient(top, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+  background: -o-linear-gradient(top, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+  background: -ms-linear-gradient(top, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+  background: linear-gradient(to bottom, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+  font:19px "Consolas", Courier, monospace;
+  color: black;
+  display: block;
+  position: relative; /*To help in the anchoring of the ".statusicon" icon image*/
+  width: auto;
+  padding: 4px 0;/* right padding might be off */
+  padding-left: 10px;
+  text-decoration: none;
+}
+.glossymenu a.menuitem:hover{
+  /** gradient-lt-green**/
+  background: -moz-linear-gradient(top, rgba(248,255,232,1) 0%, rgba(161,255,142,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(248,255,232,1)), color-stop(100%,rgba(161,255,142,1)));
+  background: -webkit-linear-gradient(top, rgba(248,255,232,1) 0%,rgba(161,255,142,1) 100%);
+  background: -o-linear-gradient(top, rgba(248,255,232,1) 0%,rgba(161,255,142,1) 100%);
+  background: -ms-linear-gradient(top, rgba(248,255,232,1) 0%,rgba(161,255,142,1) 100%);
+  background: linear-gradient(to bottom, rgba(248,255,232,1) 0%,rgba(161,255,142,1) 100%);
+  color:black;
+}
+.glossymenu a.menuitem:visited, .glossymenu .menuitem:active{
+  color: black;
+}
+.glossymenu div.submenu{
+	background-color:white;
+}
+.glossymenu div.submenu ul{ /*UL of each sub menu*/
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: auto; /*force hasLayout in IE7 */
+}
+.glossymenu div.submenu ul li{
+  border-bottom: 1px solid #ccd1d7;
+}
+.glossymenu div.submenu ul li a{
+  display: block;
+  font: normal 17px "Consolas", Courier, monospace;
+  color: black;
+  text-decoration: none;
+  padding: 2px 4px;
+  padding-left: 10px;
+}
+.glossymenu div.submenu ul li a:hover{
+  background: #999999;
+  color: white;
+}
+/* use this inside the submenu link tags to separate the section number from its name */
+.sectionBlock{
+  display:inline-block;
+  width:19%;
+  float:left;
+  margin-right:1%;
+}
+.titleBlock{
+  display:inline-block;
+  width:80%;
+}
+/***************************************************************************
+    THE NEW GRID SYSTEM
+
+    This grid system revolves around the magic number 12. So this means
+    that each row of the grid should contain a group of grid items that
+    add up to 12. A class of grid-4 would be 4/12 or 1/3 of whatever
+    section the row is contained within.
+
+    Example of a full row:
+    <div class="row">
+      <div class="grid_2"></div>
+      <div class="grid_6"></div>
+      <div class="grid_4"></div>
+    </div>
+    Example of 3 evenly sized columns:
+    <div class="row">
+      <div class="grid_4"></div>
+      <div class="grid_4"></div>
+      <div class="grid_4"></div>
+    </div>
+
+    If you have any questions, let me know, and I can walk you through it.
+      - Quinton
+***************************************************************************/
+
+.row{
+  margin-right: auto;
+  margin-left: auto;
+}
+div[class*='grid_']{
+  position: relative;
+  min-height: 1px;
+  padding-right: 15px;
+  padding-left: 15px;
+  float:left;
+  box-sizing:border-box;
+}
+.row,
+div[class*='grid_']{
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex:1 1 auto;
+}
+.grid_0-25{
+  width: 2.08333333%;
+}
+.grid_0-5{
+  width: 4.16666667%;
+}
+.grid_1{
+  width: 8.33333333%;
+}
+.grid_1-5{
+  width: 12.5%;
+}
+.grid_2{
+  width: 16.66666667%;
+}
+.grid_2_5,
+.grid_2-5{
+  width: 20.83333333%;
+}
+.grid_3{
+  width: 25%;
+}
+.grid_3-5{
+  width: 29.16666667%;
+}
+.grid_4{
+  width: 33.33333333%;
+}
+.grid_4-5{
+  width: 37.5%;
+}
+.grid_5{
+  width: 41.66666667%;
+}
+.grid_5-5{
+  width: 45.83333333%;
+}
+.grid_6{
+  width: 50%;
+}
+.grid_6-5{
+  width: 54.16666667%;
+}
+.grid_7{
+  width: 58.33333333%;
+}
+.grid_7-5{
+  width: 62.5%;
+}
+.grid_8{
+  width: 66.66666667%;
+}
+.grid_8-5{
+  width: 70.83333333%;
+}
+.grid_9{
+  width: 75%;
+}
+.grid_9_5,
+.grid_9-5{
+  width: 79.16666667%;
+}
+.grid_10{
+  width: 83.33333333%;
+}
+.grid_10-5{
+  width: 87.5%;
+}
+.grid_11{
+  width: 91.66666667%;
+}
+.grid_11-5{
+  width: 95.83333333%;
+}
+.grid_12{
+  width:100%;
+}
+/**************************************************************************
+  Old grid classes
+    I didn't remove them, just incase they are currently in use.
+    Remove these if we are sure that they aren't being used.
+
+**************************************************************************/
+.grid-20{
+  float: left;
+  width: 18%;
+  /* <IE7> */
+  *width: expression(Math.floor ( 0.2 *   ( this.parentNode.offsetWidth -
+    parseFloat(this.parentNode.currentStyle.paddingLeft)-  parseFloat(this.parentNode.currentStyle.paddingRight)
+    ) )+  "px" );
+  /* </IE7> */
+}
+.grid-80{
+  float: right;
+  width: 79%;
+  /* <IE7> */
+  *width: expression(Math.floor ( 0.8 *   ( this.parentNode.offsetWidth -
+    parseFloat(this.parentNode.currentStyle.paddingLeft)-  parseFloat(this.parentNode.currentStyle.paddingRight)
+    ) )+  "px" );
+  /* </IE7> */
+}
+.grid-100{
+  clear: both;
+  width: 100%;
+  /*height:100px;*/
+}
+/***************************************************************************
+  Begin Table.css
+
+	Style Sheet for Tables
+	CMS - Trae Luttrell
+	May 08, 2014 - v 1.3
+	Aug 20, 2014 - v 2.0
+***************************************************************************/
+/** Unsorted **/
+.req,
+.required,
+.yellow{
+  background-color:#ffff99; /** Yellow **/
+}
+.alt,
+.altered,
+.col,
+.orange{
+  background-color:#ffcc66; /** Orange **/
+}
+.light_green{
+  background-color:#99FF33; /** Light Green **/
+}
+.green{
+  background-color:#99FF99; /** Green **/
+}
+.blue{
+  background-color:#98cdde; /***blue***/
+}
+.align_right{
+  text-align:right;
+}
+.align_left{
+  text-align:left;
+}
+.align_center{
+  text-align:center;
+}
+.cell_10{
+  width:10%;
+}
+.cell_15{
+  width:15%;
+}
+.cell_20{
+  width:20%;
+}
+.cell_25{
+  width:25%;
+}
+.cell_30{
+  width:30%;
+}
+/***************************************************************************
+	- - One Column Table - -
+***************************************************************************/
+.table_col{
+	background-color:#999999;
+	margin-top: 5px;
+	margin-left:auto;
+	margin-right:auto;
+	table-layout:fixed;
+	font-family: Arial, Helvetica, sans-serif;
+}
+.table_col table{
+	width:100%;
+}
+.table_col table th{
+	/** gradient-grey**/
+	background: -moz-linear-gradient(top,  rgba(230,230,230,1) 0%, rgba(84,81,77,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(230,230,230,1)), color-stop(100%,rgba(84,81,77,1)));
+  background: -webkit-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -o-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -ms-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: linear-gradient(to bottom,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+
+	text-align:left;
+	color:white;
+	padding:5px;
+	font-size: 1.5em;
+	height:auto;
+}
+.table_col table tr td{
+	padding:0 5px;
+	background-color:white;
+	font-weight:bold;
+	text-align:right;
+	height:30px;
+}
+.table_col table tr td:first-child{
+  background-color:#98cdde;
+  width:20%;
+}
+.table_col table tr td:nth-child(2){
+  text-align:left;
+}
+
+/*******************************************************
+ - - 2 Column Table - -
+********************************************************/
+.table_2col{
+	background-color:#999999;
+	margin-left:auto;
+	margin-right:auto;
+	margin-top: 5px;
+	font-family: Arial, Helvetica, sans-serif;
+	table-layout:fixed;
+}
+.table_2col table{
+	width:100%
+}
+.table_2col table th{
+/** gradient-grey**/
+	background: -moz-linear-gradient(top,  rgba(230,230,230,1) 0%, rgba(84,81,77,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(230,230,230,1)), color-stop(100%,rgba(84,81,77,1)));
+  background: -webkit-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -o-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -ms-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: linear-gradient(to bottom,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+
+	text-transform:uppercase;
+	text-align:left;
+	color:white;
+	padding:5px;
+	font-size: 1.5em;
+	height:100%;
+}
+.table_2col table td{
+	padding:0 5px;
+	background-color:white;
+	font-weight:bold;
+	text-align:right;
+	height:30px;
+}
+.table_2col table tbody tr td:first-child,
+.table_2col table tbody tr td:nth-child(3){
+  background-color:#98cdde;
+  min-width:10%;
+}
+.table_2col table tbody tr td:nth-child(2),
+.table_2col table tbody tr td:nth-child(4){
+  text-align:left;
+  min-width:30%;
+}
+/***********************************************
+- - Three Column Table - -
+***********************************************/
+.table_3col{
+	background-color:#999999;
+	margin-left:auto;
+	margin-right:auto;
+	margin-top: 5px;
+	table-layout:fixed;
+	font-family: Arial, Helvetica, sans-serif;
+}
+.table_3col table{
+	width:100%
+}
+.table_3col table th{
+	/** gradient-grey**/
+	background: -moz-linear-gradient(top,  rgba(230,230,230,1) 0%, rgba(84,81,77,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(230,230,230,1)), color-stop(100%,rgba(84,81,77,1)));
+  background: -webkit-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -o-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -ms-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: linear-gradient(to bottom,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+
+	text-transform:uppercase;
+	text-align:left;
+	color:white;
+	padding:5px;
+	font-size: 1.5em;
+	height:100%;
+}
+.table_3col table td{
+	padding:0 5px;
+	background-color:white;
+	font-weight:bold;
+	text-align:right;
+	height:30px;
+}
+.table_3col table tbody tr td:first-child,
+.table_3col table tbody tr td:nth-child(3),
+.table_3col table tbody tr td:nth-child(5){
+  background-color:#98cdde;
+  width:10%;
+  min-width:75px;
+}
+.table_3col table tbody tr td:nth-child(2),
+.table_3col table tbody tr td:nth-child(4),
+.table_3col table tbody tr td:nth-child(6){
+  text-align:left;
+  min-width:25%;
+}
+/*****************************************************
+	- - Start of Report Style Table
+*****************************************************/
+.table_report,
+.table_report_short{
+	background-color:#999999;
+	margin-top: 5px;
+	margin-left:auto;
+	margin-right:auto;
+	font-family: Arial, Helvetica, sans-serif;
+}
+.table_report table,
+.table_report_short table{
+	width:100%
+}
+.table_report table thead tr th,
+.table_report_short table thead tr th{
+ /** gradient-grey**/
+	background: -moz-linear-gradient(top,  rgba(230,230,230,1) 0%, rgba(84,81,77,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(230,230,230,1)), color-stop(100%,rgba(84,81,77,1)));
+  background: -webkit-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -o-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -ms-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: linear-gradient(to bottom,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+	text-transform:uppercase;
+	color:white;
+	padding:5px;
+	font-size: 1.5em;
+	font-weight:bold;
+}
+.table_report .break,
+.table_report_short .break{
+ /** gradient-grey**/
+	background: -moz-linear-gradient(top,  rgba(230,230,230,1) 0%, rgba(84,81,77,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(230,230,230,1)), color-stop(100%,rgba(84,81,77,1)));
+  background: -webkit-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -o-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -ms-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: linear-gradient(to bottom,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  text-transform:uppercase;
+  color:white;
+  padding:5px;
+  font-size: 1.5em;
+  font-weight:bold;
+  text-align:center;
+}
+.table_report table tr,
+.table_report_short table tr{
+	padding:0 5px;
+	background-color:white;
+	height:30px;
+}
+.table_report table tr:nth-child(odd){
+	padding:0 5px;
+	background-color:#99ff99; /*** greenish ***/
+	height:30px;
+}
+.table_report table tbody tr:first-child,
+.table_report_short table tbody tr:first-child{
+  background-color:#98cdde;
+  font-weight:bold;
+  text-align:center;
+}
+/*****************************************************
+  Report Style Table for Searches, it is designed
+    to have the From and To search criteria displayed at
+    the top of the table.
+*****************************************************/
+.table_report_FromTo{
+  background-color:#999999;
+  margin-top: 5px;
+  margin-left:auto;
+  margin-right:auto;
+  table-layout:fixed;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size:1em;
+}
+.table_report_FromTo table{
+  width:100%
+}
+.table_report_FromTo table thead tr:first-child{
+  /** gradient-grey**/
+	background: -moz-linear-gradient(top,  rgba(230,230,230,1) 0%, rgba(84,81,77,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(230,230,230,1)), color-stop(100%,rgba(84,81,77,1)));
+  background: -webkit-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -o-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -ms-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: linear-gradient(to bottom,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  text-transform: uppercase;
+  text-align:left;
+  color: white;
+  padding:5px;
+  font-size: 1.5em;
+  height:30px;
+}
+.table_report_FromTo table thead tr:nth-child(2),
+.table_report_FromTo table thead tr:nth-child(3){
+  font-size:1em;
+  background-color:white;
+  padding:5px;
+  height:30px;
+}
+.table_report_FromTo table thead tr:nth-child(4){
+  background-color:#98cdde;
+  padding:5px;
+  font-size:1em;
+  font-weight:bold;
+  height:30px;
+}
+.table_report_FromTo .break{
+  /** gradient-grey**/
+	background: -moz-linear-gradient(top,  rgba(230,230,230,1) 0%, rgba(84,81,77,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(230,230,230,1)), color-stop(100%,rgba(84,81,77,1)));
+  background: -webkit-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -o-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -ms-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: linear-gradient(to bottom,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  text-transform:uppercase;
+  text-align: left;
+  color:white;
+  padding:5px;
+  font-size: 1.5em;
+  height:30px;
+}
+.table_report_FromTo table tbody tr:nth-child(odd){
+  padding:0 5px;
+  background-color:white;
+  text-align:center;
+  height:30px;
+}
+.table_report_FromTo table tbody tr:nth-child(even){
+  padding:0 5px;
+  background-color:#99ff99; /*** greenish ***/
+  text-align:center;
+  height:30px;
+}
+.table_report_FromTo table tbody tr:last-child{
+  background-color:#98cdde;
+}
+.btn{
+  font-size:1em;
+  width:100%;
+}
+/*****************************************************
+  Print Label table
+
+  note: it would be cool to have a shadow behind the table, so it actually looked like a piece of paper...
+*****************************************************/
+.print_label{
+  background-color:white;
+  border:thin solid black;
+  box-shadow: 0px 0px 10px rgba(0,0,0,.5);
+  border-radius:2.5px;
+  padding:8px;
+}
+/****************************************************
+  Wee Table
+    Everything about this table should work.
+****************************************************/
+.wee_table{
+  border-collapse: collapse;
+  font-family: arial, sans-serif;
+  font-size: 1em;
+}
+.wee_table thead{
+  font-weight:bold;
+  background-color:lightblue;
+  border-bottom:1px solid black;
+  font-size: 1.5em;
+}
+.wee_table tbody{
+  background-color:white;
+}
+.wee_table td,
+.wee_table th{
+  padding-left:.45em;
+  padding-right:.45em;
+}
+.wee_table th:first-child,
+.wee_table td:first-child{
+  border-right:1px solid black;
+}
+.wee_table tbody td:nth-child(2){
+  text-align:right;
+}
+/** Gradient Classes with cross browser compatibility **/
+.gradient-green{
+  background: -moz-linear-gradient(top, rgba(237,255,238,1) 27%, rgba(100,209,116,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(27%,rgba(237,255,238,1)), color-stop(100%,rgba(100,209,116,1)));
+  background: -webkit-linear-gradient(top, rgba(237,255,238,1) 27%,rgba(100,209,116,1) 100%);
+  background: -o-linear-gradient(top, rgba(237,255,238,1) 27%,rgba(100,209,116,1) 100%);
+  background: -ms-linear-gradient(top, rgba(237,255,238,1) 27%,rgba(100,209,116,1) 100%);
+  background: linear-gradient(to bottom, rgba(237,255,238,1) 27%,rgba(100,209,116,1) 100%);
+}
+.gradient-lt-green{
+  background: -moz-linear-gradient(top, rgba(248,255,232,1) 0%, rgba(161,255,142,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(248,255,232,1)), color-stop(100%,rgba(161,255,142,1)));
+  background: -webkit-linear-gradient(top, rgba(248,255,232,1) 0%,rgba(161,255,142,1) 100%);
+  background: -o-linear-gradient(top, rgba(248,255,232,1) 0%,rgba(161,255,142,1) 100%);
+  background: -ms-linear-gradient(top, rgba(248,255,232,1) 0%,rgba(161,255,142,1) 100%);
+  background: linear-gradient(to bottom, rgba(248,255,232,1) 0%,rgba(161,255,142,1) 100%);
+}
+.gradient-blue{
+  background: -moz-linear-gradient(top,  rgba(232,246,255,1) 27%, rgba(49,167,214,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(27%,rgba(232,246,255,1)), color-stop(100%,rgba(49,167,214,1)));
+  background: -webkit-linear-gradient(top,  rgba(232,246,255,1) 27%,rgba(49,167,214,1) 100%);
+  background: -o-linear-gradient(top,  rgba(232,246,255,1) 27%,rgba(49,167,214,1) 100%);
+  background: -ms-linear-gradient(top,  rgba(232,246,255,1) 27%,rgba(49,167,214,1) 100%);
+  background: linear-gradient(to bottom,  rgba(232,246,255,1) 27%,rgba(49,167,214,1) 100%);
+}
+.gradient-lt-blue{
+  background: -moz-linear-gradient(top, rgba(255,255,255,1) 15%, rgba(173,225,255,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(15%,rgba(255,255,255,1)), color-stop(100%,rgba(173,225,255,1)));
+  background: -webkit-linear-gradient(top, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+  background: -o-linear-gradient(top, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+  background: -ms-linear-gradient(top, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+  background: linear-gradient(to bottom, rgba(255,255,255,1) 15%,rgba(173,225,255,1) 100%);
+}
+.gradient-inverse-blue{
+  background: -moz-linear-gradient(top, rgba(63,147,168,1) 0%, rgba(255,255,255,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(63,147,168,1)), color-stop(100%,rgba(255,255,255,1)));
+  background: -webkit-linear-gradient(top, rgba(63,147,168,1) 0%,rgba(255,255,255,1) 100%);
+  background: -o-linear-gradient(top, rgba(63,147,168,1) 0%,rgba(255,255,255,1) 100%);
+  background: -ms-linear-gradient(top, rgba(63,147,168,1) 0%,rgba(255,255,255,1) 100%);
+  background: linear-gradient(to bottom, rgba(63,147,168,1) 0%,rgba(255,255,255,1) 100%);
+}
+.gradient-grey{
+	background: -moz-linear-gradient(top,  rgba(230,230,230,1) 0%, rgba(84,81,77,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(230,230,230,1)), color-stop(100%,rgba(84,81,77,1)));
+  background: -webkit-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -o-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: -ms-linear-gradient(top,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+  background: linear-gradient(to bottom,  rgba(230,230,230,1) 0%,rgba(84,81,77,1) 100%);
+}
+.gradient-red{
+  background: -moz-linear-gradient(top, rgba(255,255,255,1) 5%, rgba(216,0,0,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(5%,rgba(255,255,255,1)), color-stop(100%,rgba(216,0,0,1)));
+  background: -webkit-linear-gradient(top, rgba(255,255,255,1) 5%,rgba(216,0,0,1) 100%);
+  background: -o-linear-gradient(top, rgba(255,255,255,1) 5%,rgba(216,0,0,1) 100%);
+  background: -ms-linear-gradient(top, rgba(255,255,255,1) 5%,rgba(216,0,0,1) 100%);
+  background: linear-gradient(to bottom, rgba(255,255,255,1) 5%,rgba(216,0,0,1) 100%);
+}
+/*****************************************************
+
+    - - Start of Pancake Table
+
+*****************************************************/
+.pancake{
+  background-color:#999999;
+  margin-top: 5px;
+  margin-left:auto;
+  margin-right:auto;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.pancake table{
+  width:100%
+}
+.pancake table thead tr{
+  padding: 5px;
+  background: -moz-linear-gradient(top,  rgba(252,255,244,1) 0%, rgba(84,81,77,1) 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,255,244,1)), color-stop(100%,rgba(84,81,77,1)));
+  background: -webkit-linear-gradient(top,  rgba(252,255,244,1) 0%,rgba(84,81,77,1) 100%);
+  background: -o-linear-gradient(top,  rgba(252,255,244,1) 0%,rgba(84,81,77,1) 100%);
+  background: -ms-linear-gradient(top,  rgba(252,255,244,1) 0%,rgba(84,81,77,1) 100%);
+  background: linear-gradient(to bottom,  rgba(252,255,244,1) 0%,rgba(84,81,77,1) 100%);
+  font-size:1.5em;
+  color:white;
+}
+.pancake table tr{
+  padding: 5px;
+  background-color:white;
+  text-align: center;
+  height:30px;
+}
+.pancake table tbody tr:first-child{
+  background-color:#98cdde;
+  font-weight:bold;
+}
+/********************************************
+
+Inner Table Class -
+to be used when you need a table inside a
+specific table cell, for example in the:
+  TLrecR.html
+
+********************************************/
+td.inner,
+th.inner{
+  background-color:#999999;
+  width:80%;
+}
+td.inner table tr th,
+th.inner table tr th{
+  padding: 5px;
+  background-color:#98cdde; /***blue***/
+  font-size:1em;
+  text-align:center;
+  font-weight:bold;
+  height:30px;
+  border-collapse:collapse;
+}
+td.inner table tr td{
+  padding: 5px;
+  background-color:white;
+  text-align: center;
+  height:30px;
+}
+td.inner table tr td:first-child,
+td.inner table tr th:first-child,
+th.inner table tr th:first-child{
+  width:12%;
+}
+td.inner table tr td:nth-child(2),
+td.inner table tr th:nth-child(2),
+th.inner table tr th:nth-child(2){
+  width:20%;
+}
+td.inner table tr td:nth-child(3),
+td.inner table tr td:nth-child(4),
+td.inner table tr th:nth-child(3),
+td.inner table tr th:nth-child(4),
+th.inner table tr th:nth-child(3),
+th.inner table tr th:nth-child(4){
+  width:13%;
+}
+td.inner table tr td:nth-child(5),
+td.inner table tr th:nth-child(5),
+th.inner table tr th:nth-child(5){
+  width:44%;
+}
+td.inner table tr td.green{
+  padding: 5px;
+  background-color:#99ff99; /*** greenish ***/
+  text-align: center;
+  font-weight: normal;
+  font-size:medium;
+  height:30px;
+}
+/** Testkit Date Tracking display **/
+.box,
+.box_last{
+  border-radius:10px; /** must be same border radius as box title class **/
+  border:1px solid #999;
+  text-align:center;
+  font-size:1em;
+  width:100%;
+  font-family: Arial, Helvetica, sans-serif;
+  z-index:1;
+  background-color:white;
+}
+.arrow_right{
+  top:50%;
+  left:10%;
+  height:50%;
+  width:80%;
+	position: absolute;
+	content:"";
+	border-top:1px solid #999;
+	padding: 0 10px;
+	margin:0 -10px;
+}
+.arrow_right:after{
+  top: 0%;
+  left: 100%;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	border-left-color: #999;
+	border-width: 10px;
+	padding: 0 10px;
+	margin:0 -10px;
+	margin-top:-10px;
+}
+.diamond_text:after{
+  left:170%;
+  top:0%;
+  z-index:1;
+}
+.diamond_text:before{
+  width:60%;
+  top:0%;
+  left:125%;
+  z-index:1;
+}
+div[class*='box_title_']{
+  border-bottom:1px solid #999;
+  border-radius:10px 10px 0 0; /** must be same border radius as box class **/
+  font-weight:bold;
+  padding:.2em;
+}
+.box_title_blue{
+  background-color:rgba(152,205,222,.5);
+}
+.box_title_orange{
+  background-color:rgba(237,140,71,.5);
+}
+.box_title_green{
+  background-color:rgba(82,186,84,.5);
+}
+.box_title_lightgreen{
+  background-color:rgba(0,176,80,.8);
+  color:white;
+}
+.box_title_red{
+  background-color:rgba(252,50,50,.5);
+}
+.box_title_black{
+  background-color:rgba(0,0,0,.8);
+  color:white;
+}
+.box_title_gold{
+  background-color:rgba(236,151,31,1);
+}
+.box_info{
+  padding:.2em;
+  min-height:80px;
+}
+.curved_arrow,
+.curved_arrow_long{
+  position:absolute;
+  height:50%;
+  width:85%;
+  top:50%;
+  left:15%;
+  border-radius:100px 0 0 0;
+  border-top:1px dashed #999;
+  border-left:1px dashed #999;
+}
+.curved_arrow_long{
+  left:45%;
+  width:405%;
+  top:40%;
+  height:60%;
+}
+.curved_arrow:after,
+.curved_arrow_long:after{
+  left: 100%;
+	top: 0%;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	border-left-color: #999;
+	border-width: 10px;
+	margin-top: -10px;
+	z-index:1;
+}
+.gap{
+  height:100px;
+}
+.gap_arrow,
+.gap_arrow_bottom{
+  height:40%;
+  width:90%;
+  position:absolute;
+  top:50%;
+  left:5%;
+  border-top:1px solid #999;
+  border-left:1px solid #999;
+}
+.gap_arrow_bottom{
+  border-left:none;
+  left:10%;
+}
+.gap_arrow_bottom:after{
+  left: 100%;
+	top: 0%;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	border-left-color: #999;
+	border-width: 10px;
+	margin-top: -10px;
+}
+.gap_arrow_top,
+.gap_arrow_bottom_left{
+  height:50%;
+  width:90%;
+  position:absolute;
+  top:0%;
+  left:5%;
+  border-right:1px solid #999;
+}
+.gap_arrow_bottom_left{
+  border-right:none;
+  left:10%;
+  height:80%;
+  top:-30%;
+  border-left:1px solid #999;
+}
+.gap_arrow:after{
+  top:100%;
+	left: 0%;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	pointer-events: none;
+	border-top-color: #999;
+	border-width: 10px;
+	margin-left: -10.16px;
+	z-index:1;
+}
+.vertical_arrow{
+  border-right:1px solid #999;
+  left:50%;
+  position:absolute;
+  height:90%;
+}
+.vertical_arrow:after{
+  top:100%;
+	left: 0%;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	pointer-events: none;
+	border-top-color: #999;
+	border-width: 10px;
+	margin-left: -10.16px;
+	z-index:1;
+}
+.diamond{
+  border:1px solid #999;
+  -webkit-transform: rotate(-45deg);
+  -moz-transform: rotate(-45deg);
+  -ms-transform: rotate(-45deg);
+  -o-transform: rotate(-45deg);
+  transform: rotate(-45deg);
+  -webkit-transform-origin: 0 100%;
+  -moz-transform-origin: 0 100%;
+  -ms-transform-origin: 0 100%;
+  -o-transform-origin: 0 100%;
+  transform-origin: 0 100%;
+  height:120px;
+  width:120px;
+  position:absolute;
+  top:50%;
+  left:50%;
+}
+.diamond_text{
+  position:absolute;
+  top:65%;
+  left:20%;
+  text-align:center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size:1em;
+  width:60%;
+}
+.arrow_text{
+  position:absolute;
+  top:35%;
+  left:10%;
+  text-align:center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size:1em;
+  width:80%;
+  z-index:2;
+}

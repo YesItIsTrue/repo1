@@ -1,0 +1,250 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+    <TITLE>Test Kit Type Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Sara Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="2/Jan/15">
+    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+
+{&OUT}
+    "</HEAD>" SKIP
+    "<BODY class='inside'>".
+
+
+ /*------------------------------------------------------------------
+    File: TK-type-Report.html 
+    Description: The report for countries 
+    Created: Saturday December 6th 2014 4:17 PM - Sara Luttrell
+   
+  -------------------------------------------------------------------
+ *-------------------------------------------------------------------
+ * Revision History:
+ * This header information was added on 9/22/15 by Mark Jacobs        
+ * ---------------------
+ *  File: TK-type-Report.html 
+ *  Description:  Searches test_mstr by test kit type, test kit ID range and status.
+ *       
+ * 1.01 - written by Mark Jacobs on 0/22/15 Marked by 1dot01
+ *          Moved buttons outside of form.
+ *          Removed colons, Added testkit before status.
+ *          Added all of testkits statuses in drop-down testkits status field.
+ * 1.02 - written by Jacob Luttrell on 22/Feb/16 unmarked
+ *          Changed testtype to test_type.            
+ *
+ *
+ *-------------------------------------------------------------------- */
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+
+/********************************************  Variable Definitions  ****************************************************/
+
+DEFINE VARIABLE v-from-TK_ID        LIKE TK_mstr.TK_ID          NO-UNDO. 
+DEFINE VARIABLE v-to-TK_ID          LIKE TK_mstr.TK_ID          NO-UNDO. 
+DEFINE VARIABLE v-tk_test_type       LIKE TK_mstr.tk_test_type    NO-UNDO.
+DEFINE VARIABLE v-TK_status         LIKE TK_mstr.TK_status      NO-UNDO.
+
+DEFINE VARIABLE v-act               AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE v-isselected        AS CHARACTER                NO-UNDO.
+
+        
+ASSIGN
+
+    v-act               = INTEGER (get-value ("h-act"))
+
+    v-from-TK_ID          = get-value ("h-from-TK_ID")
+    v-to-TK_ID            = get-value ("h-to-TK_ID")
+    v-tk_test_type         = get-value ("h-tk_test_type")
+    v-TK_status           = get-value ("h-TK_status").
+    
+    
+    /* ********************************************  Act - 0 "Search" Criteria  ************************************************** */
+IF v-act = 0 THEN DO:
+    
+    {&OUT}
+        "<div class='row'>"             SKIP
+        "<div class='grid_3'></div>"    SKIP
+        "<div class='grid_6'>"          SKIP
+        "<div class='table_2col'>"      SKIP
+        "<form>"                        SKIP
+        "   <table>"    SKIP
+        "       <tr>"   SKIP
+        "           <th colspan=4>Search Criteria</th>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>Test Type</td>" SKIP
+	    "           <td colspan=3><select name='h-tk_test_type' tabindex='1'> " SKIP
+	    "                   <option value=''></option>".
+	    
+	FOR EACH test_mstr NO-LOCK:
+	    
+	    IF test_mstr.test_type = v-tk_test_type THEN 
+	        ASSIGN v-isselected = "selected".
+	        ELSE
+	            v-isselected = "". 
+	    
+	    {&OUT} "<option value='" test_mstr.test_type "' " v-isselected " > " test_mstr.test_type "</option>" SKIP.
+	    
+	END. /*** FOR EACH test type (dropdown) ***/
+	
+	{&OUT} "</select></td>"        
+        
+        "       </tr>"  SKIP        
+        "       <tr>"   SKIP
+        "           <td>Testkit ID</td>" SKIP
+        "           <td><input type='text' name='h-from-TK_ID' value='" v-from-TK_ID "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-to-TK_ID' value='" v-to-TK_ID "'/></td>" SKIP
+        "       </tr>"  SKIP  
+        "       <tr>"   SKIP
+        "           <td>Testkit Status</td>" SKIP
+        "           <td select name='h-TK_status' colspan=3 >" SKIP.
+         IF v-TK_status = "" THEN
+                 {&OUT} "<select name='h-TK_status' colspan=3 >" SKIP                            /* 1dot01 */
+                        "<selected>"  SKIP
+                        "<option value=' '>All</option>" SKIP  /*ALL*/
+                        "<option value='CREATED'>CREATED</option>" SKIP
+                        "<option value='IN_STOCK'>IN_STOCK</option>" SKIP
+                        "<option value='SOLD'>SOLD</option>" SKIP
+                        "<option value='SHIPPED'>SHIPPED</option>" SKIP
+                        "<option value='COLLECTED'>COLLECTED</option>" SKIP
+                        "<option value='LAB_RCVD'>LAB_RCVD</option>" SKIP
+                        "<option value='LAB_PROCESS'>LAB_PROCESS</option>" SKIP
+                        "<option value='HHI_RCVD'>HHI_RCVD</option>" SKIP
+                        "<option value='LOADED'>LOADED</option>" SKIP
+                        "<option value='PROCESSED'>PROCESSED</option>" SKIP
+                        "<option value='PRINTED'>PRINTED</option>" SKIP
+                        "<option value='BURNED'>BURNED</option>" SKIP
+                        "<option value='COMPLETE'>COMPLETE</option>" SKIP
+                        "<option value='VOID'>VOID</option>" SKIP
+                        "</select></td> " SKIP          
+        "   </table>"   SKIP
+/*        "   <center>" SKIP*/
+/*        "       <input type='hidden' name='h-act'       value=1>"        SKIP               */
+/*        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP*/
+/*        "       <input type='submit' name='submit'      value='Search'>" SKIP               */
+/*        "       <input type='reset'  name='reset'       value='Reset'>"  SKIP               */
+/*        "   </center>" SKIP                                                                 */
+/*        "</form>"                                                                           */
+        "</div>" SKIP
+        
+        "</div><!-- end of grid_6 -->" skip
+        "<div class='grid_3'></div>" skip
+        "</div>" skip.
+        
+    {&OUT}
+        "<div class='row'>" SKIP                                        /* 1dot01 */
+        "   <div class='grid_5'></div>" SKIP
+        "       <div class='grid_1'>" SKIP    
+        "           <input type='hidden' name='h-act'       value=1>"        SKIP
+        "           <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP
+        "           <input type='submit' name='submit'      value='Search'></div>" SKIP
+        "   <div class='grid_0-5'></div>" SKIP 
+        "       <div class='grid_1'>" SKIP 
+        "           <input type='reset'  name='reset'       value='Reset'></div>"  SKIP        
+        "   <div class='grid_4-5'></div>" SKIP
+/*        "   </center>" SKIP*/
+        "</form>" SKIP
+        "</div>" SKIP.
+    
+     
+    
+    
+END. /*** of v-act = "Search" Then DO: ***/
+
+/* *************************************************  Act - 1 "Report"  ****************************************************** */
+IF v-act = 1 THEN DO:
+    
+    {&OUT}
+        "<div class='row'>"                                 SKIP
+        "<div class='grid_1'></div>"                        SKIP
+        "<div class='grid_10'>"                             SKIP
+        "<form>"                                            SKIP
+        "<div class='table_report_FromTo'>"                 SKIP
+        "   <table>"                                        SKIP
+        "       <thead>"    SKIP
+        "           <tr>"   SKIP
+        "               <th colspan=4>Test Kit Report</th>" SKIP
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <td>From</td>"                      SKIP
+        "               <td>"v-tk_test_type "</td>"          SKIP
+        "               <td>"v-from-TK_ID "</td>"           SKIP
+        "               <td>"v-TK_status "</td>"            SKIP
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <td>To</td>"                        SKIP
+        "               <td>-</td>"                         SKIP
+        "               <td>"v-to-TK_ID "</td>"             SKIP
+        "               <td>-</td>"                         SKIP
+        "           </tr>"  SKIP        
+        "           <tr>"   SKIP
+        "               <th></th>"                          SKIP
+        "               <th>Test Kit Type</th>"             SKIP
+        "               <th>Test Kit ID</th>"               SKIP
+        "               <th>Status</th>"                    SKIP
+        "           </tr>"  SKIP
+        "       </thead>"   SKIP.
+
+/****************** FOR EACH **************************/
+
+    FOR EACH TK_mstr WHERE 
+        (TK_mstr.tk_test_type     = v-tk_test_type        OR v-tk_test_type   = "") AND 
+        (TK_mstr.TK_ID          >= v-from-TK_ID         OR v-from-TK_ID    = "") AND 
+        (TK_mstr.TK_ID          <= v-to-TK_ID           OR v-to-TK_ID      = "") AND
+        (TK_mstr.TK_status       = v-TK_status          OR v-TK_status     = "")  
+        NO-LOCK.
+
+            
+            {&OUT}
+        "       <tr>" SKIP
+        "           <td></td>" SKIP
+        "           <td>" TK_mstr.tk_test_type   "</td>"   SKIP
+        "           <td>" TK_mstr.TK_ID         "</td>"   SKIP
+        "           <td>" TK_mstr.TK_status     "</td>"   SKIP
+        "       </tr>" SKIP.
+        
+    END. /*** FOR EACH ***/
+    
+     {&OUT}
+        "       <tfoot>" SKIP    
+        "       <tr>"   SKIP
+        "               <td colspan=4>End of Report</td>" SKIP
+        "       </tr>"  SKIP
+        "       </tfoot>" SKIP
+        "   </table>"   SKIP
+/*        "   <center>"   SKIP*/
+/*        "   <form>"     SKIP                                                                */
+/*        "       <input type='hidden' name='h-act' value=0> "                            SKIP*/
+/*        "       <input type='hidden' name='whattorun' value='" whatshouldrun "'/>"    SKIP  */
+/*        "       <input type='submit' name='submit' value='Search Again'>"               SKIP*/
+/*        "   </form>"    SKIP                                                                */
+/*        "   </cener>"   SKIP                                                                */
+/*        "</div> "       SKIP*/
+        "</div><!-- of grid_10 -->" SKIP
+        "<div class='grid_1'></div>" SKIP.
+
+        
+     {&OUT}
+        "<br>" SKIP
+        "<div class='row'>" SKIP                                        /* 1dot01 */
+        "   <div class='grid_5'></div>" SKIP
+        "       <div class='grid_2'>" SKIP    
+        "       <input type='hidden' name='h-act' value=0> "                            SKIP
+        "       <input type='hidden' name='whattorun' value='" whatshouldrun "'/>"    SKIP
+        "       <input type='submit' name='submit' value='Search Again'></div>"               SKIP
+        "   <div class='grid_5'></div>" SKIP
+        "   <form>" SKIP
+        " </div>" SKIP. 
+        
+END. /*** of If Act = "SEARCH" THEN DO: ***/     
+        
+
+
+</SCRIPT>
+</BODY>
+</HTML>

@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>HHI Label Criteria</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.11">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <META NAME="CREATE_DATE" CONTENT="25/Aug/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<center>
+<SCRIPT LANGUAGE="SpeedScript"> 
+/*------------------------------------------------------------------
+    File:           hhi_label_criteria.html -> ADRScriteriaR.html
+    Description:    1 of 3 label creation files
+    Created:        6/12/2014 
+    Author:         Jacob Luttrell
+    
+    Version History:
+        1.1 - Written by Jacob Luttrell on 05/Nov/15
+                fixed button divs unmarked.
+        1.11 - Written by Jacob Luttrell on 25/Aug/16.
+                rearranged last name / first name. unmarked.
+-------------------------------------------------------------------*/
+
+/************************* Define vars *******************************/
+DEFINE VARIABLE confirm AS CHARACTER NO-UNDO.
+DEFINE VARIABLE search_file AS CHARACTER NO-UNDO.
+DEFINE VARIABLE email_file AS CHARACTER INITIAL "C:\apps\biomed\batch-files\errormail.exe" NO-UNDO.
+DEFINE VARIABLE act AS CHARACTER INITIAL "INITIAL" NO-UNDO.
+
+ASSIGN 
+    act = get-value('h-act').
+
+IF act = "" THEN 
+    ASSIGN
+        act = "INITIAL".
+
+IF act = "INITIAL" THEN DO:
+search_file = SEARCH(email_file).
+    
+IF search_file = ? THEN /*** I need a white box behind this ***/ 
+    {&OUT}
+        "<div class='row'>
+            <div class='grid_12'>
+		        <P>The email program required for printing address labels does not exist on this machine. <br>                          
+		          Please have your administrator install the email program before continuing.</P>
+            </div>
+        </div>".   
+ELSE 
+    {&OUT}
+       " <FORM action='ADDRviewR.r' method='post'>" SKIP
+       
+	      "<div class='row'>" SKIP
+	            "<div class='grid_3'></div>" SKIP
+	            "<div class='grid_6'>" SKIP			     
+			        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+					"<div class='table_2col'>" SKIP
+					"<TABLE>" SKIP
+					    "<TR>" SKIP
+					       "<TH colspan=4>Search Criteria</TH>" SKIP
+					    "</TR>" SKIP
+					    "<TR>" SKIP
+					       "<TD>From Test Kit ID:</TD><TD><INPUT type='text' name='a-fromTK' /></TD><TD>To Test Kit ID:</TD><TD><INPUT type='text' name='a-toTK' /></TD>" SKIP
+					    "</TR>" SKIP					    
+					    "<TR>" SKIP
+					       "<TD>From Last Name:</TD><TD><INPUT type='text' name='a-fromLN' /></TD><TD>To Last Name:</TD><TD><INPUT type='text' name='a-toLN' /></TD>" SKIP
+					    "</TR>" SKIP
+                        "<TR>" SKIP
+                           "<TD>From First Name:</TD><TD><INPUT type='text' name='a-fromFN' /></TD><TD>To First Name:</TD><TD><INPUT type='text' name='a-toFN' /></TD>" SKIP
+                        "</TR>" SKIP					    
+					    "<TR>" SKIP
+					       "<TD> Number of Pages:</TD><TD colspan='3'><INPUT type='number' name='a-numpgs' /></TD>" SKIP
+					    "</TR>" SKIP
+					"</TABLE>" SKIP
+					"</div>" SKIP
+/*					   "<input align='left' type='submit' value='Print Labels' name='s-Create'>" SKIP*/			        
+		        "</div>" SKIP
+		        "<div class='grid_3'></div>" SKIP
+	        "</div>" SKIP 
+	        "<BR>" SKIP 
+	    "<div class='row'>" SKIP
+		"   <div class='grid_5'> </DIV>" SKIP
+		"   <div class='grid_2'><button type='submit' name='s-Create' value='Print Labels' class='btn'>Print Labels</BUTTON></div>" SKIP
+		"   <div class='grid_5'> </DIV>" SKIP
+		"</div>" SKIP
+   
+        "</FORM>".
+        
+END.
+</SCRIPT>
+</center>
+</BODY>
+</HTML>

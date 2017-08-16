@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+ 
+    <title>TimeSheet-Admin</title>
+    <META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.00">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="07/Jul/15">
+    <META NAME="LAST_UPDATED" CONTENT="08/Jul/15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<script LANGUAGE="SpeedScript">
+
+/*------------------------------------------------------------------
+ * File: TimeSheet-admin.html
+ * Description: HTML mockup of Time Sheet Admin For the administration side of the Time Tracker procedures.  
+ * Created: Mark Jacobs
+ *-------------------------------------------------------------------
+ * Revision History:    
+ * ---------------------
+ * 1.00 -  Combined timesheet entry form with payment report form, these two forms use the same input fields so utilizing onclick to determine how to process the input fields.
+ *      - 
+ *
+ *
+ *
+ *-------------------------------------------------------------------- */
+</SCRIPT>
+</HEAD>
+
+<body class='inside'>
+<script LANGUAGE="SpeedScript">
+
+ 
+      {&OUT}
+        "<br>" skip
+        "<div class='row'>" skip
+        "   <div class='grid_3'></div>" skip
+        "       <div class='grid_6'>" skip
+        "           <form method='post' >" SKIP   /* onclick= */       
+        "               <div class='table_2col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='4'>Timesheet Entrys / Paymentr Report</th>" skip
+        "                       </tr>" skip 
+        
+        "                       <tr>" skip
+        "                           <td>From Date</td>" skip
+        "                           <td><input type='date' name='h-from-date'></td>" skip
+        "                           <td>TO</td>" skip
+        "                           <td><input type='date' name='h-to-date'></td>" skip
+        "                       </tr>" skip 
+        
+        "                       <tr>" skip
+        "                           <td>Select a Payee</td>" skip
+        "                           <td><select name='h-payee' multiple>" skip 
+        "                               <option value='all'>All</option>" SKIP                        
+        "                               <option value='Mark'>Mark Jacobs</option>" SKIP
+        "                               <option value='Trae'>Trae Luttrell</option>" SKIP
+        "                               <option value='Jacob'>Jacob Luttrell</option>" SKIP
+        "                               <option value='Harold'>Harold Luttrell</option></td>" SKIP
+        "                           <td colspan='2'></td>" skip 
+        "                       </tr>" skip        
+        
+
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_3'></div>" skip
+        "</div>" skip.  
+               
+{&OUT}  
+        " <div class='row'>" SKIP
+        "      <div class='grid_3'></DIV>" SKIP.        
+</script>        
+                  <div class='grid_2'><BUTTON type='submit'class='btn' name='h-get-time-entries' value='timesheet-entrys'  onclick="this.form.action='TimeSheet-Entry-admin.r'">Retrieve TimeSheet Entries</BUTTON></div> 
+ 
+                  <div class='grid_2'><BUTTON type='submit'class='btn' name='h-pay-report' value='create-payment' onclick="this.form.action='Payment-Report.r'">Create Paymentr Report</BUTTON></DIV>                  
+<script LANGUAGE="SpeedScript">
+{&OUT} 
+        "      <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Entry</BUTTON></div>" SKIP
+        "      <div class='grid_3'></DIV>" SKIP
+        "   </div>" SKIP
+        "</div>" SKIP
+        "           </form>" SKIP. 
+        
+
+{&OUT}
+        "<br>" skip
+        "<div class='row'>" skip
+        "   <div class='grid_3'></div>" skip
+        "       <div class='grid_6'>" skip
+        "           <form method='post' ACTION='Status-Report.r'>" SKIP          
+        "               <div class='table_2col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='4'>Status Log </th>" skip
+        "                       </tr>" skip    
+                      
+        "                       <tr>" skip
+        "                          <td>Select a Client</td>" skip
+        "                           <td><select name='h-client'>" skip 
+        "                               <option value=''></option>" SKIP                        
+        "                               <option value='HHI'>HHI</option>" SKIP
+        "                               <option value='Solsource'>Solsource</option>" SKIP
+        "                               <option value='DRQ'>DRQ 250</option></td>" SKIP
+        "                           <td colspan='2'></td>" skip 
+        "                       </tr>" skip        
+
+        "                       <tr>" skip
+        "                           <td>From Date</td>" skip
+        "                           <td><input type='date' name='h-form-date'></td>" skip
+        "                           <td>TO</td>" skip             
+        "                           <td><input type='date' name='h-to-time'></td>" skip                         
+        "                       </tr>" skip  
+        
+        "                       <tr>" skip
+        "                           <td>Select a Payee</td>" skip
+        "                           <td><select name='h-payee' multiple>" skip 
+        "                               <option value='all'>All</option>" SKIP                        
+        "                               <option value='Mark'>Mark Jacobs</option>" SKIP
+        "                               <option value='Trae' >Trae Luttrell</option>" SKIP
+        "                               <option value='Jacob' >Jacob Luttrell</option>" SKIP
+        "                               <option value='Harold'>Harold Luttrell</option></td>" SKIP
+        "                           <td colspan='2'></td>" skip 
+        "                       </tr>" skip        
+        
+/*        "                       <tr>" skip                                                                      */
+/*        "                           <td>Select a Payee</td>" skip                                               */
+/*        "                           <td><input type='checkbox' name=paye>All" skip                              */
+/*        "                               <br><input type='checkbox' name=paye>Mark Jacobs</option>" SKIP         */
+/*        "                               <br><input type='checkbox' name=paye>Trae Luttrell</option>" SKIP       */
+/*        "                               <br><input type='checkbox' name=paye>Jacob Luttrell</option>" SKIP      */
+/*        "                               <br><input type='checkbox' name=paye>Harold Luttrell</option></td>" SKIP*/
+/*        "                           <td colspan='2'></td>" skip                                                 */
+/*        "                       </tr>" skip                                                                     */
+        
+        "                       <tr>" skip 
+        "                           <td>Create as</td>" skip
+        "                           <td><input type='radio' name='h-run-as' vlue='YES'>Flagged" skip
+        "                           <br><input type='radio' name='h-run-as' vlue='YES'>Translated" skip
+        "                           <br><input type='radio' name='h-run-as' vlue='YES'>Not Translated</td>" skip
+        "                           <td colspan='2'></td>" skip                     
+        "                       </tr>" skip      
+             
+
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_3'></div>" skip
+        "</div>" skip.  
+               
+{&OUT}  
+        " <div class='row'>" SKIP
+        "   <div class='grid_4'></DIV>" SKIP
+        "      <div class='grid_1-5'><BUTTON type='submit'class='btn' name='h-creat-log' value='status-log'>Create Log</BUTTON></div>" SKIP                                  
+        "      <div class='grid_1'></DIV>" SKIP
+        "      <div class='grid_1-5'><BUTTON type='reset' class='btn'>Clear Entry</BUTTON></div>" SKIP
+        "      <div class='grid_4'></DIV>" SKIP
+        "   </div>" SKIP
+        "</div>" SKIP
+        "           </form>" SKIP.
+       
+        {TimeSheet-Home-button.i}.
+        
+
+</SCRIPT>
+</BODY>
+</HTML>

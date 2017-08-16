@@ -1,0 +1,706 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Solsource Menu Maintenance</TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.4">
+    <META NAME="COPYRIGHT" CONTENT="Solsource"> 
+    <META NAME="CREATE_DATE" CONTENT="29/Nov/13">
+    <META NAME="LAST_UPDATED" CONTENT="11/May/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+
+<SCRIPT language="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+   
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+	<SCRIPT language="SpeedScript">
+    
+    /**********************************************************************************************
+	 * 
+	 *  CMS-menumaintu.html - Version 1.1 - 22/Oct/14 - Doug Luttrell
+	 *
+	 *  This program is designed to allow you to create / update records in the menu_mstr table.
+	 *
+	 *  ---------------------------------------------------------------------------------------
+	 *
+	 *  Revision History:
+	 *  -----------------
+	 *  1.0 - written by DOUG LUTTRELL on 29/Nov/13.  Original Version.
+	 *  1.1 - written by DOUG LUTTRELL on 22/Oct/14.  Added support for deleted menu items as well
+	 *         as putting a Visible? Y/N flag into the menu__log01 field.  Should be removed when 
+	 *         menu_visible is added to the database schema.  Marked by 1dot1.
+	 *  1.2 - Jacob Luttrell 30/Sep/15 Div corrections. Marked by 1dot2   
+	 *  1.3 - Jacob Luttrell 02/Oct/15 button corrections, delete button refeshes menu. Marked by 1dot3
+	 *  1.4 - Jacob Luttrell 11/May/16 Added group(s) field for updating menu to group availability.
+	 *         corrected act issues.
+	 *         Marked by 1dot4
+	 **********************************************************************************************/
+	
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/	
+	
+	 DEFINE VARIABLE menuroot      LIKE menu_mstr.menu_num     NO-UNDO. 
+	 DEFINE VARIABLE menuitem      LIKE menu_mstr.menu_select  NO-UNDO.
+	 DEFINE VARIABLE menutitle     LIKE menu_mstr.menu_title   NO-UNDO.
+	 DEFINE VARIABLE menuprogname  LIKE menu_mstr.menu_exprog  NO-UNDO.
+	 DEFINE VARIABLE menumodule    LIKE menu_mstr.menu_module  NO-UNDO. 
+	 DEFINE VARIABLE menuhidden    LIKE menu_mstr.menu__log01  NO-UNDO.                                /* 1dot1 */
+	 DEFINE VARIABLE ischecked     AS CHARACTER                NO-UNDO.                                /* 1dot1 */
+	 DEFINE VARIABLE isselected    AS CHARACTER                NO-UNDO.                                /* 1dot4 */
+	 DEFINE VARIABLE v-grp-list    AS CHARACTER                NO-UNDO.                                /* 1dot4 */
+     DEFINE VARIABLE x             AS INTEGER                  NO-UNDO.                                /* 1dot4 */
+	 
+	 DEFINE VARIABLE act AS CHARACTER  NO-UNDO.                                                        /* 1dot4 */
+	 DEFINE VARIABLE progstatus AS CHARACTER NO-UNDO.
+	 DEFINE VARIABLE errmsgon      AS LOGICAL      INITIAL NO      NO-UNDO.
+/*                                                                                                                                            {&OUT}  "before assign v-grp-list = " v-grp-list "<br>" SKIP. 	*/
+	 ASSIGN  
+	    menuroot       = get-value('Menu-Point')
+	    menuitem       = int(get-value('Menu-Choice'))
+	    menutitle      = get-value('Menu-Label')
+	    menuprogname   = get-value('Menu-Run')
+	    menumodule     = get-value('Menu-Module')
+	    menuhidden     = IF get-value('h-menuhidden') = "YES" THEN                                         /* 1dot1 */
+	                       YES                                                                             /* 1dot1 */
+	                     ELSE                                                                              /* 1dot1 */
+	                       NO                                                                              /* 1dot1 */
+	    ischecked     = IF menuhidden = YES THEN                                                           /* 1dot1 */
+	                       "CHECKED"                                                                       /* 1dot1 */
+	                     ELSE                                                                              /* 1dot1 */
+	                       ""                                                                              /* 1dot1 */
+	    act            = get-value('h-act')                                                                /* 1dot4 */
+	    progstatus     = "<center><h2>Please enter the menu information you wish to update / create.</h2></center><br>"
+	    v-grp-list     = get-value("h-grp-list")                                                           /* 1dot4 */
+	    .
+/*                                                                                                                                            {&OUT}  "after assign v-grp-list = " v-grp-list "<br>" SKIP. 	*/
+	IF errmsgon = YES THEN     
+        {&OUT} "Menu Root = " menuroot "<BR>" skip 
+            "Menu Item = " menuitem "<BR>" skip
+            "menuhidden = " menuhidden "<BR>" SKIP                                                          /* 1dot1 */
+            "ischecked = " ischecked "<BR>" SKIP                                                            /* 1dot1 */
+            "Action = " act "<BR>" skip. 
+	
+	IF act = "" THEN ASSIGN act = "INITIAL".                                                                /* 1dot4 */
+	    
+    CASE act: 
+        
+        WHEN "INITIAL" THEN DO:                                                                                                     /* 1dot4 */
+            
+            {&OUT} progstatus skip
+                "<FORM method='post'>" skip 
+                "<DIV class='row'>" SKIP                                                                                            /* 1dot2 */     
+				"<DIV class='grid_2'> </DIV>" SKIP                                                                                  /* 1dot2 */
+				"<DIV class='grid_8'>" SKIP                                                                                         /* 1dot2 */
+                "<DIV class='table_2col'>" skip                                                                                                 
+                "<TABLE>" skip 
+                "   <TR>" skip
+                "       <TH colspan=4>Menu Maintenance Table</TH>" skip
+                "   <TR>" skip
+                "       <TD>Menu Root</TD>" skip 
+                "       <TD><INPUT type='text' name='Menu-Point' value='0' /></TD>" skip
+                "       <TD>Menu Choice</TD>" skip
+                "       <TD><INPUT type='number' name='Menu-Choice' /></TD>" skip
+                "   </TR>" skip
+                "   <TR>" skip
+                "       <TD>Menu Label</TD>" skip
+                "       <TD><INPUT type='text' name='Menu-Label' value='' disabled /></TD>" skip
+                "       <TD>Module / Project Name</TD>" skip
+                "       <TD><INPUT type='text' name='Menu-Module' value='' disabled /></TD>" skip
+                "   </TR>" skip
+                "   <TR>" skip
+                "       <TD>Program Name</TD>" skip
+                "       <TD><INPUT type='text' name='Menu-Run' value='' disabled /></TD>" skip
+                "       <TD>Hidden?</TD>" SKIP                                                                                      /* 1dot1 */              
+                "       <TD><input type='checkbox' name='h-menuhidden' value='YES' " ischecked " disabled /></TD>" SKIP             /* 1dot1 */
+                "   </TR>" skip
+                "   <TR>" skip                                                                                                      /* 1dot4 */
+                "       <TD>Group(s)</TD>" skip                                                                              /* 1dot4 */
+                "       <td colspan='3'><select name='h-grp' multiple disabled>" skip.                                              /* 1dot4 */    
+
+        FOR EACH grp_mstr NO-LOCK:                                                                                                  /* 1dot4 */
+        
+            {&OUT}                                                                                                                  /* 1dot4 */                                                                           
+                "               <option value='" grp_mstr.grp_ID "'>" grp_mstr.grp_ID "</option>" SKIP.                             /* 1dot4 */
+        
+        END.  /* 4ea. client_mstr */                                                                                                /* 1dot4 */
+        
+        {&OUT}                                                                                                                      /* 1dot4 */    
+                "           </select>" SKIP                                                                                         /* 1dot4 */
+                "       </td>" SKIP                                                                                                 /* 1dot4 */
+                "   </tr>" skip                                                                                                     /* 1dot4 */
+                "</TABLE>" skip
+                "</DIV>" skip
+                "</DIV>         <!-- end of grid_8 -->" SKIP                                                                        /* 1dot2 */
+				"<DIV class='grid_2'> </DIV>" SKIP                                                                                  /* 1dot2 */            
+				"</DIV>     <!-- end of row -->" SKIP                                                                               /* 1dot2 */
+                "<BR>" SKIP                                                                                                         /* 1dot2 */
+				
+				"<div class='row'>" SKIP                                                                                            /* 1dot2 */
+				"   <div class='grid_3'> </DIV>" SKIP                                                                               /* 1dot2 */
+				"<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                                       /* 1dot3 */
+				"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='MAINTENANCE' class='btn'>Find Record</BUTTON></div>" SKIP /* 1dot2 */ /* 1dot4 */
+				"   <div class='grid_2'> </DIV>" SKIP                                                                                   /* 1dot2 */
+				"   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Form</BUTTON></div>" SKIP                                /* 1dot2 */    
+				"   <div class='grid_3'> </DIV>" SKIP                                                                                   /* 1dot2 */
+				"</div>" SKIP                                                                                                           /* 1dot2 */
+				"<BR>" SKIP                                                                                                             /* 1dot2 */    
+				
+/*                "<INPUT type='hidden' name='Menu-action' value='1' />" skip              */
+/*                "<center><input type='reset' name='Reset' value='Clear Form' />" skip    */
+/*                "<INPUT type='submit' name='Submit' value='Find Record' /></center>" skip*/
+/*                "</DIV>" skip                                                            */
+/*                "</FORM>" skip                                                           */
+                .            
+            
+	    
+	    END.  /** of act = 0 **/
+	    
+        WHEN "MAINTENANCE" THEN DO:                     /** find record? **/                            /* 1dot4 */
+            
+            FIND menu_mstr WHERE menu_mstr.menu_num = menuroot AND 
+                menu_mstr.menu_select = menuitem AND 
+                menu_mstr.menu_deleted = ?                                                              /* 1dot1 */                
+                    NO-LOCK NO-ERROR.     
+                
+            IF AVAILABLE (menu_mstr) THEN DO:
+                
+                progstatus = "<center><h2>Update existing record.</h2></center><br>". 
+                
+                IF menu_mstr.menu__log01 = YES THEN        /* menu is hidden? */                        /* 1dot1 */
+                    ASSIGN                                                                              /* 1dot1 */
+                        menuhidden = YES                                                                /* 1dot1 */
+                        ischecked = "CHECKED".                                                          /* 1dot1 */                  
+                ELSE                                                                                    /* 1dot1 */
+                    ASSIGN                                                                              /* 1dot1 */
+                        menuhidden = NO                                                                 /* 1dot1 */
+                        ischecked = "".                                                                 /* 1dot1 */  
+                
+                {&OUT} progstatus skip
+	                "<FORM>" skip 
+	                "<DIV class='row'>" SKIP                                                                                   /* 1dot2 */
+	                "<DIV class='grid_2'> </DIV>" SKIP                                                                         /* 1dot2 */
+	                "<DIV class='grid_8'>" SKIP                                                                                 /* 1dot2 */
+	                "<DIV class='table_2col'>" skip
+	                "<TABLE>" skip 
+	                "   <TR>" skip
+	                "       <TH colspan=4>Menu Maintenance Table</TH>" skip
+	                "   <TR>" skip
+	                "       <TD>Menu Root</TD>" skip 
+	                "       <TD><INPUT type='hidden' name='Menu-Point' value='" menu_mstr.menu_num "'  />" menu_mstr.menu_num "</TD>" skip
+	                "       <TD>Menu Choice</TD>" skip
+	                "       <TD><INPUT type='hidden' name='Menu-Choice' value='" menu_mstr.menu_select "'  />" menu_mstr.menu_select "</TD>" skip
+	                "   </TR>" SKIP 
+	                "   <TR>" SKIP 
+	                "       <TD>Menu Label</TD>" SKIP 
+	                "       <TD><INPUT type='text' name='Menu-Label' value='" menu_mstr.menu_title "' /></TD>" SKIP 
+	                "       <TD>Module / Project Name</TD>" SKIP 
+	                "       <TD><INPUT type='text' name='Menu-Module' value='" menu_mstr.menu_module "' /></TD>" SKIP 
+	                "   </TR>" SKIP 
+	                "   <TR>" SKIP 
+	                "       <TD>Program Name</TD>" SKIP 
+	                "       <TD><INPUT type='text' name='Menu-Run' value='" menu_mstr.menu_exprog "' /></TD>" SKIP 
+	                "       <TD>Hidden?</TD>" SKIP                                                                             /* 1dot1 */              
+	                "       <TD><input type='checkbox' name='h-menuhidden' value='YES' " ischecked " /></TD>" SKIP             /* 1dot1 */
+	                "   </TR>" SKIP 
+	                "   <TR>" skip                                                                                             /* 1dot4 */
+	                "       <TD>Group(s)</TD>" skip                                                                            /* 1dot4 */
+	                "       <td colspan='3'><select name='h-grp-list' multiple >" skip.                                        /* 1dot4 */
+	
+	        FOR EACH grp_mstr NO-LOCK:                                                                                         /* 1dot4 */
+	
+	           FIND gmd_det WHERE gmd_det.gmd_grp_ID = grp_mstr.grp_ID AND                                                     /* 1dot4 */
+	                              gmd_det.gmd_menu_num = menu_mstr.menu_num AND                                                /* 1dot4 */
+	                              gmd_det.gmd_menu_select = menu_mstr.menu_select                                              /* 1dot4 */
+	                                   NO-LOCK NO-ERROR.                                                                       /* 1dot4 */
+	
+	           IF AVAILABLE (gmd_det) THEN                                                                                     /* 1dot4 */
+	               ASSIGN                                                                                                      /* 1dot4 */
+	                   isselected = "SELECTED".                                                                                /* 1dot4 */
+	           ELSE                                                                                                            /* 1dot4 */
+	               ASSIGN                                                                                                      /* 1dot4 */
+	                   isselected = "NOTHING".                                                                                 /* 1dot4 */
+	
+	            {&OUT}                                                                                                         /* 1dot4 */
+	                "               <option value='" grp_mstr.grp_ID "' " isselected ">" grp_mstr.grp_ID "</option>" SKIP.     /* 1dot4 */
+	
+	        END.  /* 4ea. client_mstr */                                                                                       /* 1dot4 */
+	
+	        {&OUT}                                                                                                             /* 1dot4 */
+	                "           </select>" SKIP                                                                                /* 1dot4 */
+	                "       </td>" SKIP                                                                                        /* 1dot4 */
+	                "   </tr>" skip                                                                                            /* 1dot4 */
+	                "</table>" SKIP
+	                "</DIV>" SKIP                                                                                                  /* 1dot2 */
+	                "</DIV>         <!-- end of grid_8 -->" SKIP                                                                   /* 1dot2 */        
+	                "<DIV class='grid_2'> </DIV>" SKIP                                                                             /* 1dot2 */
+	                "</DIV>     <!-- end of row -->" SKIP                                                                          /* 1dot2 */
+	                "<BR>" SKIP                                                                                                    /* 1dot2 */
+	                "<div class='row'>" SKIP                                                                                       /* 1dot2 */
+					"   <div class='grid_2'> </DIV>" SKIP                                                                          /* 1dot3 */
+					"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn'>Update Record</BUTTON></div>" SKIP   /* 1dot2 */  /* 1dot4 */
+					"   <div class='grid_1'> </DIV>" SKIP                                                                                      /* 1dot2 */
+					"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Clear Form</BUTTON></div>" SKIP     /* 1dot2 */  /* 1dot4 */
+					 "</FORM>" SKIP                                                                                                            /* 1dot3 */
+					"   <div class='grid_1'> </DIV>" SKIP                                                                                      /* 1dot2 */
+					"   <div class='grid_2'>"  SKIP                                                                                            /* 1dot3 */					
+/*					"<FORM method='post'>" SKIP                                                                                                /* 1dot3 */*/
+/*                    "   <center><INPUT type='hidden' name='Menu-Point' value='" menu_mstr.menu_num "'  />" SKIP                                /* 1dot3 */                       */
+/*                    "   <INPUT type='hidden' name='Menu-Choice' value='" menu_mstr.menu_select "'  />" SKIP                                    /* 1dot3 */                       */
+/*                    "   <INPUT type='hidden' name='Menu-Label' value='" menu_mstr.menu_title "' />" SKIP                                       /* 1dot3 */                       */
+/*                    "   <INPUT type='hidden' name='Menu-Module' value='" menu_mstr.menu_module "' />" SKIP                                     /* 1dot3 */                       */
+/*                    "   <INPUT type='hidden' name='Menu-Run' value='" menu_mstr.menu_exprog "' />" SKIP                                        /* 1dot3 */                       */
+/*                    "   <INPUT type='hidden' name='h-menuhidden' value='" menu_mstr.menu__log01 "' />" SKIP                    /* 1dot1 */     /* 1dot3 */                       */
+/*                    "   <INPUT type='hidden' name='h-grp-list' value='" v-grp-list "' />" SKIP                                                              /* 1dot4 */          */
+                    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                         /* 1dot3 */                    			
+					"<button type='submit' name='Menu-action' value='DELETE' class='btn'>Delete Record</BUTTON>" SKIP                            /* 1dot3 */  /* 1dot4 */
+/*                     "</FORM>" SKIP                                                                                                            /* 1dot3 */*/
+                    "</div>" SKIP                                                                                                              /* 1dot3 */
+                    "   <div class='grid_2'> </DIV>" SKIP                                                                                      /* 1dot3 */    
+					"</div>" SKIP                                                                                                              /* 1dot2 */
+/*					"<BR>" SKIP                                                                                                                /* 1dot2 */                */
+/*					                                                                                                                                                           */
+/*/*	                "      <center><INPUT type='hidden' name='Menu-action' value='2' />" SKIP   */                                                          */
+/*/*	                "      <INPUT type='submit' name='Submit' value='Update Record' />" SKIP    */                                                          */
+/*/*	                "      <input type='reset' name='Reset' value='Clear Form' /></center>" SKIP*/                                                          */
+/*	                                                                                                                                                           */
+/*	                "</FORM>" SKIP                                                                                                                            */
+/*	                                                                                                                                                           */
+/*                    "<FORM method='post'>" SKIP                                                                                                            */
+/*                    "   <center><INPUT type='hidden' name='Menu-Point' value='" menu_mstr.menu_num "'  />" SKIP                                            */
+/*                    "   <INPUT type='hidden' name='Menu-Choice' value='" menu_mstr.menu_select "'  />" SKIP                                                */
+/*                    "   <INPUT type='hidden' name='Menu-Label' value='" menu_mstr.menu_title "' />" SKIP                                                   */
+/*                    "   <INPUT type='hidden' name='Menu-Module' value='" menu_mstr.menu_module "' />" SKIP                                                 */
+/*                    "   <INPUT type='hidden' name='Menu-Run' value='" menu_mstr.menu_exprog "' />" SKIP                                                    */
+/*                    "   <INPUT type='hidden' name='h-menuhidden' value='" menu_mstr.menu__log01 "' />" SKIP                    /* 1dot1 */                 */
+/*                                                                                                                                                           */
+/*                    "<div class='row'>" SKIP                                                                                                    /* 1dot2 */*/
+/*					"   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 1dot2 */               */
+/*					"   <div class='grid_2'><button type='submit' name='Menu-action' value='4' class='btn'>Delete Record</BUTTON></div>" SKIP   /* 1dot2 */               */
+/*					"   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 1dot2 */               */
+/*					"</div>" SKIP                                                                                                               /* 1dot2 */               */
+/*					"<BR>" SKIP                                                                                                                 /* 1dot2 */               */
+/*					                                                                                                                                                           */
+/*/*                    "   <INPUT type='hidden' name='Menu-action' value='4' />" SKIP       */                                                              */
+/*/*                    "   <input type='submit' name='Submit' value='Delete Record' />" SKIP*/                                                              */
+/*                                                                                                                                                           */
+/*                    "</FORM>" SKIP  	                                                                                                                      */
+/*	                "</DIV>" SKIP                                                                                                                             */
+	                . 
+                    
+                
+            END.  /** of if avail menu_mstr **/
+            
+            ELSE DO:
+
+                progstatus = "<center><h2>Record Not Found. Do you want to create one?</h2></center><br />".
+                            
+                {&OUT} progstatus skip
+                    
+/*                    "<center>" SKIP*/
+/*                    "<TABLE>" skip                            */
+/*                    "<TR><TD colspan='2' align='center'>" skip*/
+                    "<FORM method='post'>" skip
+                    "<INPUT type='hidden' name='Menu-Point' value='" menuroot "' />" skip
+                    "<INPUT type='hidden' name='Menu-Choice' value='" menuitem "' />" skip
+/*                    "<INPUT type='hidden' name='Menu-action' value='3' />" skip*/
+/*                    "<input type='submit' name='Submit' value='Create Record' />" skip*/
+                    
+                    "<div class='row'>" SKIP                                                                                                   /* 1dot3 */
+					"   <div class='grid_3'> </DIV>" SKIP                                                                                      /* 1dot2 */
+                    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                         /* 1dot3 */
+					"   <div class='grid_2'><button type='submit' name='h-act' value='CREATE' class='btn'>Create Record</BUTTON></div>" SKIP  /* 1dot2 */ /* 1dot4 */
+					"   <div class='grid_2'> </DIV>" SKIP                                                                                      /* 1dot3 */
+                    "</FORM>" skip                                                                                                             /* 1dot3 */					
+					"   <div class='grid_2'>" SKIP                                                                                             /* 1dot3 */
+					"<FORM>" skip                                                                                                              /* 1dot3 */
+     	            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                         /* 1dot3 */
+					"<button type='submit' name='h-act' value='INITIAL' class='btn'>Cancel</BUTTON>" SKIP                                /* 1dot3 */ /* 1dot4 */
+					"</FORM>" skip                                                                                                             /* 1dot3 */
+					"</div>" SKIP                                                                                                              /* 1dot3 */
+                    "   <div class='grid_3'> </DIV>" SKIP                                                                                      /* 1dot2 */            
+					"</div>" SKIP                                                                                                              /* 1dot2 */    
+                    .
+/*                    "</FORM>" skip*/
+/*                    "</TD>" SKIP*/
+/*                    "</TR>" SKIP*/
+/*                    "<TD colspan='2' align='center'>" skip*/
+/*                    "</TABLE>" SKIP*/                   
+/*	                "<BR>" SKIP                                                                                                                               */	
+/*                    "<FORM>" skip                                                                                                                          */
+/*                    "<div class='row'>" SKIP                                                                                                    /* 1dot2 */*/
+/*					"   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 1dot2 */               */
+/*					"   <div class='grid_2'><button type='submit' name='Menu-Action' value='0' class='btn'>Cancel</BUTTON></div>" SKIP          /* 1dot2 */               */
+/*					"   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 1dot2 */               */
+/*					"</div>" SKIP                                                                                                               /* 1dot2 */               */
+/*					"<BR>" SKIP                                                                                                                 /* 1dot2 */               */
+/*                    "<INPUT type='hidden' name='Menu-action' value='0' />" skip*/
+/*                    "<INPUT type='submit' name='Submit' value='Cancel' />" skip*/
+/*                    "</FORM>" skip*/
+/*                    "</TD></TR>" skip       */
+/*                    "</TABLE></center>" skip.*/
+                                                 
+                
+            END.  /*** of else do --- not avail menu_mstr ***/        
+        
+        END.  /** of act = 1 **/	        
+	    
+        WHEN "UPDATE" THEN DO:                         /** update other fields **/                                          /* 1dot4 */
+/*                                                                                                                                            {&OUT}  "before find menu v-grp-list = " v-grp-list "<br>" SKIP.*/
+            FIND menu_mstr WHERE menu_mstr.menu_num = menuroot AND 
+                menu_mstr.menu_select = menuitem AND 
+                menu_mstr.menu_deleted = ?                                                                                  /* 1dot1 */
+                    EXCLUSIVE-LOCK NO-ERROR.
+                                        
+            IF AVAILABLE (menu_mstr) THEN DO:
+                
+	            ASSIGN 
+                    menu_mstr.menu_title    = menutitle
+                    menu_mstr.menu_exprog   = menuprogname
+                    menu_mstr.menu_module   = menumodule
+                    menu_mstr.menu__log01   = menuhidden                                                                    /* 1dot1 */
+                    ischecked              = IF menuhidden = YES THEN                                                       /* 1dot1 */
+                                                "CHECKED"                                                                   /* 1dot1 */
+                                              ELSE                                                                          /* 1dot1 */    
+                                                ""                                                                          /* 1dot1 */
+                    progstatus              = "<center><h2>Record Modified</h2></center><br />".   
+/*                                                                                                                                            {&OUT}  "before do x v-grp-list = " v-grp-list "<br>" SKIP.*/
+    DO x = 1 TO NUM-ENTRIES(v-grp-list):                                                                                    /* 1dot4 */
+
+           FIND FIRST gmd_det WHERE gmd_det.gmd_menu_num = menuroot AND                                                     /* 1dot4 */
+                                    gmd_det.gmd_menu_select = menuitem AND                                                  /* 1dot4 */
+                                    gmd_det.gmd_grp_id = ENTRY(x,v-grp-list)                                                /* 1dot4 */
+                   EXCLUSIVE-LOCK NO-ERROR.                                                                                 /* 1dot4 */
+
+           IF NOT AVAILABLE (gmd_det) THEN DO:                                  /** create new gud_det records **/          /* 1dot4 */
+
+               CREATE gmd_det.                                                                                              /* 1dot4 */
+
+               ASSIGN                                                                                                       /* 1dot4 */
+                   gmd_det.gmd_menu_num    = menuroot                                                                       /* 1dot4 */
+                   gmd_det.gmd_menu_select = menuitem                                                                       /* 1dot4 */
+                   gmd_det.gmd_grp_id      = ENTRY(x,v-grp-list)                                                            /* 1dot4 */
+/*                   gmd_det.gmd_created_by  = USERID("GENERAL")                                                              /* 1dot4 */*/
+/*                   gmd_det.gmd_create_date = TODAY.                                                                         /* 1dot4 */*/
+                   .
+                           
+           END.  /** of if not avail pcl_det ---- create **/
+
+/*           ASSIGN                                /** modify existing pcl_det records - including prev. deleted **/          /* 1dot4 */*/
+/*               gmd_det.gmd_deleted         = ?                                                                              /* 1dot4 */*/
+/*               gmd_det.gmd_modified_by     = USERID("GENERAL")                                                              /* 1dot4 */*/
+/*               gmd_det.gmd_modified_date   = TODAY                                                                          /* 1dot4 */*/
+/*               gmd_det.gmd_prog_name       = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1). /* 1dot4 */*/
+
+       END.  /** of x = 1 to num-entries(v-grouplist) **/
+
+       FOR EACH gmd_det WHERE gmd_det.gmd_menu_num = menuroot AND                                                              /* 1dot4 */
+                              gmd_det.gmd_menu_select = menuitem AND              /** delete unwanted pcl_det records **/      /* 1dot4 */
+           LOOKUP(STRING(gmd_det.gmd_grp_id),v-grp-list) = 0:                     /** share lock upgrads to exclusive and back again per record **/ /* 1dot4 */
+
+            DELETE gmd_det.                                                                                                 /* 1dot4 */
+/*           ASSIGN                                                                                                          */
+/*               gmd_det.gmd_modified_by     = USERID("GENERAL")                                                             */
+/*               gmd_det.gmd_modified_date   = TODAY                                                                         */
+/*               gmd_det.gmd_deleted         = TODAY                                                                         */
+/*               gmd_det.gmd_prog_name       = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1).*/
+
+       END.  /** of 4ea. gmd_det **/                                                                                        /* 1dot4 */
+                        
+                {&OUT} progstatus skip
+                    "<DIV class='row'>" SKIP                                                                                /* 1dot2 */
+                    "<DIV class='grid_2'> </DIV>" SKIP                                                                      /* 1dot2 */
+                    "<DIV class='grid_8'>" SKIP                                                                             /* 1dot2 */
+                    "<DIV class='table_2col'>" skip
+                    "<TABLE>" skip 
+                    "   <TR>" skip
+                    "       <TH colspan=4>Menu Maintenance Table</TH>" skip
+                    "   <TR>" skip
+                    "       <TD>Menu Root</TD>" skip 
+                    "       <TD>" menu_mstr.menu_num "</TD>" SKIP 
+                    "       <TD>Menu Choice</TD>" SKIP 
+                    "       <TD>" menu_mstr.menu_select "</TD>" SKIP 
+                    "   </TR>" SKIP 
+                    "   <TR>" SKIP 
+                    "       <TD>Menu Label</TD>" SKIP 
+                    "       <TD>" menu_mstr.menu_title "</TD>" SKIP 
+                    "       <TD>Module / Project Name</TD>" SKIP 
+                    "       <TD>" menu_mstr.menu_module "</TD>" SKIP 
+                    "   </TR>" SKIP 
+                    "   <TR>" SKIP 
+                    "       <TD>Program Name</TD>" SKIP 
+                    "       <TD>" menu_mstr.menu_exprog "</TD>" SKIP 
+                    "       <TD>Hidden?</TD>" SKIP                                                                             /* 1dot1 */    
+                    "       <TD><input type='checkbox' name='h-menuhidden' value='YES' " ischecked " disabled /></TD>" SKIP    /* 1dot1 */          
+                    "   </TR>" SKIP 
+                    "   <TR>" skip                                                                                             /* 1dot4 */
+                    "       <TD>Group(s)</TD>" skip                                                                            /* 1dot4 */
+                    "       <td colspan='3'><select name='h-grp-list' multiple disabled>" skip.                                /* 1dot4 */
+
+            FOR EACH grp_mstr NO-LOCK:                                                                                         /* 1dot4 */
+			
+			    FIND gmd_det WHERE gmd_det.gmd_grp_ID = grp_mstr.grp_ID AND                                                    /* 1dot4 */
+			                       gmd_det.gmd_menu_num = menu_mstr.menu_num AND                                               /* 1dot4 */
+			                       gmd_det.gmd_menu_select = menu_mstr.menu_select                                             /* 1dot4 */
+			                            NO-LOCK NO-ERROR.                                                                      /* 1dot4 */
+			
+			    IF AVAILABLE (gmd_det) THEN DO:                                                                                /* 1dot4 */
+			        ASSIGN                                                                                                     /* 1dot4 */
+			            isselected = "SELECTED".                                                                               /* 1dot4 */
+			
+			    {&OUT}                                                                                                         /* 1dot4 */
+                    "               <option value='" gmd_det.gmd_grp_ID "' " isselected ">" gmd_det.gmd_grp_ID "</option>" SKIP. /* 1dot4 */
+			    END. /* if avail gmd_det */                                                                                    /* 1dot4 */
+			    ELSE                                                                                                           /* 1dot4 */
+			        ASSIGN                                                                                                     /* 1dot4 */
+			            isselected = "".                                                                                       /* 1dot4 */
+
+            END.  /* 4ea. client_mstr */                                                                                       /* 1dot4 */
+
+            {&OUT}                                                                                                             /* 1dot4 */
+                    "           </select>" SKIP                                                                                /* 1dot4 */
+                    "       </td>" SKIP                                                                                        /* 1dot4 */
+                    "   </tr>" skip                                                                                            /* 1dot4 */
+                    "</TABLE>" SKIP
+                    "</DIV>" skip
+                    "</DIV>         <!-- end of grid_8 -->" SKIP                                                                /* 1dot2 */    
+                    "<DIV class='grid_2'> </DIV>" SKIP                                                                          /* 1dot2 */
+                    "</DIV>     <!-- end of row -->" SKIP                                                                       /* 1dot2 */
+                    "<BR>" SKIP                                                                                                 /* 1dot2 */
+                     
+                    "<FORM method='post'>" SKIP
+                    
+                    "<div class='row'>" SKIP                                                                                    /* 1dot2 */
+					"   <div class='grid_5'> </DIV>" SKIP                                                                       /* 1dot2 */
+/*                    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                                       /* 1dot3 */					*/
+					"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' onClick='parent.history.go(0)' class='btn'>Return to Menu</BUTTON></div>" SKIP  /* 1dot2 */ /* 1dot4 */
+					"   <div class='grid_5'> </DIV>" SKIP                                                                       /* 1dot2 */   
+					"</div>" SKIP                                                                                               /* 1dot2 */   
+					"<BR>" SKIP                                                                                                 /* 1dot2 */   
+                    "</FORM>" SKIP                                                                                              /* 1dot2 */        
+                    
+/*                    "<center><INPUT type='hidden' name='Menu-action' value='0' />" SKIP                                        */
+/*                    "<INPUT type='button' name='Submit' onClick='parent.history.go(0)' value='Return to Menu' /></center>" SKIP*/
+/*                    "</FORM>"                                                                                                  */
+/*                    "</DIV>" SKIP                                                                                              */
+                    .
+
+            END.  /** of if avail menu_mstr **/             
+        
+        END.  /** of act = 2 **/	    
+	    
+        WHEN "CREATE" THEN DO:                                 /*** Create record ***/                          /* 1dot4 */
+            
+            progstatus = "<center><h2>Creating Record</h2></center><br />".
+
+            CREATE menu_mstr.
+            
+            ASSIGN 
+                menu_mstr.menu_num      = menuroot
+                menu_mstr.menu_select   = menuitem
+                ischecked              = IF menuhidden = YES THEN                                                   /* 1dot1 */
+                                            "CHECKED"                                                               /* 1dot1 */
+                                          ELSE                                                                      /* 1dot1 */
+                                            "".                                                                     /* 1dot1 */
+            
+            {&OUT} progstatus skip
+                "<DIV class='row'>" SKIP                                                                                           /* 1dot2 */ 
+                "<DIV class='grid_2'> </DIV>" SKIP                                                                                 /* 1dot2 */ 
+                "<DIV class='grid_8'>" SKIP                                                                                        /* 1dot2 */ 
+                "<DIV class='table_2col'>" skip                                                                                                 
+                "<TABLE>" skip 
+                "   <TR>" skip
+                "       <TH colspan=4>Menu Maintenance Table</TH>" skip
+                "   <TR>" skip
+                "       <TD>Menu Root</TD>" skip 
+                "       <TD>" menu_mstr.menu_num "</TD>" SKIP 
+                "       <TD>Menu Choice</TD>" SKIP 
+                "       <TD>" menu_mstr.menu_select "</TD>" SKIP 
+                "   </TR>" SKIP 
+                "   <TR>" SKIP 
+                "       <TD>Menu Label</TD>" SKIP 
+                "       <TD>" menu_mstr.menu_title "</TD>" SKIP 
+                "       <TD>Module / Project Name</TD>" SKIP 
+                "       <TD>" menu_mstr.menu_module "</TD>" SKIP 
+                "   </TR>" SKIP 
+                "   <TR>" SKIP 
+                "       <TD>Program Name</TD>" SKIP 
+                "       <TD>" menu_mstr.menu_exprog "</TD>" SKIP 
+                "       <TD>Hidden?</TD>" SKIP                                                                                      /* 1dot1 */              
+                "       <TD><input type='checkbox' name='h-menuhidden' value='YES' " ischecked " disabled /></TD>" SKIP             /* 1dot1 */
+                "   </TR>" SKIP
+                "   <TR>" skip                                                                                                 /* 1dot4 */
+                "       <TD>Group(s)</TD>" skip                                                                                /* 1dot4 */
+                "       <td colspan='3'><select name='h-grp-list' multiple disabled>" skip.                                    /* 1dot4 */       
+
+        FOR EACH grp_mstr NO-LOCK:                                                                                             /* 1dot4 */       
+                                                                                                     
+                {&OUT}                                                                                                         /* 1dot4 */                                                                           
+                    "               <option value='" grp_mstr.grp_ID "' >" grp_mstr.grp_ID "</option>" SKIP.                   /* 1dot4 */
+            
+         END.  /* 4ea. client_mstr */                                                                                          /* 1dot4 */
+        
+        {&OUT}                                                                                                                 /* 1dot4 */    
+                "           </select>" SKIP                                                                                    /* 1dot4 */
+                "       </td>" SKIP                                                                                            /* 1dot4 */
+                "   </tr>" skip                                                                                                /* 1dot4 */ 
+                "</TABLE>" SKIP
+                "</DIV>" skip   
+                "</DIV>         <!-- end of grid_8 -->" SKIP                                                                        /* 1dot2 */
+                "<DIV class='grid_2'> </DIV>" SKIP                                                                                  /* 1dot2 */
+                "</DIV>     <!-- end of row -->" SKIP                                                                               /* 1dot2 */    
+                "<BR>" SKIP                                                                                                         /* 1dot2 */
+                
+                "<FORM method='post'>" SKIP
+                 
+/*                "<center><INPUT type='hidden' name='Menu-action' value='1' />" SKIP*/
+                "<INPUT type='hidden' name='Menu-Point' value='" menuroot "' />" skip
+                "<INPUT type='hidden' name='Menu-Choice' value='" menuitem "' />" skip
+/*                "<INPUT type='submit' name='Submit' value='Update Fields' /></center>" SKIP*/
+                
+                "<div class='row'>" SKIP                                                                                                    /* 1dot2 */
+				"   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 1dot2 */
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                                       /* 1dot3 */
+				"   <div class='grid_2'><button type='submit' name='h-act' value='MAINTENANCE' class='btn'>Update Fields</BUTTON></div>" SKIP   /* 1dot2 */   /* 1dot4 */
+				"   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 1dot2 */
+				"</div>" SKIP                                                                                                               /* 1dot2 */
+				"<BR>" SKIP                                                                                                                 /* 1dot2 */    
+                
+                "</FORM>" SKIP
+/*                "</DIV>" SKIP*/
+                .
+        
+        END.  /** of act = 3 **/	    
+        
+        WHEN "DELETE" THEN DO:                                             /*** delete record ***/
+        
+            FIND menu_mstr WHERE menu_mstr.menu_num = menuroot AND 
+                menu_mstr.menu_select   = menuitem AND 
+                menu_mstr.menu_deleted = ?                                                                          /* 1dot1 */
+                    EXCLUSIVE-LOCK NO-ERROR.
+        
+            IF errmsgon = YES THEN     
+                {&OUT} "Menu Root = " menuroot "<BR>" skip 
+                "Menu Item = " menuitem "<BR>" skip
+                "Action = " act "<BR>" skip
+                "Found menu_mstr? " avail(menu_mstr) skip.
+
+            DELETE menu_mstr.
+                    
+            progstatus = "<center><h2>Record Deleted.</h2></center><br />".
+                        
+            {&OUT} progstatus skip
+                "<FORM method='post'>" skip
+                "<DIV class='row'>" SKIP                                                                                            /* 1dot2 */
+                "<DIV class='grid_2'> </DIV>" SKIP                                                                                  /* 1dot2 */
+                "<DIV class='grid_8'>" SKIP                                                                                         /* 1dot2 */
+                "<DIV class='table_2col'>" skip                                                                                 
+                "<TABLE>" skip 
+                "   <TR>" skip
+                "       <TH colspan=4>Menu Maintenance Table</TH>" skip
+                "   <TR>" skip
+                "       <TD>Menu Root</TD>" skip 
+                "       <TD><INPUT type='text' name='Menu-Point' value='" menuroot "' disabled /></TD>" skip
+                "       <TD>Menu Choice</TD>" skip
+                "       <TD><INPUT type='number' name='Menu-Choice' value='" menuitem "' disabled /></TD>" skip
+                "   </TR>" skip
+                "   <TR>" skip
+                "       <TD>Menu Label</TD>" skip
+                "       <TD><INPUT type='text' name='Menu-Label' value='" menutitle "' disabled /></TD>" skip
+                "       <TD>Module / Project Name</TD>" skip
+                "       <TD><INPUT type='text' name='Menu-Module' value='" menumodule "' disabled /></TD>" skip
+                "   </TR>" skip
+                "   <TR>" skip
+                "       <TD>Program Name</TD>" skip
+                "       <TD><INPUT type='text' name='Menu-Run' value='" menuprogname "' disabled /></TD>" skip
+                "       <TD>Hidden?</TD>" SKIP                                                                                      /* 1dot1 */              
+                "       <TD><input type='checkbox' name='h-menuhidden' value='YES' " ischecked " disabled /></TD>" SKIP             /* 1dot1 */
+                "   </TR>" skip
+                "   <TR>" skip                                                                                                 /* 1dot4 */
+                "       <TD>Group(s)</TD>" skip                                                                                /* 1dot4 */
+                "       <td colspan='3'><select name='h-grp-list' multiple disabled>" skip.                                    /* 1dot4 */
+
+            FOR EACH grp_mstr NO-LOCK:                                                                                         /* 1dot4 */
+
+                FIND gmd_det WHERE gmd_det.gmd_grp_ID = grp_mstr.grp_ID AND                                                    /* 1dot4 */
+                                   gmd_det.gmd_menu_num = menu_mstr.menu_num AND                                               /* 1dot4 */
+                                   gmd_det.gmd_menu_select = menu_mstr.menu_select                                             /* 1dot4 */
+                                        NO-LOCK NO-ERROR.                                                                      /* 1dot4 */
+
+                IF AVAILABLE (gmd_det) THEN DO:                                                                                /* 1dot4 */
+                    ASSIGN                                                                                                     /* 1dot4 */
+                        isselected = "SELECTED".                                                                               /* 1dot4 */
+
+                {&OUT}                                                                                                         /* 1dot4 */
+                    "               <option value='" gmd_det.gmd_grp_ID "' " isselected ">" gmd_det.gmd_grp_ID "</option>" SKIP. /* 1dot4 */
+
+                END. /* if avail gmd_det */                                                                                    /* 1dot4 */
+                ELSE                                                                                                           /* 1dot4 */
+                    ASSIGN                                                                                                     /* 1dot4 */
+                        isselected = "NOTHING".                                                                                /* 1dot4 */
+
+
+
+            END.  /* 4ea. client_mstr */
+
+        {&OUT}                                                                                                                 /* 1dot4 */
+                "           </select>" SKIP                                                                                    /* 1dot4 */
+                "       </td>" SKIP                                                                                            /* 1dot4 */
+                "   </tr>" skip                                                                                                /* 1dot4 */
+                "</TABLE>" skip
+                "</DIV>" skip
+                "</DIV>         <!-- end of grid_8 -->" SKIP                                                                        /* 1dot2 */
+                "<DIV class='grid_2'> </DIV>" SKIP                                                                                  /* 1dot2 */    
+                "</DIV>     <!-- end of row -->" SKIP                                                                               /* 1dot2 */
+                "<BR>" SKIP                                                                                                         /* 1dot2 */    
+                
+                "<div class='row'>" SKIP                                                                                            /* 1dot2 */
+				"   <div class='grid_5'> </DIV>" SKIP                                                                               /* 1dot2 */
+/*                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                                       /* 1dot3 */				*/
+				"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' onClick='parent.history.go(0)' class='btn'>Return to Menu</BUTTON></div>" SKIP  /* 1dot2 */ /* 1dot4 */
+				"   <div class='grid_5'> </DIV>" SKIP                                                                               /* 1dot2 */
+				"</div>" SKIP                                                                                                       /* 1dot2 */
+				"<BR>" SKIP                                                                                                         /* 1dot2 */
+/*                "<center><INPUT type='hidden' name='Menu-action' value='0' />" skip         */
+/*                "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" skip*/
+/*                "</DIV>" skip                                                               */
+                "</FORM>" skip.            
+                        
+            
+        END.  /*** of act = 4 **/
+        
+        OTHERWISE DO:
+            
+            progstatus = "<center><h2>Unexpected Condition -- Contact Solsource Techsupport.</h2></center><br />".
+            
+            {&OUT} progstatus skip 
+                "<FORM method='post'>" skip
+                "<div class='row'>" SKIP                                                                                                    /* 1dot2 */
+                "   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 1dot2 */
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                                       /* 1dot3 */
+                "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Menu</BUTTON></div>" SKIP  /* 1dot2 */
+                "   <div class='grid_5'> </DIV>" SKIP                                                                                       /* 1dot2 */        
+                "</div>" SKIP                                                                                                               /* 1dot2 */    
+                "<BR>" SKIP                                                                                                                 /* 1dot2 */
+/*                "<center><INPUT type='hidden' name='Menu-action' value='0' />" SKIP         */
+/*                "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP*/
+                "</FORM>" skip.               
+        
+        END.  /** of act = something else **/  
+        
+    END CASE.   /** of act = ? **/
+	
+    </SCRIPT>
+
+
+</BODY>
+</HTML>

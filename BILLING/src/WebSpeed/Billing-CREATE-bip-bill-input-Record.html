@@ -1,0 +1,1075 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"> 
+<HTML>  
+<HEAD>   
+<META NAME="AUTHOR" CONTENT="Harold Luttrell, Sr.">
+
+    <link rel='stylesheet' href='/depot/src/HTMLContent/stylesheets/core.css' type='text/css'/>    
+    
+    <TITLE>Billing CREATE bip-bill-input Record</TITLE>
+    
+    <META NAME="AUTHOR" CONTENT="Harold Luttrell, Sr.">
+    <META NAME="VERSION" CONTENT="1.4">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="3/Apr/14">
+    <META NAME="LAST_UPDATED" CONTENT="25/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* ----------------------------------------------------------------------
+      Sub-program   : Billing-CREATE-bip-bill-input-Record.html.
+      Description   : This program created the bip_bill_input record 
+                    :     if there are no edit errors.
+                  
+      Sub-programs  : ALL Billing-Input-(lab name)-Screen.html programs calls
+                    :   this program for editing and bip_bill_input record creation.
+      Description   : This program edits the Invoice data from the Labs input screens
+                    :   and if there are no edit errors it then creates the bip_bill_input record.
+                    :    
+                    :   If there are edit errors theu are displayed on the screen and then returns
+                    :   to the calling program for input correction of the data or to override the
+                    :   edit error and keep the input record or to bypass the input record. 
+             
+      - - Version History - -
+      
+          1.0 - April 3, 2014 - Original code.
+
+          1.1 - June 16, 2014.  Modified previous code to reference/access the 
+                new Progress Databases: General and 
+                
+          1.2 - July 8, 2014.  Modified previous code to reference/access the 
+                new Progress Databases: General and HHI tables and apply the
+                RStP find-patient.p code. 
+
+          1.3 - August 26, 2014.  Added CSS commands to the screen displays.
+                Added code to display different screen formats to try and
+                match the invoice format from each lab.  
+                Also set up a free form invoice format incase we need one. 
+                
+          1.4 - Oct 25, 2014 - removed all '../..' from the html code and 
+                                    changed '.html' to '.r' and
+                                    added the META & css.
+                                                   
+  ----------------------------------------------------------------------*/    
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+   
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">    
+/* Include code. */ 
+
+{../depot/src/WebSpeed/menuname.i}.       /*** menu name assignment ***/
+
+{../depot/src/WebSpeed/o-depot-definenames.i}.     /*** depot output define variables ***/    
+   
+/* Define Variables. */
+DEFINE VARIABLE act                 AS INTEGER                          NO-UNDO .
+/*  
+    act values: 86 = free form invoice format.
+                1 = DDI format.
+                2 = GENOVA format.
+                3 = NS format.
+                4 = SABRE format. 
+*/ 
+/*  Following is the header info from the bill.  */ 
+DEFINE VARIABLE h-lab-id            LIKE lab_mstr.lab_ID                      NO-UNDO.  /* DROP-DOWN BOX. */   
+DEFINE VARIABLE ip-lab-id           LIKE bip_bill_input.bip_LAB_ID            NO-UNDO.
+DEFINE VARIABLE ip-Account-Nbr      LIKE bip_bill_input.bip_Account_Nbr       NO-UNDO.
+DEFINE VARIABLE ip-Invoice-Nbr      LIKE bip_bill_input.bip_Invoice_Nbr       NO-UNDO.
+DEFINE VARIABLE ip-Invoice-Date     AS CHARACTER FORMAT "x(10)"                   NO-UNDO.
+DEFINE VARIABLE ip-Total-Amt-Due    AS DECIMAL FORMAT "->>>,>>9.99"               NO-UNDO. 
+DEFINE VARIABLE ip-Pay-Term         LIKE bip_bill_input.bip_Payment_Term      NO-UNDO.
+DEFINE VARIABLE ip-Bill-Due-Date    AS CHARACTER FORMAT "x(10)"                   NO-UNDO.
+
+/*  Following is the line item from the bill.  */
+DEFINE VARIABLE ip-Sample-ID        LIKE bip_bill_input.bip_Sample_ID         NO-UNDO. 
+DEFINE VARIABLE ip-Activity-Date    AS CHARACTER FORMAT "x(10)"                   NO-UNDO. 
+DEFINE VARIABLE ip-Pat-First-Name   LIKE bip_bill_input.bip_Person_First_Name NO-UNDO.  
+DEFINE VARIABLE ip-Pat-Mid-Name     LIKE bip_bill_input.bip_Person_Mid_Name   NO-UNDO.  
+DEFINE VARIABLE ip-Pat-Last-Name    LIKE bip_bill_input.bip_Person_Last_Name  NO-UNDO.
+DEFINE VARIABLE ip-Pat-Suffix       LIKE bip_bill_input.bip_Person_Suffix     NO-UNDO.  
+DEFINE VARIABLE ip-Test-Type        LIKE bip_bill_input.bip_Test_Type         NO-UNDO.
+DEFINE VARIABLE ip-Amount           AS  DECIMAL FORMAT "->>>,>>9.99"              NO-UNDO.
+/*  End if the input bill/invoice data fields.  */
+
+DEFINE VARIABLE look4it             AS CHARACTER                                NO-UNDO.
+DEFINE VARIABLE displayreset        AS CHARACTER                                NO-UNDO.
+DEFINE VARIABLE whotocall           AS CHARACTER FORMAT "x(80)"                 NO-UNDO.
+
+DEFINE VARIABLE whattorun           AS CHARACTER                                NO-UNDO.  /* to get the menu title */
+
+DEFINE VARIABLE ip_text                         AS CHARACTER  FORMAT "x(60)"    NO-UNDO.
+DEFINE VARIABLE op_text                         AS CHARACTER  FORMAT "x(60)"    NO-UNDO.
+DEFINE VARIABLE codetorun                       AS CHARACTER                    NO-UNDO.
+DEFINE VARIABLE CCYY-Date                       AS CHARACTER  FORMAT "x(10)"    NO-UNDO.
+DEFINE VARIABLE Progress-Date                   AS DATE                         NO-UNDO. 
+DEFINE VARIABLE ip-Stripped-Invoice-Date        AS DATE                         NO-UNDO.
+DEFINE VARIABLE ip-Stripped-Activity-Date       AS DATE                         NO-UNDO.
+DEFINE VARIABLE ip-Stripped-Bill-Due-Date       AS DATE                         NO-UNDO. 
+DEFINE VARIABLE LABS-Last-Billing-seqnbr        AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE Error-flag                      AS logical FORMAT "yes/no"      NO-UNDO.
+DEFINE VARIABLE override-error                  AS CHARACTER                    NO-UNDO.
+DEFINE VARIABLE hold-string-unmatch-reason      AS CHARACTER                    NO-UNDO.
+DEFINE VARIABLE len                             AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE ix                              AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE x                               AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE y                               AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE showmsg             AS LOGICAL INITIAL NO      NO-UNDO.            /** change to yes for debug messages **/
+
+/*  Trae's patient.p & people.p program requirements.  */
+
+DEFINE VARIABLE blank_prefix            AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE blank_DOB               AS CHARACTER                            NO-UNDO. 
+/*
+DEFINE VARIABLE return_people_ID        AS INTEGER                              NO-UNDO.
+DEFINE VARIABLE return_addr_ID          AS INTEGER                              NO-UNDO. */
+/*  End of Trae's custiner.p & people.p program requirements.  */
+
+/* Assign Values to Variable statements. */
+ASSIGN 
+
+/* Logical variables. */
+        Error-flag          = LOGICAL ("no")
+        showmsg             = LOGICAL(get-field("s-showmsg"))
+                 
+/* Date variables. */
+        blank_DOB           = "?"   
+  
+/* Integer variables. */        
+        act                 = INTEGER (get-value ("h-act"))
+        ip-Amount           = DECIMAL(get-value("s-Amount"))
+        ip-Total-Amt-Due    = DECIMAL(get-value("s-Total-Amt-Due"))
+             
+/* Character variables. */
+        h-lab-id            = TRIM(get-field("h-lab-ID"))          /* DROP-DOWN BOX. */
+        ip-lab-id           = get-field("s-LabID")
+        ip-Account-Nbr      = get-field("s-Account-Nbr")
+        ip-Invoice-Nbr      = get-field("s-Invoice-Nbr")
+        ip-Pay-Term         = get-field("s-Pay-Term")
+        ip-Sample-ID        = get-field("s-Sample-ID")
+        ip-Pat-First-Name   = get-field("s-Pat-First-Name")
+        ip-Pat-Mid-Name     = get-field("s-Pat-Mid-Name")
+        ip-Pat-Last-Name    = get-field("s-Pat-Last-Name")
+        ip-Pat-Suffix       = get-field("s-Pat-Suffix")     
+        ip-Test-Type        = get-field("s-Test-Type")
+        ip-Invoice-Date     = get-field("s-Invoice-Date")
+        ip-Activity-Date    = get-field("s-Activity-Date")
+        ip-Bill-Due-Date    = get-field("s-Bill-Due-Date")
+  
+        look4it             = get-field("s-Submit")
+        displayreset        = get-field("s-Reset")
+        override-error      = get-field("s-override-error")
+        hold-string-unmatch-reason = get-field("s-hold-string-unmatch-reason")
+        
+        codetorun = "../depot/rcode/subr_Up_Low_Case.r"
+        
+        whattorun           = get-field("whattorun").           /* to get the menu title */
+     
+/*  IF look4it = 'Click HERE for main menu......' THEN DO: 
+          MESSAGE look4it VIEW-AS ALERT-BOX BUTTONS OK.                
+    END. */            
+     
+ /*   
+{&OUT}   "<H2 class='webpagetitle' >" SKIP           
+             "<P STYLE='text-align: center'> Bill/Invoice from LAB(s) </H2>" SKIP. 
+*/        
+ASSIGN  h-lab-id  = TRIM(get-field("h-lab-id")).   
+     
+IF  h-lab-id = "" THEN 
+
+    ASSIGN  h-lab-id = ip-lab-id.
+    
+ELSE 
+
+    ASSIGN  ip-lab-id = h-lab-id.   
+      
+IF  override-error = "notfound,Bypass" THEN 
+
+        override-error = "Bypass".
+     
+IF  override-error = "notfound,Override" THEN
+
+        override-error = "Override".
+
+IF showmsg = YES THEN DO:
+    {&OUT}   "<TR>" 'Start 1. Error-flag = '  "<TD>" Error-flag   "</TR><BR>" SKIP
+             "<TR>" 'override-error = ' "<TD>" override-error   "</TR><BR>" SKIP
+             "<TR>" 'hold-string-unmatch-reason = ' "<TD>" hold-string-unmatch-reason   "</TR><BR>" SKIP.   
+END.  /** IF showmsg = YES **/ 
+
+IF override-error <> "Bypass" AND override-error <> "Override" THEN DO:
+
+    ASSIGN hold-string-unmatch-reason = "".
+    ASSIGN ip-lab-id = CAPS(ip-lab-id).    
+ 
+    {&OUT}    "<center><div><table>".
+/*
+{&OUT} " Trying to link out to RUN the Billing-Edits.r pgm".
+    RUN "../BILLING/rcode/Billing-Edits.r"
+            (hold-string-unmatch-reason,                      
+            OUTPUT Error-flag). 
+*/           
+    
+    IF ip-lab-id = "" THEN DO: 
+        {&OUT} "<tr><th style='text-align:center;'>Lab ID is missing.</th></tr>".
+/*                act = 3.      */
+        ASSIGN len = LENGTH(hold-string-unmatch-reason).
+        ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Lab|ID|is|missing.|".
+        ASSIGN Error-flag = LOGICAL ("yes").                  
+    END.  /** IF ip-lab-id = "" **/
+	        
+    ASSIGN ip-Pay-Term = LC(ip-Pay-Term).
+    RUN VALUE (codetorun) (ip-Pay-Term, OUTPUT op_text). 
+    ASSIGN ip-Pay-Term = op_text.
+    
+    IF ip-Invoice-Nbr = "" THEN DO: 
+        {&OUT} "<tr><th style='text-align:center;'>Invoice number is missing.</th></tr>".
+/*                act = 3.      */
+        ASSIGN len = LENGTH(hold-string-unmatch-reason).
+        ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Invoice|Nbr|is|missing-Required!|".
+        ASSIGN Error-flag = LOGICAL ("yes").  	              
+    END.  /** IF ip-Invoice-Nbr = "" **/ 
+	        
+/*  MESSAGE ip-Invoice-Date VIEW-AS ALERT-BOX BUTTONS OK.       */
+          
+/*    ASSIGN  ip_text = ip-Invoice-Date.
+    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
+    ASSIGN  ip-Stripped-Invoice-Date   =   DATE(op_text).  */
+    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Invoice-Date, OUTPUT Progress-Date). 
+    ASSIGN  ip-Stripped-Invoice-Date   =   Progress-Date.
+	         	        
+/*  MESSAGE ip-Stripped-Invoice-Date VIEW-AS ALERT-BOX BUTTONS OK.         */    
+	        
+    IF ip-Sample-ID = "" THEN DO:
+        {&OUT} "<tr><th style='text-align:center;'>Sample ID is missing.</th></tr>".
+/*                act = 3.      */
+        ASSIGN len = LENGTH(hold-string-unmatch-reason).
+        ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Sample|ID|is|missing.|".
+        ASSIGN Error-flag = LOGICAL ("yes"). 	              
+    END.  /** IF ip-Sample-ID = ""  **/
+    
+    ELSE DO: 
+         
+        ASSIGN ip-Sample-ID = CAPS(ip-Sample-ID).
+        
+    END.  /**  ELSE DO: **/
+	        
+/*  MESSAGE ip-Activity-Date VIEW-AS ALERT-BOX BUTTONS OK.           */
+          
+/*    ASSIGN  ip_text = ip-Activity-Date.
+    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
+    ASSIGN  ip-Stripped-Activity-Date   =   DATE(op_text).  */
+    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Activity-Date, OUTPUT Progress-Date). 
+    ASSIGN  ip-Stripped-Activity-Date   =   Progress-Date.
+             
+/*  MESSAGE ip-Stripped-Activity-Date VIEW-AS ALERT-BOX BUTTONS OK.     */
+	        
+    IF ip-Activity-Date = ? OR ip-Activity-Date = "" THEN DO: 
+        {&OUT} "<tr><th style='text-align:center;'>Activity Date is missing.</th></tr>".
+/*                act = 3.      */
+         ASSIGN len = LENGTH(hold-string-unmatch-reason).
+         ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Activity|Date|is|missing.|".
+         ASSIGN Error-flag = LOGICAL ("yes").   	            
+     END.  /** IF ip-Activity-Date = ? OR ip-Activity-Date = "" **/
+     
+     IF ip-Stripped-Activity-Date > TODAY THEN DO: 
+         {&OUT} "<tr><th style='text-align:center;'>Activity Date can NOT be greater than todays date.</th></tr>".
+/*                act = 3.      */
+         ASSIGN len = LENGTH(hold-string-unmatch-reason).
+         ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Activity|Date|can|NOT|be|greater|than|todays|date.|".
+         ASSIGN Error-flag = LOGICAL ("yes").   	             
+     END.  /** IF ip-Stripped-Activity-Date > TODAY **/  
+
+/*  MESSAGE ip-Bill-Due-Date VIEW-AS ALERT-BOX BUTTONS OK.  */
+	        
+/*     ASSIGN  ip_text = ip-Bill-Due-Date. 
+     RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
+     ASSIGN ip-Stripped-Bill-Due-Date   =   DATE(op_text).  */
+     RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Bill-Due-Date, OUTPUT Progress-Date). 
+     ASSIGN  ip-Stripped-Bill-Due-Date   =   Progress-Date.
+     
+     IF ip-Stripped-Bill-Due-Date = ? OR ip-Bill-Due-Date = "" THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>Bill Due Date is blank.</th></tr>".
+/*                act = 3.      */
+         ASSIGN len = LENGTH(hold-string-unmatch-reason).
+         ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Bill|Due|Date|is|blank.|".
+         ASSIGN Error-flag = LOGICAL ("yes").                
+     END.  /** IF ip-Stripped-Bill-Due-Date = ? OR ip-Bill-Due-Date = "" **/
+     
+/*  MESSAGE ip-Stripped-Bill-Due-Date VIEW-AS ALERT-BOX BUTTONS OK.  */ 
+            	        
+     IF ip-Pat-First-Name = "" THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>Person First Name is missing.</th></tr>".
+/*                act = 3.      */
+         ASSIGN len = LENGTH(hold-string-unmatch-reason).
+         ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Person|First|Name|is|missing.|".
+         ASSIGN Error-flag = LOGICAL ("yes").		          
+     END.  /** IF ip-Pat-First-Name = "" **/
+	        
+     ELSE DO:  
+         ASSIGN ip-Pat-First-Name = LC(ip-Pat-First-Name).
+         RUN VALUE (codetorun) (ip-Pat-First-Name, OUTPUT op_text). 
+         ASSIGN ip-Pat-First-Name = op_text. 
+     END.  /** ELSE DO: **/ 
+	
+     ASSIGN ip-Pat-Mid-Name = LC(ip-Pat-Mid-Name).
+     RUN VALUE (codetorun) (ip-Pat-Mid-Name, OUTPUT op_text). 
+     ASSIGN ip-Pat-Mid-Name = op_text.
+     
+     ASSIGN ip-Pat-Suffix = LC(ip-Pat-Suffix).
+     RUN VALUE (codetorun) (ip-Pat-Suffix, OUTPUT op_text). 
+     ASSIGN ip-Pat-Suffix = op_text.
+     
+     IF ip-Pat-Last-Name = "" THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>Person Last Name is missing.</th></tr>".
+/*                act = 3.      */
+         ASSIGN len = LENGTH(hold-string-unmatch-reason).
+         ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Person|Last|Name|is|missing.|".
+         ASSIGN Error-flag = LOGICAL ("yes"). 	              
+     END.  /** IF ip-Pat-Last-Name = "" **/ 
+	        
+     ELSE DO:  
+         ASSIGN ip-Pat-Last-Name = LC(ip-Pat-Last-Name).
+         RUN VALUE (codetorun) (ip-Pat-Last-Name, OUTPUT op_text). 
+         ASSIGN ip-Pat-Last-Name = op_text.           
+     END.  /** ELSE DO: **/ 
+	            
+     IF ip-Test-Type = "" THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>Test Type is missing.</th></tr>".
+/*                act = 3.      */
+         ASSIGN len = LENGTH(hold-string-unmatch-reason).
+         ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Test|Type|is|missing.|".
+         ASSIGN Error-flag = LOGICAL ("yes"). 	            
+     END.  /** IF ip-Test-Type = "" **/
+     
+     ELSE DO:  
+         ASSIGN ip-Test-Type = CAPS(ip-Test-Type).
+     END.  /** ELSE DO: **/
+      
+     IF ip-Total-Amt-Due = 0 THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>Bill Total Amount Due can NOT be zero or blank.</th></tr>".
+/*                act = 3.      */
+         ASSIGN len = LENGTH(hold-string-unmatch-reason)
+                SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Bill|Total|Amount|Due|can|NOT|be|zero|or|blank.|"
+                Error-flag = LOGICAL ("yes").  
+     END.  /** IF ip-Total-Amt-Due = 0 **/
+     
+     IF ip-Amount = 0 THEN DO: 
+         {&OUT} "<tr><th style='text-align:center;'>Line Item Amount can NOT be zero or blank.</th></tr>".
+/*                act = 3.      */
+         ASSIGN len = LENGTH(hold-string-unmatch-reason)
+                SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Line|Item|Amount|can|NOT|be|zero|or|blank.|"
+                Error-flag = LOGICAL ("yes").  
+     END.  /**  IF ip-Amount = 0 **/
+
+
+	        
+/*    {&OUT}    "</table></div></center>".  */ 
+                                
+    RUN "../depot/rcode/find-patient.r"
+            (blank_prefix,          
+            ip-Pat-First-Name,    
+            ip-Pat-Mid-Name,      
+            ip-Pat-Last-Name,      
+            ip-Pat-Suffix,       
+            blank_DOB,            
+            OUTPUT o-fpat-ID, 
+            OUTPUT o-fpat-addr-ID, 
+            OUTPUT o-fpat-exist,
+            OUTPUT o-fpat-ran,
+            OUTPUT o-fpat-error).                                  
+                                         
+			IF  o-fpat-ID = 0  THEN DO: 
+			    
+		        IF override-error = "Bypass" THEN DO:
+		            
+		            ASSIGN Error-flag = LOGICAL ("no").
+		            
+		            {&OUT}   '<form ACTION="Billing-Input-Screen.r" method="post" >'  SKIP
+		                         "<input type='hidden' name='whattorun'    value='" whattorun "' >" SKIP  /* to get the menu title */
+			                     '<TR>' SKIP
+			                     '<BR>' SKIP
+				                     '<TD>' 'To bypass enterning this input data, '  '</TD>' SKIP
+				                     '<TD>' '<input type="hidden" value="" name="s-override-error">'  '</TD>' SKIP 
+				                     '<input type="hidden" name="h-act"     value="' act '" >' SKIP
+				                     '<input type="submit" value="Click HERE." name="s-Return">' SKIP 
+			                     '</BR>' SKIP
+			                     '</TR>' SKIP
+		                     '</form>'  SKIP. 
+
+	                IF showmsg = YES THEN DO:		                     
+						{&OUT}   "<TR>" '2. Error-flag = '  "<TD>" Error-flag   "</TR><BR>" SKIP 
+						         "<TR>" 'override-error = ' "<TD>" override-error   "</TR><BR>" SKIP 
+						         "<TR>" 'hold-string-unmatch-reason = ' "<TD>" hold-string-unmatch-reason   "</TR><BR>" SKIP.  
+	                END.  /** IF showmsg = YES **/ 
+                
+	            END.   /**   IF override-error = 'Bypass'  **/ 
+	          
+				IF override-error = "Override" THEN 
+			        ASSIGN hold-string-unmatch-reason = "".
+	                
+		        IF override-error <> "Bypass" THEN DO:
+			        ASSIGN len = LENGTH(hold-string-unmatch-reason).
+		            ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Patient|is|NOT|found|in|the|database.|".
+		            {&OUT}    "<tr><th style='text-align:center;'>Patient is NOT found in the database.</th></tr>".
+/*                act = 3.      */				       
+					ASSIGN Error-flag = LOGICAL ("yes").
+					ASSIGN override-error = "notfound".
+					
+	                IF showmsg = YES THEN DO:
+						{&OUT}   "<TR>" '3. Error-flag = '  "<TD>" Error-flag   "</TR><BR>" SKIP 
+						         "<TR>" 'override-error = ' "<TD>" override-error   "</TR><BR>" SKIP 
+						         "<TR>" 'hold-string-unmatch-reason = ' "<TD>" hold-string-unmatch-reason   "</TR><BR>" SKIP.  
+	  				END.  /** IF showmsg = YES **/ 
+  					
+			    END.   /**   IF override-error <> 'Bypass'  **/ 	
+			    
+			END.    /**  IF  return_people_ID = 0  **/  
+			 
+    {&OUT}    "</table></div></center>".
+                 	        
+END.  /**  IF override-error <> "Bypass" AND override-error <> "Override"  **/ 
+        
+        IF showmsg = YES THEN DO:
+			{&OUT}   "<TR>" '4. Error-flag = '  "<TD>" Error-flag   "</TR><BR>" SKIP 
+			         "<TR>" 'override-error = ' "<TD>" override-error   "</TR><BR>" SKIP
+			         "<TR>" 'hold-string-unmatch-reason = ' "<TD>" hold-string-unmatch-reason   "</TR><BR>" SKIP.  
+        END.  /** IF showmsg = YES **/
+        
+IF override-error = "Bypass" THEN DO: 
+    
+    ASSIGN   override-error = "lineitem"
+             Error-flag = NO
+             hold-string-unmatch-reason = "".                   
+
+/*  MESSAGE ip-Activity-Date VIEW-AS ALERT-BOX BUTTONS OK.       */          
+/*  ASSIGN  ip_text = ip-Activity-Date.
+    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
+    ASSIGN  ip-Activity-Date = op_text.   */
+    
+/* ?   RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Activity-Date, OUTPUT Progress-Date). 
+    ASSIGN  ip-Stripped-Activity-Date   =   Progress-Date.
+*/          
+/*  MESSAGE ip-Activity-Date VIEW-AS ALERT-BOX BUTTONS OK.    */       
+
+    IF act = 86 THEN 
+    
+        ASSIGN whotocall = ("Billing-IP-UNKNOWN-Lab-Screen.r").
+        
+    ELSE  
+    
+        ASSIGN whotocall = ("Billing-IP-" + ip-lab-id + "-Screen.r"). 
+ 
+ /* date */      
+/*    ASSIGN ip_text = ip-Activity-Date.
+    RUN "../depot/rcode/subr_YY_to_CCYY.r" (ip_text, OUTPUT op_text). 
+    ASSIGN ip-Activity-Date = op_text. */
+    RUN "../depot/rcode/subr_YY_to_CCYY.r" (ip-Stripped-Activity-Date, OUTPUT ip-Activity-Date). 
+    
+  /* date */  
+                               
+    {&OUT}   "<form  ACTION='" whotocall "'  method='get' >" SKIP 
+                "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP   /* to get the menu title */
+                "<input type='hidden' name='h-act'              value='" act "' >" SKIP
+                "<input type='hidden' name='s-Error-flag'       value='" Error-flag "' >" SKIP
+                "<input type='hidden' name='s-override-error'   value='" override-error "' >" SKIP
+                "<input type='hidden' name='s-hold-string-unmatch-reason' value='" hold-string-unmatch-reason "' >" SKIP
+                "<input type='hidden' name='s-LabID'            value='" ip-lab-id "' >" SKIP
+                "<input type='hidden' name='h-lab-id'           value='" ip-lab-id "' >" SKIP
+                "<input type='hidden' name='s-Account-Nbr'      value='" ip-Account-Nbr "' >" SKIP
+                "<input type='hidden' name='s-Invoice-Nbr'      value='" ip-Invoice-Nbr "' >" SKIP
+                "<input type='hidden' name='s-Invoice-Date'     value='" ip-Invoice-Date "' >" SKIP
+                "<input type='hidden' name='s-Total-Amt-Due'    value='" ip-Total-Amt-Due "' >" SKIP
+                "<input type='hidden' name='s-Pay-Term'         value='" ip-Pay-Term "' >" SKIP
+                "<input type='hidden' name='s-Bill-Due-Date'    value='" ip-Bill-Due-Date "' >" SKIP 
+				"<div class='table_2col'>" SKIP               
+				"<table border=6>" SKIP
+                        "<thead>" SKIP
+                        "<tr>" SKIP
+                            "<td colspan=4><center> Line Item input detail </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>First Name</td>" SKIP
+                            "<td><input type='text' name='s-Pat-First-Name' value='" ip-Pat-First-Name "' disabled </td>" SKIP
+                            "<td>Sample ID</td>" SKIP
+                            "<td>" "<input type='text' name='s-Sample-ID' value='" ip-Sample-ID "' disabled </td>"  SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Middle Name</td>" SKIP
+                            "<td>" "<input type='text' name='s-Pat-Mid-Name' value='" ip-Pat-Mid-Name "' disabled </td>" SKIP
+                            "<td>Activity Date</td>" SKIP
+ /* date */         /*        "<td>" "<input type='text' name='s-Activity-Date' value='" ip-Activity-Date "' disabled </td>" SKIP  */
+                            "<td>" "<input type='date' name='s-Activity-Date' value='" ip-Activity-Date "' disabled </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Last Name</td>" SKIP
+                            "<td>" "<input type='text' name='s-Pat-Last-Name' value='" ip-Pat-Last-Name "' disabled </td>" SKIP 
+                            "<td>Test Type</td>" SKIP
+                            "<td>" "<input type='text' name='s-Test-Type' value='" ip-Test-Type "' disabled </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Suffix</td>" SKIP
+                            "<td>" "<input type='text' name='s-Pat-Suffix' value='" ip-Pat-Suffix "' disabled </td>" SKIP
+                            "<td>Amount</td>" SKIP
+                            "<td>" "<input type='text' name='s-Amount' value='" ip-Amount "' disabled </td>" SKIP
+                        "</tr>" SKIP 
+                       "</thead>" SKIP
+                       "<tfoot>" SKIP
+                            "Date: " TODAY "." SKIP 
+                            "<br>" SKIP
+                            "You have elected to bypass / not keep this detail input data. "   SKIP
+                            "<br>" SKIP
+                         "Please make a NOTE about bypass entering this line item before continuing. "  SKIP
+                         "<input type='submit' style='COLOR: #FF0000;<B>' value='Click HERE to continue.' name='s-Return'>"  SKIP   
+                        "</tfoot>" SKIP
+                    "</table>"  SKIP 
+                    "</div>" SKIP.   
+	                      
+		      "</form>". 
+		              
+              ASSIGN Error-flag = LOGICAL ("yes").
+		     		                                
+END.   /**   IF override-error = "Bypass"  **/  
+ 
+IF showmsg = YES THEN DO:
+    {&OUT}   "<TR>" '5. Error-flag = '  "<TD>" Error-flag   "</TR><BR>" SKIP  
+         "<TR>" 'override-error = ' "<TD>" override-error   "</TR><BR>" SKIP 
+         "<TR>" 'hold-string-unmatch-reason = ' "<TD>" hold-string-unmatch-reason   "</TR><BR>" SKIP.  
+END.  /** IF showmsg = YES **/
+ 
+ 
+                
+IF  NOT Error-flag THEN DO:
+
+	ASSIGN override-error = "".
+	
+	IF ip-Sample-ID = "" THEN DO:
+	    ASSIGN ip-Sample-ID = 'unknown'.
+	    ASSIGN len = LENGTH(hold-string-unmatch-reason).
+	    ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Sample|ID|is|blank-changed|to|unknown.|".                  
+	END.  /** IF ip-Sample-ID = "" **/
+	
+	IF ip-Invoice-Nbr = "" THEN DO:
+	       ASSIGN ip-Invoice-Nbr = 'Overridden'.
+	       ASSIGN len = LENGTH(hold-string-unmatch-reason).
+	       ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Invoice|Nbr|is|blank-Overridden|was|selected.|".                  
+	END.  /** IF ip-Invoice-Nbr = "" **/
+	            
+/*  MESSAGE ip-Invoice-Date VIEW-AS ALERT-BOX BUTTONS OK.       */
+          
+/*    ASSIGN  ip_text = ip-Invoice-Date.
+    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
+    ASSIGN  ip-Stripped-Invoice-Date   =   DATE(op_text).  */
+    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Invoice-Date, OUTPUT Progress-Date). 
+    ASSIGN  ip-Stripped-Invoice-Date   =   Progress-Date.
+             
+/*  MESSAGE ip-Stripped-Invoice-Date VIEW-AS ALERT-BOX BUTTONS OK.         */  
+
+/*  MESSAGE ip-Activity-Date VIEW-AS ALERT-BOX BUTTONS OK.           */
+          
+/*    ASSIGN  ip_text = ip-Activity-Date.
+    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
+    ASSIGN  ip-Stripped-Activity-Date   =   DATE(op_text).    */
+    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Activity-Date, OUTPUT Progress-Date). 
+    ASSIGN  ip-Stripped-Activity-Date   =   Progress-Date.
+             
+/*  MESSAGE ip-Stripped-Activity-Date VIEW-AS ALERT-BOX BUTTONS OK.     */
+
+/*  MESSAGE ip-Bill-Due-Date VIEW-AS ALERT-BOX BUTTONS OK.      */
+
+/*    ASSIGN  ip_text = ip-Bill-Due-Date. 
+    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
+    ASSIGN ip-Stripped-Bill-Due-Date   =   DATE(op_text).  */
+    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Bill-Due-Date, OUTPUT Progress-Date). 
+    ASSIGN  ip-Stripped-Bill-Due-Date   =   Progress-Date. 
+     
+    IF ip-Stripped-Bill-Due-Date = ? OR ip-Bill-Due-Date = "" THEN DO:
+         {&OUT} "<tr><th style='text-align:center;'>Bill Due Date is blank.</th></tr>".
+/*                act = 3.      */
+         ASSIGN len = LENGTH(hold-string-unmatch-reason).
+         ASSIGN SUBSTRING(hold-string-unmatch-reason, (len + 1), 48) = "Bill|Due|Date|is|blank.|".
+         ASSIGN Error-flag = LOGICAL ("yes").                
+    END.  /** IF ip-Stripped-Bill-Due-Date = ? OR ip-Bill-Due-Date = "" **/
+
+/*  MESSAGE ip-Stripped-Bill-Due-Date VIEW-AS ALERT-BOX BUTTONS OK.     */
+
+  
+    ASSIGN len = LENGTH(hold-string-unmatch-reason)
+           ix = 1.
+    DO while ix < (len + 1):
+       IF SUBSTRING(hold-string-unmatch-reason, ix, 1) = "|" THEN 
+           ASSIGN SUBSTRING(hold-string-unmatch-reason, ix, 1) = " ".
+       ASSIGN ix = (ix + 1).
+    END. 
+                
+    CREATE bip_bill_input.  
+		        
+    ASSIGN   
+        bip_bill_input.bip_seq               = NEXT-VALUE (seq-bip)    
+        bip_bill_input.bip_LAB_ID            = ip-lab-id 
+        bip_bill_input.bip_Account_Nbr       = ip-Account-Nbr
+        bip_bill_input.bip_Invoice_Nbr       = ip-Invoice-Nbr
+        bip_bill_input.bip_Invoice_Date      = ip-Stripped-Invoice-Date 
+        bip_bill_input.bip__date01           = ip-Stripped-Bill-Due-Date          
+        bip_bill_input.bip_Total_Amt_Due     = ip-Total-Amt-Due
+        bip_bill_input.bip_Payment_Term      = ip-Pay-Term 
+        bip_bill_input.bip_Sample_ID         = ip-Sample-ID
+        bip_bill_input.bip_Activity_Date     = ip-Stripped-Activity-Date
+        bip_bill_input.bip_Person_First_Name = ip-Pat-First-Name
+        bip_bill_input.bip_Person_Mid_Name   = ip-Pat-Mid-Name
+        bip_bill_input.bip_Person_Last_Name  = ip-Pat-Last-Name
+        bip_bill_input.bip_Person_Suffix     = ip-Pat-Suffix         
+        bip_bill_input.bip_Test_Type         = ip-Test-Type
+        bip_bill_input.bip_Amount            = ip-Amount
+        bip_bill_input.bip_created_by        = USERID("HHI")
+        bip_bill_input.bip_create_date       = TODAY
+        bip_bill_input.bip_modified_by       = USERID("HHI")
+        bip_bill_input.bip_modified_date     = TODAY	                  
+        .
+        
+    IF hold-string-unmatch-reason <> "" THEN 
+    
+        ASSIGN  bip_bill_input.bip_UnMatched_Date    = TODAY 
+                   bip_bill_input.bip_UnMatched_Reason  = hold-string-unmatch-reason.
+           
+    RELEASE bip_bill_input NO-ERROR.
+		         
+/*	Billing_history	
+                CREATE bill_hist.
+		        ASSIGN 
+		            bill_hist.bill_ID               = NEXT-VALUE (seq-bill)
+		            bill_hist.bill_item             = ip-Sample-ID            
+		            bill_hist.bill_action           = "Entered Line Item"
+		            bill_hist.bill_qty              = ip-Amount
+		            bill_hist.bill_date             = TODAY
+		            bill_hist.bill_userid           = USERID("HHI")
+		            bill_hist.bill_loc              = ip-lab-id
+		            bill_hist.bill_lot              = ip-Account-Nbr
+		            bill_hist.bill_serial           = ip-Invoice-Nbr
+		            bill_hist.bill_created_by       = USERID("HHI")
+		            bill_hist.bill_create_date      = TODAY
+		            bill_hist.bill_modified_by      = USERID("HHI")
+		            bill_hist.bill_modified_date    = TODAY. 
+		        RELEASE bill_hist NO-ERROR.  
+*/		          
+	ASSIGN hold-string-unmatch-reason = "".
+	
+	ASSIGN  LABS-Last-Billing-seqnbr = CURRENT-VALUE (seq-bip).  
+	   
+	FIND bip_bill_input 
+	          WHERE   bip_bill_input.bip_seq      = LABS-Last-Billing-seqnbr  
+	              NO-LOCK NO-ERROR. 
+
+		               
+    IF AVAILABLE (bip_bill_input) THEN DO:
+          		             
+		ASSIGN  override-error = "lineitem".	 
+		
+		IF act = 1 THEN DO:              /*	"DDI" */
+  
+	        {&OUT}  "<form method='post'>" SKIP	
+	                    "<th><center><font size=5> The following has been submitted for processing.</th>" SKIP		               
+	                    "<div class='table_2col'>" SKIP               
+	                    "<table>" SKIP
+					         "<tr>" SKIP
+					             "<th colspan=4><center>&nbsp;&nbsp; " ip-lab-id "</B>&nbsp; - &nbsp; Statement of Account </th>" SKIP
+					         "</tr>" SKIP
+					         "<tr>" SKIP
+					             "<td>Closing Date</td>" SKIP.
+/*					             "<td>" bip_bill_input.bip_Invoice_Date "</td>" SKIP */
+
+/* Change the date to mm-dd-yyyy format for displaying only. */      
+            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).       
+ 
+            {&OUT}          /*     "<td>" CCYY-Date "</td>" SKIP  */
+                                 "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP 
+                                 "<td>Account Nbr</td>" SKIP
+					        /*     "<td>" bip_bill_input.bip_Account_Nbr "</td>"  SKIP    */ 
+					             "<td><input type='text' name='dummy-name' value='" bip_bill_input.bip_Account_Nbr "' disabled />" " </td>" SKIP
+					         "</tr>" SKIP
+					         "<tr>" SKIP
+					             "<td>Total Amount Due</td>" SKIP
+					             "<td>" bip_bill_input.bip_Total_Amt_Due "</td>" SKIP
+					             "<td>Bill Due Date</td>" SKIP.
+/*					             "<td>" bip_bill_input.bip__date01 "</td>" SKIP   */
+   
+/* Change the date to mm-dd-yyyy format for displaying only. */      
+            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip__date01, OUTPUT CCYY-Date).       
+					                            
+            {&OUT}       /*        "<td>" CCYY-Date "</td>" SKIP   */
+                                 "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP  
+                             "</tr>" SKIP
+					         "<tr>" SKIP                              
+					             "<td>Payment Term</td>" SKIP
+					                            "<td>" bip_bill_input.bip_Payment_Term "</td>"
+					             "<td>Invoice Nbr</td>" SKIP
+					                            "<td>" bip_bill_input.bip_Invoice_Nbr "</td>" SKIP
+					         "</tr>" SKIP
+					         "<tr>" SKIP
+					             "<th colspan=4><center> Line Item Detail Information </th>" SKIP
+					         "</tr>" SKIP
+					         "<tr>" SKIP
+					             "<td>First Name</td>" SKIP
+					             "<td>" bip_bill_input.bip_Person_First_Name "</td>" SKIP
+					             "<td>Sample ID</td>" SKIP
+					             "<td>" bip_bill_input.bip_Sample_ID "</td>"  SKIP
+					         "</tr>" SKIP
+					         "<tr>" SKIP
+					             "<td>Middle Name</td>" SKIP
+					             "<td>" bip_bill_input.bip_Person_Mid_Nam "</td>" SKIP
+					             "<td>Activity Date</td>" SKIP.
+/*            	                 "<td>" bip_bill_input.bip_Activity_Date "</td>" SKIP    */
+
+/* Change the date to mm-dd-yyyy format for displaying only. */      
+            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).       
+
+            {&OUT}       /*        "<td>" CCYY-Date "</td>" SKIP    */
+                                 "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP 
+					         "</tr>" SKIP
+					         "<tr>" SKIP
+					             "<td>Last Name</td>" SKIP
+					             "<td>" bip_bill_input.bip_Person_Last_Name "</td>" SKIP 
+					             "<td>Test Type</td>" SKIP
+					             "<td>" bip_bill_input.bip_Test_Type "</td>" SKIP
+					         "</tr>" SKIP
+					         "<tr>" SKIP
+					             "<td>Suffix</td>" SKIP
+					             "<td>" bip_bill_input.bip_Person_Suffix "</td>" SKIP
+					             "<td>Amount</td>" SKIP
+					             "<td>" bip_bill_input.bip_Amount "</td>" SKIP
+					         "</tr>" SKIP 
+	                   "</table>"  SKIP 
+	                   "</div>" SKIP                                                                       
+	                "</form>". 
+                                  
+        END.  /**  IF act = 1     "DDI"  **/
+                        
+        IF act = 3 THEN DO:              /* "NS" */  
+          
+            {&OUT}  "<form method='post'>" SKIP  
+                        "<th><center><font size=5> The following has been submitted for processing.</th>" SKIP                        
+                        "<div class='table_2col'>" SKIP               
+                        "<table>" SKIP
+                            "<tr>" SKIP
+                                "<th colspan=4><center>&nbsp;&nbsp; " ip-lab-id "</B>&nbsp; - Invoice </th>" SKIP
+                            "</tr>" SKIP
+                            "<tr>" SKIP
+                                "<td>Invoice Nbr</td>" SKIP
+                                "<td>" bip_bill_input.bip_Invoice_Nbr "</td>" SKIP
+                                "<td>Invoice Date</td>" SKIP.
+/*                              "<td>" bip_bill_input.bip_Invoice_Date "</td>" SKIP   */
+                                            
+/* Change the date to mm-dd-yyyy format for displaying only. */      
+            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).       
+                                            
+            {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
+                                "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP 
+                            "</tr>" SKIP
+                            "<tr>" SKIP                                
+                                "<td>Invoice Total</td>" SKIP
+                                "<td>" bip_bill_input.bip_Total_Amt_Due "</td>" SKIP                               
+                                "<td>Bill Due Date</td>" SKIP.
+/*                              "<td>" bip_bill_input.bip__date01 "</td>" SKIP    */
+                                            
+/* Change the date to mm-dd-yyyy format for displaying only. */      
+            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip__date01, OUTPUT CCYY-Date).       
+                                            
+            {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
+                                "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP 
+                            "</tr>" SKIP
+                            "<tr>" SKIP                              
+                                "<td>Customer Nbr</td>" SKIP
+                                "<td>" bip_bill_input.bip_Account_Nbr "</td>"  SKIP 
+                                "<td>Terms</td>" SKIP
+                                "<td>" bip_bill_input.bip_Payment_Term "</td>"  
+                             "</tr>" SKIP
+                
+                            "<tr>" SKIP
+                                "<th colspan=4><center> Transaction / Line Items Detail Information Input </th>" SKIP
+                            "</tr>" SKIP
+                            "<tr>" SKIP
+                                "<td>First Name</td>" SKIP
+                                "<td>" bip_bill_input.bip_Person_First_Name "</td>" SKIP
+                                "<td>Sample ID</td>" SKIP
+                                "<td>" bip_bill_input.bip_Sample_ID "</td>"  SKIP
+                            "</tr>" SKIP
+                            "<tr>" SKIP
+                                "<td>Middle Name</td>" SKIP
+                                "<td>" bip_bill_input.bip_Person_Mid_Nam "</td>" SKIP
+                                "<td>Activity Date</td>" SKIP.
+/*                              "<td>" bip_bill_input.bip_Activity_Date "</td>" SKIP      */
+                                            
+/* Change the date to mm-dd-yyyy format for displaying only. */      
+            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).       
+                                            
+            {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
+                                "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP
+                            "</tr>" SKIP
+                            "<tr>" SKIP
+                                "<td>Last Name</td>" SKIP
+                                "<td>" bip_bill_input.bip_Person_Last_Name "</td>" SKIP 
+                                "<td>Test Type</td>" SKIP
+                                "<td>" bip_bill_input.bip_Test_Type "</td>" SKIP
+                            "</tr>" SKIP
+                            "<tr>" SKIP
+                                "<td>Suffix</td>" SKIP
+                                "<td>" bip_bill_input.bip_Person_Suffix "</td>" SKIP
+                                "<td>Amount</td>" SKIP
+                                "<td>" bip_bill_input.bip_Amount "</td>" SKIP
+                            "</tr>" SKIP 
+                        "</table>"  SKIP 
+                        "</div>" SKIP                                                                      
+                    "</form>".  
+                                 
+        END.  /**  IF act = 3     "NS"  **/
+                                            
+        IF act = 2 THEN DO:              /* "GENOVA" */   
+                     
+	        {&OUT}  "<form method='post'>" SKIP
+	                    "<th><center><font size=5> The following has been submitted for processing.</th>" SKIP                          
+	                    "<div class='table_2col'>" SKIP               
+	                    "<table>" SKIP
+	                        "<tr>" SKIP
+	                            "<th colspan=4><center>&nbsp;&nbsp; " ip-lab-id "</B>&nbsp; - &nbsp; Bill  </th>" SKIP
+	                        "</tr>" SKIP
+	                        "<tr>" SKIP
+	                            "<td>Account Nbr</td>" SKIP
+	                            "<td>" bip_bill_input.bip_Account_Nbr "</td>"  SKIP 
+	                            "<td>Statement Date</td>" SKIP.
+/*                              "<td>" bip_bill_input.bip_Invoice_Date "</td>" SKIP       */
+
+/* Change the date to mm-dd-yyyy format for displaying only. */      
+            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).       
+                                            
+            {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
+                                "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP 
+                            "</tr>" SKIP
+                            "<tr>" SKIP 
+                                "<td>Amount Due</td>" SKIP
+                                "<td>" bip_bill_input.bip_Total_Amt_Due "</td>" SKIP
+                                "<td>Due Date</td>" SKIP.
+/*                              "<td>" bip_bill_input.bip__date01 "</td>" SKIP        */
+
+/* Change the date to mm-dd-yyyy format for displaying only. */      
+            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip__date01, OUTPUT CCYY-Date).       
+                                            
+            {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
+                                "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP
+                            "</tr>" SKIP
+                            "<tr>" SKIP 
+                                "<td>Invoice Nbr</td>" SKIP
+                                "<td>" bip_bill_input.bip_Invoice_Nbr "</td>" SKIP
+                                "<td>Payment Term</td>" SKIP
+                                "<td>" bip_bill_input.bip_Payment_Term "</td>"     
+                            "</tr>" SKIP
+
+                            "<tr>" SKIP
+                                "<th colspan=4><center> Transaction / Line Items Detail Information Input </th>" SKIP
+                            "</tr>" SKIP
+                            "<tr>" SKIP
+                                "<td>First Name</td>" SKIP
+                                "<td>" bip_bill_input.bip_Person_First_Name "</td>" SKIP
+                                "<td>Activity Date</td>" SKIP.
+/*                                "<td>" bip_bill_input.bip_Activity_Date "</td>" SKIP      */
+
+/* Change the date to mm-dd-yyyy format for displaying only. */      
+            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).       
+                                            
+            {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
+                                "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP                                 
+                            "</tr>" SKIP
+                            "<tr>" SKIP
+                                "<td>Middle Name</td>" SKIP
+                                "<td>" bip_bill_input.bip_Person_Mid_Nam "</td>" SKIP
+                                "<td>Description</td>" SKIP
+                                "<td>" bip_bill_input.bip_Test_Type "</td>" SKIP
+                            "</tr>" SKIP
+                            "<tr>" SKIP
+                                "<td>Last Name</td>" SKIP
+                                "<td>" bip_bill_input.bip_Person_Last_Name "</td>" SKIP 
+                                "<td>Sample ID</td>" SKIP
+                                "<td>" bip_bill_input.bip_Sample_ID "</td>"  SKIP                              
+                            "</tr>" SKIP
+                            "<tr>" SKIP
+                                "<td>Suffix</td>" SKIP
+                                "<td>" bip_bill_input.bip_Person_Suffix "</td>" SKIP
+                                "<td>Amount</td>" SKIP
+                                "<td>" bip_bill_input.bip_Amount "</td>" SKIP
+                            "</tr>" SKIP 
+                        "</table>"  SKIP 
+                        "</div>" SKIP                                                                       
+                    "</form>".  
+                                 
+        END.  /**  IF act = 2    "GENOVA"  **/
+                    
+                    IF act = 4 THEN DO:              /* "SABRE" */
+                       
+                        {&OUT}  "<form method='post'>" SKIP
+                                 "<th><center><font size=5> The following has been submitted for processing.</th>" SKIP                          
+                                 "<div class='table_2col'>" SKIP               
+                                 "<table>" SKIP
+                                     "<tr>" SKIP
+                                         "<th colspan=4><center>&nbsp;&nbsp; " ip-lab-id "</B>&nbsp; - &nbsp; Invoice  </th>" SKIP
+                                     "</tr>" SKIP
+                                     "<tr>" SKIP
+                                         "<td>Account Nbr:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Account_Nbr "</td>"  SKIP 
+                                         "<td>Payment Term:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Payment_Term "</td>"
+                                     "</tr>" SKIP
+                                     "<tr>" SKIP
+                                         "<td>Invoice Nbr:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Invoice_Nbr "</td>" SKIP
+                                          "<td>Total Amount Due:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Total_Amt_Due "</td>" SKIP
+                                     "</tr>" SKIP
+                                     "<tr>" SKIP                              
+                                         "<td>Invoice/Closing Date:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Invoice_Date "</td>" SKIP
+                                         "<td>Bill Due Date:</td>" SKIP
+                                         "<td>" bip_bill_input.bip__date01 "</td>" SKIP
+                                     "</tr>" SKIP
+                                 "</table>"  SKIP              
+                                 "</div>" SKIP                   
+                             
+                                 "<div class='table_2col'>" SKIP
+                                 "<table border=3>" SKIP
+                                     "<tr>" SKIP
+                                         "<td colspan=4><center> Line Item input detail </td>" SKIP
+                                     "</tr>" SKIP
+                                     "<tr>" SKIP
+                                         "<td>First Name:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Person_First_Name "</td>" SKIP
+                                         "<td>Sample ID:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Sample_ID "</td>"  SKIP
+                                     "</tr>" SKIP
+                                     "<tr>" SKIP
+                                         "<td>Middle Name:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Person_Mid_Nam "</td>" SKIP
+                                         "<td>Activity Date:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Activity_Date "</td>" SKIP
+                                     "</tr>" SKIP
+                                     "<tr>" SKIP
+                                         "<td>Last Name:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Person_Last_Name "</td>" SKIP 
+                                         "<td>Test Type:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Test_Type "</td>" SKIP
+                                     "</tr>" SKIP
+                                     "<tr>" SKIP
+                                         "<td>Suffix:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Person_Suffix "</td>" SKIP
+                                         "<td>Amount:</td>" SKIP
+                                         "<td>" bip_bill_input.bip_Amount "</td>" SKIP
+                                     "</tr>" SKIP 
+                                 "</table>"  SKIP 
+                                 "</div>" SKIP                                                                      
+                                "</form>". 
+                                  
+                    END.  /**  IF act = 4      "SABRE"  **/
+
+                    IF act = 86 THEN DO:              /* "unknown - new lab " */ 
+                      
+                        {&OUT}  "<form method='post'>" SKIP 
+	                                "<th><center><font size=5> The following has been submitted for processing.</th>" SKIP                         
+	                                "<div class='table_2col'>" SKIP               
+		                                   "<table>" SKIP
+		                                          "<tr>" SKIP
+		                                              "<th colspan=4><center>&nbsp;&nbsp; " bip_bill_input.bip_LAB_ID "</B>&nbsp; - &nbsp; Invoice  </th>" SKIP
+		                                          "</tr>" SKIP
+		                                   "</table>"  SKIP 
+	                                   "</div>" SKIP                                                                      
+	                            "</form>". 
+                           
+                    END.  /**  IF act = 86      "unknown - new lab "  **/
+ 
+/*************************************************************************************************/                           
+/* Run the Match - UnMatch pgm to process the input into the Billing master and detail tables or */
+/*    reject the input due to edit errors.                                                       */  
+/*************************************************************************************************/  
+                                               
+                    RUN "../BILLING/rcode/Billing-Match-UnMatch.r".       
+
+
+                    IF act = 86 THEN 
+                        ASSIGN whotocall = ("Billing-IP-UNKNOWN-Lab-Screen.r").
+                    ELSE     
+                        ASSIGN whotocall = ("Billing-IP-" + ip-lab-id + "-Screen.r"). 
+                                                  
+                    {&OUT}  "<form ACTION='" whotocall "'   method='get' >"  SKIP
+		                       "<center>" SKIP 
+		                            "<input type='hidden' name='whattorun'           value='" whattorun "' >" SKIP   /* to get the menu title */
+			                        "<input type='hidden' name='h-act'               value='" act "' >" SKIP
+			                        "<input type='hidden' name='s-Error-flag'        value='" Error-flag "' >" SKIP
+			                        "<input type='hidden' name='s-override-error'    value='" override-error "' >" SKIP
+			                        "<input type='hidden' name='s-hold-string-unmatch-reason' value='" hold-string-unmatch-reason "' >" SKIP
+			                        "<input type='hidden' name='s-LabID'             value='" ip-lab-id "' >" SKIP
+			                        "<input type='hidden' name='h-lab-ID'            value='" ip-lab-id "' >" SKIP
+			                        "<input type='hidden' name='s-Account-Nbr'       value='" ip-Account-Nbr "' >" SKIP
+			                        "<input type='hidden' name='s-Invoice-Nbr'       value='" ip-Invoice-Nbr "' >" SKIP
+			                        "<input type='hidden' name='s-Invoice-Date'      value='" ip-Invoice-Date "' >" SKIP
+			                        "<input type='hidden' name='s-Total-Amt-Due'     value='" ip-Total-Amt-Due "' >" SKIP
+			                        "<input type='hidden' name='s-Pay-Term'          value='" ip-Pay-Term "' >" SKIP
+			                        "<input type='hidden' name='s-Bill-Due-Date'     value='" ip-Bill-Due-Date "' >" SKIP
+			                        "<input type='submit' value='Click >  HERE  < to Return to the input screen.' name='s-Submit' >"  SKIP
+		                       "</center>" SKIP  
+		                    "</form>".    
+                		                              
+		        END.  /** IF AVAILABLE (bip_bill_input) **/
+		        
+		 END.  /** IF  NOT Error-flag   **/
+		 
+         ELSE  
+         
+         IF override-error <> "Bypass" THEN 
+         
+            IF hold-string-unmatch-reason <> "" THEN DO:  
+	                
+	               {&OUT}   "<center>" "<TR>" "<BR>" SKIP
+	                     "<TD>" 'Input Data ERROR(s) (see above).'  "</TD>" SKIP
+	                     "</TR>" "</center>" SKIP.  
+	               
+	               IF act = 86 THEN 
+                        ASSIGN whotocall = ("Billing-IP-UNKNOWN-Lab-Screen.r").
+                   ELSE      
+                        ASSIGN whotocall = ("Billing-IP-" + ip-lab-id + "-Screen.r"). 
+                     
+                   {&OUT}  "<form ACTION='" whotocall "'  method='get' >" SKIP
+			                    "<center>" SKIP
+			                        "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP  /* to get the menu title */
+				                    "<input type='hidden' name='h-act'              value='" act "' >" SKIP 
+				                    "<input type='hidden' name='s-Error-flag'       value=" Error-flag " >" SKIP
+				                    "<input type='hidden' name='s-override-error'   value=" override-error " >" SKIP
+				                    "<input type='hidden' name='s-hold-string-unmatch-reason' value=" hold-string-unmatch-reason " >" SKIP
+				                    "<input type='hidden' name='s-LabID'            value='" ip-lab-id "' >" SKIP
+				                    "<input type='hidden' name='h-lab-id'           value='" ip-lab-id "' >" SKIP
+				                    "<input type='hidden' name='s-Account-Nbr'      value='" ip-Account-Nbr "' >" SKIP
+				                    "<input type='hidden' name='s-Invoice-Nbr'      value='" ip-Invoice-Nbr "' >" SKIP
+				                    "<input type='hidden' name='s-Invoice-Date'     value='" ip-Invoice-Date "' >" SKIP
+				                    "<input type='hidden' name='s-Total-Amt-Due'    value=" ip-Total-Amt-Due " >" SKIP
+				                    "<input type='hidden' name='s-Pay-Term'         value='" ip-Pay-Term "' >" SKIP
+				                    "<input type='hidden' name='s-Bill-Due-Date'    value='" ip-Bill-Due-Date "' >" SKIP
+				                    "<input type='hidden' name='s-Pat-First-Name'   value='" ip-Pat-First-Name "' >" SKIP
+				                    "<input type='hidden' name='s-Pat-Mid-Name'     value='" ip-Pat-Mid-Name "' >" SKIP
+				                    "<input type='hidden' name='s-Pat-Last-Name'    value='" ip-Pat-Last-Name "' >" SKIP
+				                    "<input type='hidden' name='s-Pat-Suffix'       value='" ip-Pat-Suffix "' >" SKIP         
+				                    "<input type='hidden' name='s-Sample-ID'        value='" ip-Sample-ID "' >" SKIP 
+				                    "<input type='hidden' name='s-Activity-Date'    value='" ip-Activity-Date "' >" SKIP
+				                    "<input type='hidden' name='s-Test-Type'        value='" ip-Test-Type "' >" SKIP
+				                    "<input type='hidden' name='s-Amount'           value=" ip-Amount " >" SKIP          
+				                    "<input type='hidden' value='Submit' name='s-Submit'>" SKIP
+			                        "<input type='Submit' name='s-Return' value=' Click HERE to Return to the previous screen. ' >"  SKIP 
+			                    "</center>"  SKIP  
+		                    "</form>".
+	                    
+            END.   /**  hold-string-unmatch-reason <>    **/
+
+IF showmsg = YES THEN DO:
+	{&OUT}   "<TR>" 'End. Error-flag = '  "<TD>" Error-flag   "</TR><BR>"  SKIP
+	         "<TR>" 'override-error = ' "<TD>" override-error   "</TR><BR>"  SKIP
+	         "<TR>" 'hold-string-unmatch-reason = ' "<TD>" hold-string-unmatch-reason   "</TR><BR>".  
+END.  /** IF showmsg = YES **/   
+	        
+</SCRIPT>
+
+</BODY>
+</HTML>

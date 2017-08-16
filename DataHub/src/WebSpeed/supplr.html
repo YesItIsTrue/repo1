@@ -1,0 +1,73 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <TITLE>Supplement Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Sara Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="10/July/14">
+    <META NAME="LAST_UPDATED" CONTENT="25/Oct/14">
+    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside' >
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{&out}
+   " <div class='table_report fixed_table'>
+        <table>
+            <thead>
+                <td>ID          </td>
+                <td>Name        </td>
+                <td>Desc        </td>
+                <td>Sku         </td>
+                <td>Def Qty     </td>
+                <td>Def Uom     </td>
+                <td>Def Notes   </td>
+            </thead>".
+     
+     FOR EACH suppl_list  
+     BY suppl_list.suppl_id: 
+
+        {&out} 
+                "<tr>
+                    <td>"suppl_list.suppl_id        "</td>
+                    <td>"suppl_list.suppl_name      "</td>
+                    <td>"suppl_list.Suppl_desc      "</td>
+                    <td>"suppl_list.suppl_sku       "</td>
+                    <td>"suppl_list.suppl_def_qty   "</td>
+                    <td>"suppl_list.suppl_def_uom   "</td>
+                    <td>"suppl_list.Suppl_def_notes "</td>
+                    
+                </tr>".  
+                END.              
+                                    
+        {&OUT} 
+                     
+        "           <tr>"                                   SKIP
+        "               <td colspan=7>End of Report</td>"   SKIP
+        "           </tr>"                                  SKIP
+        "   </table>"                                       SKIP
+        "</div>"                                            SKIP.
+        
+        
+</SCRIPT>
+</BODY>
+</HTML>

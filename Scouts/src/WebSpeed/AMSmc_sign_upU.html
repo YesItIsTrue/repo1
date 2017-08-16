@@ -1,0 +1,378 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <TITLE>Sign Up - Man College!!!</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="03/Apr/2017">
+    <META NAME='LAST_UPDATED' CONTENT="14/Aug/17">   
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css">
+    
+<SCRIPT LANGUAGE="SpeedScript">
+
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='w3-black'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+        
+  -----------------------------------------------------------------
+  Revision History:
+  -----------------
+  1.0 - written by TRAE LUTTRELL on 03/Apr/17.  Original version.
+  1.1 - written by DOUG LUTTRELL on 14/Aug/17.  Changed to work with
+            new CMC structure (Version 12).  Marked by 1dot1.
+            
+  -------------------------------------------------------------------*/
+
+
+{CMS-theme_area-R.i}.
+
+{CMS-nav_area-R.i}.  
+       
+
+/****************************************  VARIABLES  *************************************/  
+DEFINE VARIABLE x           AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE y           AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE act         AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE itmessage   AS LOGICAL INITIAL NO       NO-UNDO.
+DEFINE VARIABLE error-message   AS CHARACTER            NO-UNDO.
+
+DEFINE VARIABLE v-lastname      LIKE people_mstr.people_lastname     NO-UNDO.
+DEFINE VARIABLE v-firstname     LIKE people_mstr.people_firstname    NO-UNDO.
+DEFINE VARIABLE v-DOB           LIKE people_mstr.people_DOB     NO-UNDO.
+DEFINE VARIABLE v-html-DOB      AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-unit          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-people_id     AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-member        LIKE speop_shadow.speop_LDS NO-UNDO.                                    /* 1dot1 */
+DEFINE VARIABLE v-troop         LIKE speop_shadow.speop_troop NO-UNDO.                                  /* 1dot1 */
+DEFINE VARIABLE v-email         AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-medical       AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-photo_perm        AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-parent_approval   AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-medical_forms     AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-chaperone         AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-leader        AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-teacher       AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-shirt             AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-Photography           LIKE MB_mstr.MB_name  NO-UNDO.
+DEFINE VARIABLE seat-Photography        AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-CitizenshipInTheWorld LIKE MB_mstr.MB_name  NO-UNDO.
+DEFINE VARIABLE seat-Cit                AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-Communication         LIKE MB_mstr.MB_name  NO-UNDO.
+DEFINE VARIABLE seat-com                AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-Geology               LIKE MB_mstr.MB_name  NO-UNDO.
+DEFINE VARIABLE seat-geology            AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-Radio                 LIKE MB_mstr.MB_name  NO-UNDO.
+DEFINE VARIABLE seat-radio              AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-CrimePrevention       LIKE MB_mstr.MB_name  NO-UNDO.
+DEFINE VARIABLE seat-crime              AS INTEGER NO-UNDO.
+DEFINE VARIABLE c-MeritBadges           AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-meritbadge1           AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-meritbadge1_id        LIKE MB_mstr.MB_BSA_ID NO-UNDO.
+DEFINE VARIABLE v-meritbadge2           AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-meritbadge2_id        LIKE MB_mstr.MB_BSA_ID NO-UNDO.
+
+ASSIGN 
+    act                     = html-encode(get-value("h-act"))
+    v-lastname              = html-encode(get-value("h-lastname"))
+    v-firstname             = html-encode(get-value("h-firstname"))
+    v-html-DOB              = html-encode(get-value("h-DOB"))
+    v-people_id             = INTEGER(html-encode(get-value("h-people_ID")))
+    v-unit                  = html-encode(get-value("h-unit"))
+    v-troop                 = INTEGER(html-encode(get-value("h-troop")))                                        /* 1dot1 */
+    v-email                 = html-encode(get-value("h-email"))
+    v-medical               = html-encode(get-value("h-medical"))
+    v-photo_perm            = html-encode(get-value("h-photo_perm"))
+    v-parent_approval       = html-encode(get-value("h-parent_approval"))
+    v-medical_forms         = html-encode(get-value("h-medical_forms"))
+    v-chaperone             = html-encode(get-value("h-chaperone"))
+    v-teacher               = html-encode(get-value("h-teacher"))
+    v-leader                = html-encode(get-value("h-leader"))
+    v-shirt                 = html-encode(get-value("h-shirt"))
+    .
+
+IF act= "" THEN 
+    act = "SignUp".
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-DOB, OUTPUT v-DOB).
+
+/***********************************  MAIN PROGRAM  ****************************************/
+
+CASE act:
+
+    WHEN "Login" THEN DO:
+        
+    END. /*** Login ***/
+
+    WHEN "SignUp" THEN DO:
+        
+        {&OUT}
+            "<div class=' w3-content w3-responsive w3-xlarge'  style='max-width:1400px;'>" SKIP
+            "   <H2 class=''>Sign up for Man College!!!</H2>" SKIP(1) 
+            "   <br>" SKIP
+            
+            "<div class='w3-container w3-text-white w3-round'>" SKIP
+            "    <h2 class='w3-border-white w3-topbar'>Personal Information</h2>"            
+
+            "   <div class='w3-row-padding'>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>First Name</label>" SKIP
+            "           <input class='w3-input w3-round-large w3-hover-theme' name='h-first_name' type='text' value='" v-firstname "'>" SKIP
+            "       </p>" SKIP 
+            "       <p class='w3-half'>" SKIP
+            "           <label>Last Name</label>" SKIP
+            "           <input class='w3-input w3-round-large w3-hover-theme' name='h-last_name' type='text' value='" v-lastname "'>" SKIP
+            "       </p>" SKIP
+            "   </div>" SKIP
+            
+            "   <div class='w3-row-padding'>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>Date of Birth</label>" SKIP
+            "           <input class='w3-input w3-round-large w3-hover-theme' name='h-DOB' type='date' value='" v-DOB "'>" SKIP
+            "       </p>" SKIP 
+            "       <p class='w3-half'>" SKIP
+            "           <label>Email Address</label>" SKIP
+            "           <input class='w3-input w3-round-large w3-hover-theme' name='h-email' type='text' value='" v-email "'>" SKIP
+            "       </p>" SKIP
+            "   </div>" SKIP
+            
+            "   <div class='w3-row-padding'>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>T-Shirt Size</label>" SKIP
+            "           <select name='h-shirt' class='w3-border w3-round-large w3-select w3-hover-theme' >" SKIP            
+            "               <option value='Wee'>Wee</option>" SKIP
+            "               <option value='Small'>Small</option>" SKIP
+            "               <option value='Medium'>Medium</option>" SKIP
+            "               <option value='Large'>Large</option>" SKIP
+            "               <option value='XL'>XL</option>" SKIP
+            "               <option value='2XL'>2XL</option>" SKIP
+            "               <option value='3XL'>3XL</option>" SKIP
+            "               <option value='5XL'>Doug-Sized</option>" SKIP
+            "           </select>" SKIP
+            "       </p>" SKIP
+            "   </DIV" SKIP 
+            
+            
+            "    <H2 class='w3-border-white w3-topbar'>Organizational Information</h2>"
+            
+            "   <div class='w3-row-padding'>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>Ward or Branch</label>" SKIP
+            "           <select name='h-unit' class='w3-border w3-round-large w3-select w3-hover-theme' >" SKIP            
+            "               <option value='Non-Member'>Not a Member</option>" SKIP
+            "               <option value='Auburn'>Auburn</option>" SKIP
+            "               <option value='Cornish'>Cornish</option>" SKIP
+            "               <option value='Damariscotta'>Damariscotta</option>" SKIP
+            "               <option value='Farmingdale'>Farmingdale</option>" SKIP
+            "               <option value='Oxford'>Oxford</option>" SKIP
+            "               <option value='Portland'>Portland</option>" SKIP
+            "               <option value='Saco'>Saco</option>" SKIP
+            "               <option value='Topsham'>Topsham</option>" SKIP
+            "               <option value='Windham'>Windham</option>" SKIP
+            "               <option value='Winthrop'>Winthrop</option>" SKIP
+            "               <option value='Yarmouth'>Yarmouth</option>" SKIP
+            "           </select>" SKIP 
+            "       </p>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>Quorum</label>" SKIP
+            "           <select class='w3-select w3-round-large w3-hover-theme' name='h-quorum'>" SKIP
+            "               <option value='deacon'>No Priesthood</option>" SKIP 
+            "               <option value='deacon'>Deacon</option>" SKIP
+            "               <option value='deacon'>Teacher</option>" SKIP
+            "               <option value='deacon'>Preist</option>" SKIP
+            "           </select>" SKIP
+            "       </p>" SKIP
+            "   </div>" SKIP          
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Scout Rank</label>" SKIP
+            "           <select class='w3-select w3-round-large w3-hover-theme' name='h-BSA_rank'>" SKIP
+            "               <option value='Non-Scout'>Not a Boy Scout</option>" SKIP
+            "               <option value='Scout'>Scout</option>" SKIP 
+            "               <option value='Tenderfoot'>Tenderfoot</option>" SKIP
+            "               <option value='2ndClass'>Second Class</option>" SKIP
+            "               <option value='1stClass'>First Class</option>" SKIP
+            "               <option value='Star'>Star</option>" SKIP
+            "               <option value='Life'>Life</option>" SKIP
+            "               <option value='Eagle'>Eagle</option>" SKIP
+            "               <option value='Eagle'>Eagle, Bronze Palm</option>" SKIP
+            "               <option value='Eagle'>Eagle, Gold Palm</option>" SKIP
+            "               <option value='Eagle'>Eagle, Silver Palm</option>" SKIP
+            "               <option value='Eagle'>Eagle, Second Bronze Palm</option>" SKIP
+            "               <option value='Eagle'>Eagle, Second Gold Palm</option>" SKIP
+            "           </select>" SKIP
+            "    </p>" SKIP
+
+            "    <H2 class='w3-border-white w3-topbar'>Medical Information</h2>"
+
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Alergies</label>" SKIP
+            "        <textarea class='w3-input w3-border w3-round-large w3-hover-theme' name='h-medical' value='" v-medical "' rows='3' cols='50'></textarea>" SKIP
+            "    </p>" SKIP
+
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Medical Conditions</label>" SKIP
+            "        <textarea class='w3-input w3-border w3-round-large w3-hover-theme' name='h-medical' value='" v-medical "' rows='3' cols='50'></textarea>" SKIP
+            "    </p>" SKIP
+
+            "    <H2 class='w3-border-white w3-topbar'>Please see to these permissions.</h2>"
+
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-photo_perm' value='" v-photo_perm "' required/>" SKIP
+            "        <label>Permission to Photograph</label>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-parent_approval' value='" v-parent_approval "' required/>" SKIP
+            "        <label>Parental Approval</label>" SKIP            
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-medical_forms' value='" v-medical_forms "' required/>" SKIP
+            "        <label>Medical Forms Done</label>" SKIP
+            "    </p>" SKIP
+            
+            "    <h2 class='w3-border-white w3-topbar'>Are you a ... ?</h2>"
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-chaperone' value='" v-chaperone "'/>" SKIP
+            "        <label>Chaperone</label>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-leader' value='" v-leader "'/>" SKIP    
+            "        <label>Leader</label>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-teacher' value='" v-teacher "'/>" SKIP
+            "        <label>Teacher</label>" SKIP
+            "    </p>" SKIP
+            
+            "   <br>" SKIP
+            "       <div class='w3-black'>" SKIP
+            "           <div class='w3-container w3-theme' style='width:75%'>75%</div>" SKIP
+            "       </div>" SKIP
+            "   <br>" SKIP
+            
+            "   <center>" SKIP 
+            "   <div class='w3-row w3-topbar w3-bottombar w3-border-white'>" SKIP     
+            "       <header class=''>" SKIP
+            "           <h2 > Period One </h3>" SKIP
+/*            "           <br>" SKIP w3-border-bottom w3-border-theme*/
+            "       </header>" SkIP
+            
+            "       <div class='w3-col s12 m6 l2 w3-padding'>" SKIP 
+            "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP
+            "               <input class='w3-radio' type='radio' name='period1' value='Timber_frame'>" SKIP
+            "               <br>" SKIP 
+            "               <label class=''>Timber Framing Lab</label>" SKIP  
+            "               <br>" SKIP                    
+            "           </div>" SKIP
+            "       </div>" SKIP
+            
+            "       <div class='w3-col s12 m6 l2 w3-padding'>" SKIP 
+            "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP 
+            "               <input class='w3-radio' type='radio' name='period1' value='Timber_frame'>" SKIP 
+            "               <br>" SKIP
+            "               <label class=''>Classivity A</label>" SKIP  
+            "               <br>" SKIP                    
+            "           </div>" SKIP
+            "       </div>" SKIP
+            
+            "       <div class='w3-col s12 m6 l2 w3-padding'>" SKIP 
+            "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP 
+            "               <input class='w3-radio' type='radio' name='period1' value='Timber_frame'>" SKIP 
+            "               <br>" SKIP 
+            "               <label class=''>Classivity B</label>" SKIP  
+            "               <br>" SKIP                              
+            "           </div>" SKIP
+            "       </div>" SKIP
+            
+            "       <div class='w3-col s12 m6 l2 w3-padding'>" SKIP 
+            "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP 
+            "               <input class='w3-radio' type='radio' name='period1' value='Timber_frame'>" SKIP 
+            "               <br>" SKIP
+            "               <label class=''>Classivity C</label>" SKIP  
+            "               <br>" SKIP              
+            "           </div>" SKIP
+            "       </div>" SKIP
+            
+            "       <div class='w3-col s12 m6 l2 w3-padding'>" SKIP 
+            "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP
+            "               <input class='w3-radio' type='radio' name='period1' value='Timber_frame'>" SKIP 
+            "               <br>" SKIP 
+            "               <label class=''>Classivity D</label>" SKIP  
+            "               <br>" SKIP                    
+            "           </div>" SKIP
+            "       </div>" SKIP
+            
+            "       <div class='w3-col s12 m6 l2 w3-padding'>" SKIP    
+            "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP 
+            "               <input class='w3-radio' type='radio' name='period1' value='Timber_frame'>" SKIP 
+            "               <br>" SKIP 
+            "               <label class=''>Masonry Lab</label>" SKIP  
+            "               <br>" SKIP                     
+            "           </div>" SKIP
+            "<br>" SKIP 
+            "<br>"
+            "       </div>" SKIP
+            
+            "</center>" SKIP
+            
+            "   </div><!--- row div --->" SKIP                                                                                                      
+            "</div>" SKIP
+            "<br>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Verification' class='w3-btn-block w3-theme w3-round' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='Reset' class='w3-btn-block w3-theme w3-round' style='max-width:400px;'><b>Reset</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "<br><br><br><br><br><br><br>" SKIP.
+        
+    END. /*** Login ***/
+
+    OTHERWISE DO:
+        
+        {&OUT}
+            "<div class='w3-container'>" SKIP
+            "<form>" SKIP
+            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-red'>" SKIP
+            "       <h1>Error</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>Could not find act '" act "'.</p>" SKIP
+            "    </div>" SKIP
+
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+            
+    END. /*** otherwise ***/
+    
+END CASE.
+
+</SCRIPT>
+</BODY>
+</HTML>

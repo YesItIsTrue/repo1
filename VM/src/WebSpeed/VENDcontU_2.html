@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Vendor Contact Maintenance</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="14Jul15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           VENDcontU_MOCK.html
+    Description:    html mockup of Vendor Contact Management Screen
+    Created:
+        
+    --------------------------------------------------------------- 
+    Revision History:
+    -----------------
+    1.0 - written by R.J. LUTTRELL on 14/Jul/15.  Original version.
+    1.1 - written by DOUG LUTTRELL on 14/Aug/17.  Changed to work with 
+            the new CMC structure (Version 12).  Not checked for logic.
+            Marked by 1dot1.
+            
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE state-prov LIKE addr_mstr.addr_stateprov NO-UNDO.
+DEFINE VARIABLE stname  LIKE state_mstr.state_display_name NO-UNDO.                                         /* 1dot1 */
+DEFINE VARIABLE stabbv LIKE state_mstr.state_iso NO-UNDO.                                                   /* 1dot1 */
+DEFINE VARIABLE cntry LIKE addr_mstr.addr_country NO-UNDO.
+DEFINE VARIABLE cntryname LIKE country_mstr.country_display_name NO-UNDO.                                   /* 1dot1 */
+DEFINE VARIABLE cntryabbv LIKE country_mstr.country_iso NO-UNDO.                                            /* 1dot1 */
+  
+{&OUT}
+"<div class='row'> " SKIP
+"   <div class='grid_1'></div> " SKIP
+"   <div class='grid_10'> " SKIP
+"        <div class='table_2col'> " SKIP
+"           <table> " SKIP
+"              <tr> " SKIP
+"                 <th colspan=4>Contact Information</th> " SKIP
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Name</td> " SKIP
+"                 <td>Jacob Luttrell</td> " SKIP
+"                 <td>Address Line 1</td> " SKIP
+"                 <td>Berverly Hills 119</td> " SKIP
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>ID Number</td> " SKIP
+"                 <td>TuffGuy</td> " SKIP
+"                 <td>Address Line 2</td> " SKIP
+"                 <td></td> " SKIP
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Email</td> " SKIP
+"                 <td>r.j.luttrell@rockhounds.com</td> " SKIP
+"                 <td>Address Line 3</td> " SKIP
+"                 <td></td> " SKIP
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Company</td> " SKIP
+"                 <td>RJ's Rock Hounds</td> " SKIP
+"                 <td>City</td> " SKIP
+"                 <td>Hollywood</td> " SKIP
+
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Cell Number</td> " SKIP
+"                 <td>298-234-3299</td> " SKIP
+"                 <td>State / Province</td> " SKIP
+"                 <td>California</td>" SKIP
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Work Number</td> " SKIP
+"                 <td>208-999-1232</td> " SKIP
+"                 <td>Zip Code</td> " SKIP
+"                 <td>90210</td> " SKIP
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                 <td>Fax Number</td> " SKIP
+"                 <td>208-208-2081</td> " SKIP
+"                 <td>Country</td> " SKIP
+"                 <td>USA</td>" SKIP
+"              </tr> " SKIP
+"              <tr> " SKIP
+"                <td>Notes</td> " SKIP
+"                <td colspan=3>Fun guy, don't know why he is working for a rock hound company.</td> " SKIP
+"           </table> " SKIP
+"        </div><!-- table_3col --> " SKIP
+"    </div><!-- grid_10 --> " SKIP
+"    <div class='grid_1'></div> " SKIP
+"</div><!-- row --> " SKIP
+"<BR> " SKIP
+"<div class='row'> " SKIP 
+"   <div class='grid_3'> </DIV> " SKIP 
+"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='' class='btn'><a href='http://localhost:3333/DataHub/rcode/VENDmainU_2.r'>Create Contact</a></BUTTON></div> " SKIP 
+"   <div class='grid_2'> </DIV> " SKIP
+"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div> " SKIP 
+"   <div class='grid_3'> </DIV> " SKIP
+"</div> " SKIP
+"<BR> " SKIP.
+</SCRIPT>
+</BODY>
+</HTML>

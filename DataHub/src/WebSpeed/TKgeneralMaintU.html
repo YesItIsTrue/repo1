@@ -1,0 +1,1100 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<META name="VERSION" content="3.4">
+<META name="COPYRIGHT" content="Solsource">
+<META name="CREATE_DATE" content="30/Sep/15">
+<META NAME="LAST_UPDATED" CONTENT="12/Apr/16">
+
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<TITLE>General Testkit Search</TITLE>
+
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+{&OUT}
+"</HEAD>" SKIP
+"<BODY class='inside'>" SKIP.
+  /*------------------------------------------------------------------
+    File: TKgeneralSearchU.html
+    Description: The is the search screen that comes (for the users) before 
+    the TKgeneraMaintU.html update program. 
+    Created: 30/Sep/15
+    Updated: 05/Oct/15
+    Version: 1.1
+    Current known issues:
+    Notes:
+    Version: 1.1 - 05/Oct/15 - Trae Luttrell:  Altering the hyperlinks, and 
+        adding a form tag around the 'Search Again' button. 
+        
+    Version 2.0 - written by DOUG LUTTRELL on 06/Oct/15.  Marked by 2dot0.  
+                    a) Changed to include the TKeditdatesU code for 
+                        transaction history information.
+                    b) Allow the users to edit the dates to create
+                        various trh_hist records and update the status.
+                    c) Make the Patient information a selectable hyperlink
+                        so that a patient can be assigned (or changed) for
+                        this testkit.
+                    d) Disabled the NOTES fields.  The 
+                        TKvoidmaintU.html  program updates the NOTES field 
+                        with the reason as to why the Testkit was voided.
+    
+    Version 2.2 - written by Harold Luttrell on 15/Oct/15.  
+        Marked by /* 2dot1 */  
+                    Finished up coding changes for Doug.  There was so much
+                    to be chanaged I did not mark every line.
+    Version 2.3 - written by Jacob Luttreon on 17/Nov/15
+                    Corrected whattoruns on hyperlinks and buttons
+                    Added tfoot
+                    Unmarked.    
+    Version 2.4 - written by Jacob Luttrell on 25/Nov/15.
+        Marked by /* 2dot4 */
+                    Added hyperlink and code to allow customer name to act like 
+                    the patient name hyperlink.  Corrected Customer Paid date.
+     Version 3.0 - written by Jacob Luttrell and Doug Luttrell on 2/Dec/15.
+        Marked by /* 3dot0 */
+                    Added code to correct trh_hist files for customer paid date.
+                    Added deleted fields to searches.     
+                    Corrected logic for updating the status in the TK_mstr. 
+     Version 3.1 - written by Jacob Luttrell on 22Jan16. Marked by /* 3dot1 */
+                    Fixed domestic defaulting issues.  Corrected updating 
+                    issues for lab date and cust date flags.  Readdressed issues
+                    with customer paid date and commented out bugged code
+                    (not marked).
+     Version 3.2 - written by Jacob Luttrell on 23Feb16. Marked by /* 3dot2 */
+                    Updated SUB routines changed which dates are updated in  
+                    and testtype/test_type (unmarked). 
+     Version 3.3 - written by Jacob Luttrell on 11Mar16. Marked by 3dot3.
+                     Chagned SUBtrh-RStP-findR to SUBtrh-findR and changed which
+                     dates are being updated in the trh_hist.  
+     Version 3.4 - written by Jacob Luttrell on 12Apr16.  added statuslist.i in
+                    place of the defined variable statlist. Added code to change
+                    status to deleted or void when aproprete. /* 3dot4 */                                                                                                   
+  -------------------------------------------------------------------*/  
+{../depot/src/WebSpeed/menuname.i}.
+  
+/***************************  Variables  ******************************/ 
+ 
+DEFINE VARIABLE v-act               AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-TK_ID             LIKE TK_mstr.TK_ID                  NO-UNDO.
+DEFINE VARIABLE v-TK_test_seq       LIKE TK_mstr.TK_test_seq            NO-UNDO.
+DEFINE VARIABLE v-testtype          LIKE TK_mstr.tk_test_type           NO-UNDO.
+DEFINE VARIABLE v-cust_firstname    LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE v-cust_lastname     LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-pat_firstname     LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE v-pat_lastname      LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-lab_sample_id     LIKE TK_mstr.TK_lab_sample_ID       NO-UNDO.
+DEFINE VARIABLE v-prof              LIKE TK_mstr.TK_prof                NO-UNDO.
+DEFINE VARIABLE v-patage            LIKE TK_mstr.TK_test_age            NO-UNDO.
+DEFINE VARIABLE v-domestic          LIKE TK_mstr.TK_domestic            NO-UNDO.
+DEFINE VARIABLE v-lab-seq           LIKE TK_mstr.TK_lab_seq             NO-UNDO.
+DEFINE VARIABLE v-comments          LIKE TK_mstr.tk_comments            NO-UNDO.
+DEFINE VARIABLE v-notes             LIKE TK_mstr.tk_notes               NO-UNDO.
+
+
+DEFINE VARIABLE  o-uctkm-id              LIKE TK_mstr.TK_id              NO-UNDO.
+DEFINE VARIABLE  o-uctkm-create          AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE  o-uctkm-update          AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE  o-uctkm-avail           AS LOGICAL INITIAL YES          NO-UNDO.
+DEFINE VARIABLE  o-uctkm-successful      AS LOGICAL INITIAL NO           NO-UNDO.
+
+/** begin 2dot0 **/
+DEFINE VARIABLE CCYY-Date           AS CHARACTER  FORMAT "x(10)"         NO-UNDO.
+DEFINE VARIABLE x-loop              AS INTEGER                           NO-UNDO. 
+DEFINE VARIABLE html5-datelist  AS CHARACTER  FORMAT "x(10)"  EXTENT 17  NO-UNDO.
+DEFINE VARIABLE v-trhid             AS INTEGER                           NO-UNDO.
+DEFINE VARIABLE v-trhfound          AS LOG INITIAL NO                    NO-UNDO.
+DEFINE VARIABLE v-error             AS LOG INITIAL NO                    NO-UNDO.
+DEFINE VARIABLE v-tkstat            AS CHARACTER                         NO-UNDO.
+DEFINE VARIABLE w-dte               AS CHARACTER                         NO-UNDO.   /* 2dot1 */
+DEFINE VARIABLE Last-Date-Position-Found    AS INTEGER                   NO-UNDO.   /* 2dot1 */
+
+DEFINE VARIABLE v-patient_ID        LIKE TK_mstr.TK_patient_ID           NO-UNDO.   /* 2dot1 */
+
+DEFINE VARIABLE v-cust_ID           LIKE TK_mstr.TK_cust_ID             NO-UNDO.    /* 2dot4 */
+DEFINE VARIABLE disp-custdate       AS CHARACTER                        NO-UNDO.   
+
+DEFINE VARIABLE foundone            AS LOGICAL INITIAL NO               NO-UNDO.    /* 3dot0 */
+DEFINE VARIABLE origcustdate        AS DATE                             NO-UNDO.    /* 3dot0 */
+DEFINE VARIABLE htmlcustdate        AS CHARACTER                        NO-UNDO.    /* 3dot0 */
+
+
+DEFINE VARIABLE pp-passBack-char    AS CHARACTER                        NO-UNDO.    /* 2dot1 */
+DEFINE VARIABLE pp-passBack-integer AS INTEGER                          NO-UNDO.    /* 2dot1 */
+
+DEFINE VARIABLE itmessage           AS LOGICAL INITIAL NO               NO-UNDO.    /* 3dot0 */
+ 
+DEFINE VARIABLE datelist AS DATE EXTENT 17 NO-UNDO.
+
+{../depot/src/WebSpeed/statuslist.i}.                                                                      /* 3dot4 */
+/*DEFINE VARIABLE statlist AS CHARACTER                                                                                                                                    */
+/*    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,COMPLETE,PAID_BY_CUST,VEND_PAID,DELETED,VOID" NO-UNDO.*/
+
+DEFINE VARIABLE cust-paid           LIKE TK_mstr.TK_cust_paid           NO-UNDO.    /* 3dot1 */
+DEFINE VARIABLE cust-paid-char      AS CHARACTER                        NO-UNDO.    /* 3dot1 */
+DEFINE VARIABLE lab-paid            LIKE TK_mstr.TK_lab_paid            NO-UNDO.    /* 3dot1 */ 
+DEFINE VARIABLE html5-lab-paid      AS CHARACTER                        NO-UNDO.    /* 3dot1 */
+/** end 2dot0 **/
+
+/***************************  Prologue  *******************************/
+
+/*********  HTML Get-Values  ***********/
+ASSIGN 
+    v-TK_ID             = get-value("h-TK_ID")
+    v-TK_test_seq       = INTEGER(get-value("h-TK_test_seq"))
+    v-act               = get-value("h-act")
+    v-cust_firstname    = get-value("h-cust-firstname")
+    v-cust_lastname     = get-value("h-cust-lastname")
+    v-pat_firstname     = get-value("h-patient-firstname")
+    v-pat_lastname      = get-value("h-patient-lastname")
+    v-lab_sample_id     = get-value("h-lab-sample")
+    v-domestic          = IF get-value("h-domestic") = "YES" THEN YES ELSE IF get-value("h-domestic") = "NO" THEN NO ELSE ?  /* 3dot1 */
+    v-prof              = IF get-value ("h-prof") = "YES" THEN YES ELSE NO
+    v-patage            = DECIMAL(get-value("h-patage"))        
+    v-lab-seq           = INTEGER(get-value("h-lab-seq"))
+    v-testtype          = get-value("h-type")
+    v-comments          = get-value("h-comments")
+    v-notes             = get-value("h-notes")
+    whatshouldrun       = get-value('whattorun')
+    htmlcustdate        = get-value("h-origcustdate")                                       /* 3dot0 */
+    .
+
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (htmlcustdate, OUTPUT origcustdate).             /* 3dot0 */
+
+/******** Other Prologuedom  ***********/
+
+IF  v-act = "Clear Search" THEN                                                 /* 2dot1 */
+    ASSIGN  v-TK_ID = ""                                                        /* 2dot1 */
+            v-TK_test_seq = 0                                                   /* 2dot1 */
+            v-act = "INITIAL".                                                  /* 2dot1 */
+            
+IF  v-act = "" THEN 
+    v-act = "INITIAL".
+      
+/*************************  Main Program  *****************************/
+    
+CASE v-act:
+
+    WHEN "INITIAL" THEN DO: 
+                
+        {&OUT}
+            "<DIV class='row'>"                                                             SKIP
+            "<DIV class='grid_3'> </DIV>    <!-- grid_3 spacer -->"                         SKIP   
+            "<DIV class='grid_6'>"                                                          SKIP
+            "<FORM>"                                                                        SKIP
+            "<DIV class='table_col'>"                                                       SKIP
+            "   <TABLE>"                                                                        SKIP
+            "       <TR>"                                                                           SKIP
+            "           <TH colspan=2>Search Criteria</TH>"                                             SKIP
+            "       </TR>"                                                                                  SKIP
+            "       <TR>"                                                                                       SKIP 
+            "           <TD>Testkit ID</TD>"                                                                        SKIP        /* 2dot0 */
+            "           <TD><input type='text' name='h-TK_ID' value='" v-TK_ID "' class='req'/></TD>"               SKIP
+            "       </TR>"                                                                                          SKIP
+            "       <TR>"                                                                                           SKIP 
+            "           <TD>Testkit Seq</TD>"                                                                       SKIP        /* 2dot0 */
+            "           <TD><input type='number' name='h-TK_test_seq' value='" v-TK_test_seq "'/></TD>"             SKIP
+            "       </TR>"                                                                                          SKIP
+            "   </TABLE>"                                                                                           SKIP
+            "</DIV>       <!-- end of table_col -->"                                                                SKIP         
+            "<BR>"                                                                                                  SKIP
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                                      SKIP
+            "</DIV>                                 <!-- end of grid_6 -->"                                             SKIP                                                    
+            "<DIV class='grid_3'> </DIV>            <!-- grid_3 spacer -->"                                             SKIP
+            "</DIV>                                 <!-- end of row -->"                                                SKIP
+            "<div class='row'>"                                                                                         SKIP
+            "   <div class='grid_3'> </DIV>"                                                                                SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>"                                                                            SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Clear Search' class='btn'>Clear Search</BUTTON></div>"        SKIP /** 1.1 **/
+            "   <div class='grid_3'> </DIV>"                                                                            SKIP
+            "</div>" SKIP
+            "<BR>"  SKIP
+            "</FORM>".                                             
+
+    END.  /** of when v-act = initial **/
+
+    WHEN "SEARCH" THEN DO:
+
+        {&OUT}
+            "<DIV class='row'>"                                         SKIP
+            "<DIV class='grid_2'> </DIV>        <!-- grid_2 spacer -->" SKIP
+            "<DIV class='grid_8'>"                                      SKIP
+            "<DIV class='table_report fixed_table'>"                    SKIP
+            "   <TABLE>"                                                SKIP
+            "       <THEAD>"                                            SKIP
+            "           <TR>"                                           SKIP
+            "               <TH colspan=5>Testkit(s)</TH>"              SKIP
+            "           </TR>"                                          SKIP
+            "           <TR>"                                           SKIP
+            "               <TD>Testkit / Seq</TD>"                     SKIP        /* 2dot0 */
+            "               <td>Test Type</td>"                         SKIP
+            "               <td>Patient Name</td>"                      SKIP
+            "               <td>Customer Name</td>"                     SKIP
+            "           </TR>"                                          SKIP
+            "       </THEAD>"                                           SKIP
+            .
+ 
+        FOR EACH TK_mstr WHERE 
+            ((TK_mstr.TK_ID = v-tk_id) OR (v-tk_id = "")) AND 
+            ((TK_mstr.TK_test_seq = v-tk_test_seq) OR (v-tk_test_seq = 0)) AND 
+            TK_mstr.TK_deleted = ? NO-LOCK:
+
+            {&OUT}
+                "           <tr>" SKIP
+                "               <td>"
+/*                "<a href='http://localhost:3333/DataHub/rcode/TKgeneralMaintU.r"*/
+                "<a href='../../DataHub/rcode/TKgeneralMaintU.r"    /** 1.1 **/
+                "?h-TK_ID=" TK_mstr.TK_ID
+                "&h-TK_test_seq=" TK_mstr.TK_test_seq
+                "&whattorun=1.5"   /* linking to itself in a different act */ 
+                "&h-act=MAINTENANCE'>" TK_mstr.TK_ID ' / ' TK_mstr.TK_test_seq "</a></td>" SKIP     /* 2dot1 */
+                "               <td>" TK_mstr.tk_test_type "</td>" SKIP.
+        
+            FIND FIRST people_mstr WHERE 
+                people_mstr.people_id = TK_mstr.TK_patient_ID AND 
+                people_mstr.people_deleted = ? 
+                NO-LOCK NO-ERROR.
+                
+            IF AVAILABLE (people_mstr) THEN
+              {&OUT}
+                "               <td>" SKIP
+                "                   <a href=~"../../DataHub/rcode/TKtestSearchR.r"  /** 1.1 **/
+                "?h-first=" people_mstr.people_firstname 
+                "&h-last=" people_mstr.people_lastname
+                "&whattorun=" whatshouldrun
+                "&h-act=SEARCH~">" SKIP 
+                people_mstr.people_lastname ", " people_mstr.people_firstname "</a></td>" SKIP.
+
+            ELSE {&OUT} 
+                "               <td></td>" SKIP.
+                    
+            FIND FIRST people_mstr WHERE 
+                people_mstr.people_id = TK_mstr.TK_cust_ID AND 
+                people_mstr.people_deleted = ?
+                NO-LOCK NO-ERROR.
+                
+            IF AVAILABLE (people_mstr) THEN {&OUT}
+                "               <td>" people_mstr.people_lastname ", " people_mstr.people_firstname "</td>" SKIP.
+                    
+            ELSE {&OUT} 
+                "               <td></td>" SKIP.
+            
+            {&OUT} 
+                "           </tr>" SKIP.
+                    
+        END. /*** of TK_mstr straight 4ea ***/
+
+        {&OUT}
+            "   <tfoot>" SKIP                                                               /* 1dot */
+            "       <TR>" SKIP
+            "           <TD COLSPAN=5><center>END OF REPORT</center></TD>" SKIP
+            "       </TR>" SKIP
+            "   </tfoot>" SKIP                                                              /* 1dot */
+            "   </TABLE>" SKIP
+            "</DIV>                 <!-- end of table_report -->" SKIP
+            "</DIV>             <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>        <!-- grid 2 spacer -->" SKIP
+            "</DIV>         <!-- end of row -->" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_12'>" SKIP
+            "       <center><p><i><b>Click the Patient Name to search for Testkits for that patient.</b></i></p></center>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<form>" SKIP       /** 1.1 **/
+            "<input type='hidden' name='h-TK_id' value='" v-TK_ID "'/>" SKIP
+            "<input type='hidden' name='h-tk_test_seq' value='" v-tk_test_seq "'/>" SKIP
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                                      SKIP            /* 1dot */            
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>".
+
+    END.  /** of v-act = search **/
+    
+    WHEN "MAINTENANCE" THEN DO:
+    
+    /** make sure that the tk_id is coming in no matter which way you get here. **/
+/* 2dot1 */    
+	    ASSIGN  pp-passBack-char      = get-value("h-pp-passBack-char")               /* Calling Procedure's Character data to pass back. */ 
+	            pp-passBack-integer   = INTEGER(get-value("h-pp-passBack-integer")).  /* Calling Procedure's Integer data to pass back. */  
+
+	    IF  pp-passBack-char <> "" THEN                     
+	        ASSIGN  v-TK_ID         = pp-passBack-char
+	                v-TK_test_seq   = pp-passBack-integer.
+/* 2dot1 */
+    
+        FIND TK_mstr WHERE 
+            TK_mstr.TK_ID = v-tk_id AND 
+            TK_mstr.TK_test_seq = v-tk_test_seq AND 
+            TK_mstr.TK_deleted = ? EXCLUSIVE-LOCK NO-ERROR.
+        
+        IF AVAILABLE (tk_mstr) THEN DO:
+             
+            ASSIGN x-loop = 0.                                                  /* 2dot1 */
+                
+            FOR EACH trh_hist WHERE trh_hist.trh_serial = TK_mstr.TK_ID AND 
+                trh_hist.trh_sequence = TK_mstr.TK_test_seq AND 
+                trh_hist.trh_deleted = ? NO-LOCK
+                    BREAK BY trh_hist.trh_ID:
+                    
+/*                datelist[lookup(trh_hist.trh_action,statlist)] = trh_hist.trh_create_date.*/
+                datelist[lookup(trh_hist.trh_action,statlist)] = trh_hist.trh_date.             /* 3dot2 */
+                
+                
+                IF trh_hist.trh_action = "PAID_BY_CUST" THEN                                    /* 3dot0 */
+                    ASSIGN                                                                      /* 3dot0 */
+/*                        origcustdate = trh_hist.trh_create_date                                 /* 3dot0 */*/
+                        origcustdate = trh_hist.trh_date                                        /* 3dot2 */
+                        foundone     = YES.                                                     /* 3dot0 */
+                   
+            END.  /** of 4ea. trh_hist **/
+            
+            IF foundone = NO THEN                                                               /* 3dot0 */
+                ASSIGN                                                                          /* 3dot0 */
+                    origcustdate = ?                                                            /* 3dot0 */
+                    htmlcustdate = "".                                                          /* 3dot0 */
+            
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (origcustdate, OUTPUT htmlcustdate).         /* 2dot4 */
+            
+/* 2dot1 */            
+            ASSIGN v-patient_ID             = INTEGER(get-value("h-patient_ID")).            
+            IF  v-patient_id <> 0 THEN DO: 
+                FIND people_mstr WHERE 
+                    people_mstr.people_id = v-patient_id AND
+                    people_mstr.people_deleted = ? NO-LOCK NO-ERROR.
+                ASSIGN TK_mstr.TK_patient_ID = people_mstr.people_id.
+            END. 
+            ELSE DO:     
+	            FIND people_mstr WHERE 
+	                people_mstr.people_id = TK_mstr.TK_patient_ID AND
+	                people_mstr.people_deleted = ? NO-LOCK NO-ERROR.
+	        END.  /* IF  v-patient_id <> 0 */
+/* 2dot1 */
+            
+            IF AVAILABLE (people_mstr) THEN 
+                ASSIGN  v-pat_firstname = people_mstr.people_firstname
+                        v-pat_lastname = people_mstr.people_lastname.
+            ELSE 
+                ASSIGN  v-pat_lastname  = "hyperlink here "
+                        v-pat_firstname = "Click to assign this Testkit to a Patient".        
+            
+/* 2dot4 */            
+            ASSIGN v-cust_ID             = INTEGER(get-value("h-cust_ID")).            
+            IF  v-cust_id <> 0 THEN DO: 
+                FIND people_mstr WHERE 
+                    people_mstr.people_id = v-cust_id AND
+                    people_mstr.people_deleted = ? NO-LOCK NO-ERROR.
+                ASSIGN TK_mstr.TK_cust_ID = people_mstr.people_id.
+            END. 
+            ELSE DO:     
+                FIND people_mstr WHERE 
+                    people_mstr.people_id = TK_mstr.TK_cust_ID AND
+                    people_mstr.people_deleted = ? NO-LOCK NO-ERROR.
+            END.  /* IF  v-cust_id <> 0 */
+/* 2dot4 */            
+                
+            IF AVAILABLE (people_mstr) THEN
+                ASSIGN  v-cust_firstname = people_mstr.people_firstname
+                        v-cust_lastname  = people_mstr.people_lastname. 
+            ELSE
+                ASSIGN  v-cust_lastname  = "hyperlink here "
+                        v-cust_firstname = "Click to assign this Testkit to a Customer".
+        
+            {&OUT}
+                "<div class='row'>" SKIP
+/*                "   <div class='grid_2'></div>" SKIP*/
+                "   <div class='grid_12'>" SKIP                                                                     
+                "       <form>" SKIP
+                "       <div class='table_2col'>" SKIP
+                "           <TABLE>" SKIP
+                "               <tr>" SKIP
+                "                   <th colspan=4>Editing: " tk_mstr.tk_ID " / " TK_mstr.TK_test_seq "</th>" SKIP                             
+                "               </tr>" SKIP   
+                "               <tr>" SKIP.
+
+/* 2dot1 */
+             IF  v-pat_lastname  = "hyperlink here" THEN  
+                   {&OUT}
+                      "                   <td>Patient Name</td>"  SKIP
+		              "       <td><a href='../../DataHub/rcode/PATpickerR.r"
+		                "?h-prevproc=TKgeneralMaintU.r"                         /* Calling Procedure */
+		                "&h-pp-act=MAINTENANCE"                                 /* Calling Procedure's Act */
+		                "&h-pp-whattorun=" whatshouldrun                        /* Calling Procedure's Whattorun */
+		                "&h-pp-passBack-char=" v-TK_ID                          /* Calling Procedure's Character data to pass back. */
+		                "&h-pp-passBack-integer=" v-tk_test_seq                 /* Calling Procedure's Integer data to pass back. */
+		                "&h-cust=NO"                                            /* 2dot4 */
+		                "&whattorun=1.5"                                          
+		                "'>" v-pat_firstname "</a></td>"   
+		                 SKIP. 
+		                                                    
+             IF  v-pat_lastname  <> "hyperlink here" THEN  
+                 {&OUT}         
+                     "                 <tr>" SKIP
+                     "                   <td>Patient Name</td>" SKIP
+                     "       <td><a href='../../DataHub/rcode/PATpickerR.r"
+                        "?h-prevproc=TKgeneralMaintU.r"                         /* Calling Procedure */
+                        "&h-pp-act=MAINTENANCE"                                 /* Calling Procedure's Act */
+                        "&h-pp-whattorun=" whatshouldrun                        /* Calling Procedure's Whattorun */
+                        "&h-pp-passBack-char=" v-TK_ID                          /* Calling Procedure's Character data to pass back. */
+                        "&h-pp-passBack-integer=" v-tk_test_seq                 /* Calling Procedure's Integer data to pass back. */
+                        "&h-cust=NO"                                            /* 2dot4 */
+                        "&whattorun=1.5"                                        
+                        "'>" v-pat_lastname ", " v-pat_firstname  "</a></td>" SKIP.
+/* 2dot1 */
+
+/* 2dot1 */     /*  SAVE CODE FOR POSSIBLE CHANGES IN THE FUTURE - Harold Luttrell - 10/15/2015 */
+              IF  v-cust_lastname  = "hyperlink here" THEN
+                   {&OUT}
+                      "                   <td>Customer Name</td>" SKIP
+                      "       <td><a href='../../DataHub/rcode/PATpickerR.r"
+                        "?h-prevproc=TKgeneralMaintU.r"                         /* Calling Procedure */
+                        "&h-pp-act=MAINTENANCE"                                 /* Calling Procedure's Act */
+                        "&h-pp-whattorun=" whatshouldrun                        /* Calling Procedure's Whattorun */
+                        "&h-pp-passBack-char=" v-TK_ID                          /* Calling Procedure's Character data to pass back. */
+                        "&h-pp-passBack-integer=" v-tk_test_seq                 /* Calling Procedure's Integer data to pass back. */
+                        "&h-cust=YES"                                           /* 2dot4 */
+                        "&whattorun=1.5"                              
+                        "'>" v-cust_firstname "</a></td>"
+                         SKIP.
+              
+             IF  v-cust_lastname  <> "hyperlink here" THEN
+       {&OUT}
+                    "                   <td>Customer Name</td>" SKIP
+                  "       <td><a href='../../DataHub/rcode/PATpickerR.r"
+                        "?h-prevproc=TKgeneralMaintU.r"                         /* Calling Procedure */
+                        "&h-pp-act=MAINTENANCE"                                 /* Calling Procedure's Act */
+                        "&h-pp-whattorun=" whatshouldrun                        /* Calling Procedure's Whattorun */
+                        "&h-pp-passBack-char=" v-TK_ID                          /* Calling Procedure's Character data to pass back. */
+                        "&h-pp-passBack-integer=" v-tk_test_seq                 /* Calling Procedure's Integer data to pass back. */
+                        "&h-cust=YES"                                           /* 2dot4 */
+                        "&whattorun=1.5"                        
+                        "'>" v-cust_lastname ", " v-cust_firstname "</a></td>" SKIP.
+/* 2dot1 */	               
+             {&OUT} 
+                "               </tr>" SKIP               
+                "               <tr>" SKIP
+                "                   <td>Testkit Type </td>" SKIP                                                   
+                "                   <td><select name='h-type'>" SKIP
+                "                       <option value='" v-testtype "' selected>" TK_mstr.tk_test_type "</option>" SKIP. 
+    
+            FOR EACH test_mstr NO-LOCK:           
+               {&OUT} "                       <option Value='" test_mstr.test_type "'>" test_mstr.test_type "</option>" SKIP.
+            END. /*** test_mstr 4ea ***/
+       
+            {&OUT}
+                "                   </td>" SKIP
+                "                   <td> Destination </td>" SKIP.
+                    
+            IF TK_mstr.TK_domestic = YES THEN
+                {&OUT}
+                    "                   <td><input type='radio' name='h-domestic' value='Yes' checked> Domestic" SKIP
+                    "                   <br><input type='radio' name='h-domestic' value='No'> International </td>"    SKIP
+                    "               </tr>" SKIP.
+                
+            ELSE IF TK_mstr.TK_domestic = NO THEN  
+                {&OUT}
+                    "                   <td><input type='radio' name='h-domestic' value='Yes'> Domestic" SKIP
+                    "                   <br><input type='radio' name='h-domestic' value='No' checked> International </td>" SKIP
+                    "               </tr>" SKIP.
+            
+            ELSE 
+                {&OUT}
+                    "                   <td><input type='radio' name='h-domestic' value='Yes'> Domestic" SKIP
+                    "                   <br><input type='radio' name='h-domestic' value='No'> International </td>" SKIP
+                    "               </tr>" SKIP.
+            
+            {&OUT}
+                "               <tr>" SKIP
+                "                   <td>Age at Time of Test</td><td><input type='text' name='h-patage' value='" TK_mstr.TK_test_age "'></td>" SKIP.
+                    
+            IF TK_mstr.TK_prof = YES THEN
+                {&OUT}
+                    "                   <td> Professional? </td><td><input type='checkbox'  name='h-prof' value=YES checked></td>" SKIP.
+                
+            ELSE 
+                {&OUT}
+                    "                   <td> Professional? </td><td><input type='checkbox'  name='h-prof' value=YES ></td>" SKIP. 
+                           
+            {&OUT} 
+                "               </tr>" SKIP
+                "               <tr>" SKIP
+                "                   <td>Lab Sample / Seq</td>"
+                "                   <td colspan='1'><input type='text' name='h-lab-sample' value='" TK_mstr.TK_lab_sample_ID "'> / " SKIP
+                "                       <input type='number' name='h-lab-seq' value='" TK_mstr.TK_lab_seq "'></td>" SKIP
+                "                   <td>Status</td>"
+                "                   <td><input type='text' name='h-status' value='" TK_mstr.TK_status "'  disabled></td>" SKIP
+                "               </tr>" SKIP
+                "               <tr>" SKIP
+                "                   <td>Comments</td>" SKIP
+                "                   <td colspan='3'><textarea name='h-comments' rows='2' cols='100'>" TK_mstr.TK_comments "</textarea></td>" SKIP
+                "               </tr>" SKIP
+                "               <tr>" SKIP
+                "                   <td>Notes</td>" SKIP
+                "                   <td colspan='3'><textarea name='h-notes' rows='2' cols='100' disabled>" TK_mstr.TK_notes "</textarea></td>" SKIP
+                "               </tr>" SKIP
+                "           </TABLE>" SKIP
+                "       </div>" /* class='table_col' */ SKIP.
+   
+                  
+/** begin 2dot0 **/
+  
+    {TKgm-TRH-Hist-Dates.i "Nothing" "Nothing"}.                                           /* 2dot1       1st dates displayed. */ /* 2dot4 2nd customer paid date displayed. */  
+
+            {&OUT}     
+                "   </div>" /* class='grid_12' */ SKIP
+/*                "<div class='grid_2'></div>" SKIP*/
+                "</div>" /* class='row' */ SKIP
+                "<br>" SKIP                 
+                
+                "<div class='row'>" SKIP
+                "<div class='grid_3'></div>" SKIP 
+                "<div class='grid_2'>" SKIP
+                "   <input type='hidden' name='h-TK_id'  value='" v-tk_ID "' />" SKIP
+                "   <input type='hidden' name='h-TK_test_seq'  value='" TK_mstr.tk_test_seq "' />" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP 
+                "   <input type='hidden' name='h-cust_id'  value='" TK_mstr.TK_cust_ID "' />" SKIP
+                "   <button type='submit' name='h-act' value='REVIEW' class='btn'>Update " TK_mstr.TK_ID " / " TK_mstr.TK_test_seq "</button>" SKIP
+                "</div>" /* class='grid_2' */ SKIP
+                "<div class='grid_2'></div>" SKIP
+                "<div class='grid_2'>" SKIP
+                "   <button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</button></td>" SKIP
+                "</form>" SKIP
+                "</div>" /* class='grid_2' */ SKIP
+                "<div class='grid_3'></div>" SKIP
+                "</div>" /* class='row' */ SKIP. 
+            
+        END. /*** of if availble TK_mstr do ***/
+        
+        ELSE DO:
+            
+           {&OUT} "<center><h2> No Testkit found with an ID of " v-TK_id " / " v-TK_test_seq "</h2><br><p> in TKgeneralSearchR.html. </p></center> ". 
+            
+        END. /*** of TK_mstr NOT available ***/
+    
+    END. /** of v-act = maintenance **/
+    
+    WHEN "REVIEW" THEN DO: 
+
+		ASSIGN cust-paid-char = get-value("h-PAID_BY_CUST").
+		
+		IF cust-paid-char = "" THEN                                                                 /* 3dot1 */
+		          ASSIGN                                                                            /* 3dot1 */
+		              cust-paid = NO.                                                               /* 3dot1 */
+		      ELSE                                                                                  /* 3dot1 */
+		          ASSIGN                                                                            /* 3dot1 */
+		              cust-paid = YES.                                                              /* 3dot1 */
+		
+		ASSIGN html5-lab-paid = get-value("h-VEND_PAID").                                           /* 3dot1 */
+		IF html5-lab-paid <> "" THEN                                                                /* 3dot1 */
+		    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (html5-lab-paid, OUTPUT lab-paid).               /* 3dot1 */
+                  
+        RUN VALUE(SEARCH("SUBtkmstrRSTPucU.r"))                      
+            (v-TK_id,
+            v-testtype,
+            v-prof,
+            v-TK_test_seq,
+            v-domestic,
+            0,  /* cust id */  
+            0,  /* pat id */
+            v-lab_sample_id,
+            v-lab-seq,
+            v-patage,
+            "",  /* lab ID */
+            "", /* status */
+            v-comments,
+            v-notes,
+            cust-paid, /* cust paid */
+            ?, /* lab print */
+            lab-paid, /* lab paid */
+            "", /* magento order */                                                     /* 3dot2 */
+            ?,  /* cust paid date */  
+            OUTPUT v-TK_id,
+            OUTPUT o-uctkm-create,
+            OUTPUT o-uctkm-update,
+            OUTPUT o-uctkm-avail,
+            OUTPUT o-uctkm-successful).
+  
+/* 2dot1 */
+        FIND TK_mstr WHERE 
+            TK_mstr.TK_ID = v-tk_id AND 
+            TK_mstr.TK_test_seq = v-tk_test_seq AND 
+            TK_mstr.TK_deleted = ? NO-LOCK NO-ERROR.                                        /* 3dot0 */
+
+        ASSIGN Last-Date-Position-Found = 0.
+                
+        ASSIGN  w-dte = get-value("h-CREATED").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[1]).
+            ASSIGN Last-Date-Position-Found = 1.        
+        END. 
+        ASSIGN  w-dte = get-value("h-IN_STOCK").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[2]). 
+            ASSIGN Last-Date-Position-Found = 2.         
+        END. 
+        ASSIGN  w-dte = get-value("h-SOLD").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[3]).
+            ASSIGN Last-Date-Position-Found = 3.          
+        END. 
+        ASSIGN  w-dte = get-value("h-SHIPPED").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[4]).
+            ASSIGN Last-Date-Position-Found = 4.          
+        END. 
+        ASSIGN  w-dte = get-value("h-COLLECTED").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[5]).
+            ASSIGN Last-Date-Position-Found = 5.          
+        END. 
+        ASSIGN  w-dte = get-value("h-LAB_RCVD").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[6]).
+            ASSIGN Last-Date-Position-Found = 6.          
+        END.
+        ASSIGN  w-dte = get-value("h-LAB_PROCESS").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[7]).
+            ASSIGN Last-Date-Position-Found = 7.        
+        END.
+        ASSIGN  w-dte = get-value("h-HHI_RCVD").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[8]).
+            ASSIGN Last-Date-Position-Found = 8.        
+        END.
+        ASSIGN  w-dte = get-value("h-LOADED").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[9]).
+            ASSIGN Last-Date-Position-Found = 9.        
+        END.
+        ASSIGN  w-dte = get-value("h-PROCESSED").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[10]).
+            ASSIGN Last-Date-Position-Found = 10.        
+        END.
+        ASSIGN  w-dte = get-value("h-PRINTED").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[11]).
+            ASSIGN Last-Date-Position-Found = 11.        
+        END.
+        ASSIGN  w-dte = get-value("h-CD_BURNED").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[12]).
+            ASSIGN Last-Date-Position-Found = 12.        
+        END.
+        ASSIGN  w-dte = get-value("h-COMPLETE").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[13]). 
+            ASSIGN Last-Date-Position-Found = 13.        
+        END.        
+        ASSIGN  w-dte = get-value("h-PAID_BY_CUST").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[14]).        
+        END.
+        ELSE                                                                                    /* 3dot0 */
+            ASSIGN datelist[14] = ?.                                                            /* 3dot0 */
+        ASSIGN  w-dte = get-value("h-VEND_PAID").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[15]).        
+        END.
+        ASSIGN  w-dte = get-value("h-DELETED").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[16]).          
+        END.
+        ASSIGN  w-dte = get-value("h-VOID").
+        IF w-dte <> "" THEN DO: 
+            RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[17]).        
+        END.   
+																														IF itmessage = YES THEN         
+																														{&OUT}
+																														    "<UL><B>Status Check - PRE</B>" SKIP
+																														    "   <LI>Last-Date-Postition-Found = "  Last-Date-Position-Found "</LI>" SKIP
+																														    "   <LI>v-tkstat = " v-tkstat "</LI>" SKIP
+																														    "   <LI>Datelist[14] = " datelist[14] "</LI>" SKIP 
+																														    "   <LI>origcustdate = " origcustdate "</LI>" SKIP 
+																														    "</UL>" SKIP.        
+        
+        
+                        IF datelist[14] <> origcustdate AND origcustdate <> ? THEN DO:          /* 3dot0 */
+
+/*                            RUN VALUE(SEARCH("SUBtrh-RStp-findR.r"))                            /* 3dot0 */*/
+                            RUN VALUE(SEARCH("SUBtrh-findR.r"))                                 /* 3dot3 */
+                                (TK_mstr.tk_test_type,                                          /* 3dot0 */
+                                 entry(14,statlist),   /* was v-tkstat */                       /* 3dot0 */
+                                 TK_mstr.TK_ID,                                                 /* 3dot0 */
+                                 TK_mstr.TK_test_seq,                                           /* 3dot0 */
+/*                                 origcustdate,                                                  /* 3dot0 */*/
+                                 OUTPUT v-trhid,                                                /* 3dot0 */
+                                 OUTPUT v-trhfound).
+
+                           FIND trh_hist WHERE trh_hist.trh_ID = v-trhid AND                    /* 3dot0 */
+                                trh_hist.trh_deleted = ?                                        /* 3dot0 */
+                               EXCLUSIVE-LOCK NO-ERROR.                                         /* 3dot0 */
+
+                           IF AVAILABLE trh_hist THEN                                           /* 3dot0 */
+                            ASSIGN                                                              /* 3dot0 */
+                               trh_hist.trh_date = datelist[14]                                             /* 3dot2 */
+                               trh_hist.trh_modified_by = USERID ("General")                                /* 3dot2 */
+                               trh_hist.trh_prog_name = THIS-PROCEDURE:FILE-NAME                            /* 3dot2 */
+                               trh_hist.trh_modified_date = TODAY.                              /* 3dot0 */
+
+                            IF datelist[14] = ? THEN DO:                                        /* 3dot0 */
+                               ASSIGN                                                           /* 3dot0 */
+                                   trh_hist.trh_deleted = TODAY.                                /* 3dot0 */
+/*                             DELETE trh_hist.*/
+                            END.
+/*                            ELSE                                                                /* 3dot0 */*/
+/*                               ASSIGN                                                           /* 3dot0 */*/
+/*                                   trh_hist.trh_create_date = datelist[14].                     /* 3dot0 */*/
+/*                                                                                                           */
+                        END. /* if datelist[14] */                                              /* 3dot0 */
+         
+        
+        
+        ASSIGN x-loop = 0.                                
+	    DO WHILE x-loop < 17:
+	        ASSIGN x-loop = (x-loop + 1).
+/*	                {&OUT}   "datelist " x-loop "=" datelist[x-loop] SKIP.*/
+
+            IF  datelist[x-loop] <> ? THEN DO:                                
+
+                        ASSIGN 
+                            v-trhid     = 0
+                            v-trhfound  = NO
+                            v-tkstat    = entry(x-loop, statlist).
+																														IF itmessage = YES THEN     
+																														{&OUT}
+																														    "<UL><B>Status Check - DURING</B>" SKIP
+																														    "   <LI>Last-Date-Postition-Found = "  Last-Date-Position-Found "</LI>" SKIP
+																														    "   <LI>v-tkstat = " v-tkstat "</LI>" SKIP
+																														    "   <LI>Datelist[14] = " datelist[14] "</LI>" SKIP 
+																														    "</UL>" SKIP.      
+                        
+                        IF datelist[14] <> origcustdate AND origcustdate <> ? THEN DO:          /* 3dot0 */
+                        
+/*                            RUN VALUE(SEARCH("SUBtrh-RStp-findR.r"))                            /* 3dot0 */*/
+                            RUN VALUE(SEARCH("SUBtrh-findR.r"))                                 /* 3dot3 */                                     
+	                            (TK_mstr.tk_test_type,                                          /* 3dot0 */        
+	                             v-tkstat,              /*  statlist[x-loop],   */              /* 3dot0 */                                                
+	                             TK_mstr.TK_ID,                                                 /* 3dot0 */        
+	                             TK_mstr.TK_test_seq,                                           /* 3dot0 */        
+/*	                             origcustdate,                                                  /* 3dot0 */*/
+	                             OUTPUT v-trhid,                                                /* 3dot0 */       
+	                             OUTPUT v-trhfound).
+	                      
+	                       FIND trh_hist WHERE trh_hist.trh_ID = v-trhid AND 
+	                           trh_hist.trh_deleted = ?                       /* 3dot0 */
+	                           EXCLUSIVE-LOCK NO-ERROR.                                         /* 3dot0 */
+	                             
+	                       IF AVAILABLE trh_hist THEN                                           /* 3dot0 */
+	                        ASSIGN                                                              /* 3dot0 */    
+	                           trh_hist.trh_modified_date = TODAY                              /* 3dot0 */           
+	                           
+/*	                        IF datelist[14] = ? THEN DO:                                        /* 3dot0 */*/
+/*	                           ASSIGN                                                           /* 3dot0 */*/
+/*	                               trh_hist.trh_deleted = TODAY.                                /* 3dot0 */*/
+/*/*	                           DELETE trh_hist.*/                                                        */
+/*	                        END.                                                                           */
+/*	                        ELSE                                                                /* 3dot0 */*/
+/*	                           ASSIGN                                                           /* 3dot0 */*/
+	                               trh_hist.trh_create_date = datelist[14].                     /* 3dot0 */
+	                               
+	                    END. /* if datelist[14] */                                              /* 3dot0 */   
+                        
+                        ELSE                     
+/*                            RUN VALUE(SEARCH("SUBtrh-RStp-findR.r"))                            /* 3dot0 */*/
+                            RUN VALUE(SEARCH("SUBtrh-findR.r"))                                 /* 3dot3 */                                                                 
+                            (TK_mstr.tk_test_type,                                                   
+                             v-tkstat,              /*  statlist[x-loop],   */                                                              
+                             TK_mstr.TK_ID,                                                         
+                             TK_mstr.TK_test_seq,                                                   
+/*                             datelist[x-loop],*/
+                             OUTPUT v-trhid,                                                       
+                             OUTPUT v-trhfound).                                                     
+
+                        IF v-trhfound = NO THEN DO: 
+                            
+/*                            RUN VALUE(SEARCH("SUBtrh-RStP-ucU.r"))*/
+                            RUN VALUE(SEARCH("SUBtrh-ucU.r"))
+                                (v-trhid,
+                                TK_mstr.tk_test_type,
+                                v-tkstat,           /*  statlist[x-loop],   */
+                                1,
+                                "",
+                                "",
+                                TK_mstr.tk_ID,
+                                "",
+                                TK_mstr.TK_test_seq,
+/*                                datelist[x-loop],*/                                
+                             /* 3dot2 --> */    
+                                "",                            /*i-ctrh-comments*/
+			                    TK_mstr.TK_magento_order,      /*i-ctrh-other   */
+			                    TK_mstr.Tk_cust_id,            /*i-ctrh-people  */
+			                    STRING("WO-" + TK_mstr.TK_magento_order),                            /*i-ctrh-order   */ 
+			                    datelist[x-loop],              /*i-ctrh-date    */                   /* 3dot3 */
+			                    STRING(TIME,"HH:MM:SS"),       /*i-ctrh-time    */
+			                    (TK_mstr.TK_lab_sample_ID + " / " + STRING(TK_mstr.TK_lab_seq)),     /*i-ctrh-ref     */
+			                    "", /* warehouse */
+                              /* <-- 3dot2 */   
+                                OUTPUT v-trhid,
+                                OUTPUT v-error).
+                                
+                            IF v-error = YES THEN DO: 
+                
+                               {&OUT}  "trh_hist create failed for datelist #: " x-loop "=" datelist[x-loop] SKIP.
+                                
+                            END.  /*** OF ELSE DO --- ERROR TYPE ***/    
+                                
+                        END.  /** of find trh_hist failed -- don't make extra records if they already exist **/     
+                
+                
+            END.  /* IF  datelist[x-loop] <> ? */
+	    END.  /* DO WHILE x-loop < 17 */
+/* 2dot1 */  
+   
+        FIND TK_mstr WHERE                          
+            TK_mstr.TK_ID = v-tk_id AND 
+            TK_mstr.TK_test_seq = v-tk_test_seq AND 
+            TK_mstr.TK_deleted = ? EXCLUSIVE-LOCK NO-ERROR.                                                         /* 3dot0 */
+        
+        IF AVAILABLE (tk_mstr) THEN DO:
+
+            ASSIGN x-loop = 0.                                                  /* Harold */
+            
+            v-tkstat = "".                                                                                          /* 3dot0 */                                                
+            
+        /*** this {&OUT} part is the pretty much the same as the previous one, but everything is disabled ***/
+        
+            FOR EACH trh_hist WHERE trh_hist.trh_serial = TK_mstr.TK_ID AND 
+                trh_hist.trh_sequence = TK_mstr.TK_test_seq AND 
+                trh_hist.trh_deleted = ? NO-LOCK                                                                    /* 3dot0 */ 
+                    BREAK BY trh_hist.trh_ID:
+                    
+                datelist[lookup(trh_hist.trh_action,statlist)] = trh_hist.trh_date.                                 /* 3dot3 */ 
+/*                datelist[lookup(trh_hist.trh_action,statlist)] = trh_hist.trh_create_date.                          /* 3dot0 */*/
+                
+                IF LOOKUP(trh_hist.trh_action,statlist) <= 13 THEN DO:                                              /* 3dot0 */ 
+                    
+	                IF lookup(v-tkstat,statlist) > LOOKUP(trh_hist.trh_action,statlist) THEN                        /* 3dot0 */         
+	                    ASSIGN                                                                                      /* 3dot0 */ 
+	                        v-tkstat = v-tkstat.                                                                    /* 3dot0 */ 
+	                ELSE                                                                                            /* 3dot0 */ 
+	                    ASSIGN                                                                                      /* 3dot0 */ 
+	                        v-tkstat = trh_hist.trh_action.                                                         /* 3dot0 */ 
+                
+                END.  /** of if lookup trh_action <= 13 **/
+                IF LOOKUP(trh_hist.trh_action,statlist) >= 16 THEN DO:                                              /* 3dot4 */ 
+                    
+                    IF lookup(v-tkstat,statlist) > LOOKUP(trh_hist.trh_action,statlist) THEN                        /* 3dot4 */         
+                        ASSIGN                                                                                      /* 3dot4 */ 
+                            v-tkstat = v-tkstat.                                                                    /* 3dot4 */ 
+                    ELSE                                                                                            /* 3dot4 */ 
+                        ASSIGN                                                                                      /* 3dot4 */ 
+                            v-tkstat = trh_hist.trh_action.                                                         /* 3dot4 */ 
+                
+                END.  /** of if lookup trh_action >= 16 **/
+            END.  /** of 4ea. trh_hist **/
+																																	IF itmessage = YES THEN
+																																	{&OUT}
+																																	    "<UL><B>Status Check - POST</B>" SKIP
+																																	    "   <LI>Last-Date-Postition-Found = "  Last-Date-Position-Found "</LI>" SKIP
+																																	    "   <LI>v-tkstat = " v-tkstat "</LI>" SKIP
+																																	    "   <LI>Datelist[14] = " datelist[14] "</LI>" SKIP 
+																																	    "</UL>" SKIP.
+    
+    
+    TK_mstr.TK_status = v-tkstat.                                                                                   /* 3dot0 */ 
+    
+/* 2dot1 */
+    /** don't allow the status to roll backwards **/  
+/*	        IF  Last-Date-Position-Found > 0 THEN                                 */
+/*	            ASSIGN    v-tkstat    = entry(Last-Date-Position-Found, statlist).*/
+/*{&OUT} " New  v-tkstat = " v-tkstat " ||" SKIP.*/
+                                   
+/*	        IF LOOKUP(v-tkstat,statlist) > LOOKUP(TK_mstr.TK_status,statlist)            /* <<<<<<<<<<<<<<<----------------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< */*/
+/*	         THEN                                                                                                                                                                                      */
+/*	            ASSIGN                                                                                                                                                                                 */
+/*	                TK_mstr.TK_status = v-tkstat.                                                                                                                                                      */
+/*	        ELSE                                                                                                                                                                                       */
+/*	            ASSIGN                                                                                                                                                                                 */
+/*	                TK_mstr.TK_status = TK_mstr.TK_status.                                                                                                                                             */
+                 
+    /** end of prevent status rollback **/
+/* 2dot1 */
+                         
+	        FIND people_mstr WHERE 
+	                people_mstr.people_id = TK_mstr.TK_patient_ID AND
+	                people_mstr.people_deleted = ? NO-LOCK NO-ERROR.
+	            
+	        IF AVAILABLE (people_mstr) THEN 
+	           ASSIGN  v-pat_firstname = people_mstr.people_firstname
+	                   v-pat_lastname = people_mstr.people_lastname.
+	        ELSE 
+	           ASSIGN  v-pat_firstname = ""
+	                   v-pat_lastname  = "".
+	        
+	        FIND people_mstr WHERE 
+	            people_mstr.people_id = TK_mstr.TK_cust_ID AND
+	            people_mstr.people_deleted = ? NO-LOCK NO-ERROR.
+	            
+	        IF AVAILABLE (people_mstr) THEN
+	           ASSIGN  v-cust_firstname = people_mstr.people_firstname
+	                   v-cust_lastname  = people_mstr.people_lastname.
+	        ELSE 
+	           ASSIGN  v-cust_firstname = ""
+                       v-cust_lastname  = "".        
+    
+	        {&OUT}
+	            "<div class='row'>" SKIP
+	/*            "   <div class='grid_2'></div>" SKIP*/
+	            "   <div class='grid_12'>" SKIP                                                                     
+	            "       <form>" SKIP
+	            "       <div class='table_2col'>" SKIP
+	            "           <TABLE>" SKIP
+	            "               <tr>" SKIP
+	            "                   <th colspan=4>" tk_mstr.tk_ID " / " TK_mstr.TK_test_seq " has been edited. </th>" SKIP                             
+	            "               </tr>" SKIP.
+	        IF  v-pat_lastname  = "" AND 
+	            v-pat_firstname = "" THEN 
+	                {&OUT}         
+                        "               <tr>" SKIP
+                        "                   <td>Patient Name</td>" SKIP
+                        "                   <td> "  "</td>" SKIP.
+	              ELSE 
+			        {&OUT}         
+			            "               <tr>" SKIP
+			            "                   <td>Patient Name</td>" SKIP
+			            "                   <td> " v-pat_lastname ", " v-pat_firstname  "</td>" SKIP.
+	            
+	         IF  v-cust_lastname  = "" AND 
+	             v-cust_firstname = "" THEN
+	                 {&OUT}   
+	                    "                   <td>Customer Name</td>" SKIP
+	                    "                   <td> "  "</td>" SKIP.
+	               ELSE     
+	                 {&OUT}   
+	                    "                   <td>Customer Name</td>" SKIP
+	                    "                   <td> " v-cust_lastname ", " v-cust_firstname "</td>" SKIP.
+	                    
+	        {&OUT}
+	                "               </tr>" SKIP 	            
+	            "               <tr>" SKIP
+	            "                   <td>Testkit Type </td>" SKIP                                                   
+	            "                   <td><select name='h-type' disabled>" SKIP
+	            "                       <option  value='" TK_mstr.tk_test_type "' selected >" TK_mstr.tk_test_type "</option>" SKIP. 
+	
+	        FOR EACH test_mstr NO-LOCK:           
+	           {&OUT} "                       <option Value='" test_mstr.test_type "'>" test_mstr.test_type "</option>" SKIP.
+	        END. /*** test_mstr 4ea ***/
+	   
+	        {&OUT}
+	            "                   </td>" SKIP
+	            "                   <td> Destination </td>" SKIP.
+	                
+	        IF TK_mstr.TK_domestic = YES THEN
+	            {&OUT}
+	                "                   <td><input type='radio' name='h-domestic' value='Yes' checked disabled> Domestic" SKIP
+	                "                   <br><input type='radio' name='h-domestic' value='No' disabled> International </td>"    SKIP
+	                "               </tr>" SKIP.
+	            
+	        ELSE IF TK_mstr.TK_domestic = NO THEN  
+	            {&OUT}
+	                "                   <td><input type='radio' name='h-domestic' value='Yes' disabled> Domestic" SKIP
+	                "                   <br><input type='radio' name='h-domestic' value='No' checked disabled> International </td>" SKIP
+	                "               </tr>" SKIP.
+	        
+	        ELSE 
+	            {&OUT}
+	                "                   <td><input type='radio' name='h-domestic' value='Yes' disabled> Domestic" SKIP
+	                "                   <br><input type='radio' name='h-domestic' value='No' disabled> International </td>" SKIP
+	                "               </tr>" SKIP.
+	        
+	        {&OUT}
+	            "               <tr>" SKIP
+	            "                   <td>Age at Time of Test</td><td><input type='text' name='h-patage' value='" TK_mstr.TK_test_age "' disabled></td>" SKIP.
+	                
+	        IF TK_mstr.TK_prof = YES THEN
+	            {&OUT}
+	                "                   <td> Professional? </td><td><input type='checkbox'  name='h-prof' value=YES checked disabled></td>" SKIP.
+	            
+	        ELSE 
+	            {&OUT}
+	                "                   <td> Professional? </td><td><input type='checkbox'  name='h-prof' value=YES  disabled></td>" SKIP. 
+	                        
+	        {&OUT}
+	            "               </tr>" SKIP
+	            "               <tr>" SKIP
+	            "                   <td>Lab Sample and Seq.</td>"
+	            "                   <td colspan='1'><input type='text' name='h-lab-sample' value='" TK_mstr.TK_lab_sample_ID "' disabled> / " SKIP
+	            "                       <input type='number' name='h-lab-seq' value='" TK_mstr.TK_lab_seq "' disabled></td>" SKIP
+	            "                   <td>Status</td>"
+	            "                   <td><input type='text' name='h-status' value='" TK_mstr.TK_status "'  disabled></td>" SKIP            
+	            "               </tr>" SKIP
+	            "               <tr>" SKIP
+	            "                   <td>Comments</td>" SKIP
+	            "                   <td colspan='3'><textarea name='h-comments' rows='2' cols='100' disabled>" TK_mstr.TK_comments "</textarea></td>" SKIP
+	            "               </tr>" SKIP
+	            "               <tr>" SKIP
+	            "                   <td>Notes </td>" SKIP
+	            "                   <td colspan='3'><textarea name='h-notes' rows='2' cols='100' disabled>" TK_mstr.TK_notes "</textarea></td>" SKIP
+	            "               </tr>" SKIP
+	            "           </TABLE>" SKIP.
+ 
+/* 2dot1 */                        
+	{TKgm-TRH-Hist-Dates.i "disabled" "REVIEW"}.                              /*  2dot1    2nd dates displayed.*/
+/* 2dot1 */
+
+            {&OUT}                 	            
+	            "       </div>" /* class='table_col' */ SKIP
+	            "   </div>" /* class='grid_8' */ SKIP
+	/*            "<div class='grid_2'></div>" SKIP*/
+	            "</div>" /* class='row' */ SKIP
+	            "<br>" SKIP                
+	            "<div class='row'>" SKIP
+	            "<div class='grid_5'></div>" SKIP
+	            "<div class='grid_2'>" SKIP
+	            "   <input type='hidden' name='h-TK_id'  value='" v-tk_ID "' />" SKIP
+	            "   <input type='hidden' name='h-TK_test_seq'  value='" v-tk_test_seq "' />" SKIP
+	            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+	            "   <button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</button></td>" SKIP
+	            "</form>" SKIP
+	            "</div>" /* class='grid_2' */ SKIP
+	            "<div class='grid_5'></div>" SKIP
+	            "</div>" /* class='row' */ SKIP. 
+	            
+	    END. /*** of if availble TK_mstr do ***/
+        
+        ELSE DO:
+            
+           {&OUT} "<center><h2> Testkit " v-TK_id " / " v-TK_test_seq " is missing.</h2><br><p>TKgeneralSearchR.html</p></center> ". 
+            
+        END. /*** of TK_mstr NOT available ***/
+        
+    END. /*** of v-act = REVIEW ***/
+    
+    OTHERWISE DO:
+
+        {&OUT} "<center><h2> An error has occured in program: </h2><br><p>TKgeneralSearchR.html</p></center> ".
+
+    END.
+    
+END CASE.    
+
+/*** END OF LINE ***/
+
+/*            "       <TR>" SKIP                                                          /** Row 1 **/                                                                                     */
+/*            "           <td>Test Kit ID</td>"                                                           SKIP                                                                              */
+/*            "           <td><input type=text name='h-tk_id' value='" v-tk_id "'></td>"                  SKIP                                                                              */
+/*            "           <TD>Effectivity Date</TD>" SKIP                                                                                                                                   */
+/*            "           <TD><input type='radio' name='h-eff-date' value='" TODAY "'>Today</input>" SKIP                                                                                   */
+/*            "           <input type='radio' name='h-eff-date' value=</TD>" SKIP /***** do I want them to pick a day or make it some sort of look-up-the-day-it-was-processed thing? *****/*/
+/*            "       </TR>" SKIP                                                                                                                                                           */
+ 
+
+</SCRIPT>
+</BODY>
+</HTML>

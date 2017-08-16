@@ -1,0 +1,667 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD> 
+     
+    <TITLE>LABS Update Begin</TITLE> 
+
+    <META NAME="AUTHOR" CONTENT="Harold Luttrell, Sr.">
+    <META NAME="VERSION" CONTENT="2.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="1/Jul/14">
+    <META NAME="LAST_UPDATED" CONTENT="9/May/16">
+        
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+ 
+<SCRIPT LANGUAGE="SpeedScript"> 
+    /*------------------------------------------------------------------
+      Main-program  : LABS-Update-Begin.html.
+      Description   : This is the main User-Interface for Updateing or Creating 
+                    :     the LAB Records and its Address and People records.
+                  
+      Sub-programs  : LABS-Update-Fields-html.
+      Description   : This program actually updates or creates the Lab, Address
+                    :     and People records using the data that was entered
+                    :     on the main program screen.  
+             
+      - - Version History - -
+      
+          1.0 - July 2014 - Original code.
+
+          1.1 - Aug 20, 2014 - Changed layout to be 3 col with name, addr & phone
+                with email section at the bottom.  Drop-downs for State & Country.
+                Add the CSS comands to the report.  Getting the maintenance screen 
+                even if picking a blank lab - should be a selected error message.
+                Fix header rows.
+                
+          1.2 - Sept. 21, 2015 - by Harold Luttrell, SR.
+                No changes - just opened this code and saved it to change
+                windows date to be the same as the LABS-Update_Fields.html.   
+          
+          1.3 - Oct. 05, 2015 - by Jacob Luttrell.
+                Corrected div's and display.
+                Marked by 1dot3. 
+          
+          1.4 - Oct. 22, 2015 - by Jacob Luttrell.
+                Changed order of email and second email fields (not marked)
+                increased grid sizes (not marked)
+                Changed all run stuff.p to stuff.r
+                Marked by 1dot4.
+          
+          2.0 - Jan. 11, 2016 - by Harold Luttrell, SR.
+                Added code to include the state_deleted and sort on the find statement.
+                Market by 2dot0.
+          2.1 - Feb. 10, 2016 - by Jacob Luttrell.
+                Added statedropdown.i and the countrydropdownlist.i and other changes 
+                for v11.1 release.  Marked by 2dot1 
+          2.11 - May 9, 2016 - by Jacob Luttrell. rolling back to per dropdown.i files.   
+                unmarked.           
+                
+          2.12 - written by DOUG LUTTRELL on 04/Jun/16.  Fixed the RUN statements to 
+                    run *.r instead of *.p.  Marked by 212.
+                                    
+    -------------------------------------------------------------------*/
+              
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+ 
+<BODY CLASS='inside'>
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Include code. */
+
+{../depot/src/WebSpeed/menuname.i}.       /*** menu name assignment ***/    
+ 
+/* Define Variables. */
+
+DEFINE VARIABLE h-lab-id            LIKE lab_mstr.lab_ID                    NO-UNDO.  /* DROP-DOWN BOX. */
+DEFINE VARIABLE ddb-lab-id          LIKE lab_mstr.lab_ID                    NO-UNDO.  
+DEFINE VARIABLE lababbv             LIKE lab_mstr.lab_ID                    NO-UNDO.  /* DROP-DOWN BOX. */
+DEFINE VARIABLE labname             LIKE lab_mstr.lab_name                  NO-UNDO.  /* DROP-DOWN BOX. */
+
+DEFINE VARIABLE act                 AS INTEGER                                  NO-UNDO .
+/*  
+    act values: 0 = blank screen - no data.
+                1 = changes or not: from the 1st display screen: "Current LAB Information.".
+                2 = new Lab (add): from display screen: "Enter New LAB Information below.".
+                3 = edit errors.
+                4 = edit errors corrected - re-edit the data. 
+*/
+DEFINE VARIABLE h-add-new           AS CHARACTER FORMAT "x(7)"                  NO-UNDO.
+DEFINE VARIABLE look4it             AS CHARACTER                                NO-UNDO. 
+
+DEFINE VARIABLE ip-lab-id           LIKE lab_mstr.lab_ID                    NO-UNDO.
+DEFINE VARIABLE ip-lab-name         LIKE people_mstr.people_lastname    NO-UNDO. 
+DEFINE VARIABLE ip-lab-phone        LIKE people_mstr.people_workphone   NO-UNDO.
+DEFINE VARIABLE ip-lab-fax          LIKE people_mstr.people_fax         NO-UNDO.
+DEFINE VARIABLE ip-lab-acct-nbr     LIKE lab_mstr.lab_acct_nbr              NO-UNDO.
+DEFINE VARIABLE ip-lab-pay-term     LIKE lab_mstr.lab_payterm               NO-UNDO.
+DEFINE VARIABLE ip-lab-address1     LIKE addr_mstr.addr_addr1           NO-UNDO.
+DEFINE VARIABLE ip-lab-address2     LIKE addr_mstr.addr_addr2           NO-UNDO.
+DEFINE VARIABLE ip-lab-address3     LIKE addr_mstr.addr_addr3           NO-UNDO.
+DEFINE VARIABLE ip-lab-city         LIKE addr_mstr.addr_city            NO-UNDO.
+DEFINE VARIABLE ip-lab-stateprov    LIKE addr_mstr.addr_stateprov       NO-UNDO.
+DEFINE VARIABLE ip-lab-stname       LIKE state_mstr.state_display_name          NO-UNDO.
+DEFINE VARIABLE ip-lab-zip          LIKE addr_mstr.addr_zip             NO-UNDO.
+DEFINE VARIABLE ip-lab-country      LIKE addr_mstr.addr_country         NO-UNDO.
+DEFINE VARIABLE ip-coname           LIKE country_mstr.country_display_name      NO-UNDO.            /* 2dot1 */
+
+DEFINE VARIABLE ip-lab-email1       LIKE people_mstr.people_email       NO-UNDO.
+DEFINE VARIABLE ip-lab-email2       LIKE people_mstr.people_email2      NO-UNDO.
+DEFINE VARIABLE ip-rdemail          LIKE people_mstr.people_email       NO-UNDO.
+DEFINE VARIABLE ip-rdemail-2        LIKE people_mstr.people_email2      NO-UNDO.  
+
+DEFINE VARIABLE o-fstate-ISO AS CHARACTER NO-UNDO.                                          /* 2dot1 */
+DEFINE VARIABLE o-fstate-error AS LOGICAL NO-UNDO.                                          /* 2dot1 */
+DEFINE VARIABLE o-fcountry-ISO AS CHARACTER NO-UNDO.                                        /* 2dot1 */
+DEFINE VARIABLE o-fcountry-error AS LOGICAL NO-UNDO.                                        /* 2dot1 */
+
+DEFINE VARIABLE isselected          AS CHARACTER                                NO-UNDO.                    /* 2dot1 */ 
+
+DEFINE VARIABLE whattorun           AS CHARACTER                                NO-UNDO.   /* to get the menu title */         
+                   
+/* Assign Values to Variable statements. */
+ASSIGN 
+ 
+/* Logical variables. */
+         
+/* Date variables. */
+      
+/* Integer variables. */        
+
+        act               = INTEGER (get-value ("h-act"))
+      
+/* Character variables. */
+      
+        whattorun         = get-value("whattorun")                 /* to get the menu title */
+        h-lab-id          = get-field("h-lababbv")          /* DROP-DOWN BOX. */
+        h-add-new         = get-field('h-add-new')
+        
+        look4it           = get-field("h-Submit").
+        
+{&OUT}
+    "<form method='post'>" SKIP
+	    "<DIV class='row'>" SKIP                                                                                                       /* 1dot3 */
+			"<DIV class='grid_2'> </DIV>" SKIP                                                                                         /* 1dot3 */
+			"<DIV class='grid_8'>" SKIP                                                                                                /* 1dot3 */
+			"<div class='table_col'>" SKIP                                                                                             /* 1dot3 */
+		        "<table>" SKIP                                                                                                         /* 1dot3 */
+		            "<th colspan='2'>LAB`s Information Update.</th>" SKIP.                                                             /* 1dot3 */
+/* ****** Removed in 1dot3 ******	      
+/*    "<H2 class='webpagetitle' >" SKIP                                              */
+/*             "<P STYLE='text-align: center'> LAB`s Information Update. </H2>" SKIP.*/
+    ******* end of removal ****** */      
+</SCRIPT>
+<!-- Removed in 1dot3 
+    <center>           
+         <form method="post">
+            <table > 
+                <center>  
+     end of removal -->
+                     <tr>
+                                                
+<!-- /* Following starts DROP-DOWN BOX. */  --> 
+                            
+                        <td>Select Lab ID:</td>                         
+                        <td><select name='h-lababbv' >               
+                        <option value=''></option>                 
+                                             
+<SCRIPT LANGUAGE="SpeedScript">   
+         FOR EACH lab_mstr WHERE lab_mstr.lab_deleted = ? NO-LOCK :     /* 2dot0 */
+             ASSIGN
+                  labname = lab_mstr.lab_name
+                  lababbv = lab_mstr.lab_ID.
+         
+             {&OUT}  "<option Value='" lababbv "'>" lababbv  "</option>".
+                                                                      
+         END.  /* FOR EACH lab_mstr */  
+         ASSIGN
+                  labname = "add/new"
+                  lababbv = "add/new". 
+         {&OUT}  "<option Value='" lababbv "'>" lababbv  "</option>".         
+</SCRIPT>        
+<!-- /* Ends DROP-DOWN BOX. */  --> 
+                            </select>                                                                                           <!-- 1dot3 -->
+                        </td>                                                                                                   <!-- 1dot3 -->
+                    </tr>                                                                                                       <!-- 1dot3 -->
+               </table>                                                                                                         <!-- 1dot3 -->  
+       </div> <!-- table -->                                                                                                    <!-- 1dot3 -->
+           </DIV>         <!-- end of grid_8 -->                                                                                <!-- 1dot3 -->
+           <DIV class='grid_2'> </DIV>                                                                                          <!-- 1dot3 -->  
+           </DIV>     <!-- end of row -->                                                                                       <!-- 1dot3 --> 
+           <BR>                                                                                                                 <!-- 1dot3 -->
+            <div class='row'>                                                                                                   <!-- 1dot3 -->
+            <div class='grid_5'> </DIV>                                                                                         <!-- 1dot3 -->
+            <div class='grid_2'><button type='submit' name='h-Submit' value='Enter' class='btn'>Enter</BUTTON></div>            <!-- 1dot3 -->
+            <div class='grid_5'> </DIV>                                                                                         <!-- 1dot3 -->
+            </div>                                                                                                              <!-- 1dot3 -->
+              
+              <!-- Removed in 1dot3 
+                        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>    
+                        <td><input type='Submit' value='Enter'  name='h-Submit' ></td>    
+                        <td>&nbsp;&nbsp;</td>     
+                        </td> 
+                    </tr>               
+                 </center>  
+            </table>
+            end of removal -->
+            
+        </form>. 
+        
+<SCRIPT LANGUAGE="SpeedScript"> 
+
+ASSIGN 
+        ddb-lab-id          = get-field("h-lababbv")          /* DROP-DOWN BOX. */
+        h-add-new           = get-field('h-add-new')
+        look4it             = get-field("h-Submit")
+        act                 = INTEGER (get-value ("h-act")).
+
+/** Check to see if we returned from the LABS-Update-Fields program because of blank required input data fields. **/
+IF  ddb-lab-id <> ip-lab-id OR ddb-lab-id <> "" THEN 
+    ASSIGN  act = 0
+            h-add-new = "".
+            
+ASSIGN   ip-lab-id =  ddb-lab-id.
+
+IF look4it = "Enter" THEN DO:  
+        
+    ASSIGN ip-lab-id = h-lab-id.
+           
+    FIND lab_mstr 
+        WHERE lab_mstr.lab_id = ip-lab-id  AND  lab_mstr.lab_deleted = ?
+            NO-LOCK NO-ERROR.
+    
+    IF NOT AVAILABLE (lab_mstr) AND ip-lab-id <> "add/new" THEN DO:
+
+        {&OUT} 
+            "<DIV class='row'>" SKIP                                                                                           /* 1dot3 */
+			"<DIV class='grid_2'> </DIV>" SKIP                                                                                 /* 1dot3 */
+			"<DIV class='grid_8'>" SKIP                                                                                        /* 1dot3 */
+			"<center>" SKIP                                                                                                    /* 1dot3 */
+            "<h3>You did not select a Lab ID from the dropdown list. &nbsp; <BR>
+                    <span style='COLOR: #FF0000;' <B><font size=8> Please select a Lab ID.</font></B></span> </h3>" SKIP
+            "</center>" SKIP                                                                                                   /* 1dot3 */        
+            "</DIV>         <!-- end of grid_8 -->" SKIP                                                                       /* 1dot3 */
+			"<DIV class='grid_2'> </DIV>" SKIP                                                                                 /* 1dot3 */
+			"</DIV>     <!-- end of row -->" SKIP.                                                                             /* 1dot3 */
+			
+    END.    /**  IF NOT AVAILABLE (lab_mstr)  **/   
+
+    IF AVAILABLE (lab_mstr) THEN DO:   
+
+        FIND people_mstr WHERE people_mstr.people_id = lab_mstr.lab_contact_ID NO-LOCK NO-ERROR.
+        
+        IF NOT AVAILABLE (people_mstr) THEN DO:
+        
+            {&OUT} 
+                "<DIV class='row'>" SKIP                                                                                           /* 1dot3 */
+	            "<DIV class='grid_2'> </DIV>" SKIP                                                                                 /* 1dot3 */
+	            "<DIV class='grid_8'>" SKIP                                                                                        /* 1dot3 */
+	            "<center>" SKIP                                                                                                    /* 1dot3 */
+                "<h3>Selected information for Lab ID: &nbsp;
+                        <span style='COLOR: #FF0000;' <B><i><u>" ip-lab-id "</u></i></B></span> 
+                            &nbsp; :was not found in the people_mstr database table. <BR>
+                    <span style='COLOR: #FF0000;' <B><font size=8> Please notify the IT department.</font></B></span> </h3>" SKIP
+                "</center>" SKIP                                                                                                   /* 1dot3 */        
+	            "</DIV>         <!-- end of grid_8 -->" SKIP                                                                       /* 1dot3 */
+	            "<DIV class='grid_2'> </DIV>" SKIP                                                                                 /* 1dot3 */
+	            "</DIV>     <!-- end of row -->" SKIP.                                                                             /* 1dot3 */
+	                    
+        END.    /**  IF NOT AVAILABLE (people_mstr)  **/
+        
+        IF AVAILABLE (people_mstr) THEN DO:
+        
+            FIND addr_mstr WHERE addr_mstr.addr_id = lab_mstr.lab_addr_ID NO-LOCK NO-ERROR.
+            
+            IF NOT AVAILABLE (addr_mstr) THEN DO:
+        
+	            {&OUT} 
+	                "<DIV class='row'>" SKIP                                                                                           /* 1dot3 */
+	                "<DIV class='grid_2'> </DIV>" SKIP                                                                                 /* 1dot3 */
+	                "<DIV class='grid_8'>" SKIP                                                                                        /* 1dot3 */
+	                "<center>" SKIP                                                                                                    /* 1dot3 */       
+	                   "<h3>Selected information for Lab ID: &nbsp;
+	                        <span style='COLOR: #FF0000;' <B><i><u>" ip-lab-id "</u></i></B></span> 
+	                            &nbsp; :was not found in the addr_mstr table in the database. <BR>
+	                    <span style='COLOR: #FF0000;' <B><font size=8> Please notify the IT department.</font></B></span> </h3>" SKIP
+	                "</center>" SKIP                                                                                                   /* 1dot3 */        
+                    "</DIV>         <!-- end of grid_8 -->" SKIP                                                                       /* 1dot3 */
+                    "<DIV class='grid_2'> </DIV>" SKIP                                                                                 /* 1dot3 */
+                    "</DIV>     <!-- end of row -->" SKIP.                                                                             /* 1dot3 */ 
+                    
+            END.    /**  IF NOT AVAILABLE (addr_mstr)  **/
+            
+            IF AVAILABLE (addr_mstr) THEN DO:
+                
+                ASSIGN  ip-rdemail   =    people_mstr.people_email
+                        ip-rdemail-2 =    people_mstr.people_email2
+                        ip-lab-stateprov = addr_mstr.addr_stateprov         /* 2dot1 */
+                        ip-lab-country = addr_mstr.addr_country             /* 2dot1 */
+                        .
+                
+                    RUN VALUE(SEARCH("SUBcountry-findR.r")) (                                              /* 2dot1 */  /* 212 */
+				        ip-lab-country,                                                                    /* 2dot1 */
+				        OUTPUT o-fcountry-ISO,                                                             /* 2dot1 */
+				        OUTPUT o-fcountry-error                                                            /* 2dot1 */
+				        ).                                                                                 /* 2dot1 */
+				
+				    RUN VALUE(SEARCH("SUBstate-findR.r")) (                                                /* 2dot1 */  /* 212 */
+				        o-fcountry-ISO,                                                                    /* 2dot1 */
+				        ip-lab-stateprov,                                                                  /* 2dot1 */
+				        OUTPUT o-fstate-ISO,                                                               /* 2dot1 */
+				        OUTPUT o-fstate-error                                                              /* 2dot1 */
+				        ).                                                                                 /* 2dot1 */
+                
+                
+                {&OUT}  "<form ACTION='LABS-Update-Fields.r' method='get' >" SKIP
+                            "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */  
+                            "<input type='hidden' name='h-act'              value='1' >" SKIP
+                            "<input type='hidden' name='h-lab-ID'           value='" lab_mstr.lab_ID "' >" SKIP
+                            "<input type='hidden' name='h-lab-people-ID'    value='" lab_mstr.lab_contact_ID "' >" SKIP
+                            "<input type='hidden' name='h-lab-addr-ID'      value='" lab_mstr.lab_addr_ID "' >" SKIP
+                            
+                            "<DIV class='row'>" SKIP                                                                                                            /* 1dot3 */
+							"<DIV class='grid_12'>" SKIP                                                                                                        /* 1dot3 */
+                                                    
+                            "<div class='table_3col'>" SKIP               
+		                     "<table>" SKIP
+		                        "<TR>"
+		                            "<TH colspan='2'>Name</TH>"
+		                            "<TH colspan='2'>Address</TH>"
+		                            "<TH colspan='2'>Phone, etc.</TH>"
+		                        "</TR>"
+		                        "<tr>" SKIP
+		                        "<tr>" SKIP
+		                            "<td>ID</td>" SKIP
+		                            "<td class='req'><input type='text' name='h-lab-ID' value='" lab_mstr.lab_ID "' disabled  > </td>"  SKIP 
+		                            "<td>Address 1</td>" SKIP
+		                            "<td class='req'><input type='text' name='h-addr-addr-1' value='" addr_mstr.addr_addr1 "' tabindex=3 > </td>" SKIP    
+		                            "<td>Phone Nbr</td>" SKIP
+		                            "<td><input type='text' name='h-people-workphone' value='" people_mstr.people_workphone "' tabindex=10 > </td>"  SKIP
+		                        "</tr>" SKIP
+		                        "<tr>" SKIP
+		                            "<td>Full Lab Name</td>" SKIP
+		                            "<td class='req'><input type='text' name='h-people-lastname' value='" people_mstr.people_lastname "' autofocus tabindex=2 > </td>" SKIP
+		                            "<td>Address 2</td>" SKIP
+		                            "<td><input type='text' name='h-addr-addr-2' value='" addr_mstr.addr_addr2 "' tabindex=4 >  </td> " SKIP
+		                             "<td>Fax Nbr</td>" SKIP
+		                            "<td><input type='text' name='h-people-fax' value='" people_mstr.people_fax "' tabindex=11 > </td>" SKIP
+		                        "</tr>" SKIP
+		                        "<tr>" SKIP
+		                            "<td></td>" SKIP
+		                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP
+		                            "<td>Address 3</td>" SKIP
+		                            "<td><input type='text' name='h-addr-addr-3' value='" addr_mstr.addr_addr3 "' tabindex=5 > </td>" SKIP
+		                            "<td>Lab's Payment Term</td>" SKIP
+		                            "<td class='req'><input type='text' name='h-lab-pay-term' value='" lab_mstr.lab_payterm "' tabindex=12 > </td>" SKIP
+		                        "</tr>" SKIP  
+		                        "<tr>" SKIP
+		                            "<td></td>" SKIP
+		                            "<td><input type='hidden' name='h-not-used' value= '' disabled  > </td>" SKIP                              
+		                            "<td>City</td>" SKIP
+		                            "<td class='req'><input type='text' name='h-addr-city' value='" addr_mstr.addr_city "' tabindex=6 > </td>" SKIP
+		                            "<td>HHI's Account Nbr with Lab</td>" SKIP
+		                            "<td><input type='text' name='h-lab-acct-nbr' value='" lab_mstr.lab_acct_nbr "' tabindex=13 > </td>" SKIP
+		                        "</tr>" SKIP  
+                                "<tr>" SKIP 
+		                            "<td></td>" SKIP
+		                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP.	                            
+    
+            /**  look for the current input stateabbv inorder to get the state full name to be displayed on the screen.  **/                                                 
+		                    FIND FIRST state_mstr WHERE  state_mstr.state_ISO = addr_mstr.addr_stateprov
+		                              AND state_mstr.state_deleted = ?                                            /* 2dot0 */
+		                              AND state_mstr.state_primary = YES 
+		                           NO-LOCK NO-ERROR.
+		                    IF AVAILABLE (state_mstr) THEN DO:
+		                       ASSIGN
+                                        ip-lab-stname = state_mstr.state_display_name
+                                        ip-lab-stateprov = state_mstr.state_ISO.
+		                    END.  /** IF AVAILABLE (state_mstr) **/
+		                                                         
+		             {&OUT}          "<TD>State / Province</TD>"
+		                             "<TD class='req'><SELECT name='h-addr-stateprov'     tabindex=7 </td>" SKIP 
+		                                    "<OPTION selected>" ip-lab-stname "  </OPTION>" SKIP.
+
+/*                        {../depot/src/WebSpeed/StateDropDown.i o-fstate-ISO o-fcountry-ISO}.                       /* 2dot1 */*/
+
+				                FOR EACH state_mstr
+				                            WHERE state_mstr.state_deleted = ?             /* 2dot0 */
+				                            AND state_mstr.state_primary = YES 
+				                        NO-LOCK BY state_mstr.state_display_name:                  /* 2dot0 */
+				
+				                   ASSIGN
+				                        ip-lab-stname = state_mstr.state_display_name
+				                        ip-lab-stateprov = state_mstr.state_ISO.
+				
+				                    {&OUT}  "<option value=" ip-lab-stateprov ">"ip-lab-stname "</option>" SKIP.
+				
+				                END.  /* FOR EACH state_mstr */
+				                
+				  {&OUT}	          "</select>" SKIP
+	                                "</td>" SKIP
+			                
+			/* MESSAGE ip-lab-stateprov VIEW-AS ALERT-BOX BUTTONS OK. */ 
+			     
+	                                "<td></td>" SKIP
+		                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP    
+		                         "</tr>" SKIP
+		                         "<tr>" SKIP 
+		                            "<td></td>" SKIP
+		                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP                            
+		                            "<td>Zip Code</td>" SKIP
+		                            "<td><input type='text' name='h-addr-zip' value='" addr_mstr.addr_zip "' tabindex=8 > </td>" SKIP
+		                            "<td></td>" SKIP
+		                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP   
+		                         "</tr>" SKIP
+		                         "<tr>" SKIP 
+		                            "<td></td>" SKIP
+		                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP. 
+		                              		                            
+            /**  look for the current input stateabbv inorder to get the state full name to be displayed on the screen.  **/
+                            FIND FIRST country_mstr WHERE  country_mstr.country_ISO = addr_mstr.addr_country
+                                    AND country_mstr.country_deleted = ?                                            /* 2dot0 */
+                                 NO-LOCK NO-ERROR.
+                            IF AVAILABLE (country_mstr) THEN DO:
+                               ASSIGN
+		                                ip-coname = country_mstr.country_display_name
+		                                ip-lab-country = country_mstr.country_ISO.
+                            END.  /** IF AVAILABLE (country_mstr) **/
+                                                                        
+		             {&OUT}         "<td>Country</td>" SKIP
+		                            "<td class='req'>" SKIP
+		                                "<select name='h-addr-country' tabindex=9 </td>" SKIP
+		                                        "<option selected>" ip-coname "</option>" SKIP.
+/*                    {../depot/src/WebSpeed/CountryDropDownList.i o-fcountry-ISO}.                               /* 2dot1 */*/
+
+
+		                FOR EACH country_mstr
+		                          WHERE country_mstr.country_deleted = ?                     /* 2dot0 */
+		                          AND country_mstr.Country_Primary = YES 
+		                      NO-LOCK BY country_mstr.country_display_name:                          /* 2dot0 */
+		                    ASSIGN
+		                        ip-coname = country_mstr.country_display_name
+		                        ip-lab-country = country_mstr.country_ISO.
+		
+		                        {&OUT}
+		                            "<option value=" ip-lab-country ">" ip-coname "</option>" SKIP.
+		
+		                END.  /* FOR EACH county_mstr */
+		                
+		                {&OUT}         "</SELECT>" SKIP
+                                    "</TD>" SKIP
+		 /* MESSAGE ip-lab-country VIEW-AS ALERT-BOX BUTTONS OK.  */
+		                                                                     
+                                    "<td></td>" SKIP
+                                    "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP                         
+			                     "</tr>" SKIP
+			                     "<TH colspan='6'>Email info</TH>" SKIP
+                                 "<TR>" SKIP
+                                    "<TD>Email Address</TD>" SKIP
+		                            "<TD colspan='2'  class='req'><input size='50' type='text' name='h-lab-email1' value='" people_mstr.people_email "' tabindex=21 > </td>" SKIP
+		                            "<TD>Reenter Email</td>" SKIP
+                                    "<TD colspan='2'  class='req'><INPUT size='50' type='text' name='h-email-redo' value='" ip-rdemail "' tabindex=23 > </TD>" SKIP
+		                         "</TR>" SKIP    
+		                         "<TR>" SKIP      
+		                            "<TD>Second Email Address</TD>" SKIP
+                                    "<TD colspan='2'><input size='50' type='text' name='h-lab-email2' value='" people_mstr.people_email2 "' tabindex=25 > </td>" SKIP
+		                            "<TD>Reenter Second Email</TD>" SKIP
+		                            "<TD colspan='2'><INPUT size='50' type='text' name='h-email-2-redo' value='" ip-rdemail-2 "' tabindex=27 > </TD>" SKIP
+		                         "</TR>" SKIP	                              
+			                   "</table>"  SKIP              
+			                 "</div>" SKIP
+                              
+                 "</DIV>         <!-- end of grid_12 -->" SKIP                                                                                                                          /* 1dot3 */
+				 "</DIV>     <!-- end of row -->" SKIP                                                                                                                                  /* 1dot3 */    
+                                   
+                 "<br> </br>" SKIP 
+                 
+                 "<div class='row'>" SKIP                                                                                                                                               /* 1dot3 */
+				 "   <div class='grid_3'> </DIV>" SKIP                                                                                                                                  /* 1dot3 */
+				 "   <div class='grid_2'><BUTTON type='submit' name='s-Return' value='Click HERE to update Lab data.' class='btn'>Click HERE to update Lab data.</BUTTON></div>" SKIP   /* 1dot3 */
+				 "</form>"                                                                                                                                                              /* 1dot3 */
+				 "   <div class='grid_2'> </DIV>" SKIP.                                                                                                                                 /* 1dot3 */
+			{&OUT}                                                                                                                                                                      /* 1dot3 */ 
+				 "   <div class='grid_2'>" SKIP                                                                                                                                         /* 1dot3 */
+				 "<form ACTION='LABs-Update-Begin.r' method='get' >" SKIP                                                                                                               /* 1dot3 */
+                                    "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */                                /* 1dot3 */
+                                    "<input type='hidden' name='h-act'              value='0' >" SKIP                                                                                   /* 1dot3 */
+                                    "<input type='hidden' name='h-add-new'          value='' >" SKIP 				                                                                    /* 1dot3 */           
+				 "<BUTTON type='submit' value='Click HERE to display a different Lab.' name='s-Return' class='btn'>Click HERE to display a different Lab.</BUTTON>"                     /* 1dot3 */
+				 "</form>"                                                                                                                                                              /* 1dot3 */
+				 "</div>" SKIP                                                                                                                                                          /* 1dot3 */
+				 "   <div class='grid_3'> </DIV>" SKIP                                                                                                                                  /* 1dot3 */
+				 "</div>" SKIP                                                                                                                                                          /* 1dot3 */
+				 "<BR>" SKIP.                                                                                                                                                           /* 1dot3 */                                 
+                
+            END.  /**  IF AVAILABLE (addr_mstr)  **/
+            
+        END.    /**  IF AVAILABLE (people_mstr)  **/
+         
+    END.    /**  IF NOT AVAILABLE (lab_mstr)  **/ 
+
+
+    IF NOT AVAILABLE (lab_mstr) AND ip-lab-id = "add/new" THEN DO:
+
+        {&OUT}  "<form ACTION='LABS-Update-Fields.r' method='get' >" SKIP
+                            "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */ 
+                            "<input type='hidden' name='h-act'              value='2' >" SKIP
+                            "<input type='hidden' name='h-add-new'          value='" ip-lab-id "' >" SKIP
+                            "<input type='hidden' name='h-Company'          value='Company' >" SKIP
+                            "<input type='hidden' name='h-lab-people-ID'    value='0' >" SKIP
+                            "<input type='hidden' name='h-lab-addr-ID'      value='0' >" SKIP
+
+                            "<DIV class='row'>" SKIP                                                                                                            /* 1dot3 */
+                            "<DIV class='grid_12'>" SKIP                                                                                                        /* 1dot3 */
+                       
+                    "<div class='table_3col'>" SKIP               
+                     "<table>" SKIP
+                        "<TR>"
+                            "<TH colspan='2'>Name</TH>"
+                            "<TH colspan='2'>Address</TH>"
+                            "<TH colspan='2'>Phone, etc.</TH>"
+                        "</TR>"
+                        "<tr>" SKIP
+                            "<td>ID</td>" SKIP
+                            "<td class='req'><input type='text' name='h-lab-ID' value='' autofocus tabindex=1  > </td>"  SKIP 
+                            "<td>Address 1</td>" SKIP
+                            "<td class='req'><input type='text' name='h-addr-addr-1' value='' tabindex=3 > </td>" SKIP    
+                            "<td>Phone Nbr</td>" SKIP
+                            "<td><input type='text' name='h-people-workphone' value='' tabindex=10 > </td>"  SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td>Full Lab Name</td>" SKIP
+                            "<td class='req'><input type='text' name='h-people-lastname' value='' tabindex=2 > </td>" SKIP
+                            "<td>Address 2</td>" SKIP
+                            "<td><input type='text' name='h-addr-addr-2' value='' tabindex=4 > </td>" SKIP
+                             "<td>Fax Nbr</td>" SKIP
+                            "<td><input type='text' name='h-people-fax' value='' tabindex=11 > </td>" SKIP
+                        "</tr>" SKIP
+                        "<tr>" SKIP
+                            "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP
+                            "<td>Address 3</td>" SKIP
+                            "<td><input type='text' name='h-addr-addr-3' value='' tabindex=5 > </td>" SKIP
+                            "<td>Lab's Payment Term</td>" SKIP
+                            "<td class='req'><input type='text' name='h-lab-pay-term' value='' tabindex=12 > </td>" SKIP
+                        "</tr>" SKIP  
+                        "<tr>" SKIP
+                            "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value= '' disabled  > </td>" SKIP                              
+                            "<td>City</td>" SKIP
+                            "<td class='req'><input type='text' name='h-addr-city' value='' tabindex=6 > </td>" SKIP
+                            "<td>HHI's Account Nbr with Lab</td>" SKIP
+                            "<td><input type='text' name='h-lab-acct-nbr' value='' tabindex=13 > </td>" SKIP
+                        "</tr>" SKIP  
+                        "<tr>" SKIP 
+                            "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP  
+                            
+                            "<TD>State / Province</TD>"
+                             "<TD class='req'><SELECT name='h-addr-stateprov'     tabindex=7 </td>" SKIP
+                                    "<OPTION selected>" ip-lab-stateprov "  </OPTION>".
+
+/*                        {../depot/src/WebSpeed/StateDropDown.i o-fstate-ISO o-fcountry-ISO}.                       /* 2dot1 */*/
+
+			    FOR EACH state_mstr
+			                 WHERE state_mstr.state_deleted = ?                           /* 2dot0 */
+			                 AND state_mstr.state_primary = YES 
+			           NO-LOCK BY state_mstr.state_display_name:                                   /* 2dot0 */
+			
+			       ASSIGN
+			            ip-lab-stname = state_mstr.state_display_name
+			            ip-lab-stateprov = state_mstr.state_ISO.
+			
+			        {&OUT}  "<option value=" ip-lab-stateprov ">"ip-lab-stname "</option>" SKIP.
+			
+			    END.  /* FOR EACH states_mstr */
+                
+/* MESSAGE ip-lab-stateprov VIEW-AS ALERT-BOX BUTTONS OK. */ 
+     
+               {&OUT}          "</select>" SKIP
+                             "</td>" SKIP
+                             "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP    
+                         "</tr>" SKIP
+                         "<tr>" SKIP 
+                            "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP                            
+                            "<td>Zip Code</td>" SKIP
+                            "<td><input type='text' name='h-addr-zip' value='' tabindex=8 > </td>" SKIP
+                             "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP   
+                         "</tr>" SKIP
+                         "<tr>" SKIP 
+                            "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP                             
+                            "<td>Country</td>" SKIP
+                            "<td class='req'><select name='h-addr-country' tabindex=9 </td>" SKIP
+                                        "<option selected>" ip-lab-country "</option>" SKIP.
+
+/*                    {../depot/src/WebSpeed/CountryDropDownList.i o-fcountry-ISO}.                               /* 2dot1 */*/
+          
+			    FOR EACH country_mstr
+			                 WHERE country_mstr.country_deleted = ?                          /* 2dot0 */
+			                 AND country_mstr.Country_Primary = YES 
+			             NO-LOCK BY country_mstr.country_display_name:                       /* 2dot0 */
+			        ASSIGN
+			            ip-coname = country_mstr.country_display_name
+			            ip-lab-country = country_mstr.country_ISO.
+			
+			            {&OUT}   "<option value=" ip-lab-country ">" ip-coname "</option>" SKIP.
+			
+			    END.  /* FOR EACH county_mstr */
+                
+ /* MESSAGE ip-lab-country VIEW-AS ALERT-BOX BUTTONS OK.  */
+ 
+                {&OUT}         "</SELECT>" SKIP
+                            "</TD>" SKIP                                 
+                             "<td></td>" SKIP
+                            "<td><input type='hidden' name='h-not-used' value='' disabled > </td>" SKIP   
+                        "</tr>" SKIP 
+                        "<TH colspan='6'>Email info</TH>" SKIP
+                        "<TR>" SKIP
+                            "<TD>Email Address</TD>" SKIP
+                            "<TD colspan='2' class='req'><input size='50' type='text' name='h-lab-email1' value='' tabindex=21 > </td>" SKIP
+                            "<TD>Reenter Email</td>" SKIP
+                            "<TD colspan='2' class='req'><INPUT size='50' type='text' name='h-email-redo' value='' tabindex=23 > </TD>" SKIP                             
+                        "</TR>" SKIP
+                        "<TR>" SKIP     
+                            "<TD>Second Email Address</TD>" SKIP
+                            "<TD colspan='2'><input size='50' type='text' name='h-lab-email2' value='' tabindex=25 > </td>" SKIP
+                            "<TD>Reenter Second Email</TD>" SKIP
+                            "<TD colspan='2'><INPUT size='50' type='text' name='h-email-2-redo' value='' tabindex=27 > </TD>" SKIP
+                        "</TR>" SKIP                                          
+                     "</table>"  SKIP              
+                 "</div>" SKIP  
+                 
+                 "</DIV>         <!-- end of grid_12 -->" SKIP                                                                                                                          /* 1dot3 */
+                 "</DIV>     <!-- end of row -->" SKIP                                                                                                                                  /* 1dot3 */    
+                                   
+                 "<br> </br>" SKIP 
+                 
+                 "<div class='row'>" SKIP                                                                                                                                               /* 1dot3 */
+                 "   <div class='grid_3'> </DIV>" SKIP                                                                                                                                  /* 1dot3 */
+                 "   <div class='grid_2'><BUTTON type='submit' name='s-Submit' value='Click HERE to create the Lab.' class='btn'>Click HERE to create the Lab.</BUTTON></div>" SKIP   /* 1dot3 */
+                 "</form>"                                                                                                                                                              /* 1dot3 */
+                 "   <div class='grid_2'> </DIV>" SKIP.                                                                                                                                 /* 1dot3 */
+            {&OUT}                                                                                                                                                                      /* 1dot3 */ 
+                 "   <div class='grid_2'>" SKIP                                                                                                                                         /* 1dot3 */
+                 "<form ACTION='LABs-Update-Begin.r' method='get' >" SKIP                                                                                                               /* 1dot3 */
+                                    "<input type='hidden' name='whattorun'          value='" whattorun "' >" SKIP            /* to get the menu title */                                /* 1dot3 */
+                                    "<input type='hidden' name='h-act'              value='0' >" SKIP                                                                                   /* 1dot3 */
+                                    "<input type='hidden' name='h-add-new'          value='' >" SKIP                                                                                    /* 1dot3 */           
+                 "<BUTTON type='submit' value='Click HERE to display a different Lab.' name='s-Return' class='btn'>Click HERE to display a different Lab.</BUTTON>"                     /* 1dot3 */
+                 "</form>"                                                                                                                                                              /* 1dot3 */
+                 "</div>" SKIP                                                                                                                                                          /* 1dot3 */
+                 "   <div class='grid_3'> </DIV>" SKIP                                                                                                                                  /* 1dot3 */
+                 "</div>" SKIP                                                                                                                                                          /* 1dot3 */
+                 "<BR>" SKIP.                                                                                                                                                           /* 1dot3 */                 
+
+    END.    /**  IF NOT AVAILABLE (lab_mstr)  **/ 
+        
+END.   /**  IF look4it = "Enter" **/                                        
+ 
+</SCRIPT>        
+
+</BODY>
+</HTML>

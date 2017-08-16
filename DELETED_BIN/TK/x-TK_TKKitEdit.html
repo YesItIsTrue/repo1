@@ -1,0 +1,240 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+<TITLE>Testkit Delete</TITLE>
+
+<META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.2">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="22/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+
+<SCRIPT LANGUAGE="SpeedScript">
+/*------------------------------------------------------------------
+ * File: TK_TKKitEdit.html
+ * Description: To edit an existing test kit before it has been sold.*(This is a copy of TK_TKKitdeletEdit.html Which has been modified) 
+ *              This is a user input procedure, sends input to TK_TKKitEditU.html.
+ * Created:
+ *-------------------------------------------------------------------
+ * Revision History:    
+ * ---------------------
+ *  1.1 - *This procedure originally only displayed test gets prior to being sold for user to pick from. This functionality has been removed and now requires 
+ *      - user to search for test kit to edit, and any test kit from Creation to Complete may be edited for these 3 conditions;
+ *      - 1) Professional, Non-professional 
+ *      - 2) Domestic, International
+ *      - 3) Paid by Customer, Not paid by Customer.
+ *  1.2 - Written by Jacob Luttrell on 13Feb16. Corrected Test_Type (unmarked), added TK_cust_paid_date marked by 1dot2.
+ *
+ *-------------------------------------------------------------------- */
+  
+CREATE WIDGET-POOL.
+
+    {../depot/src/WebSpeed/menuname.i}.
+      
+    DEFINE VARIABLE qty AS INTEGER LABEL "Quantity Activating"  NO-UNDO.
+    DEFINE VARIABLE act AS INTEGER LABEL "Testkits Activated?" NO-UNDO. /* user feedback */
+    DEFINE VARIABLE TKnum LIKE Tk_ID NO-UNDO. /* typ & seq */
+  /*  DEFINE VARIABLE seq LIKE Tk_seq NO-UNDO. */ 
+    DEFINE VARIABLE cout AS INTEGER NO-UNDO.
+    DEFINE VARIABLE ddate AS DATE FORMAT "99/99/9999" NO-UNDO.
+   
+    /*******************************************************************/
+    
+    DEFINE VARIABLE remove  AS LOG LABEL "Delete Records?" FORMAT "yes/no" NO-UNDO.
+    DEFINE VARIABLE ddel  LIKE Tk_id LABEL "Testkit Number to be Delete" NO-UNDO.
+    DEFINE VARIABLE areyou  AS CHARACTER NO-UNDO. /* This is being used in an attempt to convert the ones and zeros to yes and no, see below */   
+    
+    DEFINE VARIABLE tID   LIKE Tk_id LABEL "To" NO-UNDO.   
+    DEFINE VARIABLE tdate LIKE Tk_create_date LABEL "To" NO-UNDO.
+    DEFINE VARIABLE sold    AS INTEGER NO-UNDO.
+    
+    DEFINE VARIABLE tk   LIKE TK_mstr.Tk_id NO-UNDO.
+    DEFINE VARIABLE typ  LIKE TK_mstr.TK_test_type NO-UNDO.
+    DEFINE VARIABLE prof LIKE scust_shadow.scust_prof NO-UNDO.
+    DEFINE VARIABLE dom  LIKE TK_mstr.TK_domestic  NO-UNDO.
+    DEFINE VARIABLE who  LIKE TK_mstr.TK_created_by NO-UNDO.
+    DEFINE VARIABLE pd   LIKE TK_mstr.TK_cust_paid NO-UNDO.
+    DEFINE VARIABLE cust_paid_date LIKE TK_mstr.TK_cust_paid_date NO-UNDO. /* 1dot2*/
+    
+    DEFINE VARIABLE C-date   LIKE TK_mstr.TK_create_date NO-UNDO.    
+    DEFINE VARIABLE Can        AS INTEGER  NO-UNDO.    
+    DEFINE VARIABLE test-seq LIKE TK_mstr.TK_test_seq NO-UNDO.    
+    
+    DEFINE VARIABLE statlist AS CHARACTER 
+    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,COMPLETE,VOID" NO-UNDO.
+    
+    /* DEFINE VARIABLE soldate LIKE tk_sold_date NO-UNDO. */
+    
+    /*------------------------------------------------------------*/
+    DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.    /*---< ITfeedback (YES or NO)  */
+    /* -----------------------------------------------------------*/
+    DEFINE VARIABLE whattorun AS CHARACTER NO-UNDO.
+    
+    ASSIGN
+       tk         =   get-value ("testkit")
+       can        =   INTEGER   (get-value ("h-can"))
+       whattorun  =   get-value ("whattorun")
+       test-seq   =   INTEGER (get-value("h-test-seq")).
+     
+     
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+   
+<SCRIPT LANGUAGE="SpeedScript">  
+											
+											                IF ITfeedback = YES THEN     
+											                     {&OUT} "<p>can -- " can SKIP
+											                             "<br>TK -- " TK "</p>".
+
+        IF tk = "" OR 
+          can = 1 THEN DO:
+                         
+</SCRIPT> 
+			<div class='table_2col' style="width:35%">                          
+			  <FORM method="post">  <!-- ACTION="" -->        
+			    <TABLE >
+			       <thead>
+			       <tr>
+			           <th colspan=2>Search Criteria</th>
+			       </tr>    
+			       </thead> 
+			        
+			       <tr>
+			           <td> Testkit ID &nbsp</td>
+			           <td style='text-align:left;'><input type="text" name="testkit" value="" autofocus></td>  <!--  class='REQ' -->
+			       </tr>
+			       <tr>
+			           <td> Testkit Sequence</td>
+			           <td style='text-align:left;'><input type="text" name="h-test-seq" value="1" ></td>    <!-- class='REQ' -->   
+			       </tr>  
+			
+			 </TABLE>
+			</div>
+			     <div align="center"> 
+			              <input type="submit" value="Find TestKit" >
+			              &nbsp;&nbsp;<button type="reset" name="submit" value="reset">Reset</button>  
+			              
+			              <p></p>
+			     </div>
+			
+			  </FORM>    
+    
+            
+<SCRIPT LANGUAGE="SpeedScript">
+
+
+ 
+        END. /* IF tk = "" THEN DO: */  
+        
+											                IF ITfeedback = YES THEN     
+											                 {&OUT} "<p>Just befor FIND FIRST with " SKIP
+											                        "<br> can of -- " can  SKIP
+											                        "<br>TK --" TK "</p>".
+              
+        IF tk > "" AND
+        can   < 1 THEN DO:
+			                    
+                FIND FIRST Tk_mstr WHERE  Tk_id = TK AND
+                           TK_mstr.TK_test_seq  = test-seq AND 
+                           TK_mstr.TK_deleted   = ? NO-LOCK NO-ERROR.
+                           
+                			                             
+                 IF AVAILABLE  (TK_mstr) THEN DO:      
+                               
+                  ASSIGN  
+                      TK       = tk_mstr.TK_ID                                
+                      typ      = TK_mstr.TK_test_type                               
+                      dom      = TK_mstr.TK_domestic
+                      C-date   = TK_mstr.TK_create_date
+                      who      = TK_mstr.TK_created_by
+                      prof     = TK_mstr.TK_prof
+                      pd       = TK_mstr.TK_cust_paid
+                      cust_paid_date = TK_mstr.TK_cust_paid_date. /* 1dot2*/
+			                                       
+ </SCRIPT>   
+          			           
+			        <div class="table_report"style='width:75%'align='center'>
+				        <table>
+				            <thead>
+				                <tr>
+				                    <th colspan='9'>Search Results</th>
+				                </tr>     
+				         
+                                <tr>
+                                    <td nowrap>Testkit ID</td>
+                                    <td>Testkit Type</td>
+                                    <td>Testkit Sequence</td>
+                                    <td>Domestic</td>
+                                    <td>Professional</td>
+                                    <td>Paid by Customer</td>
+                                    <td>Paid Date</td>  <!-- 1dot2 -->
+                                    <td>Date Created</td>
+                                    <td nowrap>Created By</td>
+                                </tr>
+                            </thead>   
+                                                                                                 
+<SCRIPT LANGUAGE="SpeedScript"> 
+                         
+                         {&OUT} 
+                               "<TR>
+	                                <td>" "<a href=~"../../DataHub/rcode/TRH-history-R.r?whattorun=1.21&h-low-serial=" TK_id "&h-high-serial=" TK_id "&h-act=1&submit=Search~" >"  TK_ID "</a>"
+	                               "<td>" typ "</td>
+	                                <td>" test-seq "</td>
+	                                <td>" prof "</td>
+	                                <td>" dom "</td>
+	                                <td>" pd "</td>    
+	                                <TD>" cust_paid_date "</td>" /* 1dot2*/
+	                                "<td>" C-date "</td> 	                                
+	                                <td>" who "</td>
+	                           </tr>".
+</SCRIPT>                          
+                        </table>    
+                    </div>                            
+ 					     
+						 <FORM>    <!--  ACTION="TK_TKFormDelete.r" method="post" -->
+						    <center>
+						        <table>              
+		                             <td><input type="hidden" name="testkit" value="`TK`"></td>		                             
+		                             <td><input type="hidden" name="TK-typ" value="`typ`"></td>
+		                             
+		                             <td><input type="hidden" name="h-test-seq" value="`test-seq`"></td>
+		                             <td><input type="hidden" name="domic" value="`dom`"></td>
+		                             <td><input type="hidden" name="profal" value="`prof`"></td>		                             
+		                             <td><input type="hidden" name="cdate" value="`C-date`"></td>
+		                             <td><input type="hidden" name="by" value="`who`"></td>
+		                           
+		                             <td><input type="hidden" name="h-Can" value="1" ></td> 
+		                             
+                                     <br></b><input type="submit" name="update" value="Edit This Record" onclick="this.form.action='TK_TKKitEditU.r'">                            
+                                     
+                                     <td><input type="hidden" name="whattorun" value=`whattorun` ></td>                           
+	                                 <!--<input type="submit" name="can" value="Cancel" onclick="this.form.action='TK_TKKitdeleteEdit.r'">  -->
+			                    </table>           
+			                </center>				             
+			             </FORM>   
+			        </div>                     
+<SCRIPT LANGUAGE="SpeedScript">    
+                 END.  /* IF AVAILABLE  (TK_mstr) THEN DO: */    
+          
+        ELSE       
+              {&OUT} 
+              "<div align='center'>   
+              
+               <h2>
+                <tr><td><font color='#E60000'> This TestKit&nbsp</font>" TK "&nbsp<font color='#E60000'&nbsp>does not Exist </font></h2>
+                <br></b><a href=TK_TKKitEdit.r?whattorun="whattorun ">Click here to return to Testkit Edit</a>
+                </div>".   
+                
+        END. /*  IF tk > "" AND can < 1 THEN DO: */ 
+</SCRIPT>
+         
+
+</SCRIPT>
+</BODY>
+</HTML>

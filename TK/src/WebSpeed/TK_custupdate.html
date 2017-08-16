@@ -1,0 +1,839 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"><tr></tr><HTML>
+<HEAD>
+
+
+    <TITLE>Customer Record Update</TITLE>
+    <META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.31">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="08/Oct/15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+
+<SCRIPT LANGUAGE="SpeedScript">
+  /*********************************************************************
+  *  File: TK_custupdate.html
+  *  Description: This is the starting procedure to update a customer record, it retrieves a list from 1st name and last name input
+  *                 fields. Displays a record update form to be filled out and sent to TK_custupdateU.html.  
+  *  Created:
+  *  -------------------------------------------------------------------
+  *  Revision History:
+  *  -------------------
+  *  1.01 - Added counter to be used if record lookup retrieves no record. Displays no record found message.
+  *  1.1  - Made it possible to update a record that does not have an address associated with it.
+  *       - Combined first name and last name in result field in Customer look up.
+  *       - Added SKIPS.
+  *  1.2  - witten by Mark Jacobs on 9/22/15, Marked by 1dot2.
+  *             Added preferred name to the forms.
+  *             Added state_mstr.state_country to state find.
+  *
+  *  1.3  - written by Mark Jacobs on 05/Oct/15. Added in the code snippets for grid_* div, code snippets for Buttons, TFOOT and
+  *         META tags updated. Marked by 1dot3.
+  *         <a href edited to <A HREF=’../../projectname/rcode/blahblahblah.html’> not marked.
+  *
+  * 1.31 - written by DOUG LUTTRELL on 08/Oct/15.  Fix grid errors.  Marked by 131.
+  * 1.32 - Written by Jacob Luttrell on 25/Aug/16. Changed order of first name / last name. Unmarked.
+  ********************************************************************** */
+
+
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<!--  
+    <H1 style="text-align: center">
+        <BR>TestKit Tracker <SPAN style="COLOR: #0000FF;">Customer Records Update</SPAN><BR>
+    </H1>
+    <HR style="width: 70%">
+-->    
+ <SCRIPT LANGUAGE="SpeedScript">
+ {../depot/src/WebSpeed/menuname.i}. 
+ 
+        DEFINE VARIABLE isselected      AS CHARACTER        NO-UNDO.    /* 1dot2 */
+        DEFINE VARIABLE prefix LIKE people_prefix           NO-UNDO.
+        DEFINE VARIABLE suffix LIKE people_suffix           NO-UNDO.
+        DEFINE VARIABLE fname  LIKE people_firstname        NO-UNDO. 
+        DEFINE VARIABLE mname  LIKE people_midname          NO-UNDO.
+        DEFINE VARIABLE lname  LIKE people_lastname         NO-UNDO.
+        DEFINE VARIABLE prefname LIKE people_mstr.people_prefname NO-UNDO.  /* 1dot2 */
+        DEFINE VARIABLE addr1  LIKE addr_addr1              NO-UNDO.
+        DEFINE VARIABLE addr2  LIKE addr_addr2              NO-UNDO.
+        DEFINE VARIABLE addr3  LIKE addr_addr3              NO-UNDO.
+        DEFINE VARIABLE city   LIKE addr_city               NO-UNDO.
+        DEFINE VARIABLE state  LIKE addr_stateprov          NO-UNDO.
+        DEFINE VARIABLE zip    LIKE addr_zip FORMAT "99999" NO-UNDO.
+        DEFINE VARIABLE county LIKE addr_country            NO-UNDO.      
+  /*------------------------------------------------------------------------------*/     
+        DEFINE VARIABLE w-phone   LIKE people_workphone  NO-UNDO.
+        DEFINE VARIABLE c-phone   LIKE people_cellphone  NO-UNDO. /* @@ need to add these to tables @@ */
+        DEFINE VARIABLE fax-phone LIKE people_fax        NO-UNDO.
+  /*------------------------------------------------------------------------------*/           
+        DEFINE VARIABLE H-phone   LIKE people_homephone  NO-UNDO.
+        
+        DEFINE VARIABLE email  LIKE people_email                        NO-UNDO.
+        DEFINE VARIABLE email2 LIKE people_email LABEL "Reenter E-mail" NO-UNDO.
+        
+        DEFINE VARIABLE email-2   LIKE people_email2 NO-UNDO.  /*-------------------- 2nd email  ---------------------------------*/
+        DEFINE VARIABLE rdemail-2 LIKE people_email2 NO-UNDO. 
+    
+        DEFINE VARIABLE cust-id   LIKE cust_ID       NO-UNDO.
+        
+        DEFINE VARIABLE magrnto-id LIKE scust_magento_id   NO-UNDO. 
+        DEFINE VARIABLE seq        LIKE cust_id            NO-UNDO.           /* @@ I question using this veritable name now @@ */
+        DEFINE VARIABLE ddate      LIKE cust_create_date   NO-UNDO.
+        DEFINE VARIABLE moddate    LIKE cust_modified_date NO-UNDO.
+ /*--------------------------------------------------------------------------------*/
+        DEFINE VARIABLE mod-by LIKE cust_modified_by NO-UNDO.     /* @@ need to add @@ */           
+        DEFINE VARIABLE prof   LIKE scust_prof       NO-UNDO.
+        
+        DEFINE VARIABLE magrn  LIKE scust_magento_ID NO-UNDO.       
+        
+        DEFINE VARIABLE mail2   LIKE seq NO-UNDO. /* Using it to clear email2 value when changing customer */
+        DEFINE VARIABLE sentnum LIKE seq NO-UNDO.
+        
+        DEFINE VARIABLE is-checked AS CHARACTER NO-UNDO.
+        
+        DEFINE VARIABLE act        AS INTEGER   NO-UNDO.  /* user feedback */
+        DEFINE VARIABLE creat-num  AS INTEGER   NO-UNDO.
+        DEFINE VARIABLE origin     AS INTEGER   NO-UNDO.  /* If call came from customer search results */
+        
+        DEFINE VARIABLE coname   LIKE Country_Display_Name   NO-UNDO.
+        DEFINE VARIABLE coabbv   LIKE addr_country   NO-UNDO.
+        DEFINE VARIABLE stname   LIKE State_Display_Name     NO-UNDO.
+        DEFINE VARIABLE stabbv   LIKE addr_stateprov NO-UNDO.
+        DEFINE VARIABLE addr-id    AS INTEGER        NO-UNDO.
+        
+        DEFINE VARIABLE scust-id LIKE scust_id       NO-UNDO.
+   /*------------------------------------------------------------*/     
+        DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.  /*---< ITfeedback (YES or NO)  */
+   /*------------------------------------------------------------*/     
+
+		DEFINE VARIABLE  peop-ID      LIKE people_mstr.people_id      NO-UNDO.
+		DEFINE VARIABLE  peop-addr-ID LIKE people_mstr.people_addr_id NO-UNDO.
+		DEFINE VARIABLE  cust-exist     AS LOGICAL INITIAL NO         NO-UNDO.
+/*---------------------------------------------------------------------------*/
+	    DEFINE VARIABLE o-cust-ID      LIKE people_mstr.people_id      NO-UNDO.
+	    DEFINE VARIABLE o-cust-addr-ID LIKE people_mstr.people_addr_id NO-UNDO.
+	    DEFINE VARIABLE o-cust-exist     AS LOGICAL  NO-UNDO.                    /* this is if the CUSTOMER record exists */
+	    DEFINE VARIABLE o-cust-ran       AS LOGICAL INITIAL NO         NO-UNDO.
+	    DEFINE VARIABLE o-cust-error     AS LOGICAL INITIAL NO         NO-UNDO.
+	    
+	    DEFINE VARIABLE cust-add-id    LIKE addr_mstr.addr_id          NO-UNDO. 
+	    
+	    
+	    DEFINE VARIABLE company  LIKE people_mstr.people_company NO-UNDO.         /* These are only being used in external procedures */
+        DEFINE VARIABLE gen      LIKE people_mstr.people_gender  NO-UNDO.
+        DEFINE VARIABLE cust-con LIKE people_mstr.people_contact NO-UNDO.
+        DEFINE VARIABLE cust-dob LIKE people_mstr.people_DOB     NO-UNDO.
+        
+        DEFINE VARIABLE card          LIKE cust_mstr.cust_card_nbr      NO-UNDO.  /*Credit card variables */
+        DEFINE VARIABLE card-expmouth LIKE cust_mstr.cust_card_expmonth NO-UNDO. /* @@@ New Var @@*/
+        DEFINE VARIABLE card-expyear  LIKE cust_mstr.cust_card_expyear  NO-UNDO. 
+        DEFINE VARIABLE card-sec      LIKE cust_mstr.cust_card_seccode  NO-UNDO.
+        DEFINE VARIABLE card-typ      LIKE cust_mstr.cust_card_type     NO-UNDO. 
+        
+        DEFINE VARIABLE expyear-start LIKE cust_mstr.cust_card_expyear NO-UNDO.
+        DEFINE VARIABLE expyear-end   LIKE cust_mstr.cust_card_expyear NO-UNDO.   
+        DEFINE VARIABLE x               AS INTEGER                     NO-UNDO.
+        DEFINE VARIABLE whichmonth      AS CHARACTER EXTENT 12         NO-UNDO.
+        
+        DEFINE VARIABLE whattorun       AS CHARACTER                   NO-UNDO.
+        
+        DEFINE VARIABLE i          AS INTEGER            NO-UNDO.
+        DEFINE VARIABLE count-pep  AS INTEGER            NO-UNDO.
+        DEFINE VARIABLE keep-going AS LOGICAL INITIAL NO NO-UNDO.
+        DEFINE VARIABLE first-stop AS INTEGER            NO-UNDO.
+        
+        DEFINE VARIABLE cout       AS INTEGER INITIAL 0  NO-UNDO.          /* added 2/5/15 */
+        
+        
+        
+        DEFINE VARIABLE monthname AS CHARACTER EXTENT 12 
+           INITIAL ["01 - Jan", "02 - Feb", "03 - Mar", "04 - Apr", "05 - May", "06 - Jun", "07 - Jul", "08 - Aug", "09 - Sep", "10 - Oct", "11 - Nov", "12 - Dec"]
+           NO-UNDO.
+           
+/*---------------------------------------------------------------------------*/  		
+        
+        ASSIGN
+        
+          whattorun       =   get-value ("whattorun")
+          keep-going      =   LOGICAL (get-value ("h-keep-going"))
+          First-stop      =   INTEGER (get-value ("h-first-stop"))
+          peop-ID         =   INTEGER (get-value ("pep-id"))
+          peop-addr-ID    =   INTEGER (get-value ("pep-addr"))
+      /*    cust-exist    =   LOGICAL (get-value ("pep-exist"))  */
+          cust-id         =   INTEGER (get-value ("h-cust-id"))
+      
+           
+          prefix          =   get-value ("pref") 
+          suffix          =   get-value ("suff") 
+          fname           =   get-value ("f-name")
+          mname           =   get-value ("m-name")
+          lname           =   get-value ("l-name")
+          prefname       =   get-value ("h-prefname")        /* 1dot2 */
+          addr1           =   get-value ("adress1")        
+          addr2           =   get-value ("adress2")
+          addr3           =   get-value ("adress3")  
+          city            =   get-value ("ci")
+          state           =   get-value ("st")
+          county          =   get-value ("co")
+          zip             =   get-value ("zp")  /*INTEGER (get-value ("zp")).*/       
+          H-phone         =   get-value ("pho")
+          w-phone         =   get-value ("w-pho")
+          c-phone         =   get-value ("c-pho")
+          fax-phone       =   get-value ("fax")
+         
+          email           =   get-value ("e-mail")
+          email2          =   get-value ("e-mail2")                              
+          email-2         =   get-value ("2e-mail")
+          rdemail-2       =   get-value ("2-rdemail")
+          
+          card            =   get-value ("h-card")
+          card-expmouth   =   INTEGER (get-value("h-card-expmouth"))
+          card-expyear    =   INTEGER (get-value("h-card-expyear"))
+          card-sec        =   INTEGER (get-value ("h-card-sec"))
+          card-typ        =   get-value ("h-card-typ")
+          
+          prof            =   LOGICAL (get-value ("prof_al"))       
+          sentnum         =   INTEGER (get-value("mailnum"))            
+          magrn           =   get-value ("magrnto")   /*  INTEGER (get-value("magrnto")) */      
+          creat-num       =   INTEGER (get-value("creat"))
+          origin          =   INTEGER (get-value("came")) 
+          seq             =   INTEGER (get-value ("cust_id"))   
+          ddate           =   DATE (get-value("crea_date"))
+          moddate         =   DATE (get-value("mod")).    
+           
+   
+ 
+         
+/*---------------------------------------------------------------------------------------------------------------------------------*/
+
+											                                    IF ITfeedback = YES THEN  
+											                                            {&OUT}  "<p>This is whattorun-- "whattorun "</p>".  
+    
+                                                                                IF ITfeedback = YES THEN
+                                                                                    {&OUT} "<H1>" THIS-PROCEDURE:FILE-NAME "</H1>".
+                                                                                         
+    
+    
+            IF first-stop < 1 THEN DO:
+    
+													    			            IF ITfeedback = YES THEN
+																                        {&OUT} "f-name --" fname SKIP
+																                               "<br>l-name --" lname  SKIP
+																                             
+																                               "</p>".
+																                              
+{&OUT}					
+    "<DIV class='row'>" SKIP                                /* 1dot3 */
+    "<DIV class='grid_3'> </DIV>" SKIP                                                                          /* 131 */
+    "<DIV class='grid_6'>" SKIP.		                                                                          /* 131 */
+						                               
+</SCRIPT>            
+				       
+				        <div class='table_2col'>   <!--  style="width:30%"align="center" -->      
+							<FORM  method="post"> <!--This is the form to retrieve the record  -->			   
+							       <table>
+							            <th colspan="2">Customer Record Search</th>
+							            <tr>
+							                <td>Last Name</td><td><input type="text" name="l-name" value=`lname`></td></tr> 
+				                            <td>First Name</td><td><input type="text" name="f-name" autofocus value=`fname` ></td></tr>  
+				                     <!--    <tr>           
+				                            <td>Middle Name</td><td><input type="text" name="m-name" value=""></td></tr>
+				                        <tr>  -->         
+				                            
+				                     <!--     <tr>           
+				                            <td>Address Line1</td><td><input type="text" name="adress1" value=""></td></tr>
+				                        <tr>
+				                            <td>Address Line2</td><td><input type="text" name="adress2" value=""></td></tr>
+				                        <tr>
+				                            <td>Address Line3</td><td><input type="text" name="adress3" value=""></td></tr>     
+				                        <tr>           
+				                            <td>City</td><td><input type="text" name="ci" value=""></td></tr>
+				                        <tr>           
+				                            <td>State</td><td><input type="text" name="st" value=""></td></tr>   
+				                        <tr>
+				                            <td>E-mail Address</td><td><input   type="text" name="e-mail" value="`email`"></td></tr>
+				                      -->       
+				                            <input type="hidden" name="h-keep-going" value="NO"> 
+				                            <input type="hidden" name="h-first-stop" value=1>
+				                   </table>
+						</div>
+						
+<SCRIPT LANGUAGE="SpeedScript">		
+{&OUT}
+    "</DIV>     <!-- end of grid_6 -->" SKIP                    /* 1dot3 */
+    "<DIV class='grid_3'> </DIV>" SKIP
+    "</DIV>     <!-- end of row -->" SKIP.   
+    
+    
+{&OUT}  
+	"<div class='row'>" SKIP                                   /* 1dot3 */
+	"   <div class='grid_3'> </DIV>" SKIP                                                                          /* 131 */
+	"   <input type='hidden' name='whattorun' value=" whattorun "></td>" skip
+	"   <div class='grid_2'><BUTTON type='submit' name='' value='' class='btn'>Submit for Customer Record update</BUTTON></div>" SKIP
+	"   <div class='grid_2'> </DIV>" SKIP                                                                          /* 131 */
+	"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP                            /* 131 */
+	"   <div class='grid_3'> </DIV>" SKIP                                                                          /* 131 */
+	"</div>" SKIP
+	"<BR>" SKIP. 
+   
+
+</SCRIPT>   				<!-- 
+				    	                <div align="center"> 				    
+									      <br><button type="submit" name="submit" value="submit">Submit for Customer Record update</button>
+							            &nbsp;&nbsp;<button type="reset" name="reset" value="reset">Reset</button><br><br> OR
+							            <br><br></b><input type="submit" name="create" value="Create Customer Record" onclick="this.form.action='TK_custmakeU.r?f-name=`fname`&l-name=`lname`&formact=5&whattorun=2.1'">		
+				                        </div>   
+				            -->
+				            </form>  
+                
+<SCRIPT LANGUAGE="SpeedScript">
+
+ 
+            END.  /* IF first-stop < 1 THEN DO: */    
+    
+            ELSE 
+ 
+            IF  keep-going = NO THEN DO:     
+        
+   
+																		        IF ITfeedback = YES THEN  
+																		                   {&OUT}  "<p>This is whattorun-- "whattorun "</p>". 			
+{&OUT}
+    "<DIV class='row'>" SKIP                /* 1dot3 */
+    "<DIV class='grid_12'>" SKIP																		                   
+																		                   
+																		                   
+             
+             "<div class='table_report fixed_table'>" SKIP                     
+	               "     <table>" SKIP
+	               "        <thead>" SKIP
+	               "          <tr>" SKIP
+	               "             <th colspan='5'>Select the Customers ID that you would like to Update</th>" SKIP
+	               "             </tr>" SKIP	                          
+	               "             <tr>" SKIP
+		           "             <td>Customer ID </td>" SKIP
+		           "             <td>Customer Name</td>" SKIP
+/*		           "             <td>Last Name</td>" SKIP*/
+		           "             <td>Email address</td>" SKIP
+		           "             <td>Address</td>" SKIP
+		           "             <td>State</td>" SKIP
+	               "          </tr>" SKIP
+	               "        </thead> "skip.
+			
+			  FOR EACH cust_mstr WHERE cust_mstr.cust_deleted = ? NO-LOCK,
+			 
+			      EACH people_mstr WHERE  people_id = cust_id AND 
+			                              people_firstname BEGINS fname   AND
+			                              people_lastname  BEGINS lname   AND
+			                              people_mstr.people_deleted = ?  NO-LOCK BREAK BY people_lastname BY people_firstname: 
+			              ASSIGN
+                          addr1 = ""
+                          stname = "".                     
+			                                 
+					     FOR EACH addr_mstr WHERE addr_id = people_addr_id AND
+					                             addr_mstr.addr_deleted = ? NO-LOCK : 
+                                 ASSIGN
+                                 addr1 = addr_mstr.addr_addr1
+                                 stname = addr_mstr.addr_stateprov.
+                                 
+			      END. /* FOR  EACH addr_mstr */
+			      cout = cout + 1.                           
+			                       			                              
+						   IF avail (cust_mstr) THEN DO:
+			{&OUT} 
+			       "          <tr>" SKIP
+				   "             <td><a href='../../TK/rcode/TK_custupdate.r?h-cust-id=" cust_id "&e-mail=" people_email "&f-name=" people_firstname "&l-name=" people_lastname 
+				                              "&whattorun=" whattorun "&h-keep-going=YES&h-first-stop=1 '>" people_id "</a></td>" SKIP
+/*				   "             <td>" people_firstname "</td>" SKIP*/
+				   "             <td>" people_lastname ", " people_firstname "</td>"  SKip
+				   "             <td>" people_email "</td>"     SKIP
+				   "             <td>" addr1 "</td>"       SKIP /*addr_addr1 */
+				   "             <td>" stname "</td>"   SKIP /*addr_stateprov*/
+				   "          </tr>".                      	                     
+	                     
+	                       END.  /* IF avail (cust_mstr) THEN DO:   */
+	          END. /* FOR EACH cust_mstrr, people_mstr, addr_mstr */   
+	          
+	          
+{&OUT}	 
+	"   <TFOOT>" SKIP                                                           /* 1dot3 */
+	"       <TR>" SKIP
+	"           <TD COLSPAN=5>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+	"       </TR>" SKIP
+	"   </TFOOT>" SKIP
+	                   "     </table>" skip         
+	"</DIV>         <!-- end of grid_12 -->" SKIP                  
+	"</DIV>     <!-- end of row -->" SKIP
+	"</div>" skip
+    
+    "<br>" skip
+	"<div class='row'>" SKIP
+	"   <div class='grid_3'> </DIV>" SKIP
+	"   <div class='grid_2'>" skip
+	"<form>" skip	 
+	"  <input type='hidden' name='whattorun' value=" whattorun "></td>" skip
+	"  <BUTTON type='submit' name='first-stop' value='0' class='btn'>New Customer Update</BUTTON></div>" SKIP
+	"</form>" skip	
+	"   <div class='grid_2'> </DIV>" SKIP
+	"   <div class='grid_2'>" skip
+	"<form ACTION='TK_custmakeU.r' method='post' >" skip
+	"  <input type='hidden' name='whattorun' value=2.1 ></td>" skip
+	"  <BUTTON type='subit' class='btn'>Create Customer Record</BUTTON></div>" SKIP
+	"</form>" skip
+	"   <div class='grid_3'> </DIV>" SKIP
+	"</div>" SKIP
+	"<BR>" SKIP.
+	            
+/*	                   IF cout = 0 THEN*/
+	                       
+/*	        {&OUT}                                                                                                                                                */
+/*	               " </div>" skip                                                                                                                                 */
+/*	               "          <tr>" skip                                                                                                                          */
+/*	               "             <td colspan='6'align='center'>No customers found.<a href='TK_custmakeU.r?whattorun=2.1'> Click here to create one.</a></td>" skip*/
+/*	               "             </tr>" skip                                                                                                                      */
+/*	               "     </table>" skip                                                                                                                           */
+/*	         "</div>" skip.                                                                                                                                       */
+/*	                                                                                                                                                               */
+/*                        ELSE                                                                                                                                   */
+        
+/*            {&OUT}                    */
+/*                   "     </tabl>" skip*/
+/*             "</div>" skip.           */
+                          
+                                                                               IF ITfeedback = YES THEN  
+                                                                                           {&OUT}  "<p>MY count is -- "cout "</p>".  
+        
+            END. /* IF  keep-going = NO THEN DO: */
+                                                                    
+           ELSE DO: 
+       
+           IF keep-going = YES THEN DO:
+   
+																		        IF ITfeedback = YES THEN  
+																	               {&OUT}  "<p>runing find-customer.r</p>".
+	
+				  
+							FIND  people_mstr WHERE people_id = cust-id AND  							
+							      people_mstr.people_email    = email   AND 						
+							      people_mstr.people_deleted  = ?       NO-LOCK NO-ERROR.
+					
+					        IF AVAILABLE (people_mstr) THEN DO:		         
+																		         IF ITfeedback = YES THEN
+																		            {&OUT} "<p>Found a person with people_id of-- "  people_id  "</p>" SKIP.    
+				            ASSIGN 
+				            prefix    = people_prefix
+				            suffix    = people_suffix
+				            fname     = people_firstname
+				            mname     = people_midname
+				            lname     = people_lastname
+				            prefname  = people_mstr.people_prefname   /* 1dot2 */
+				            H-phone   = people_homephone 
+				            cust-id   = people_id
+				            email     = people_email
+				            email-2   = people_email2      
+				            addr-id   = people_addr_id
+				            suffix    = people_suffix
+				            prefix    = people_prefix
+				            c-phone   = people_cellphone
+				            w-phone   = people_workphone
+				            fax-phone = people_fax
+				            company   = people_mstr.people_company
+				            gen       = people_mstr.people_gender
+				            cust-con  = people_mstr.people_contact
+				            cust-dob  = people_mstr.people_DOB.  
+				            
+				     /*    FIND  addr_mstr WHERE
+				             addr_id = people_addr_id NO-LOCK NO-ERROR. */
+			             
+			         FIND addr_mstr WHERE addr_id = people_addr_ID AND
+			                         addr_mstr.addr_deleted = ?  NO-LOCK NO-ERROR. 
+			             
+			         IF AVAILABLE (addr_mstr) THEN DO:
+			          
+																	             IF ITfeedback = YES THEN
+																	             {&OUT} "<p>Found a addr with an addr_id of-- " addr_id  "</p>" SKIP.   
+			                  
+				         ASSIGN   
+				            addr1   = addr_addr1
+				            addr2   = addr_addr2
+				            addr3   = addr_addr3 
+				            city    = addr_city
+				            state   = addr_stateprov
+				            county  = addr_country			       
+				            zip     = addr_zip
+				            addr-id = addr_id.
+			            	
+					END.   /* IF AVAILABLE (addr_mstr) THEN DO: */ 											             IF ITfeedback = YES THEN
+																	             {&OUT} "<p>I'm after the assign with an addrID of-- "  addr_id  "</p>" SKIP. 		            
+			          			           
+			         FIND  cust_mstr WHERE cust_id = people_id AND
+			                cust_mstr.cust_deleted = ?  NO-LOCK NO-ERROR.   
+			             
+			         IF AVAILABLE (cust_mstr) THEN DO: 
+			           
+																	             IF ITfeedback = YES THEN 
+																	             {&OUT} "<p>Found a customer rec. is-- " cust_id  "</p>" SKIP.   
+				               
+				         ASSIGN
+				            ddate         = cust_create_date
+	                        moddate       = cust_modified_date
+	                        seq           = cust_id
+	                        card          = cust_mstr.cust_card_nbr 
+                            card-expmouth = cust_mstr.cust_card_expmonth
+                            card-expyear   = cust_mstr.cust_card_expyear
+                            card-sec      = cust_mstr.cust_card_seccode 
+                            card-typ      = cust_mstr.cust_card_type.   
+	                        
+														                         IF ITfeedback = YES THEN
+																	             {&OUT} "<p>assigned a customer rec-ID. is-- " seq "</p>" SKIP. 
+				             
+				     FIND scust_shadow WHERE scust_id = cust_id AND
+				           scust_shadow.scust_deleted = ? NO-LOCK NO-ERROR.
+				             
+				     IF AVAILABLE (scust_shadow) THEN DO:
+				          
+																	             IF ITfeedback = YES THEN 
+																	             {&OUT} "<p>Found a shadow cust-rec</p>" SKIP.  
+				              
+					     ASSIGN
+					        prof  = scust_prof
+					        magrn = scust_magento  
+					        ddate = scust_create_date
+					        scust-id = scust_id			      
+					            
+					        is-checked  = IF prof = TRUE THEN
+					                       "checked"
+					                         ELSE
+					                          "".
+				                               
+				     END. /*IF AVAILABLE (scust_shadow) THEN DO:*/                   
+			         END.     /*IF AVAILABLE (cust_mstr) THEN DO:  */  
+			         
+			         
+{&OUT}			
+    "<DIV class='row'>" SKIP                                   /* 1dot3 */    
+    "<DIV class='grid_12'>" SKIP.			       
+</SCRIPT>      
+<!-- ----------------------------------------------------------------- Start of Update Form -------------------------------------------------------------------- -->
+
+                <FORM   ACTION="TK_custupdateU.r" method="post">   <!-- ACTION="TK_custupdateU.r" -->
+				         <div class='table_3col'>   <!--  style="width:65%"align="center"> -->            
+				           <table>                    
+				                        <tr> 
+				                            <th colspan="2" >Personal</th><th colspan="2" >Address </th><th colspan="2" >Contact </th>
+				                        </tr>
+				                        <tr>            
+				                            <td>Prefix</td><td><input type="text" name="pref" value="`prefix`" tabindex=1 autofocus></td>  
+				                            <td>Address Line1</td><td><input type="text" name="adress1" value="`addr1`" tabindex=7></td>
+				                            <td>Home Number</td><td><input type="text" name="pho" value="`H-phone`" tabindex=14></td>
+				                        </tr>                         
+				                        <tr>
+				                            <td>First Name</td><td><input type="text" name="f-name" value="`fname`" tabindex=2></td>
+				                            <td>Address Line2</td><td><input type="text" name="adress2" value="`addr2`"tabindex=8></td>
+				                            <td>Work Number</td><td><input type="text" name="w-pho" value="`w-phone`"tabindex=15></td>
+				                        </tr>   
+				                        <tr>
+				                             <td>Middle Name</td><td><input type="text" name="m-name" value="`mname`"tabindex=3></td>  
+				                             <td>Address Line3</td><td><input type="text" name="adress3" value="`addr3`"tabindex=9></td>
+				                             <td>Cell Number</td><td align="left"><input type="text" name="c-pho" value="`c-phone`"tabindex=15></td>                             
+				                        </tr>
+				                        <tr>
+				                             <td>Last Name</td><td><input type="text" name="l-name" value="`lname`"tabindex=4></td>                                
+				                             <td>City</td><td><input type="text" name="ci" value="`city`"tabindex=10></td>  
+				                             <td>Fax Number</td><td><input type="text" name="fax" value="`fax-phone`"tabindex=16></td>                      
+				                        </tr>
+				                        <tr>
+				                              <td>Suffix</td><td><input type="text" name="suff" value="`suffix`"tabindex=5></td>
+				                         
+				                             <td>State</td><td><select name="st" tabindex=11>
+                                               <option selected >`state` </option>
+                                               <option value='' ></option>             
+<SCRIPT LANGUAGE="SpeedScript">  
+                                            FOR EACH state_mstr WHERE 
+                                                     state_mstr.state_deleted = ? NO-LOCK :
+                                                         
+                                            IF state_mstr.State_ISO  = state AND 
+                                             state_mstr.state_country = county THEN    /* 1dot2 */ 
+                                                isselected  = "SELECTED".                                          
+                                            ELSE             
+                                                isselected  = "". 
+                                                         
+                                     /*---------------------------- was this ------------------------*/                    
+/*                                                ASSIGN                  */
+/*                                                    stname = State_Display_Name */
+/*                                                    stabbv = State_ISO.*/
+                                     /*--------------------------------------------------------------*/   
+                                     
+                                     {&OUT}
+                                        "<option value=~"" state_mstr.State_ISO "~" " isselected " >" state_mstr.State_Display_Name "</option>" SKIP.    /* 1dot2 */       
+</SCRIPT>             
+                                            <!--    <option Value="`stabbv`"> `stname`  </otion> -->
+<SCRIPT LANGUAGE="SpeedScript">                
+                                             END.  /* FOR EACH states_mstr */  
+</SCRIPT>
+				                            <!--  <td>Magento Customer Number</td><td><input type="text" name="Magrnto" value="`magrn`"tabindex=17></td> -->
+				                            <td>Magento Number</td><td> `magrn`</td>
+				                            
+				                        </tr>
+				                        <tr>
+				                              <td>Preferred Name</td><td><input type="text" name="h-prefname" value="`prefname`"tabindex=6</td>                       <!-- 1dot2 --> 
+				                              <td>Zip Code</td><td><input type="text" name="zp" value="`zip`"tabindex=12></td> 
+				                         
+				                              <td>Professional Customer</td><td> <input type="checkbox" name="prof_al" value="true" tabindex=18 `is-checked` >  </td> 
+				                        </tr>
+				                        <tr>
+				                            <td>Customer ID</td><td>`cust-ID`</td>
+				                                
+				                            <td>Country</td><td><select name="co" tabindex=13 >
+				                   <!--         <option selected >`county`  </option>      `county` -->
+				                            <option value=''></option>     
+<SCRIPT LANGUAGE="SpeedScript">  
+				                            FOR EACH country_mstr  WHERE 
+				                                     country_mstr.country_deleted = ? NO-LOCK
+				                                BREAK BY country_mstr.Country_Display_Name:
+				                                         
+				                            IF country_mstr.Country_ISO = county THEN           /* 1dot2 */                                           
+                                                isselected = "SELECTED".
+                                            ELSE 
+                                                isselected = "".             
+				                            {&OUT}
+                                                 "<option value=~"" country_mstr.Country_ISO "~" " isselected " >" country_mstr.Country_Display_Name "</option>" SKIP.   /* 1dot2 */  
+     
+				                   /*----------------- was this -------------------------------*/             
+/*				                                ASSIGN                    */
+/*				                                    coname = Country_Display_Name */
+/*				                                    coabbv = Country_ISO.*/
+				                                    
+				                  /*----------------------------------------------------------*/                  
+</SCRIPT>             
+				                          <!--    <option Value="`coabbv`"> `coname`  </option> -->
+<SCRIPT LANGUAGE="SpeedScript">                
+				                             END.  /* FOR EACH county_mstr */
+</SCRIPT>
+				                             <td colspan="2"></td>
+				                        </tr>
+				                            
+				                              <th colspan="6">Email info</th> 
+				                        <tr>        
+				                              <td>E-mail Address</td><td align="leftt"colspan="2"><input  size="50" type="text" name="e-mail" value="`email`" tabindex=19></td>                        
+				                              <td>Reenter E-mail</td><td align="left" colspan="2"><input size="50" type="text" name="e-mail2" value="`email2`"tabindex=20></td>
+				                        </tr>
+				                        <tr>
+				                              <td>Second E-mail Address</td><td align="leftt"colspan="2"><input  size="50" type="text" name="2e-mail" value="`email-2`"tabindex=21></td>                        
+				                              <td>Second Reenter E-mail</td><td align="left" colspan="2"><input size="50" type="text" name="2-rdemail" value="`rdemail-2`"tabindex=22></td>
+				                        </tr>
+				                               <th colspan="6">Credit Card info</th> 
+				                        <tr>
+				                                              
+				                              <td>Credit Card Type</td><td><select name="h-card-typ" tabindex=23 >                                                              
+				                                                              <option selected>`card-typ`  </option> 
+				                                                              <option value='' ></option>                                                          
+				                                                              <option value="Visa">Visa</option>     
+				                                                              <option value="MasterCard">MasterCard</option> 
+				                                                              <option value="American Express">American Express</option></select>  
+				                                                              
+				                                                             
+				                               </td>                                                                 
+				                              <td>Credit Card Number</td><td><input  maxlength='16' type="text" name="h-card" value="`card`" tabindex=24></td> <!-- size="45" -->
+				                              <td colspan="2"></td>
+				                        </tr>
+				 <!-- ----------------------------------------------------------------------------------------------------------------------------- --> 
+				            <td>Expiration Date</td><td><select name="h-card-expmouth" tabindex=24 >
+				                                                 
+<SCRIPT LANGUAGE="SpeedScript">                                                               
+																IF cust_card_expmonth > 0 THEN  /*was cust-card-expmonth */
+																    ASSIGN 
+																        whichmonth[cust_card_expmonth]   = "SELECTED".                      /* underbars instead of dashes */
+																    
+																ELSE IF cust_card_expmonth = 0 THEN                                         /* underbars instead of dashes */
+																    {&OUT}
+																        "<option value=0 SELECTED>Select Exp. Month</option>" SKIP.   
+																    
+															/* 	{&OUT}                                                        
+																        "<option value=1 " whichmonth[1] ">01-Jan</option>" SKIP     
+																        "<option value=2 " whichmonth[2] ">02-Feb</option>" SKIP
+																        "<option value=3 " whichmonth[3] ">03-Mar</option>" SKIP
+																        "<option value=4 " whichmonth[4] ">04-Apr</option>" SKIP
+																        "<option value=5 " whichmonth[5] ">05-May</option>" SKIP
+																        "<option value=6 " whichmonth[6] ">06-Jun</option>" SKIP
+																        "<option value=7 " whichmonth[7] ">07-Jul</option>" SKIP
+																        "<option value=8 " whichmonth[8] ">08-Aug</option>" SKIP
+																        "<option value=9 " whichmonth[9] ">09-Sep</option>" SKIP
+																        "<option value=10 " whichmonth[10] ">10-Oct</option>" SKIP
+																        "<option value=11 " whichmonth[11] ">11-Nov</option>" SKIP
+																        "<option value=12 " whichmonth[12] ">12-Dec</option>" SKIP
+																    "</select>" SKIP(1).                  
+				                                                 */ 
+				                                                     DO i = 1 TO 12:
+				                                                       {&OUT} "<option value=" i " " whichmonth[i] ">" monthname[i] "</option>" SKIP.
+				                                                     END.  /** of do i = 1 to 12 --- output month options **/
+				                                                  {&OUT}
+				                                                  "</select>" SKIP(1). 
+				                                                   
+				                                                    
+				                                                    expyear-start = YEAR(TODAY) - 3.
+				                                                    expyear-end   = expyear-start + 8.
+				                                                   
+				                                                    {&OUT} "<select name='h-card-expyear' tabindex=25>"
+				                                                        "<option selected>"card-expyear "</option>" SKIP.                                                            
+				                                                           
+				                                                    DO x = expyear-start TO expyear-end:
+				                                                        {&OUT}
+				                                                            "<option Value=" x ">" x " </option>" SKIP.
+				                                                    END.  /** of do - build year list **/
+				                                         
+				                                                    {&OUT}
+				                                                        "</select></td>" SKIP.        
+				           
+				                               
+</SCRIPT>                                
+				                      
+				 
+				                              <td>Security Code</td> 
+<SCRIPT LANGUAGE="SpeedScript"> 
+				                                IF card-sec = 0 THEN
+				                                {&OUT}
+				                                    "<td><input maxlength='3'size='2' type='text' name='h-card-sec' value='' tabindex=26></td>". 
+				                                ELSE
+</SCRIPT>                                                                  
+				                              <td><input maxlength='3'size='2' type="text" name="h-card-sec" value="`card-sec`" tabindex=26></td>                               
+				 
+				 <!-- ------------------------------------------------------------------------------------------------------------------------------------------- -->        
+				                        <td colspan="2"></td>
+				                       
+				                        </tr>         
+				                          
+				                            <input type="hidden" name="cust_id" value="`seq`">               
+				                            <input type="hidden" name="crea_date" value="`ddate`">
+				                            <input type="hidden" name="mod" value="`moddate`">
+				                            <input type="hidden" name="creat" value="`creat-num`">
+				                            <input type="hidden" name="came" value="`origin`">  
+				                            
+				                            <input type="hidden" name="scust" value="`scust_id`">           
+				                            <input type="hidden" name="h-cust-add-id" value="`people_addr_id`"> 
+				                            
+				                            <input type="hidden" name="h-company" value="`company`">  <!-- added sat --> 
+				                            <input type="hidden" name="h-gen" value="`gen`"> 
+				                            <input type="hidden" name="h-cust-cont" value="`cust-con`"> 
+				                            <input type="hidden" name="h-cust-dob" value="`cust-dob`">				                            
+				                            <input type="hidden" name="h-cust-id" value="`cust-id`"> 
+				                            
+				                            <input type="hidden" name="whattorun" value="2.3"> <!-- `whattorun` -->
+				                          
+				                        </table>
+				                        
+				         </div> <!-- end of div class='table_3col'> --> 
+				         
+<SCRIPT LANGUAGE="SpeedScript">				         
+{&OUT}				
+	"</DIV>         <!-- end of grid_12 -->" SKIP                       /* 1dot3 */	
+	"</DIV>     <!-- end of row -->" SKIP
+	
+	"<div class='row'>" SKIP
+	"   <div class='grid_2'> </DIV>" SKIP
+	"   <div class='grid_2'><BUTTON type='submit' name='' value='' class='btn'>Update</BUTTON></div>" SKIP
+	"   <div class='grid_1'> </DIV>" SKIP	
+	"   <div class='grid_2'><BUTTON type='reset' name='reset' value='' class='btn'>Reset</BUTTON></div>" SKIP
+	"</form>" skip
+	"   <div class='grid_1'> </DIV>" SKIP
+	"   <div class='grid_2'>" skip
+	"<form>" skip
+	"      <BUTTON type='submit' name='whattorun' value=2.3 class='btn'>Search Again</BUTTON></div>" SKIP
+	"</form>" skip
+	"   <div class='grid_2'> </DIV>" SKIP
+	"</div>" SKIP
+	"<BR>" SKIP.
+	
+	
+	
+	
+</SCRIPT>             
+				<!-- 						         <div align="center">  
+							                <br><input type="submit" name="edit" value="Update" onclick="this.form.action='TK_custupdateU.r'">
+							     <!--       &nbsp;&nbsp;<input type="submit" name="submit" value="Delete" onclick="this.form.action='TK_custDeleteU.r'">   -->
+					<!-- 		                &nbsp;&nbsp;<button type="reset" name="submit" value="reset">Reset</button><br></br>    
+							                
+							                
+							                <a href=TK_custupdate.r?whattorun=`whattorun` >Click here for New Customer Update</a><br>
+                 
+                -->
+<!-- ------------------------------------------------------------------ End of Update Form -------------------------------------------------------------------- --> 
+        
+<SCRIPT LANGUAGE="SpeedScript">	
+	     END. /* else do: */               
+
+   
+ END. /* ? */  
+ 
+       ELSE DO:       
+</SCRIPT>  
+
+                        <div align="center">                      
+                          
+                            <h2 align="center"><font color='#E60000'>There was a problem locating the Record, check Required Fields</font></h2>
+                                OR &nbsp  
+                                <a href='TK_custupdate.r'>Click here for a new from</a><br></br>
+                               <h3> If you need to create this as a new Customer Record click 
+                               <a href='TK_custmakeU.r?f-name=`fname`&l-name=`lname`&e-mail=`email`&formact=5&whattorun=`whattorun`'>Create New Customer Record</a></h3> <!-- to Create this as New Customer Record -->
+                                                      
+                        </div>     
+              
+			   <FORM  method="post">   
+			    <div class='table_2col' style="width:30%"align="center">
+			        <table>
+			            <th colspan="2">Customer Record Search</th>
+			            <tr>
+			                <td>First Name</td><td class='REQ'><input type="text" name="f-name" value=`fname`></td></tr>  
+			            <tr>           
+			                <td>Middle Name</td><td><input type="text" name="m-name" value=""></td></tr>
+			            <tr>           
+			                <td>Last Name</td><td class='REQ'><input type="text" name="l-name" value=`lname`></td></tr>
+			            <tr>           
+			                <td>Address Line1</td><td><input type="text" name="adress1" value=""></td></tr>
+			            <tr>
+			                <td>Address Line2</td><td><input type="text" name="adress2" value=""></td></tr>
+			            <tr>
+                            <td>Address Line3</td><td><input type="text" name="adress3" value=""></td></tr>     
+			            <tr>           
+			                <td>City</td><td><input type="text" name="ci" value=""></td>
+			            <tr>           
+			                <td>State</td><td><input type="text" name="st" value=""></td>   
+			            <tr>
+                            <td>E-mail Address</td><td><input   type="text" name="e-mail" value="`email`"></td> <!-- size="50" -->            
+			       </table>
+			  </div>    <!-- div class='table_3col' -->   
+			<div align="center"> 
+			           <!--    <br><input type="submit" name="create" value="Create Customer" onclick="this.form.action='TK_custmakeU.r?f-name=`fname`&l-name=`lname`&e-mail=`email`'"> -->            
+			              <br><button type="submit" name="submit2" value="submit">Submit</button>
+			            &nbsp;&nbsp;<button type="reset" name="reset2" value="reset">Reset</button> 			                           
+			</div>  
+			   </form> 
+	                    
+			            <div align="center">
+			            
+			               <!-- <h3 align="center"><font color='#E60000'>This Customer&nbsp</font>`fname`  &nbsp<font color='#E60000'&nbsp>does not Exist with this email </font>&nbsp `email` </h3> -->
+			    <!--            <h3 align="center"><font color='#E60000'>There was a problem locating the Record, check Required Fields</font></h3>
+			              <p> OR </p>  
+                               <a href='TK_custupdate.r'>Click here for New Customer Update</a><br> 
+                               			              
+			            </div>  
+			            -->   
+<SCRIPT LANGUAGE="SpeedScript">	
+
+	          
+		END.  /* of ELSE DO */    
+     
+ END.  /* of IF fname <> "" frome line # 868 */ 
+ 
+/*  END. /*IF keep-going = YES THEN DO: @@@ today 10/24 */  */
+ 
+  
+</SCRIPT>   
+        </div> <!-- end of <div align=center> --> 
+  </center>
+ 
+</BODY>
+</HTML>

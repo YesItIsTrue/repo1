@@ -1,0 +1,1255 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <META NAME="AUTHOR" CONTENT="DOUG LUTTRELL">
+    <TITLE>Registration</TITLE>
+    <META NAME="VERSION" CONTENT="2.0"> 
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css">
+
+    <STYLE>
+    
+    .bgimg, .bgimg2 {
+            min-height: 100%;
+            background-position: center;
+            background-size: cover; 
+    } 
+    
+    .bgimg-main {
+            min-height: 100%;
+            background-position: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+    } 
+    
+    .bgimg-err {
+            min-height: 100%;
+            background-position: center;
+            background-size: cover;
+    } 
+    
+    .bgimg {background-image: url("/depot/src/HTMLContent/images/Youth-CMS/background.jpg")}
+    .bgimg2 {background-image: url("/depot/src/HTMLContent/images/Youth-CMS/john_sullivan.png")}
+    .bgimg-main {background-image: url("/depot/src/HTMLContent/images/Youth-CMS/Ask-logo.jpg")}
+    .bgimg-err {background-image: url("/depot/src/HTMLContent/images/Youth-CMS/binary-wormhole.jpg")}
+    
+    </STYLE> 
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='w3-black'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+        
+    ---------------------------------------------------------------
+    Revision History:
+    -----------------
+    1.0 - written by TRAE LUTTRELL on 20/Apr/17.  Original version.
+    1.1 - written by DOUG LUTTRELL on 15/Aug/17.  Changed to work with 
+            the new CMC structure (Version 12).  Not checked for logic.
+            Needs thorough testing due to the scope of changes made in 
+            this version.  Marked by 1dot1.    
+                          
+  -------------------------------------------------------------------*/
+  
+{CMS-theme_area-R.i}.
+
+{CMS-nav_area-R.i}.   
+       
+
+/**********************  Variable Definition Section  ****************************/
+DEFINE VARIABLE ITmessages AS LOGICAL INITIAL NO NO-UNDO.
+
+DEFINE VARIABLE v-stage AS INTEGER NO-UNDO.                 /* counter to help keep track of what point in the flow the user is */
+DEFINE VARIABLE v-classlist AS INTEGER EXTENT 20 NO-UNDO.
+DEFINE VARIABLE v-leadlist AS INTEGER EXTENT 20 NO-UNDO.                                            /* only available to leaders */
+DEFINE VARIABLE v-carrylist AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-people_ID LIKE regis_mstr.regis_people_id NO-UNDO. 
+DEFINE VARIABLE v-disabled AS CHARACTER NO-UNDO. 
+DEFINE VARIABLE v-class_ID AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-old_class_ID AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE v-checked AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-progress AS DECIMAL FORMAT "->>9%" NO-UNDO. 
+DEFINE VARIABLE v-path_increment AS DECIMAL INITIAL 6.25 NO-UNDO.
+
+DEFINE VARIABLE x AS INTEGER NO-UNDO.       /*** junk counter ***/
+
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO. 
+
+/*** Variables for the people section ***/
+DEFINE VARIABLE v-lastname          LIKE people_mstr.people_lastname     NO-UNDO.
+DEFINE VARIABLE v-firstname         LIKE people_mstr.people_firstname    NO-UNDO.
+DEFINE VARIABLE v-DOB               LIKE people_mstr.people_DOB     NO-UNDO.
+DEFINE VARIABLE v-html-DOB          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-unit              AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-member            LIKE speop_shadow.speop_LDS NO-UNDO.                                    /* 1dot1 */
+DEFINE VARIABLE v-troop             LIKE speop_shadow.speop_troop NO-UNDO.                                  /* 1dot1 */
+DEFINE VARIABLE v-email             AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-allergies         AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-medical           AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-photo_perm        AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-parent_approval   AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-medical_forms     AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-chaperone         AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE v-leader            AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE v-teacher           AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE v-shirt             AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-quorum            AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-scout_rank          LIKE speop_shadow.speop_scout_rank NO-UNDO.                             /* 1dot1 */
+
+DEFINE VARIABLE v-found-regis       AS LOGICAL NO-UNDO. 
+
+
+DEFINE VARIABLE v-addr_ID       LIKE people_mstr.people_addr_id NO-UNDO.    /** old address ID - need to remove - 1dot1 */
+DEFINE VARIABLE v-error         AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+DEFINE VARIABLE v-ran           AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+
+DEFINE VARIABLE v-created       AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+DEFINE VARIABLE v-updated       AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+DEFINE VARIABLE v-avail         AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+DEFINE VARIABLE v-success       AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+
+
+DEFINE VARIABLE v-stake         LIKE speop_shadow.speop_stake NO-UNDO.                                      /* 1dot1 */
+
+
+/***************************  Populate Variables  *******************************/
+ASSIGN 
+    v-act           = html-encode(get-value('h-act'))
+    v-stage         = INTEGER(html-encode(get-value('h-stage')))
+    v-people_ID     = INTEGER(html-encode(get-value('h-people_ID')))
+    v-carrylist     = html-encode(get-value('h-carrylist')) 
+    v-progress      = DECIMAL(html-encode(get-value('h-progress')))
+    v-class_ID      = INTEGER(html-encode(get-value('h-class_ID')))
+    v-old_class_ID  = INTEGER(html-encode(get-value('h-old_class_ID')))
+    
+    /**** variables for people stuff ****/
+    v-lastname              = html-encode(get-value("h-lastname"))
+    v-firstname             = html-encode(get-value("h-firstname"))
+    v-html-DOB              = html-encode(get-value("h-DOB"))
+    v-unit                  = html-encode(get-value("h-unit"))
+    v-troop                 = integer(html-encode(get-value("h-troop")))                                        /* 1dot1 */
+    v-email                 = html-encode(get-value("h-email"))
+    v-allergies             = html-encode(get-value("h-allergies"))
+    v-medical               = html-encode(get-value("h-medical"))
+    v-photo_perm            = IF html-encode(get-value("h-photo_perm")) = "yes" THEN YES ELSE NO 
+    v-parent_approval       = IF html-encode(get-value("h-parent_approval")) = "yes" THEN YES ELSE NO
+    v-medical_forms         = IF html-encode(get-value("h-medical_forms")) = "yes" THEN YES ELSE NO
+    v-chaperone             = IF html-encode(get-value("h-chaperone")) = "yes" THEN YES ELSE NO
+    v-teacher               = IF html-encode(get-value("h-teacher")) = "yes" THEN YES ELSE NO
+    v-leader                = IF html-encode(get-value("h-leader")) = "yes" THEN YES ELSE NO
+    v-shirt                 = html-encode(get-value("h-shirt"))
+    v-quorum                = html-encode(get-value("h-quorum"))
+    v-stake                 = html-encode(get-value("h-stake"))                                                 /* 1dot1 */
+    v-scout_rank            = html-encode(get-value("h-scout_rank")).                                           /* 1dot1 */
+
+IF itmessages = YES THEN {&OUT} "v-chaperone = " v-chaperone "<br>"
+    "v-teacher = " v-teacher "<br>"
+    "v-leader = " v-leader "<br>".
+    
+IF v-act = "" THEN
+    v-act = "INITIAL".
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-DOB, OUTPUT v-DOB).
+
+IF itmessages = YES THEN {&OUT} "Wuut #2 ?<br>".
+
+DO x = 1 TO NUM-ENTRIES(v-carrylist): 
+    
+    IF itmessages = YES THEN {&OUT} "Ok, I'm in the initial carry list assignment. x = " x "<br>".
+    
+    v-classlist[x] = INTEGER(ENTRY(x,v-carrylist)).
+    
+END.  /*** of do x = 1 to num-entries(v-carrylist) ***/
+
+IF itmessages = YES THEN {&OUT} "Wuut #3 ?<br>".
+
+
+IF v-act = "people_validation" THEN DO:
+    
+    ASSIGN v-act = "Validation".
+    
+            /**************  begin 1dot1 code *****************/
+    RUN VALUE(SEARCH("SUBpeop-datefindR.r")) ("",                               /* Prefix */
+                                                      v-firstname,              /* Firstname */
+                                                      "",                       /* Middle Name */
+                                                      v-lastname,               /* Lastname */
+                                                      "",                       /* Suffix */
+                                                      v-dob,                    /* DOB */
+                                                      OUTPUT v-people_ID,       /* People ID */
+                                                      OUTPUT v-addr_ID,         /* old address ID --- need to remove */
+                                                      OUTPUT v-error,           /* returned error */
+                                                      OUTPUT v-ran).            /* did it run? */
+                                                      
+    IF v-ran = YES AND v-error = NO AND v-people_ID > 0 THEN DO:  
+                                                     
+        FIND people_mstr WHERE people_mstr.people_id = v-people_ID NO-LOCK NO-ERROR.
+        
+    END.  /** of found a person **/
+    
+    ELSE IF v-ran = YES AND v-error = NO AND v-people_ID = 0 THEN DO:
+        
+	    RUN VALUE(SEARCH("SUBpeop-ucU.r")) (v-people_ID,            /* People ID */ 
+	                                        v-firstname,            /* Firstname */
+	                                        "",                     /* Middle Name */
+	                                        v-lastname,             /* Lastname */
+	                                        "",                     /* Prefix */
+	                                        "",                     /* Suffix */
+	                                        "",                     /* Company */
+	                                        "",                     /* Gender */
+	                                        "",                     /* Home Phone */
+	                                        "",                     /* Work Phone */
+	                                        "",                     /* Cell Phone */
+	                                        "",                     /* Fax Phone */
+	                                        v-email,                /* Email */
+	                                        "",                     /* Email 2 */
+	                                        "",                     /* Address ID ---- will need to be replaced -- pal_list */
+	                                        "",                     /* Contact ID ---- will need to be replaced -- plink_mstr */
+	                                        v-DOB,                  /* DOB */
+	                                        "",                     /* Address ID 2 -- will need to be replaced -- pal_list */
+	                                        "",                     /* Preferred Name */
+	                                        "",                     /* Title */
+	                                        OUTPUT v-people_ID,     /* People_ID */
+	                                        OUTPUT v-created,       /* people_mstr created */
+	                                        OUTPUT v-updated,       /* people_mstr updated */
+	                                        OUTPUT v-avail,         /* people_mstr available */
+	                                        OUTPUT v-success).      /* update successful? */          
+        
+	    IF v-success = YES AND v-people_ID > 0 THEN DO:  
+	                                                     
+	        FIND people_mstr WHERE people_mstr.people_id = v-people_ID NO-LOCK NO-ERROR.
+	        
+	    END.  /** of found a person **/
+        
+    END.  /** of created a person **/
+    
+    ELSE DO:
+        {&OUT} "<H1>ERROR! Random error condition occurred!  Contact <a href='mailto:solsource.techsupport@mysolsource.com'>Solsource Techsupport</a> immediately!</H1>".
+    END.  /** of else do --- random error condition **/
+
+
+    IF AVAILABLE (people_mstr) THEN DO: 
+
+        FIND speop_shadow WHERE speop_shadow.speop_ID = people_mstr.people_ID                                 
+            EXCLUSIVE-LOCK NO-ERROR. 
+                                                                 
+        IF NOT AVAILABLE (speop_shadow) THEN DO:
+            
+            CREATE speop_shadow.
+            ASSIGN 
+                speop_shadow.speop_ID           = v-people_ID
+                speop_shadow.speop_create_date  = TODAY 
+                speop_shadow.speop_created_by   = USERID("CUSTOM")
+                speop_shadow.speop_prog_name    = THIS-PROCEDURE:FILE-NAME.
+                
+        END.  /** of if not avail speop_shadow **/
+        
+        ASSIGN 
+            speop_shadow.speop_ward         = v-unit
+            speop_shadow.speop_stake        = v-stake
+            speop_shadow.speop_LDS          = v-member
+            speop_shadow.speop_troop        = v-troop
+            speop_shadow.speop_Tsize        = v-shirt
+            speop_shadow.speop_quorum       = v-quorum
+            speop_shadow.speop_allergies    = v-allergies   /** should be replaced with pcl_det **/
+            speop_shadow.speop_med_cond     = v-medical     /** should be replaced with pcl_det ---- what is the difference? **/
+            speop_shadow.speop_photo_perm   = v-photo_perm
+            speop_shadow.speop_par_app      = v-parent_approval
+            speop_shadow.speop_med_form     = v-medical_forms                                                    /* 1dot1 */
+            speop_shadow.speop_modified_date    = TODAY 
+            speop_shadow.speop_modified_by      = USERID("CUSTOM")
+            speop_shadow.speop_prog_name        = THIS-PROCEDURE:FILE-NAME.
+            
+        IF v-chaperone = YES THEN DO: 
+            
+            FIND FIRST resp_det WHERE resp_det.resp_event_ID = v-event_ID AND 
+                resp_det.resp_name = "CHAPERONE" AND 
+                resp_det.resp_people_id = people_mstr.people_id AND
+                resp_det.resp_category = "CHAPERONE" 
+                    NO-LOCK NO-ERROR.
+            IF NOT AVAILABLE (resp_det) THEN DO:
+                CREATE resp_det.
+                ASSIGN 
+                    resp_det.resp_event_id  = v-event_ID 
+                    resp_det.resp_people_ID = people_mstr.people_id 
+                    resp_det.resp_name      = "CHAPERONE"
+                    resp_det.resp_category  = "CHAPERONE"
+                    resp_det.resp_create_date   = TODAY 
+                    resp_det.resp_created_by    = USERID("Modules")
+                    resp_det.resp_modified_by   = USERID("Modules")
+                    resp_det.resp_modified_date = TODAY 
+                    resp_det.resp_prog_name     = THIS-PROCEDURE:FILE-NAME.
+            END.    /** of if not avail resp_det --- create resp_det **/
+            
+        END.   /** of if v-chaperone = yes **/
+        
+        IF v-leader = YES THEN DO: 
+            
+            FIND FIRST resp_det WHERE resp_det.resp_event_ID = v-event_ID AND 
+                resp_det.resp_name = "LEADER" AND 
+                resp_det.resp_people_id = people_mstr.people_id AND
+                resp_det.resp_category = "LEADER" 
+                    NO-LOCK NO-ERROR.
+            IF NOT AVAILABLE (resp_det) THEN DO:
+                CREATE resp_det.
+                ASSIGN 
+                    resp_det.resp_event_id  = v-event_ID 
+                    resp_det.resp_people_ID = people_mstr.people_id 
+                    resp_det.resp_name      = "LEADER"
+                    resp_det.resp_category  = "LEADER"
+                    resp_det.resp_create_date   = TODAY 
+                    resp_det.resp_created_by    = USERID("Modules")
+                    resp_det.resp_modified_by   = USERID("Modules")
+                    resp_det.resp_modified_date = TODAY 
+                    resp_det.resp_prog_name     = THIS-PROCEDURE:FILE-NAME.
+            END.    /** of if not avail resp_det --- create resp_det **/
+            
+        END.   /** of if v-leader = yes **/
+
+        IF v-teacher = YES THEN DO: 
+            
+            FIND FIRST resp_det WHERE resp_det.resp_event_ID = v-event_ID AND 
+                resp_det.resp_name = "TEACHER" AND 
+                resp_det.resp_people_id = people_mstr.people_id AND
+                resp_det.resp_category = "TEACHER" 
+                    NO-LOCK NO-ERROR.
+            IF NOT AVAILABLE (resp_det) THEN DO:
+                CREATE resp_det.
+                ASSIGN 
+                    resp_det.resp_event_id  = v-event_ID 
+                    resp_det.resp_people_ID = people_mstr.people_id 
+                    resp_det.resp_name      = "TEACHER"
+                    resp_det.resp_category  = "TEACHER"
+                    resp_det.resp_create_date   = TODAY 
+                    resp_det.resp_created_by    = USERID("Modules")
+                    resp_det.resp_modified_by   = USERID("Modules")
+                    resp_det.resp_modified_date = TODAY 
+                    resp_det.resp_prog_name     = THIS-PROCEDURE:FILE-NAME.
+            END.    /** of if not avail resp_det --- create resp_det **/
+            
+        END.   /** of if v-teacher = yes **/            
+        
+    END.  /** of if avail people_mstr **/
+            
+        /*****************  End of 1dot1 changes  *************************/                                   
+         
+END. /*** of people_validation act ***/
+
+/**** Populate the list with settings people are registered for *****/
+FOR EACH event_mstr WHERE event_mstr.event_ID = v-event_ID AND 
+        event_mstr.event_deleted = ? NO-LOCK,
+    EACH sched_mstr WHERE sched_mstr.sched_event_ID = event_mstr.event_ID AND 
+        sched_mstr.sched_deleted = ? NO-LOCK,
+    EACH regis_mstr WHERE regis_mstr.regis_people_id = v-people_ID AND
+        regis_mstr.regis_class_ID = sched_mstr.sched_class_ID AND  
+        regis_mstr.regis_deleted = ? NO-LOCK: 
+
+    if itmessages = yes then 
+        {&OUT} "period = " INTEGER(sched_mstr.sched_period) "<br>".
+
+    v-classlist[INTEGER(sched_mstr.sched_period)] = sched_mstr.sched_class_ID.   /* Will be a problem for Periods with characters */
+    
+    IF INTEGER(sched_mstr.sched_period) = v-stage THEN                           /* Will be a problem for Periods with characters */
+        v-old_class_ID  = sched_mstr.sched_class_ID.
+        
+END.  /*** of 4ea. regis_mstr ***/
+/*****  End of populate the list   ********/
+
+FIND event_mstr WHERE event_mstr.event_ID = v-event_id AND 
+    event_mstr.event_deleted = ? 
+        NO-LOCK NO-ERROR.
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "v-stage = " v-stage 
+        " v-class_ID = " v-class_ID 
+        " v-old_class_ID = " v-old_class_ID 
+        " Event_mstr found = " AVAILABLE(event_mstr) 
+        "<BR>" SKIP.
+    
+
+/***********************  VALIDATION ACT  ************************/
+IF v-act = "VALIDATION" THEN DO: 
+    
+    IF itmessages = YES THEN {&OUT} "Wuut #4 ?<br>".
+    
+    IF v-class_ID <> 0 THEN ASSIGN 
+        v-classlist[v-stage]    = v-class_ID.
+    
+    IF itmessages = YES THEN {&OUT} "Wuut #5 ?<br>".
+    
+    IF v-old_class_ID <> v-class_ID THEN DO: 
+    
+        IF AVAILABLE (event_mstr) THEN 
+            FIND FIRST sched_mstr WHERE sched_mstr.sched_event_ID = event_mstr.event_ID AND 
+                sched_mstr.sched_class_ID = v-old_class_ID AND 
+                sched_mstr.sched_period = STRING(v-stage) AND 
+                sched_mstr.sched_deleted = ? 
+                    EXCLUSIVE-LOCK NO-ERROR.      
+
+        IF ITmessages = YES THEN        
+            {&OUT}
+                "v-stage = " v-stage 
+                " v-class_ID = " v-class_ID 
+                " v-old_class_ID = " v-old_class_ID 
+                " Event_mstr found = " AVAILABLE(event_mstr) 
+                " Sched_mstr found = " AVAILABLE(sched_mstr)
+                "<BR>" SKIP.
+                           
+        IF AVAILABLE (sched_mstr) THEN DO: 
+            
+            ASSIGN 
+                sched_mstr.sched_used_seats = sched_mstr.sched_used_seats - 1
+                v-old_class_ID              = v-class_ID
+                v-disabled                  = IF sched_mstr.sched__dec01 > 0 THEN 
+                                                "DISABLED"
+                                              ELSE 
+                                                ""
+                sched_mstr.sched_modified_by    = USERID("SCOUTS")      /** will need to change when fixing the new database structures **/
+                sched_mstr.sched_modified_date  = TODAY
+                sched_mstr.sched_prog_name      = THIS-PROCEDURE:FILE-NAME.        
+        
+            FIND regis_mstr WHERE regis_mstr.regis_people_id = people_mstr.people_id AND                    /* 1dot1 */
+                regis_mstr.regis_class_ID   = sched_mstr.sched_class_ID
+                    EXCLUSIVE-LOCK NO-ERROR.
+                    
+            IF AVAILABLE (regis_mstr) THEN 
+                DELETE regis_mstr. 
+        
+        END.  /** of if avail sched_mstr **/
+        
+    END.  /*** of v-old_class_ID <> v-class_ID ***/
+    
+    IF AVAILABLE (event_mstr) THEN 
+        FIND FIRST sched_mstr WHERE sched_mstr.sched_event_ID = event_mstr.event_ID AND 
+            sched_mstr.sched_class_ID = v-class_ID AND 
+            sched_mstr.sched_period = STRING(v-stage) AND 
+            sched_mstr.sched_deleted = ? 
+                EXCLUSIVE-LOCK NO-ERROR. 
+    
+    IF AVAILABLE (sched_mstr) THEN DO: 
+        
+        FIND regis_mstr WHERE regis_mstr.regis_people_id = v-people_ID AND 
+           regis_mstr.regis_class_ID = sched_mstr.sched_class_ID AND 
+           regis_mstr.regis_deleted = ? 
+               NO-LOCK NO-ERROR.
+               
+        IF NOT AVAILABLE (regis_mstr) THEN DO:
+                    
+            CREATE regis_mstr.
+            
+            ASSIGN 
+            
+               regis_mstr.regis_people_ID     = v-people_ID
+               regis_mstr.regis_class_ID      = sched_mstr.sched_class_ID
+               regis_mstr.regis_created_by    = USERID("SCOUTS")      /** will need to change when fixing the new database structures **/
+               regis_mstr.regis_create_date   = TODAY 
+               regis_mstr.regis_modified_by   = USERID("SCOUTS")      /** will need to change when fixing the new database structures **/
+               regis_mstr.regis_modified_date = TODAY
+               regis_mstr.regis_prog_name     = THIS-PROCEDURE:FILE-NAME 
+               
+               sched_mstr.sched_used_seats    = sched_mstr.sched_used_seats + 1
+               sched_mstr.sched_modified_by   = USERID("SCOUTS")      /** will need to change when fixing the new database structures **/
+               sched_mstr.sched_modified_date = TODAY
+               sched_mstr.sched_prog_name     = THIS-PROCEDURE:FILE-NAME.
+               
+        END.  /** of if not avail regis_mstr **/
+           
+        v-classlist[v-stage + integer(sched_mstr.sched__dec01)] = v-class_ID.
+    
+    END.  /*** of if avail sched_mstr ***/       
+            
+
+    IF ITmessages = YES THEN 
+        {&OUT}
+            "<DIV class='w3-container w3-content'>" SKIP
+            "   <OL>Class List" SKIP.
+            
+    v-carrylist = "".
+        
+    DO x = 1 TO 14: 
+    
+       v-carrylist = IF v-carrylist = "" THEN 
+                        string(v-classlist[x])
+                      ELSE 
+                        v-carrylist + "," + string(v-classlist[x]). 
+    
+       IF ITmessages = YES THEN     
+           {&OUT}
+               "       <LI>" v-classlist[x] "</LI>" SKIP.
+        
+    END.  /** of do x = 1 to 14 **/
+    
+    IF ITmessages = YES THEN 
+        {&OUT}
+            "   </OL>" SKIP
+            "</DIV>" SKIP.
+            
+    ASSIGN 
+        v-stage = v-stage + 1.
+    
+    IF v-stage < 15 THEN                        /*** fix for proper path ***/
+        v-act = "PICK_CLASS".
+    ELSE 
+        ASSIGN 
+            v-act = "FINAL_ACT".
+    
+        
+END.  /*** of if v-act = "VALIDATION" ***/
+
+IF v-chaperone = YES OR v-leader = YES OR v-teacher = YES THEN DO:
+
+    ASSIGN 
+        v-act = "adult_pick".
+    
+    IF itmessages = YES THEN {&OUT} "At I'm a leader... v-act =" v-act "<br>".
+    
+END. /*** leader pather finder. ***/
+
+
+
+CASE v-act:
+    
+    WHEN "INITIAL" THEN DO: 
+        
+        /****** reset variables in case of user redo  ************/
+        DO x = 1 TO 14: 
+            
+            v-classlist[x] = 0.
+            
+        END.  /*** of do x = 1 to 14 --- variable reset  ***/    
+
+        /*******************  People Registration  here  *****************/
+        
+/*        pass ACROSS v-stage and increment v-progress  by 6.25 for youth and 11.11 for leaders (this is actually based on*/
+/*            number of choosable periods)                                                                                */
+
+        {&OUT}
+            "<div class=' w3-content w3-responsive w3-xlarge'  style='max-width:1400px;'>" SKIP.
+            
+        IF AVAILABLE (event_mstr) THEN 
+            {&OUT}
+                "   <H2 class=''>Sign up for " event_mstr.event_name "</H2>" SKIP(1).
+        ELSE 
+            {&OUT}
+                "   <H2 class=''>Sign up for something awesome!</H2>" SKIP(1).  
+
+        {&OUT}
+            "   <br>" SKIP
+            "<form>" skip
+            "<div class='w3-container w3-text-white w3-round'>" SKIP
+            "    <h2 class='w3-border-white w3-topbar'>Personal Information</h2>"            
+
+            "   <div class='w3-row-padding'>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>First Name</label>" SKIP
+            "           <input class='w3-input w3-round-large w3-hover-theme' name='h-first_name' type='text' value='" v-firstname "' required>" SKIP
+            "       </p>" SKIP 
+            "       <p class='w3-half'>" SKIP
+            "           <label>Last Name</label>" SKIP
+            "           <input class='w3-input w3-round-large w3-hover-theme' name='h-last_name' type='text' value='" v-lastname "' required>" SKIP
+            "       </p>" SKIP
+            "   </div>" SKIP
+            
+            "   <div class='w3-row-padding'>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>Date of Birth</label>" SKIP
+            "           <input class='w3-input w3-round-large w3-hover-theme' name='h-DOB' type='date' value='" v-DOB "' required>" SKIP
+            "       </p>" SKIP 
+            "       <p class='w3-half'>" SKIP
+            "           <label>Email Address</label>" SKIP
+            "           <input class='w3-input w3-round-large w3-hover-theme' name='h-email' type='text' value='" v-email "'>" SKIP
+            "       </p>" SKIP
+            "   </div>" SKIP
+            
+            "   <div class='w3-row-padding'>" SKIP
+            "       <p class='w3-col s12'>" SKIP
+            "           <label>T-Shirt Size</label>" SKIP
+            "           <select name='h-shirt' class='w3-border w3-round-large w3-select w3-hover-theme' >" SKIP            
+            "               <option value='Wee'>Wee</option>" SKIP
+            "               <option value='Small'>Small</option>" SKIP
+            "               <option value='Medium'>Medium</option>" SKIP
+            "               <option value='Large'>Large</option>" SKIP
+            "               <option value='XL'>XL</option>" SKIP
+            "               <option value='2XL'>2XL</option>" SKIP
+            "               <option value='3XL'>3XL</option>" SKIP
+            "               <option value='5XL'>Doug-Sized</option>" SKIP
+            "           </select>" SKIP
+            "       </p>" SKIP
+            "   </DIV>" SKIP             
+            
+            "   <H2 class='w3-border-white w3-topbar'>Organizational Information</h2>"
+            
+            "   <div class='w3-row-padding'>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>Ward or Branch</label>" SKIP
+            "           <select name='h-unit' class='w3-border w3-round-large w3-select w3-hover-theme' >" SKIP     
+            "               <option value='Auburn'>Auburn</option>" SKIP
+            "               <option value='Cornish'>Cornish</option>" SKIP
+            "               <option value='Damariscotta'>Damariscotta</option>" SKIP
+            "               <option value='Farmingdale'>Farmingdale</option>" SKIP
+            "               <option value='Oxford'>Oxford</option>" SKIP
+            "               <option value='Portland'>Portland</option>" SKIP
+            "               <option value='Saco'>Saco</option>" SKIP
+            "               <option value='Topsham'>Topsham</option>" SKIP
+            "               <option value='Windham'>Windham</option>" SKIP
+            "               <option value='Winthrop'>Winthrop</option>" SKIP
+            "               <option value='Yarmouth'>Yarmouth</option>" SKIP                   
+            "               <option value='NON'>Not a Member (Yet)</option>" SKIP
+            "           </select>" SKIP
+            "       </p>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>Quorum</label>" SKIP
+            "           <select class='w3-select w3-round-large w3-hover-theme' name='h-quorum'>" SKIP
+            "               <option value='Deacon'>Deacon</option>" SKIP
+            "               <option value='Teacher'>Teacher</option>" SKIP
+            "               <option value='Priest'>Priest</option>" SKIP
+            "               <option value='Elder'>Elder</option>" SKIP
+            "               <option value='High Priest'>High Priest</option>" SKIP
+            "               <option value='NON'>No Priesthood (Yet)</option>" SKIP 
+            "           </select>" SKIP
+            "       </p>" SKIP
+            "   </div>" SKIP          
+            
+            "   <div class='w3-row-padding'>" SKIP
+            "    <p class='w3-col s12'>" SKIP
+            "        <label>Scout Rank</label>" SKIP
+            "           <select class='w3-select w3-round-large w3-hover-theme' name='h-scout_rank'>" SKIP              /* 1dot1 */
+            "               <option value='Non-Scout'>Not a Boy Scout (Yet)</option>" SKIP
+            "               <option value='Scout'>Scout</option>" SKIP 
+            "               <option value='Tenderfoot'>Tenderfoot</option>" SKIP
+            "               <option value='2ndClass'>Second Class</option>" SKIP
+            "               <option value='1stClass'>First Class</option>" SKIP
+            "               <option value='Star'>Star</option>" SKIP
+            "               <option value='Life'>Life</option>" SKIP
+            "               <option value='Eagle'>Eagle</option>" SKIP
+            "               <option value='Eagle'>Eagle, Bronze Palm</option>" SKIP
+            "               <option value='Eagle'>Eagle, Gold Palm</option>" SKIP
+            "               <option value='Eagle'>Eagle, Silver Palm</option>" SKIP
+            "               <option value='Eagle'>Eagle, Second Bronze Palm</option>" SKIP
+            "               <option value='Eagle'>Eagle, Second Gold Palm</option>" SKIP
+            "           </select>" SKIP
+            "    </p>" SKIP
+            "   </DIV>" SKIP
+
+            "    <H2 class='w3-border-white w3-topbar'>Medical Information</h2>"
+
+            "   <div class='w3-row-padding'>" SKIP            
+            "    <p class='w3-col s12'>" SKIP
+            "        <label>Allergies</label>" SKIP
+            "        <textarea class='w3-input w3-border w3-round-large w3-hover-theme' name='h-allergies' rows='3' cols='50'>" v-allergies "</textarea>" SKIP
+            "    </p>" SKIP
+
+            "    <p class='w3-col s12'>" SKIP
+            "        <label>Medical Conditions</label>" SKIP
+            "        <textarea class='w3-input w3-border w3-round-large w3-hover-theme' name='h-medical' rows='3' cols='50'>" v-medical "</textarea>" SKIP
+            "    </p>" SKIP
+            "   </div>" SKIP
+
+            "    <H2 class='w3-border-white w3-topbar'>Please see to these permissions.</h2>"
+
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-photo_perm' value='yes' required/>" SKIP
+            "        <label>Permission to Photograph</label>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-parent_approval' value='yes' required/>" SKIP
+            "        <label>Parental Approval</label>" SKIP            
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-medical_forms' value='yes' required/>" SKIP
+            "        <label>Medical Forms Done</label>" SKIP
+            "    </p>" SKIP
+            
+            "    <h2 class='w3-border-white w3-topbar'>Are you a ... ?</h2>"
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-chaperone' value='yes'/>" SKIP
+            "        <label>Chaperone</label>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-leader' value='yes'/>" SKIP    
+            "        <label>Leader</label>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top w3-hover-text-theme'>" SKIP
+            "        <input class='w3-check' type='checkbox' name='h-teacher' value='yes'/>" SKIP
+            "        <label>Teacher</label>" SKIP
+            "    </p>" SKIP
+            
+            "<BR>" SKIP
+                  
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='people_validation' class='w3-block w3-button w3-hover-theme w3-round w3-green'  style='max-width:500px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP 
+            "<div class='w3-row-padding w3-margin' >" SKIP
+            "   <div class='w3-col s12'>" SKIP
+            "       <button type='Reset' class='w3-block w3-button w3-hover-theme w3-round w3-red'  style='max-width:500px;'><b>Reset</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "<br><br><br><br><br><br><br>" SKIP.
+        
+    END.  /** of when v-act = "INITIAL" **/
+    
+    WHEN "PICK_CLASS" THEN DO: 
+       
+        ASSIGN
+            v-path_increment    = 6.25
+            v-progress          = IF v-progress = 0 THEN
+		                            v-path_increment
+		                          ELSE
+		                            v-progress + v-path_increment
+		    v-stage             = IF v-stage = 0 THEN 
+		                            1
+		                          ELSE 
+		                            v-stage.
+       
+        {&OUT}
+            "<FORM>" SKIP(1)
+            
+                      /********************   hidden variable types --- passing data back   *************************/   
+            "<INPUT name='h-stage' value='" (v-stage) "' type='hidden'>" SKIP
+            "<INPUT name='h-people_ID' value='" v-people_ID "' type='hidden'>" SKIP
+            "<INPUT name='h-carrylist' value='" v-carrylist "' type='hidden'>" SKIP
+            "<INPUT name='h-progress' value='" v-progress "' type='hidden'>" SKIP
+            "<INPUT name='h-old_class_ID' value='" v-old_class_ID "' type='hidden'>" SKIP
+            "<INPUT name='h-event_ID' value='" v-event_ID "' type='hidden'>" SKIP(1)
+                      /****************************  end of hidden variable list  ***********************************/
+                            
+            "<div class=' w3-content w3-responsive w3-xlarge'  style='max-width:1400px;'>" SKIP.
+            
+        IF AVAILABLE (event_mstr) THEN 
+            {&OUT}
+                "   <H2 class=''>Sign up for " event_mstr.event_name "</H2>" SKIP(1).
+        ELSE 
+            {&OUT}
+                "   <H2 class=''>Sign up for something awesome!</H2>" SKIP(1).   
+                  
+        {&OUT}                      
+            "   <br>" SKIP
+            "       <div class='w3-black'>" SKIP
+            "           <div class='w3-container w3-theme' style='width:" v-progress "%'>" v-progress "%</div>" SKIP
+            "       </div>" SKIP
+            "   <br>" SKIP
+            "   <center>" SKIP 
+            "   <div class='w3-row w3-topbar w3-bottombar w3-border-white w3-border-theme'>" SKIP
+           
+            "       <header class=''>" SKIP
+            "           <h2 > Period " v-stage "</h3>" SKIP
+            "       </header>" SKIP
+            "        <DIV class='w3-row'>" SKIP.
+                        
+            /**********  This code finds all the classes at a specific period   *************/                        
+        FOR EACH event_mstr WHERE event_mstr.event_id = v-event_ID AND 
+                event_mstr.event_deleted = ? NO-LOCK,        
+            EACH sched_mstr WHERE sched_mstr.sched_event_ID = event_mstr.event_ID AND 
+                INTEGER(sched_mstr.sched_period) >= (v-stage - sched_mstr.sched__dec01) AND    /** will be a problem with char periods **/
+                INTEGER(sched_mstr.sched_period) <= (v-stage) AND                              /** will be a problem wtih char periods */
+                sched_mstr.sched_deleted = ? NO-LOCK,
+            FIRST MB_mstr WHERE MB_mstr.MB_BSA_ID = sched_mstr.sched_BSA_ID AND 
+                MB_mstr.MB_deleted = ? NO-LOCK 
+                /** should be by period by class_id by sched__dec01 desc  **/  /* adding in some cheating by event_ID */
+            BREAK BY event_mstr.event_ID BY INTEGER(sched_mstr.sched_period) BY sched_mstr.sched_class_ID BY sched_mstr.sched__dec01: 
+/*            BREAK BY INTEGER(sched_mstr.sched_period) BY sched_mstr.sched__dec01 DESCENDING BY sched_mstr.sched_class_id:*/
+
+            IF FIRST-OF (event_mstr.event_ID) THEN DO:
+                ASSIGN 
+                    v-disabled = "".
+            END.  /** of if first-of sched_period **/
+            
+/*            IF FIRST-OF (integer(sched_mstr.sched_period)) THEN DO:*/
+/*                ASSIGN                                             */
+/*                    v-disabled = "".                               */
+/*            END.  /** of if first-of sched_period **/              */
+            
+            IF FIRST-OF (sched_mstr.sched_class_ID) THEN DO:   /* was (INTEGER(sched_period)) */
+                ASSIGN 
+/*                    v-disabled = ""*/
+                    v-found-regis = NO.
+                    
+                IF v-classlist[INTEGER(v-stage)] > 0 AND
+                        (sched_mstr.sched__dec01 > 0 AND  
+/*                        v-classlist[INTEGER(INTEGER(v-stage) - sched_mstr.sched__dec01)] <> v-classlist[integer(v-stage)]) AND*/
+                        v-classlist[INTEGER(v-stage)] <> sched_mstr.sched_class_ID AND 
+                        v-classlist[INTEGER(INTEGER(v-stage) - sched_mstr.sched__dec01)] = sched_mstr.sched_class_ID) THEN
+/*                        v-classlist[integer(v-stage)] = sched_mstr.sched_class_ID THEN*/
+                    v-disabled = "DISABLED".    /* I bet this is wrong if they go down the Pyro path */
+/*                ELSE                */
+/*                    v-disabled = "".*/
+            END.  /** of if first-of sched_class_ID **/    
+                    
+                    
+             
+            IF v-classlist[INTEGER(sched_mstr.sched_period)] = sched_mstr.sched_class_ID THEN        /* problem with char periods */
+               v-checked   = "CHECKED".
+            ELSE 
+               v-checked   = "".
+    
+			IF CAN-FIND (FIRST regis_mstr WHERE regis_mstr.regis_people_id = v-people_ID AND 
+			                regis_mstr.regis_class_ID = sched_mstr.sched_class_ID NO-LOCK) AND 
+                v-classlist[integer(sched_mstr.sched_period)] = sched_mstr.sched_class_ID
+			                THEN DO:  
+            
+                ASSIGN v-found-regis = YES.
+            
+                IF sched_mstr.sched_period <> STRING(v-stage) THEN DO: 
+                                
+                    ASSIGN 
+                        v-disabled = "DISABLED"
+                        v-checked = "checked". 
+                                
+                   {&OUT}
+                           
+                        "       <div class='w3-col s12 m6 l4 w3-padding'>" SKIP 
+                        "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP.
+                        
+                   IF itmessages = YES THEN 
+                        {&OUT} "Line number = 672<BR>v-found-regis = " v-found-regis "<BR>" SKIP
+                                "v-disabled = " v-disabled "<BR>" SKIP
+                                "class_ID = " sched_mstr.sched_class_ID "<BR>" SKIP.
+                   
+                   
+                   /*** Should be driven by if first-of sched_class_ID ***/
+                    IF FIRST-OF (sched_mstr.sched_class_ID) THEN 
+                   {&OUT}
+                        "               <input class='w3-radio' type='radio' name='h-class_ID' value='" sched_mstr.sched_class_ID "' " v-disabled " " v-checked ">" SKIP
+                        "               <br>" SKIP 
+                        "               <label class=''>" MB_mstr.MB_name "</label>" SKIP  
+                        "               <br>" SKIP                    
+                        "               <div class='w3-row'>" SKIP
+                        "                  <div class='w3-medium w3-col s12' style='color:grey; text-align:right'> Open Seats: " 
+                        (sched_mstr.sched_total_seats - sched_mstr.sched_used_seats) "</div>" SKIP
+                        "               </div>" SKIP                
+                        "           </div>" SKIP
+                        "       </div>" SKIP.
+                
+                /** should be conditional based on the stage and period not matching ***/
+                    IF v-stage <> integer(sched_mstr.sched_period) THEN          /** problem for character periods **/ 
+                    {&OUT}
+                        "<DIV class='w3-container w3-col s12 m6 l4'>" SKIP
+                        "   <P class='w3-large'><I>You have chosen a course on a previous screen that extends across this period.  "
+                        "Look at these classtivities and be sure you've choosen wisely. If you are unhappy "
+                        "with this choice, please go BACK and change your previous choice.  Depending on which browser you are " 
+                        "using you may need to refresh the page.</I></P>" SKIP
+                        "</DIV>" SKIP.
+                        
+                END.  /** of if can-find regis_mstr and double period **/
+                
+                ELSE DO: /*** found it, but it is not a double period ***/
+                    
+                    ASSIGN 
+                        v-disabled = ""
+                        v-checked = "checked".
+                    
+                    {&OUT}   
+                        "       <div class='w3-col s12 m6 l4 w3-padding'>" SKIP 
+                        "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP
+                        "               <input class='w3-radio' type='radio' name='h-class_ID' value='" sched_mstr.sched_class_ID "' " v-disabled " " v-checked ">" SKIP.
+                        
+                   IF itmessages = YES THEN 
+                        {&OUT} "Line number = 715<BR>v-found-regis = " v-found-regis "<BR>" SKIP
+                                "v-disabled = " v-disabled "<BR>" SKIP
+                                "class_ID = " sched_mstr.sched_class_ID "<BR>" SKIP.
+                   
+                   {&OUT}
+                        "               <br>" SKIP 
+                        "               <label class=''>" MB_mstr.MB_name "</label>" SKIP  
+                        "               <br>" SKIP                    
+                        "               <div class='w3-row'>" SKIP
+                        "                  <div class='w3-medium w3-col s12' style='color:grey; text-align:right'> Open Seats: " 
+                        (sched_mstr.sched_total_seats - sched_mstr.sched_used_seats) "</div>" SKIP
+                        "               </div>" SKIP                
+                        "           </div>" SKIP
+                        "           <BR>" SKIP
+                        "       </div>" SKIP.
+                        
+                END. /*** not-used double length class ***/
+               
+            END.  /*** regis_mstr found... ***/
+            
+            ELSE DO: /*** couldn't find a selected class ***/
+            
+                IF sched_mstr.sched_period <> STRING(v-stage) 
+/*                    AND sched_mstr.sched__dec01 > 0*/
+                    THEN DO: 
+                                
+                    IF v-checked = "CHECKED" THEN 
+                        ASSIGN
+                            v-disabled = "DISABLED".        /** right here **/
+
+                                
+                   {&OUT}
+                           
+                        "       <div class='w3-col s12 m6 l4 w3-padding'>" SKIP 
+                        "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP.
+                        
+                   IF itmessages = YES THEN 
+                        {&OUT} "Line number = 749<BR>v-found-regis = " v-found-regis "<BR>" SKIP
+                                "v-disabled = " v-disabled "<BR>" SKIP
+                                "class_ID = " sched_mstr.sched_class_ID "<BR>" SKIP
+                                "sched_period = " sched_mstr.sched_period "<BR>" SKIP.
+                   
+                   {&OUT}
+                        "               <input class='w3-radio' type='radio' name='h-class_ID' value='" sched_mstr.sched_class_ID "' " v-disabled " " v-checked ">" SKIP
+                        "               <br>" SKIP 
+                        "               <label class=''>" MB_mstr.MB_name "</label>" SKIP  
+                        "               <br>" SKIP                    
+                        "               <div class='w3-row'>" SKIP
+                        "                  <div class='w3-medium w3-col s12' style='color:grey; text-align:right'> Open Seats: " 
+                        (sched_mstr.sched_total_seats - sched_mstr.sched_used_seats) "</div>" SKIP
+                        "               </div>" SKIP                
+                        "           </div>" SKIP
+                        "           <BR>" SKIP
+                        "       </div>" SKIP.
+                     
+                     
+
+                        
+                END.  /** second half of a double period **/
+                
+                ELSE DO: /*** found it, but it is not a double period ***/               
+                
+                    IF v-found-regis = YES THEN 
+                        ASSIGN 
+                            v-disabled = "disabled".
+                    
+                    {&OUT}   
+                        "       <div class='w3-col s12 m6 l4 w3-padding'>" SKIP 
+                        "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP
+                        "               <input class='w3-radio' type='radio' name='h-class_ID' value='" sched_mstr.sched_class_ID "' " v-disabled " " v-checked ">" SKIP.
+                        
+                   IF itmessages = YES THEN 
+                    {&OUT} "Line number = 780<BR>v-found-regis = " v-found-regis "<BR>" SKIP
+                                "v-disabled = " v-disabled "<BR>" SKIP
+                                "class_ID = " sched_mstr.sched_class_ID "<BR>" SKIP.
+                   
+                   {&OUT}
+                        "               <br>" SKIP 
+                        "               <label class=''>" MB_mstr.MB_name "</label>" SKIP  
+                        "               <br>" SKIP                    
+                        "               <div class='w3-row'>" SKIP
+                        "                  <div class='w3-medium w3-col s12' style='color:grey; text-align:right'> Open Seats: " 
+                        (sched_mstr.sched_total_seats - sched_mstr.sched_used_seats) "</div>" SKIP
+                        "               </div>" SKIP                
+                        "           </div>" SKIP
+                        "           <BR>" SKIP
+                        "       </div>" SKIP.
+                        
+                END. /*** not-used double length class ***/
+                        
+            END. /*** regular class ***/
+            
+/*            IF sched_mstr.sched_period = STRING(v-stage) THEN DO:                                                                                               */
+/*                                                                                                                                                                */
+/*                ASSIGN v-disabled = "".                                                                                                                         */
+/*                                                                                                                                                                */
+/*		          {&OUT}                                                                                                                                              */
+/*		              "       <div class='w3-col s12 m6 l4 w3-padding'>" SKIP                                                                                         */
+/*		              "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP                                            */
+/*		              "               <input class='w3-radio' type='radio' name='h-class_ID' value='" sched_mstr.sched_class_ID "' " v-disabled " " v-checked ">" SKIP*/
+/*		              "               <br>" SKIP                                                                                                                      */
+/*		              "               <label class=''>" MB_mstr.MB_name "</label>" SKIP                                                                               */
+/*		              "               <br>" SKIP                                                                                                                      */
+/*		              "               <div class='w3-row'>" SKIP                                                                                                      */
+/*		              "                  <div class='w3-medium w3-col s12' style='color:grey; text-align:right'> Open Seats: "                                        */
+/*		              (sched_mstr.sched_total_seats - sched_mstr.sched_used_seats) "</div>" SKIP                                                                      */
+/*		              "               </div>" SKIP                                                                                                                    */
+/*		              "           </div>" SKIP                                                                                                                        */
+/*		              "           <BR>" SKIP                                                                                                                          */
+/*		              "       </div>" SKIP.                                                                                                                           */
+/*                                                                                                                                                                */
+/*            END. /** also a regular class **/                                                                                                                   */
+
+            IF LAST-OF (INTEGER(sched_mstr.sched_period)) THEN DO:
+                
+            END. 
+
+        END.  /*** of 4ea. sched_mstr ***/ 
+     
+        {&OUT}
+            "</DIV>     <!-- end of bonus row -->" SKIP
+            "   </div><!--- row div --->" SKIP                                                                                                      
+
+            "<br>" SKIP
+            "<div class='w3-row-padding w3-margin' style='max-width:500px;'>" SKIP
+            "   <div class='w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='VALIDATION' class='w3-block w3-button w3-hover-theme w3-round w3-green'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP 
+            "<div class='w3-row-padding w3-margin' style='max-width:500px;' >" SKIP
+            "   <div class='w3-col s12'>" SKIP
+            "       <button type='Reset' class='w3-block w3-button w3-hover-theme w3-round w3-red'><b>Reset</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</div>" SKIP            
+            "</center>" SKIP
+            "</form>" SKIP
+            "<br><br><br><br><br><br><br>" SKIP. 
+            
+               
+            /****************************  End of class finding code  ************************/
+           
+  
+    END.  /** of when v-act = "EDITING" **/
+    
+    WHEN "ADULT_PICK" THEN DO: 
+        
+        ASSIGN v-progress = 75.
+        
+        {&OUT}
+            "<FORM>" SKIP(1)
+            
+                      /********************   hidden variable types --- passing data back   *************************/   
+            "<INPUT name='h-stage' value='" (v-stage) "' type='hidden'>" SKIP
+            "<INPUT name='h-people_ID' value='" v-people_ID "' type='hidden'>" SKIP
+            "<INPUT name='h-carrylist' value='" v-carrylist "' type='hidden'>" SKIP
+            "<INPUT name='h-progress' value='" v-progress "' type='hidden'>" SKIP
+            "<INPUT name='h-old_class_ID' value='" v-old_class_ID "' type='hidden'>" SKIP
+            "<INPUT name='h-event_ID' value='" v-event_ID "' type='hidden'>" SKIP(1)
+                      /****************************  end of hidden variable list  ***********************************/
+                            
+            "<div class=' w3-content w3-responsive w3-xlarge'  style='max-width:1400px;'>" SKIP.
+            
+        IF AVAILABLE (event_mstr) THEN 
+            {&OUT}
+                "   <H2 class=''>Sign up for " event_mstr.event_name "</H2>" SKIP(1).
+        ELSE 
+            {&OUT}
+                "   <H2 class=''>Sign up for something awesome!</H2>" SKIP(1).   
+                  
+        {&OUT}                      
+            "   <br>" SKIP
+            "       <div class='w3-black'>" SKIP
+            "           <div class='w3-container w3-theme' style='width:" v-progress "%'>" v-progress "%</div>" SKIP
+            "       </div>" SKIP
+            "   <br>" SKIP
+            "   <center>" SKIP 
+            "   <div class='w3-row w3-topbar w3-bottombar w3-border-theme'>" SKIP
+            "           <p class='w3-col s12'> We are pretty sure you must be some sort of leader. Go ahead and email "
+            "<a href=~"mailto:drmerryman@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment~" target=~"_top~">Dave</a>"
+            ", <a href=~"mailto:scott.e.pratt@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment~" target=~"_top~">Scott</a>"
+            ", or <a href=~"mailto:rpcamire@maine.rr.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment~" target=~"_top~">Roland</a>"
+            " with the times you will be there. There will be training for Adults offered on Saturday regarding Young Mens and Scouting. It will be epic. </p>" SKIP
+            "          <p class='w3-col s12'>If you ARE a regular participant of Man College!!! go ahead an click "
+            "<a href=~"../../Scouts/rcode/Dad-CMS-Event_Register-U.r?h-first_name=" v-firstname 
+            "&h-last_name=" v-lastname
+            "&h-DOB=" v-dob 
+            "h-email=" v-email
+            "&h-shirt=" v-shirt
+            "&h-unit=" v-unit 
+            "&h-quorum=" v-quorum 
+            "&h-scout_rank=" v-scout_rank                                                               /* 1dot1 */
+            "&h-allergies=" v-allergies 
+            "&h-medical=" v-medical 
+            "&h-photo_perm=" v-photo_perm 
+            "&h-parent_approval=" v-parent_approval 
+            "&h-medical_forms=" v-medical_forms 
+            "&h-act=PICK_class~">HERE</a> to continue signing up.</p>" SKIP
+            "       </div>" SKIP
+            "<br>" SKIP
+            "<form>"
+            "<div class='w3-row-padding w3-margin' style='max-width:500px;'>" SKIP
+            "   <div class='w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Initial' class='w3-block w3-button w3-hover-theme w3-round w3-green'><b>Register Another Person</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP   
+            "</form>" SKIP        
+            "   </div>"
+            "<br><br><br><br><br>"
+            "<br><br><br><br><br>"
+            "<br><br><br><br><br>".
+        
+    END.    /** of when v-act = "ADULT_PICK" **/
+    
+    WHEN "FINAL_ACT" THEN DO:
+        
+        /*** Put a congratulations page here ***/
+        {&OUT}
+            "<DIV class='w3-container w3-content w3-padding'>Put a congratualtions page here </DIV>" SKIP.
+            
+        
+    END.    /** of when v-act = "FINAL_ACT" **/
+       
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<div class='w3-display-container bgimg-err'>" SKIP
+            "<DIV class='w3-display-middle w3-text-black w3-center w3-theme-l3 w3-round-large'>" SKIP
+            "  <H1 class='w3-panel'>ERROR!  Please contact <a href='mailto:solsource.techsupport@mysolsource.com;doug.luttrell@gmail.com?Subject=Man College Registration Error'>Solsource</a> immediately.</H1>" SKIP(1)
+            "</DIV>" SKIP
+            "</DIV>" SKIP(1).
+            
+        
+    END.  /*** of otherwise ***/
+    
+END CASE.  /*** of case v-act ***/
+
+
+/*IF v-act <> "initial" THEN DO:                                                                                              */
+/*                                                                                                                            */
+/*    FIND people_shadow WHERE people_shadow.people_ID = v-people_ID AND                                                      */
+/*       people_shadow.people_ID <> 0         /** should be the actual people_mstr **/                                        */
+/*        NO-LOCK NO-ERROR.                                                                                                   */
+/*                                                                                                                            */
+/*                                                                                                                            */
+/*    IF AVAILABLE (people_shadow) THEN DO:                                   /** should be the actual people_mstr **/        */
+/*                                                                                                                            */
+/*        IF (TODAY - people_shadow.people_DOB) / 365 >= 19 THEN ASSIGN             /** should be the actual people_mstr **/  */
+/*            v-path_increment    = 11.11                                                                                     */
+/*            v-act = "Adult_Pick".    /* needs to be replaced with actual calculation based on number of pages for signup */ */
+/*        ELSE ASSIGN                                                                                                         */
+/*            v-path_increment    = 6.25                                                                                      */
+/*            v-act = "Pick_Class".     /* needs to be replaced with actual calculation based on number of pages for signup */*/
+/*                                                                                                                            */
+/*        IF itmessages = YES THEN {&OUT} "At people_shad avail v-act =" v-act "<br>".                                        */
+/*                                                                                                                            */
+/*    END.  /*** of if avail people_shadow ***/                               /** should be the actual people_mstr **/        */
+/*                                                                                                                            */
+/*    ELSE DO:                                                                                                                */
+/*                                                                                                                            */
+/*        IF (TODAY - v-DOB) / 365 >= 19 THEN ASSIGN                                                                          */
+/*            v-path_increment    = 11.11                                                                                     */
+/*            v-act = "Adult_Pick".                                                                                           */
+/*                                                                                                                            */
+/*        ELSE ASSIGN                                                                                                         */
+/*            v-path_increment    = 6.25                                                                                      */
+/*             v-act = "Pick_Class".                                                                                          */
+/*                                                                                                                            */
+/*       IF itmessages = YES THEN {&OUT} "At people shad not avail v-act =" v-act "<br>".                                     */
+/*                                                                                                                            */
+/*    END.  /*** of else do --- people_shadow not avail ***/                                                                  */
+/*                                                                                                                            */
+/*END. /*** v-dob <> ? ***/                                                                                                   */
+/*                                                                                                                            */
+/*/*ELSE ASSIGN v-act = "initial".*/                                                                                          */
+
+
+/*IF sched_mstr.sched_period <> STRING(v-stage) THEN DO:                                                                                                                                                                */
+/*                                                                                                                                                                                                                      */
+/*                IF CAN-FIND (FIRST regis_mstr WHERE regis_mstr.regis_people_id = v-people_ID AND                                                                                                                      */
+/*                                regis_mstr.regis_class_ID = sched_mstr.sched_class_ID NO-LOCK) THEN DO:                                                                                                               */
+/*                                                                                                                                                                                                                      */
+/*                    ASSIGN                                                                                                                                                                                            */
+/*                        v-disabled = "DISABLED"                                                                                                                                                                       */
+/*                        v-checked = "checked".                                                                                                                                                                        */
+/*                                                                                                                                                                                                                      */
+/*                   {&OUT}                                                                                                                                                                                             */
+/*                        "       <div class='w3-col s12 m6 l4 w3-padding'>" SKIP                                                                                                                                       */
+/*                        "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP                                                                                          */
+/*                        "               <input class='w3-radio' type='radio' name='h-class_ID' value='" sched_mstr.sched_class_ID "' " v-disabled " " v-checked ">" SKIP                                              */
+/*                        "               <br>" SKIP                                                                                                                                                                    */
+/*                        "               <label class=''>" MB_mstr.MB_name "</label>" SKIP                                                                                                                             */
+/*                        "               <br>" SKIP                                                                                                                                                                    */
+/*                        "               <div class='w3-row'>" SKIP                                                                                                                                                    */
+/*                        "                  <div class='w3-medium w3-col s12' style='color:grey; text-align:right'> Open Seats: "                                                                                      */
+/*                        (sched_mstr.sched_total_seats - sched_mstr.sched_used_seats) "</div>" SKIP                                                                                                                    */
+/*                        "               </div>" SKIP                                                                                                                                                                  */
+/*                        "           </div>" SKIP                                                                                                                                                                      */
+/*                        "           <BR>" SKIP                                                                                                                                                                        */
+/*                        "       </div>" SKIP.                                                                                                                                                                         */
+/*                                                                                                                                                                                                                      */
+/*                    {&OUT}                                                                                                                                                                                            */
+/*                        "<DIV class='w3-container w3-col s12 m6 l4'>" SKIP                                                                                                                                            */
+/*                        "   <P class='w3-large'><I>You have chosen a course on a previous screen that extends across this period.  Look at these classtivities and be sure you've choosen wisely. If you are unhappy "*/
+/*                        "with this choice, please go BACK and change your previous choice.  Depending on which browser you are using you may need to "                                                                */
+/*                        "refresh the page.</I></P>" SKIP                                                                                                                                                              */
+/*                        "</DIV>" SKIP                                                                                                                                                                                 */
+/*                        "</DIV>     <!-- end of div ROW -->" SKIP(1)                                                                                                                                                  */
+/*                        "<DIV>" SKIP.                                                                                                                                                                                 */
+/*                                                                                                                                                                                                                      */
+/*                END.  /** of if can-find regis_mstr **/                                                                                                                                                               */
+/*                                                                                                                                                                                                                      */
+/*                ELSE do:                                                                                                                                                                                              */
+/*                                                                                                                                                                                                                      */
+/*                    ASSIGN                                                                                                                                                                                            */
+/*                        v-disabled = "DISABLED"                                                                                                                                                                       */
+/*                        v-checked = "".                                                                                                                                                                               */
+/*                                                                                                                                                                                                                      */
+/*                    {&OUT}                                                                                                                                                                                            */
+/*                        "       <div class='w3-col s12 m6 l4 w3-padding'>" SKIP                                                                                                                                       */
+/*                        "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP                                                                                          */
+/*                        "               <input class='w3-radio' type='radio' name='h-class_ID' value='" sched_mstr.sched_class_ID "' " v-disabled " " v-checked ">" SKIP                                              */
+/*                        "               <br>" SKIP                                                                                                                                                                    */
+/*                        "               <label class=''>" MB_mstr.MB_name "</label>" SKIP                                                                                                                             */
+/*                        "               <br>" SKIP                                                                                                                                                                    */
+/*                        "               <div class='w3-row'>" SKIP                                                                                                                                                    */
+/*                        "                  <div class='w3-medium w3-col s12' style='color:grey; text-align:right'> Open Seats: "                                                                                      */
+/*                        (sched_mstr.sched_total_seats - sched_mstr.sched_used_seats) "</div>" SKIP                                                                                                                    */
+/*                        "               </div>" SKIP                                                                                                                                                                  */
+/*                        "           </div>" SKIP                                                                                                                                                                      */
+/*                        "           <BR>" SKIP                                                                                                                                                                        */
+/*                        "       </div>" SKIP.                                                                                                                                                                         */
+/*                                                                                                                                                                                                                      */
+/*                END. /*** not-used double length class ***/                                                                                                                                                           */
+/*                                                                                                                                                                                                                      */
+/*            END.  /*** of if sched_period <> v-stage ***/                                                                                                                                                             */
+/*                                                                                                                                                                                                                      */
+/*            ELSE DO:                                                                                                                                                                                                  */
+/*                                                                                                                                                                                                                      */
+/*                ASSIGN                                                                                                                                                                                                */
+/*                        v-disabled = "DISABLED"                                                                                                                                                                       */
+/*                        v-checked = "".                                                                                                                                                                               */
+/*                                                                                                                                                                                                                      */
+/*                {&OUT}                                                                                                                                                                                                */
+/*                        "       <div class='w3-col s12 m6 l4 w3-padding'>" SKIP                                                                                                                                       */
+/*                        "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP                                                                                          */
+/*                        "               <input class='w3-radio' type='radio' name='h-class_ID' value='" sched_mstr.sched_class_ID "' " v-disabled " " v-checked ">" SKIP                                              */
+/*                        "               <br>" SKIP                                                                                                                                                                    */
+/*                        "               <label class=''>" MB_mstr.MB_name "</label>" SKIP                                                                                                                             */
+/*                        "               <br>" SKIP                                                                                                                                                                    */
+/*                        "               <div class='w3-row'>" SKIP                                                                                                                                                    */
+/*                        "                  <div class='w3-medium w3-col s12' style='color:grey; text-align:right'> Open Seats: "                                                                                      */
+/*                        (sched_mstr.sched_total_seats - sched_mstr.sched_used_seats) "</div>" SKIP                                                                                                                    */
+/*                        "               </div>" SKIP                                                                                                                                                                  */
+/*                        "           </div>" SKIP                                                                                                                                                                      */
+/*                        "           <BR>" SKIP                                                                                                                                                                        */
+/*                        "       </div>" SKIP.                                                                                                                                                                         */
+/*                                                                                                                                                                                                                      */
+/*             END. /*** regular class ***/                                                                                                                                                                             */
+/*                                                                                                                                                                                                                      */
+/*            IF sched_mstr.sched_period = STRING(v-stage) THEN DO:                                                                                                                                                     */
+/*                                                                                                                                                                                                                      */
+/*                ASSIGN v-disabled = "".                                                                                                                                                                               */
+/*                                                                                                                                                                                                                      */
+/*                  {&OUT}                                                                                                                                                                                              */
+/*                      "       <div class='w3-col s12 m6 l4 w3-padding'>" SKIP                                                                                                                                         */
+/*                      "           <div class='w3-hover-theme w3-container w3-round w3-leftbar w3-border w3-padding'>" SKIP                                                                                            */
+/*                      "               <input class='w3-radio' type='radio' name='h-class_ID' value='" sched_mstr.sched_class_ID "' " v-disabled " " v-checked ">" SKIP                                                */
+/*                      "               <br>" SKIP                                                                                                                                                                      */
+/*                      "               <label class=''>" MB_mstr.MB_name "</label>" SKIP                                                                                                                               */
+/*                      "               <br>" SKIP                                                                                                                                                                      */
+/*                      "               <div class='w3-row'>" SKIP                                                                                                                                                      */
+/*                      "                  <div class='w3-medium w3-col s12' style='color:grey; text-align:right'> Open Seats: "                                                                                        */
+/*                      (sched_mstr.sched_total_seats - sched_mstr.sched_used_seats) "</div>" SKIP                                                                                                                      */
+/*                      "               </div>" SKIP                                                                                                                                                                    */
+/*                      "           </div>" SKIP                                                                                                                                                                        */
+/*                      "           <BR>" SKIP                                                                                                                                                                          */
+/*                      "       </div>" SKIP.                                                                                                                                                                           */
+/*                                                                                                                                                                                                                      */
+/*            END. /** also a regular class **/                                                                                                                                                                         */
+
+</SCRIPT>
+</BODY>
+</HTML>

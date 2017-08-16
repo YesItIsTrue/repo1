@@ -1,0 +1,325 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Finished Status Log</TITLE>
+    <META name="AUTHOR" content="Jacob Luttrell">
+    <META name="VERSION" content="1.0">
+    <META name="COPYRIGHT" content="Solsource">
+    <META name="CREATE_DATE" content="18/Jan/16">
+    <META name="MODIFIED_DATE" content="18/Jan/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT language="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+<BODY class='inside'>
+<script>
+
+function PrintThisPage() {
+
+    window.print();
+
+}
+
+</script>
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           TSmaintU.html
+    Description:    Finished Status Log 
+    Created:        Jacob Luttrell 
+    Version History:
+        1.0 - Created by Jacob Luttrell on 18/Jan/16. 
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE fromdate      LIKE Hours_Mstr.Hours_date          NO-UNDO.
+DEFINE VARIABLE todate        LIKE Hours_Mstr.Hours_date          NO-UNDO.
+DEFINE VARIABLE disp-from     AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE disp-to       AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE empname       AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE clientabbv    LIKE Client_Mstr.Client_abbv        NO-UNDO.
+DEFINE VARIABLE projname      LIKE Hours_Mstr.Hours_project_name  NO-UNDO.
+DEFINE VARIABLE empid         LIKE Hours_Mstr.Hours_employee_ID   NO-UNDO.
+DEFINE VARIABLE clientid      LIKE Hours_Mstr.Hours_client_ID     NO-UNDO.
+DEFINE VARIABLE passed-trans  LIKE Hours_Mstr.Hours_translation   NO-UNDO.
+DEFINE VARIABLE bare-trans    AS   DECIMAL                        NO-UNDO.
+DEFINE VARIABLE trans-value   AS   DECIMAL                        NO-UNDO.  
+DEFINE VARIABLE billing-rate  AS   DECIMAL                        NO-UNDO.
+DEFINE VARIABLE billable-hrs  AS   DECIMAL                        NO-UNDO. 
+DEFINE VARIABLE translation   AS   CHARACTER                      NO-UNDO. 
+
+DEFINE VARIABLE projbill      AS   DECIMAL                        NO-UNDO.
+DEFINE VARIABLE daybill       AS   DECIMAL                        NO-UNDO.
+
+DEFINE VARIABLE projhrs       AS DECIMAL FORMAT "->>9.9" NO-UNDO.
+DEFINE VARIABLE projtot       AS DECIMAL FORMAT "->>9.9" NO-UNDO.
+DEFINE VARIABLE daytot        AS DECIMAL NO-UNDO.
+DEFINE VARIABLE emptot        AS DECIMAL NO-UNDO.
+
+DEFINE VARIABLE act           AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE itmessage     AS LOGICAL INITIAL NO               NO-UNDO.
+
+DEFINE TEMP-TABLE grand-temp
+    FIELD grand-proj   LIKE Hours_Mstr.Hours_project_name
+    FIELD grand-tot    AS DECIMAL. 
+
+ASSIGN 
+    empid           = INTEGER( html-encode(get-value("h-empid")))
+    disp-from       = html-encode(get-value("html5-from"))
+    disp-to         = html-encode(get-value("html5-to"))      
+    clientid        = INTEGER(html-encode(get-value("h-clientid")))   
+    projname        = html-encode(get-value("h-projname"))
+    act             = html-encode(get-value("h-act"))
+    clientabbv      = html-encode(get-value("h-clientabbv"))
+    translation     = html-encode(get-value("h-translation"))
+    .
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    disp-from,                                                               
+    OUTPUT fromdate                                                             
+    ).                                                                          
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                   
+    disp-to,                                                                 
+    OUTPUT todate                                                               
+    ).   
+    
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL". 
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO: 
+      {&OUT}
+        "<form>" SKIP 
+        "<div class='row'>" skip
+        "   <div class='grid_3'></div>" skip
+        "       <div class='grid_6'>" skip             
+        "               <div class='table_2col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='4'>Finished Status Log</th>" skip
+        "                       </tr>" skip
+        "                       <tr>" SKIP 
+        "                           <td>Client</td>" skip
+        "                           <td colspan='3'><select name='h-clientid'>" skip.
+
+        FOR EACH Client_Mstr  WHERE                  
+            Client_Mstr.Client_deleted = ? NO-LOCK:  
+                               
+            ASSIGN 
+                clientid = Client_Mstr.Client_people_ID
+                clientabbv = Client_Mstr.Client_abbv. 
+                
+            {&OUT}
+            "<option value='" clientid "' >" clientabbv "</option>" SKIP.
+                
+        END.  /** of 4ea. client_mstr **/
+
+        {&OUT} 
+        "                           </SELECT></td>" SKIP
+        "                       </tr>" skip               
+        "                       <tr>" skip
+        "                           <td>From Date</td>" skip
+        "                           <td><input type='date' name='html5-from' value='" disp-from "' required></td>" skip
+        "                           <td>TO</td>" skip
+        "                           <td><input type='date' name='html5-to' value='" disp-to "' required></td>" skip
+        "                       </tr>" skip                 
+        "                       <tr>" skip
+        "                           <td>Create As:</td>" skip
+        "                           <td colspan='3'><input type='radio' name='h-translation' value='As Flagged' checked>As Flagged"
+        "                           <BR><input type='radio' name='h-translation' value='Translated'>Translated" skip                              
+        "                           <br><input type='radio' name='h-translation' value='Not Translated'>Not Translated</td>" SKIP
+        "                       </tr>" skip                       
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_3'></div>" skip
+        "</div>" skip  
+        "<BR>" SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Submit</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</div>" SKIP
+        "</form>" SKIP .
+          
+    END. /* INITIAL */            
+    WHEN "SEARCH" THEN DO:
+         
+         FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid NO-LOCK NO-ERROR.
+         
+         IF AVAILABLE (Client_Mstr) THEN 
+            ASSIGN 
+                clientabbv = Client_Mstr.Client_abbv.
+         
+         
+        {&OUT}
+           "<form>" SKIP 
+           "<DIV class='row'>" SKIP
+           "<DIV class='grid_1'> </DIV>" SKIP
+           "<DIV class='grid_10'>" SKIP
+               "<div class='print_label' align='left'>" SKIP
+                       "<H1>Status Log For " clientabbv "</H1>" SKIP
+                       "<H2>From: " fromdate " To: " todate "</H2>" SKIP
+                       "<H2>Translation: " translation "</H2>" SKIP.                               
+                   
+        FOR EACH Hours_Mstr WHERE Hours_Mstr.Hours_client_ID = clientid AND   
+                                    ((Hours_Mstr.Hours_date >= fromdate) OR
+                                     (fromdate = ?)) AND
+                                    ((Hours_Mstr.Hours_date <= todate) OR 
+                                     (todate = ?)) AND
+                                    Hours_Mstr.Hours_deleted = ? NO-LOCK,
+            EACH people_mstr WHERE people_mstr.people_id = Hours_Mstr.Hours_employee_ID NO-LOCK,
+            EACH Emp_Mstr    WHERE Emp_Mstr.Emp_ID = Hours_Mstr.Hours_employee_ID NO-LOCK,
+            EACH Client_Mstr WHERE Client_Mstr.Client_people_ID = Hours_Mstr.Hours_client_ID NO-LOCK,
+            EACH TSC_ctrl    NO-LOCK BREAK BY Hours_Mstr.Hours_date BY Hours_Mstr.Hours_project_name BY Hours_Mstr.Hours_employee_ID:          
+
+/* ******************* passed translated value from INITIAL act ******************* */
+           
+            IF translation = "As Flagged" THEN 
+                ASSIGN 
+                    passed-trans = Hours_Mstr.Hours_translation.
+            ELSE IF translation = "Translated" THEN 
+                ASSIGN 
+                    passed-trans = "Translated".
+            ELSE IF translation = "Not Translated" THEN 
+               ASSIGN 
+                   passed-trans = "Full".        
+
+/* ******************* billing rate definition section ******************* */
+            
+
+            billing-rate = ((Client_Mstr.Client_zone * TSC_ctrl.TSC_zone_modifier) + TSC_ctrl.TSC_base_rate - Client_Mstr.Client_spec_disc).
+                                            
+            IF Client_Mstr.Client_LDS = YES THEN 
+                billing-rate = billing-rate * .9.
+
+/* ******************* Assigning translation values to variables ******************* */
+             
+                ASSIGN
+                    bare-trans = (Emp_Mstr.Emp_loaded_pay / billing-rate)
+                    trans-value = (Emp_Mstr.Emp_loaded_pay / (billing-rate * (1 - (Client_Mstr.client_def_profit_margin / 100)))).
+                    
+/* ******************* Applying translations to billable hours  ******************* */
+                    
+            IF passed-trans = "BARE" THEN 
+                ASSIGN 
+                     billable-hrs = (Hours_Mstr.Hours_amount * bare-trans).
+            
+            IF passed-trans = "Translated" THEN 
+                ASSIGN 
+                    billable-hrs = (Hours_Mstr.Hours_amount * trans-value).
+            
+            IF passed-trans = "Full" THEN 
+                ASSIGN 
+                    billable-hrs = Hours_Mstr.Hours_amount.                 
+            
+            IF FIRST-OF (Hours_Mstr.Hours_date) THEN DO: 
+            ASSIGN
+                daytot = 0.
+                
+                {&OUT}
+                    "<H3>" Hours_Mstr.Hours_date "</H3>" SKIP.
+            END. /* first-of date */        
+            IF FIRST-OF (Hours_Mstr.Hours_project_name) THEN DO:
+            ASSIGN 
+                projtot = 0
+                projhrs = 0.
+            
+                
+                {&OUT}
+                    "<H4>" Hours_Mstr.Hours_project_name "</H4>" SKIP
+                        "<ul>" SKIP.
+            END. /* first-of projname */
+            
+            {&OUT}
+                            "<li>" Hours_Mstr.Hours_description "</li>" SKIP.
+            
+            
+            ASSIGN
+                projhrs = projhrs + billable-hrs.
+                
+            IF LAST-OF (Hours_Mstr.Hours_project_name) THEN DO: 
+                {&OUT}  
+                        "</ul>" SKIP.
+
+/* ******************* Rounding Equation ******************* */
+                
+                ASSIGN 
+                    projtot = ROUND(((projhrs * 2) + .499),0) / 2                                                                         
+                    daytot = daytot + projtot.
+	            
+	            FIND grand-temp WHERE grand-temp.grand-proj = Hours_Mstr.Hours_project_name EXCLUSIVE-LOCK NO-ERROR.
+	            
+	            IF AVAILABLE (grand-temp) THEN 
+	                ASSIGN 
+	                    grand-temp.grand-tot = grand-temp.grand-tot + projtot.
+	            ELSE DO: 
+	                CREATE grand-temp.
+	                ASSIGN 
+	                    grand-temp.grand-proj = Hours_Mstr.Hours_project_name
+	                    grand-temp.grand-tot = projtot.         
+                 END. /* else do grand-temp */                                            
+            END. /* last-of projname */    
+            IF LAST-OF (Hours_Mstr.Hours_date) THEN DO:  
+                
+                daybill = daytot * billing-rate.
+                
+                {&OUT}
+                    "<h5>Total Hours For " Hours_Mstr.Hours_date ": " daytot "</h5>" SKIP.
+            END.  /* last-of date */ 
+     
+        END. /* 4ea. hours_mstr */      
+        
+        {&OUT} 
+		            "<table>" SKIP
+		                "<thead>" SKIP
+/*		                    "<tr>" SKIP                                   */
+/*		                        "<th colspan='2'>Project Totals</th>" SKIP*/
+/*		                    "</tr>" SKIP                                  */
+		                    "<tr>" SKIP
+		                        "<th>Projects</th><th>Totals</th>" SKIP
+		                "</thead>" SKIP
+		                "<tbody>" SKIP.
+ 
+        
+        FOR EACH grand-temp NO-LOCK:
+            
+            {&OUT}
+			                "<tr>" SKIP
+			                    "<td>" grand-temp.grand-proj "</td>" SKIP
+			                    "<td>" grand-temp.grand-tot "</td>" SKIP
+			                "</tr>" SKIP.    
+        END. /* 4ea. grand-temp */
+        {&OUT}
+		                "</tbody>" SKIP
+		            "</table>" SKIP
+                    "<center><H7>End of Log</H7></center>" SKIP
+                "</div>" SKIP
+            "</DIV>         <!-- end of grid_10 -->" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><button onclick='PrintThisPage()' class='btn'>Print this page</button>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP .            
+                                                                        
+    END. /* SEARCH */        
+END CASE. 
+</SCRIPT>
+</BODY>
+</HTML>

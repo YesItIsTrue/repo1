@@ -1,0 +1,929 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+  
+    <TITLE>Patient Delete</TITLE>
+    <META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.2">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="02/Jun/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+ /********************************************************************
+  * File: patientdelete.html
+  * Description: Delete patient record and or patient record sets
+  * Created: Mark Jacobs
+  * Date: 07/16/2014
+  *
+  * -------------------------------------------------------------------
+  *
+  * Revision History:
+  * ------------------  
+  *
+  * 1.01 - Removed original browser from top of procedure.
+  *      - Commented out the 2nd form that was being used to locate a patient record and replaced it with the look and functionality
+  *      - of retrieving a record for patient update. As in patient update this returns the results of what is entered into 1st and 
+  *      - last name fields then user selects ID number for deletion.
+  * 1.2  - written by DOUG LUTTRELL on 01/Jun/15.  Added code to support the 
+  *          pathing workaround.  Marked by 1dot2. 
+  * 1.4  - Edited run statements To RUN VALUE(SEARCH("*.r")) 9/30/15. Marked with 1dot4.     
+ ***********************************************************************/
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+<SCRIPT LANGUAGE="SpeedScript">
+
+</SCRIPT>
+
+<!-- 
+<h1 style="text-align: center">
+        <br>TestKit Tracker <span style="COLOR: #0000FF;">Patient Record Delete</span><br>
+    </h1>
+    <hr style="width: 70%">
+-->    
+<SCRIPT LANGUAGE="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}. 
+
+DEFINE VARIABLE codetorun       AS CHARACTER                        NO-UNDO.    /* 1dot2 */  
+DEFINE VARIABLE depotcode       AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+DEFINE VARIABLE drive_letter    AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+         
+ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1).                /* 1dot2 */
+
+  
+    DEFINE VARIABLE patID    LIKE patient_ID NO-UNDO.
+    DEFINE VARIABLE patfstn  LIKE people_firstname NO-UNDO.
+    DEFINE VARIABLE patlstn  LIKE people_lastname NO-UNDO.
+    DEFINE VARIABLE patmidn  LIKE people_midname NO-UNDO.
+    DEFINE VARIABLE pattitle LIKE people_prefix NO-UNDO.
+    DEFINE VARIABLE patsuf   LIKE people_suffix NO-UNDO.
+    
+    DEFINE VARIABLE add1       LIKE addr_addr1 NO-UNDO.
+    DEFINE VARIABLE add2       LIKE addr_addr2 NO-UNDO.
+    DEFINE VARIABLE add3       LIKE addr_addr3 NO-UNDO.
+    DEFINE VARIABLE city       LIKE addr_city NO-UNDO.
+    DEFINE VARIABLE state-prov LIKE addr_stateprov NO-UNDO.
+    DEFINE VARIABLE patzip     LIKE addr_zip NO-UNDO.
+    
+    DEFINE VARIABLE h-phone   LIKE people_homephone NO-UNDO.
+    DEFINE VARIABLE c-phone   LIKE people_cellphone NO-UNDO.
+    DEFINE VARIABLE w-phone   LIKE people_workphone NO-UNDO.  
+    DEFINE VARIABLE fax-phone LIKE people_fax NO-UNDO.
+    
+    DEFINE VARIABLE patgen LIKE people_gender NO-UNDO.
+    DEFINE VARIABLE Gender   AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE patdob LIKE people_DOB NO-UNDO.
+    DEFINE VARIABLE patage   AS INTEGER NO-UNDO. /* patient_age */ 
+    
+    DEFINE VARIABLE patcon   LIKE patient_condition NO-UNDO.
+    DEFINE VARIABLE patcp    LIKE patient_RP_ID NO-UNDO.  /* The needs to be made into a people record */
+    DEFINE VARIABLE patnotes LIKE patient_notes NO-UNDO.
+    
+    DEFINE VARIABLE patemail   LIKE people_email NO-UNDO.
+    DEFINE VARIABLE patRPemail LIKE people_email NO-UNDO. /** @@@ This needs to be associated with the responsible party people record patient_RP_ID */
+    DEFINE VARIABLE patdoc       AS INTEGER  NO-UNDO. /* patient_doctorID */ 
+    DEFINE VARIABLE patcomp    LIKE people_company NO-UNDO.    
+    DEFINE VARIABLE patmpa       AS LOGICAL  NO-UNDO. /* patient_MPACust */
+    DEFINE VARIABLE pat-tk       AS LOGICAL NO-UNDO. 
+        
+    DEFINE VARIABLE country LIKE addr_country NO-UNDO.  
+    DEFINE VARIABLE patvflag  AS LOGICAL  NO-UNDO. /* patient_verify_flag */
+                             
+    DEFINE VARIABLE email      LIKE people_email NO-UNDO.
+    DEFINE VARIABLE email-reen LIKE people_email NO-UNDO.
+    
+    DEFINE VARIABLE email2      LIKE people_email2 NO-UNDO.  
+    DEFINE VARIABLE email2-reen LIKE people_email2 NO-UNDO.
+    
+    DEFINE VARIABLE male-ck   AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE female-ck AS CHARACTER NO-UNDO.
+    
+    DEFINE VARIABLE doc LIKE patient_doctor_id NO-UNDO.       /* @@@@@@ need to add this to the from  @@@@@ */
+    
+    DEFINE VARIABLE ddate     LIKE patient_create_date NO-UNDO.
+    DEFINE VARIABLE moddate   LIKE patient_modified_date NO-UNDO.
+    DEFINE VARIABLE cust-id   LIKE cust_id NO-UNDO.   
+    DEFINE VARIABLE o-pat-exist AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-pat-ran   AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE o-pat-error AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE peop-86     AS LOGICAL INITIAL NO NO-UNDO.         
+    DEFINE VARIABLE addr-86     AS LOGICAL INITIAL NO NO-UNDO.
+    DEFINE VARIABLE pat-86      AS LOGICAL INITIAL NO NO-UNDO.
+    /*********************************************************************************************/
+    
+    DEFINE VARIABLE act         AS INTEGER NO-UNDO.
+    DEFINE VARIABLE deleteblock AS INTEGER NO-UNDO.
+    DEFINE VARIABLE un86        AS INTEGER NO-UNDO.
+    DEFINE VARIABLE edit        AS INTEGER NO-UNDO.
+    DEFINE VARIABLE make        AS INTEGER NO-UNDO.
+    DEFINE VARIABLE crt         AS INTEGER NO-UNDO.
+    DEFINE VARIABLE sent-edit   AS INTEGER NO-UNDO.
+    /*********************************************************************************************/
+    
+    /*---------------------- Responsible party variable definitions -----------------------------*/
+    DEFINE VARIABLE RP-peop-ID LIKE people_id NO-UNDO.
+    DEFINE VARIABLE RP-fstn    LIKE people_firstname NO-UNDO.
+    DEFINE VARIABLE RP-lstn    LIKE people_lastname NO-UNDO.
+    DEFINE VARIABLE RP-midn    LIKE people_midname NO-UNDO.
+    DEFINE VARIABLE RP-title   LIKE people_prefix NO-UNDO.
+    DEFINE VARIABLE RP-suf     LIKE people_suffix NO-UNDO.
+    
+    DEFINE VARIABLE RP-add1       LIKE addr_addr1 NO-UNDO.
+    DEFINE VARIABLE RP-add2       LIKE addr_addr2 NO-UNDO.
+    DEFINE VARIABLE RP-add3       LIKE addr_addr3 NO-UNDO.
+    DEFINE VARIABLE RP-city       LIKE addr_city NO-UNDO.
+    DEFINE VARIABLE RP-state-prov LIKE addr_stateprov NO-UNDO.
+    DEFINE VARIABLE RP-zip        LIKE addr_zip NO-UNDO.
+    DEFINE VARIABLE RP-country    LIKE addr_country NO-UNDO.
+    
+    DEFINE VARIABLE RP-h-phone   LIKE people_homephone NO-UNDO.
+    DEFINE VARIABLE RP-c-phone   LIKE people_cellphone NO-UNDO.
+    DEFINE VARIABLE RP-w-phone   LIKE people_workphone NO-UNDO.  
+    DEFINE VARIABLE Rp-fax-phone LIKE people_fax NO-UNDO.
+    DEFINE VARIABLE RP-email     LIKE people_email NO-UNDO.
+    DEFINE VARIABLE RP-add-id    LIKE people_addr_id NO-UNDO.
+    /*-------------------- End of Responsible party variable definitions -----------------------*/    
+ 
+    DEFINE VARIABLE sent-back AS INTEGER NO-UNDO. /* Am I going to keep this ???? YES*/
+    DEFINE VARIABLE re-title  AS INTEGER NO-UNDO.
+    DEFINE VARIABLE brows     AS INTEGER NO-UNDO. 
+        
+    DEFINE VARIABLE coname LIKE Country_Display_Name NO-UNDO.
+    DEFINE VARIABLE coabbv LIKE Country_ISO NO-UNDO.
+    
+    DEFINE VARIABLE stname LIKE State_Display_Name NO-UNDO.
+    DEFINE VARIABLE stabbv LIKE State_ISO NO-UNDO.
+    
+   /******************************* For age calculation *****************/
+    DEFINE VARIABLE thisday    AS DATE NO-UNDO.
+    DEFINE VARIABLE thatday    AS DATE NO-UNDO.
+    DEFINE VARIABLE patientage AS DECIMAL FORMAT "->>.99" NO-UNDO.
+    DEFINE VARIABLE cont       AS INTEGER NO-UNDO.
+    DEFINE VARIABLE days       AS INTEGER NO-UNDO.
+    DEFINE VARIABLE formdate   AS DATE NO-UNDO.   
+  
+    /********************************************************************/
+    
+    DEFINE VARIABLE peop-ID      LIKE people_mstr.people_id NO-UNDO.
+    DEFINE VARIABLE peop-addr-ID LIKE people_mstr.people_addr_id NO-UNDO.
+    DEFINE VARIABLE pat-exist      AS LOGICAL INITIAL NO NO-UNDO.
+    
+    DEFINE VARIABLE peeprec     AS RECID NO-UNDO. /* this NEW to me, and cool */    
+    DEFINE VARIABLE doctor-id LIKE doctor_mstr.doctor_ID NO-UNDO.
+    DEFINE VARIABLE addr-id   LIKE addr_mstr.addr_id NO-UNDO.
+    DEFINE VARIABLE cout        AS INTEGER NO-UNDO.
+    DEFINE VARIABLE rec-cout    AS INTEGER NO-UNDO.
+    DEFINE VARIABLE fom-act     AS INTEGER NO-UNDO.
+    
+    DEFINE VARIABLE whattorun   AS CHARACTER NO-UNDO.    
+    
+    /*-------------------------------------------------------------*/
+    DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.       /*---< ITfeedback (YES or NO)  */    
+    /* ------------------------------------------------------------*/
+      
+    
+    ASSIGN 
+    
+    whattorun       =   get-value ("whattorun")
+    peop-ID         =   INTEGER (get-value ("pep-id"))
+    peop-addr-ID    =   INTEGER (get-value ("pep-addr"))
+    pat-exist       =   LOGICAL (get-value ("pep-exist"))
+    sent-edit       =   INTEGER (get-value ("sentedit"))  
+    fom-act         =   INTEGER (get-value ("h-fom-act"))
+    
+    patID       = INTEGER (get-value ("ID"))
+    patfstn     = get-value ("fstn")
+    patlstn     = get-value ("lstn")
+    patmidn     = get-value ("midn")
+    pattitle    = get-value ("title")
+    patsuf      = get-value ("suffix")
+    add1        = get-value ("addr1") 
+    add2        = get-value ("addr2")
+    add3        = get-value ("addr3")
+    city        = get-value ("patcity")
+    state-prov  = get-value ("state")
+    patzip      = get-value ("zip")
+    h-phone     = get-value ("home")
+    c-phone     = get-value ("cell")
+    w-phone     = get-value ("work")
+    fax-phone   = get-value ("fax")
+    
+    patgen      = LOGICAL (get-value ("gender")) /* @@ This used to be a character datatype @@ */
+   
+    patdob      = DATE (get-value ("dob")) 
+    patage      = INTEGER (get-value ("age"))  
+    patcon      = get-value ("condition")
+    patnotes    = get-value ("notes")
+    patcp       =  INTEGER (get-value ("contactperson"))
+    
+    patemail    = get-value ("email")
+    patRPemail  = get-value ("RPemail")
+    
+    patdoc      = INTEGER (get-value ("doctor"))   
+    patcomp     = get-value ("company")  
+    
+    country     = get-value ("count")
+  
+    
+    patvflag    = LOGICAL (get-value ("flag"))
+    deleteblock = INTEGER (get-value("dblock"))
+    un86        = INTEGER (get-value("undorec"))
+    edit        = INTEGER (get-value("mod"))
+    thisday     = TODAY
+    
+    sent-back   = INTEGER (get-value("sent"))
+    re-title    = INTEGER (get-value("undoth"))
+    brows       = INTEGER (get-value("browse"))
+    sent-back   = 0
+    make        = INTEGER (get-value("make-rec")) 
+    crt         = INTEGER (get-value("crt-rec"))
+  /*------------------------------------------------*/
+    RP-fstn        = get-value ("rpfstn")
+    RP-lstn        = get-value ("rplstn")
+    RP-midn        = get-value ("rpmidn")
+    RP-title       = get-value ("rptitle")
+    RP-suf         = get-value ("rpsuffix")
+    RP-add1        = get-value ("rpaddr1")
+    RP-add2        = get-value ("rpaddr2")
+    RP-add3        = get-value ("rpaddr3")
+    RP-city        = get-value ("rpcity")
+    RP-state-prov  = get-value ("rpstate")
+    RP-zip         = get-value ("rpzip")
+    RP-h-phone     = get-value ("rphome")
+    RP-c-phone     = get-value ("rpcell")
+    RP-w-phone     = get-value ("rpwork")
+    RP-fax-phone   = get-value ("rpfax")
+    RP-country     = get-value ("rpcount")
+    RP-email       = get-value ("rpemail").
+  
+  
+  
+     
+    IF patfstn   = ""  AND 
+       sent-edit = 0  THEN DO:  
+                       
+ 
+																	      IF ITfeedback = YES THEN     
+																	          {&OUT} "<p>I'm at end of browser and my name is---- " patfstn patlstn "--" patdob "--" peop-ID "addr_id is--"  peop-addr-ID "</p>" SKIP.       /* <<< TESTer @@@ */
+                    
+</SCRIPT> 
+
+    <!--
+		<center> 
+		    <div class='table_3col'>         
+		         <form method="post">
+		            <table >            
+                        <th colspan="6">Patient Record   (Finding Patient Record)</th> <!-- style='text-align:center;' -->           
+       <!--                  <tr>
+                        <th colspan="2">Personal </th><th colspan="2">Address </th><th colspan="2">Contact </th>            
+                        <tr>              
+                            <td>prefix:</td><td><input type="text" name="title" value="`pattitle`" tabindex=1 autofocus ></td>  
+                            <td>Address Line1:</td><td><input type="text" name="addr1" value="`add1`" tabindex=8></td>
+                            <td>Home Number:</td><td align="left"><input type="text" name="home" value="`H-phone`" Disabled tabindex=15></td>
+                        </tr>                         
+                        <tr>
+                            <td>First Name:</td><td><input type="text" name="fstn" value="`patfstn`" tabindex=2></td>
+                            <td>Address Line2:</td><td><input type="text" name="addr2" value="`add2`" tabindex=9></td>
+                            <td>Work Number:</td><td align="left"><input type="text" name="work" value="`w-phone`" Disabled tabindex=16></td>
+                        </tr>   
+                        <tr>
+                             <td>Middle Name:</td><td><input type="text" name="midn" value="`patmidn`" tabindex=3></td>  
+                             <td>Address Line3:</td><td><input type="text" name="addr3" value="`add3`" tabindex=10></td>
+                             <td>Cell Number:</td><td align="left"><input type="text" name="cell" value="`c-phone`" Disabled tabindex=17></td>                             
+                        </tr>
+                        <tr>
+                             <td>Last Name:</td><td><input type="text" name="lstn" value="`patlstn`" tabindex=4></td>                                
+                             <td>City:</td><td align="left"><input type="text" name="patcity" value="`city`" tabindex=11></td>  
+                             <td>Fax Number:</td><td align="left"><input type="text" name="fax" value="`fax-phone`" Disabled tabindex=18></td>                      
+                        </tr>
+                        <tr>
+                              <td>suffix:</td><td><input type="text" name="suffix" value="`patsuf`" tabindex=5></td>
+                              <td>Zip Code:</td><td><input type="text" name="zp" value="`patzip`" tabindex=12></td> 
+                              <td>Email Address</td><td><input type="text" name="email" value="`email`" Disabled tabindex=19></td>  
+                        </tr>
+                        <tr>
+                              <td>Date of Birth</td>
+<SCRIPT LANGUAGE="SpeedScript"> 
+                                IF patdob = ? THEN
+                                {&OUT}
+                                    "<td><input type='text' name='dob' value=''></td>".
+                                    ELSE
+</SCRIPT>                                                                  
+                              <td><input type="text" name="dob" value="`patdob`" tabindex=6></td>                               
+                             
+                              <td>State:</td><td><select name="st" tabindex=12 >
+                              <option selected>`state-prov` </option>
+                              <option value=''></option>             
+<SCRIPT LANGUAGE="SpeedScript">  
+                            FOR EACH state_mstr NO-LOCK :
+                                ASSIGN
+                                    stname = State_Display_Name
+                                    stabbv = State_ISO.
+</SCRIPT>             
+                            <option Value="`stabbv`"> `stname`  </otion>
+<SCRIPT LANGUAGE="SpeedScript">                
+                             END.  /* FOR EACH states_mstr */  
+</SCRIPT>
+                              <td>Reenter Email</td><td><input type="text" name="email2" value="`email-reen`" Disabled tabindex=20></td><!--** Not built Needs to be added The assigned get statement** -->     
+       <!--                  </tr>
+                        <tr>
+                           <td>Gender</td><td>Male<input type="radio" name="gender" value="Male" `male-ck`>                            
+                                Female<input type="radio" name="gender" value="Female" tabindex=7 `female-ck`>       </td></td> 
+                            <td>Country:</td><td><select name="co" tabindex=13 >
+                            <option selected>`country`  </option>
+                            <option value=''></option>     
+<SCRIPT LANGUAGE="SpeedScript">  
+                            FOR EACH country_mstr NO-LOCK :
+                                ASSIGN
+                                    coname = Country_Display_Name
+                                    coabbv = Country_ISO.
+</SCRIPT>             
+                            <option Value="`coabbv`"> `coname`  </option>
+<SCRIPT LANGUAGE="SpeedScript">   
+             
+                             END.  /* FOR EACH county_mstr */  
+                                
+</SCRIPT>
+
+                             <td>&nbsp</td><td>&nbsp</td>      
+                    </table>
+                   
+          
+                            <br><input type="submit" name="submit" value="Get Patient Record" onclick="this.form.action='patientdelete.r'">
+    
+                                 &nbsp;&nbsp;<button type="reset" name="submit" value="reset">Reset</button>     
+                 </form>                   
+            </div>  
+        </center>    
+        
+        -->                             
+ <!-- --------------------------------------------------------------------------------------------------------------------------- -->          
+ <!-- 
+            <FORM  method="post"> 
+                               <div class='table_2col' style="width:30%"align="center">
+                                    <table>    
+                                        <tr>
+                                            <td>First Name</td><td class='REQ'><input type="text" name="fstn" value="" autofocus ></td></tr> 
+                                        <tr>           
+                                            <td>Middle Name</td><td><input type="text" name="midn" value=""></td></tr>
+                                        <tr>           
+                                            <td>Last Name</td><td class='REQ'><input type="text" name="lstn" value=""></td></tr>
+                                        <tr>           
+                                            <td>Address1</td><td><input type="text" name="adr1" value=""></td></tr>
+                                        <tr>
+                                            <td>Address2</td><td><input type="text" name="adr2" value=""></td></tr>
+                                        <tr>
+                                            <td>Address3</td><td><input type="text" name="adr3" value=""></td></tr>    
+                                        <tr>           
+                                            <td>City</td><td><input type="text" name="patcity" value=""></td>
+                                        <tr>           
+                                            <td>State</td><td><input type="text" name="state" value=""></td></tr>    
+                                        <tr>
+                                            <td>Date of Birth</td><td class='REQ'><input  size="50" type="text" name="dob" value=""></td>
+                                             
+                                           <input type="hidden" name="h-fom-act" value=5>        
+                                   </table> 
+                                  </div>
+                                        <div align="center">                    
+                                          <br><button type="submit" name="submit" value="submit">Submit</button>
+                                        &nbsp;&nbsp;<button type="reset" name="reset" value="reset">Reset</button>      
+                                        </div>   
+                              </form> 
+               -->               
+  <!-- ------------------------------------------------------------------------------------------------------------------------- -->                            
+         <!-- 
+         <div align="center">
+                <h3>Enter First Name and Last Name of the Patient Record Requiring Deletion</h3>
+            </div>
+         -->   
+<center>
+
+    <div class='table_2col'style="width:45%">
+            <form method="post">
+                <table > 
+                        <th colspan='4'>Patient Search Criteria</th> 
+                        <tr>
+                            <td>First Name</td><td ><input type="text" name="fstn" value="`patfstn`" autofocus tabindex=1></td>
+                           
+                            <td>Last Name</td><td ><input type="text" name="lstn" value="`patlstn`" tabindex=2></td>
+                         </tr>   
+                              <input type="hidden" name="h-fom-act" value=5>        
+            </table>
+            </div> 
+                        <br><input type="submit" name="submit" value="Find Patient" onclick="this.form.action='patientdelete.r?whattorun=3.3'">
+    
+                        &nbsp;&nbsp;<button type="reset" name="submit" value="reset">Reset</button>
+                        <br>     
+            </form>                    
+                              
+                               
+ 
+ <!-- --------------------------------------------------------------------------------------------------------------------------- -->                
+<SCRIPT LANGUAGE="SpeedScript">
+             END.  /*  IF patfstn EQ "" */   
+             
+             
+           IF patfstn <> "" THEN DO:
+                
+   /*----------------------------------------------------------------------------------------*/
+/*
+            RUN ../depot/rcode/find-patient.r               
+                (pattitle,
+                 patfstn,
+                 patmidn,
+                 patlstn,
+                 patsuf,
+                 patdob,
+                 OUTPUT peop-id,
+                 OUTPUT peop-addr-id,
+                 OUTPUT o-pat-exist,
+                 OUTPUT o-pat-ran,
+                 OUTPUT o-pat-error).
+
+/*----------------------------------------------------------------------------------------*/
+			IF ITfeedback = YES THEN        
+			                       {&OUT} "<p>Here's some information back from the external find procedure <br>" SKIP 
+			                              "patient ID-- " peop-id "<br>" SKIP
+			                              "patieny addr id-- " peop-addr-id "</p>".
+			IF o-pat-exist = NO AND 
+			   peop-id     = 0 THEN
+			 {&OUT} 
+			 "<center><h3>Patient Record Not Found</h3></center>" SKIP.
+			 
+			IF o-pat-ran = YES /* AND 
+			     peop-id <> 0 */ THEN DO:
+	*/		         
+/*------------------------------------------------------------------------------------------------------*/
+
+       IF  fom-act = 5 THEN DO:   
+        
+                         
+          {&OUT} "<div class='table_report fixed_table'>" skip                     
+                 "   <table>" skip 
+                 "      <thead>" skip
+                 "       <tr>" skip
+                 "           <th colspan='7'>Select the Patient ID that you would like to DELETE</th>" skip
+                 "       </tr>" skip
+                 "       <tr>" skip
+                 "           <td>Patient ID </td>" skip
+                 "           <td>First Name</td>" skip
+                 "           <td>Last Name</td>" skip
+                 "           <td>Date of Birth</td>" skip
+                 "           <td>Email address</td>" skip
+                 "           <td>Address</td>" skip
+                 "           <td>State</td>" skip
+                 "       </tr>" skip
+                 "     </thead>" skip.
+            
+                FOR EACH patient_mstr WHERE patient_mstr.patient_deleted = ? NO-LOCK,
+             
+	                EACH people_mstr WHERE people_id = patient_id AND
+	                                       people_firstname BEGINS patfstn AND /*BEGINS patfstn */
+	                                       people_lastname  BEGINS patlstn AND /*BEGINS patlstn */
+	                                       people_mstr.people_deleted = ?  NO-LOCK BREAK BY people_lastname BY people_firstname:
+	                ASSIGN
+                        add1       = ""
+                        state-prov = "".                           
+	                                           
+                    FOR EACH addr_mstr WHERE  addr_id = people_addr_id AND
+                                           addr_mstr.addr_deleted = ?  NO-LOCK BREAK BY people_lastname : 
+		                    ASSIGN
+		                        add1       = addr_mstr.addr_addr1
+		                        state-prov = addr_mstr.addr_stateprov.                           
+                    END.  /* FOR EACH addr_mstr WHERE  addr_id = people_addr_id AND */
+                                             
+                    rec-cout = rec-cout + 1.                           
+                                              
+                      IF avail (patient_mstr) THEN                                   
+		  {&OUT} "       <tr>" skip
+		         "           <td> <a href=patientdelete.r?whattorun=3.3&fom-act=6&dob=" people_DOB "&fstn=" people_firstname "&lstn=" people_lastname "&pep-id=" people_id ">" people_id "</a></td>" skip
+		         "           <td>" people_firstname "</td>" skip
+		         "           <td>" people_lastname "</td>" skip
+		         "           <td>" people_dob "</th>" skip
+		         "           <td>" people_email "</td>" skip
+		         "           <td>" add1 "</td>" skip
+		         "           <td>" state-prov "</td>" skip
+		         "       </tr>" skip .                
+		    
+                    END. /* FOR EACH people_mstr */                        
+                END. /* FOR EACH patient_mstr */ 
+               
+                IF rec-cout = 0  AND 
+                  fom-act   = 5 THEN 
+                           
+          {&OUT} "       <tr>" skip
+                 "           <td colspan='7'align='center'>No Patient found for &nbsp" patfstn "," patlstn " .</td>" skip                  
+                 "       </tr>" skip
+                 "   </table>" skip
+                 " </div>" skip.    
+                                                       
+                        ELSE
+        
+          {&OUT} "   </table>" skip
+                 " </div>" skip.   
+               
+                
+     END. /* IF  fom-act = 5 THEN DO:    */   
+ 
+/*------------------------------------------------------------------------------------------------------*/			         
+			           
+			         FIND patient_mstr WHERE patient_id = peop-id NO-LOCK NO-ERROR.
+			             IF AVAILABLE (patient_mstr) THEN DO:
+						
+				             ASSIGN
+				             o-pat-exist = YES.
+			             
+			             END. /*if available (patient_mstr) then do: */
+			  /*            
+			             ELSE DO:
+			              
+			             {&OUT} 
+                             "<center><h3>Unable to locate Patient Record with this information</h3></center>" SKIP.
+                           
+                             
+                          "<td></td><td>" patfstn "</td><td>" patlstn "</td><td>" patdob "</td><td>" patemail "</td><td>" add1 "</td><td>" state-prov "</td></tr>
+                             </table></div>". 
+                            
+                             IF ITfeedback = YES THEN     
+                                          {&OUT} "<p>Found a person and my id is--" peop-id "</p>" SKIP.
+                                     
+                        END.  /* ELSE DO: */            
+                    */                           
+	/*	END. /*IF o-pat-ran = yes and peop-id <> 0 then do: */ */                  
+		   	                              
+		    FIND  people_mstr WHERE  people_id = peop-ID  NO-LOCK NO-ERROR.
+                                   
+                                    IF AVAILABLE (people_mstr) THEN DO:
+                                                                                                                                                                 
+                                       ASSIGN
+                                            peop-ID      = people_id
+                                            patdob       = people_DOB                                              
+                                            patmidn      = people_midname
+                                            pattitle     = people_prefix
+                                            patsuf       = people_suffix
+                                            email        = people_email
+                                            email2       = people_email2
+                                            h-phone      = people_homephone
+                                            w-phone      = people_workphone
+                                            c-phone      = people_cellphone
+                                            fax-phone    = people_fax 
+                                            patgen       = people_gender 
+                                            peop-addr-ID = people_addr_id.
+                                                            
+								                                            IF ITfeedback = YES THEN     
+								                                             {&OUT} "<p>Found a person and my id is--" peop-id "</p>" SKIP. 
+                                                                              
+                                    END.  /** of if avail people_mstr */
+
+             FIND FIRST addr_mstr WHERE addr_id = peop-addr-ID NO-LOCK NO-ERROR. 
+                            
+	                                IF AVAILABLE (addr_mstr) THEN DO:
+	                                    
+	                                     ASSIGN
+	                                        add1            = addr_addr1
+	                                        add2            = addr_addr2
+	                                        add3            = addr_addr3
+	                                        city            = addr_city
+	                                        state-prov      = addr_stateprov
+	                                        country         = addr_country
+	                                        patzip          = addr_zip.
+	                                        /* people_addr_id  = addr_id */.
+	                                        
+								                                            IF ITfeedback = YES THEN     
+							                                                 {&OUT} "<p>I'm at the end of addr assign and my addr_id is ---" peop-addr-ID   "</p>" SKIP.
+	                                                                                
+	                                END.  /** of if avail addr_mstr **/    
+                              
+                                 
+                              
+                  
+             FIND FIRST patient_mstr WHERE patient_id = peop-ID NO-LOCK NO-ERROR.
+             
+	                                IF  AVAILABLE (patient_mstr)THEN DO:
+	                                    
+	                                     ASSIGN
+	                                        patid    = patient_id
+	                                        patcon   = patient_condition
+	                                        patnotes = patient_notes.
+	                                        
+									                                        IF ITfeedback = YES THEN     
+								                                            {&OUT} "<p>I'm at the end of Find patient_mste and my patient_id is ---" patid   "</br>" SKIP
+								                                                   "Here's my condition-- " patcon "</p>".
+	                                       
+	                                END.  /* if not available (patient_mstr)then  */
+	                                  
+	       /*------------------- Looking to see if patient has test kits assigned to it --------------------------*/
+	       
+	         FIND FIRST TK_mstr WHERE TK_patient_id = peop-id NO-LOCK NO-ERROR.
+	                                
+	                                IF  AVAILABLE (TK_mstr)THEN 
+	                                ASSIGN
+	                                pat-tk = YES.    
+	                                                  
+/*------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+            IF sent-edit = 0 AND 
+            o-pat-exist <> NO THEN DO: 
+                
+                  ASSIGN                     
+                    Gender    =   IF patgen = FALSE THEN  /* This converts a logical patgen into a character for display */
+                                               "Female"
+                                                ELSE
+                                                "Male".  
+</SCRIPT>
+		       <div align="center" >
+		        <h2>Review Patient Record before Deleting</h2>
+		       </div> 
+		       
+        <center>
+           <div class='table_3col'>         
+                <table >          
+
+                      <!--  <th colspan="6">Patient Record   ( Review before Deleting )</th> <!-- style='text-align:center;' -->           
+                        <tr>
+                        <th colspan="2">Personal </th><th colspan="2">Address </th><th colspan="2">Contact </th>            
+                        <tr>              
+                            <td>prefix:</td><td>`pattitle`  </td>  
+                            <td>Address Line1:</td><td>`add1` </td>
+                            <td>Home Number:</td><td>`H-phone` </td>
+                        </tr>                         
+                        <tr>
+                            <td>First Name:</td><td>`patfstn`  </td>
+                            <td>Address Line2:</td><td>`add2`  </td>
+                            <td>Work Number:</td><td>`w-phone` </td>
+                        </tr>   
+                        <tr>
+                             <td>Middle Name:</td><td>`patmidn` </td>  
+                             <td>Address Line3:</td><td>`add3`  </td>
+                             <td>Cell Number:</td><td>`c-phone` </td>                             
+                        </tr>
+                        <tr>
+                             <td>Last Name:</td><td>`patlstn` </td>                                
+                             <td>City:</td><td>`city` </td>  
+                             <td>Fax Number:</td><td>`fax-phone` </td>                      
+                        </tr>
+                        <tr>
+                              <td>suffix:</td><td>`patsuf` </td>
+                              <td>Zip Code:</td><td>`patzip` </td> 
+                              <td>Email Address</td><td>`email`  </td>  
+                        </tr>
+                        <tr>
+                              <td>Date of Birth</td>
+<SCRIPT LANGUAGE="SpeedScript"> 
+                                IF patdob = ? THEN
+                                {&OUT}
+                                    "<td><input type='text' name='dob' value=''></td>".
+                                    ELSE
+</SCRIPT>                                                                  
+                              <td>`patdob`  </td>                        
+                              
+                              <td>State:</td><td>`state-prov`  </td>
+                              
+                              <td>Second email:</td><td>`email-reen`  </td>        
+                        </tr>
+                        <tr>
+                           <td>Gender</td><td>`Gender`  </td>
+                           
+                           <!-- <td>Male<input type="radio" name="gender" value="true" `male-ck`>                            
+                                Female<input type="radio" name="gender" value="false" tabindex=7 `female-ck`> </td></td>
+                           -->      
+                            <td>Country:</td><td>`country`  </td>
+                           
+                             <td>&nbsp</td><td>&nbsp</td>                            
+                        
+                        </tr>
+                        <tr>
+                            <th colspan="6" align="center">Notes</th>
+                        </tr                       
+                        <tr>
+                            <td>Notes:</td><td colspan="3"> `patnotes`  </td><td colspan="2"</td>
+                        </tr>                 
+                       
+                   </table>
+<SCRIPT LANGUAGE="SpeedScript">                
+                             
+                 IF pat-tk = YES THEN DO:                    
+	      {&OUT}                           
+	             " </div>" skip
+	             "             <center><h2><font Color='red'>Unable to delete this Customer Record. These Test Kits are Assigned to it.</h2></font><center>" skip
+	             " </div>" skip.
+	                          
+      /*---------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+	                       
+                    FIND FIRST TK_mstr WHERE TK_patient_ID = patid AND /* peop-id */
+                                        TK_mstr.TK_deleted = ? NO-LOCK NO-ERROR.  /* Checking to see if test kit has been sold ( was cust_id) */
+                                     
+                     IF AVAILABLE TK_mstr THEN DO:             
+          {&OUT}         
+                 " <div class='table_3col'>" skip
+                 "   <table>" skip                  
+                 "      <tr>" skip
+	             "       <th nowrap>Test Kit ID</th>" skip
+	             "       <th>Created Date</th>" skip
+	             "       <th nowrap>Created By</th>" skip
+	             "       <th>Domestic</th>" skip
+	             "       <th>Professional</th>" skip
+	             "      </tr>" skip.                       
+             
+                          
+                    FOR EACH TK_mstr WHERE TK_patient_ID = patid NO-LOCK. /* peop-id */
+                            
+          {&OUT}
+                 "      <tr>" skip
+                 "        <td>" tk_id "</td>" skip
+                 "        <td>" tk_create_date "</td>" skip                          
+                 "        <td>" tk_created_by "</td>" skip
+                 "        <td>" tk_domestic "</td>" skip
+                 "        <td>" tk_prof "</td>" skip.
+                          
+                    END. /* for each TK_mstr where seq = tk_cust_id */
+                    
+          {&OUT}
+                 "      </tr>" skip
+                 "   </table>" skip
+                 " </div>" skip.      
+	     
+	     /*---------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/                     
+	                          
+                      END. /* IF AVAILABLE TK_mstr THEN DO: */   
+                 END.  /* if pat-tk = yes then do: */    
+                             
+                 ELSE DO:  
+          {&OUT}  
+                 " <FORM  method='post'>" skip                      
+		         "             <input type='hidden' name='sentedit' value=' 1 '>" skip
+		         "             <input type='hidden' name='fstn' value='" patfstn  "'>" skip
+		         "             <input type='hidden' name='lstn' value='" patlstn  "'>" skip
+		         "             <input type='hidden' name='dob' value='" patdob  "'>" skip.
+		  {&OUT}
+		         "       </div>" skip
+			     "              <div align='center'>" skip                   
+			     "                 &nbsp;&nbsp;<input type='submit' name='submit' value='Delete' onclick='this.form.action='patientdelete.r''>" skip   
+			     "               </div>" skip      
+                 "</form>" skip.      
+                            
+</SCRIPT>   
+                 			                             
+                    <!--   <br><input type="submit" name="edit" value="Delete Patient Record" onclick="this.form.action='patientdelete.r?sentedit=1'">                            
+   
+                          &nbsp;&nbsp;<button type="reset" name="submit" value="reset">Reset</button>    -->   
+                </form>   
+        </center>
+	                                
+<SCRIPT LANGUAGE="SpeedScript">  
+
+										                                 IF ITfeedback = YES THEN     
+										                                   {&OUT} "<p>I'm at the end of Review before deleting form <br>" SKIP
+										                                     "I'm looking to see the value of o-pat-exist--- " o-pat-exist "<br>
+										                                     sent-edit is ---" sent-edit "</p>".
+                                     
+                    END. /* ELSE DO: */     
+            END. /*IF sent-edit = 0 then do: */ 
+               
+        
+            IF o-pat-exist = YES AND
+                 sent-edit = 1 THEN DO:  
+            
+														                 IF ITfeedback = YES THEN     
+														                              {&OUT} "<p>You've made it into the delete block</p>" SKIP.
+														  
+/*				  {../datahub/src/webspeed/pathfix.i "ext-pat-delete.p"}. /* 1dot2 */ 										*/
+                              
+/*                  RUN "../depot/rcode/ext-pat-delete.p"*/               /* 1dot2 */
+/*                    RUN VALUE(depotcode)                                  /* 1dot2 */*/
+                    RUN VALUE(SEARCH("ext-pat-delete.r"))            /* 1dot4 */
+                           (peop-id,
+                            OUTPUT pat-86).
+                            
+                            IF pat-86 = YES THEN
+          {&OUT} 
+                 "<center><h3>You have Successfully Deleted a Patient Record</h3></center>".
+                            
+                         /*   ELSE
+                            
+                            {&OUT} "<center><h3>Try again Stupid!</h3></center>".
+                        */    
+  /*-------------------------------------------------------------------------------------------------------------------*/
+  
+                  FIND FIRST cust_mstr WHERE cust_id = peop-id AND
+                                        cust_deleted = ? NO-LOCK NO-ERROR. 
+                     IF AVAILABLE cust_mstr THEN
+                        ASSIGN                        
+                        cust-id = cust_id.      
+                     
+                  ELSE
+												                         IF ITfeedback = YES THEN
+												                           {&OUT} "<p>No cust record found </p>".  
+                       
+                  FIND doctor_mstr WHERE doctor_id = peop-id AND 
+                                    doctor_deleted = ? NO-LOCK NO-ERROR. /* cust_id */
+                     IF AVAILABLE doctor_mstr THEN DO:
+                        ASSIGN
+                        doctor-id = doctor_id. 
+                                                
+													                     IF ITfeedback = YES THEN
+													                        {&OUT} "<p> this is doctor ID " doctor-id  "</p>".  
+                        
+                     END.  /* IF AVAILABLE doctor_mstr */
+                     
+                  ELSE
+												                         IF ITfeedback = YES THEN
+												                          {&out} "<p> No doctor record found </p>".
+                        
+                  FIND addr_mstr WHERE addr_id = people_addr_id AND
+                                  addr_deleted = ? NO-LOCK NO-ERROR. 
+                     IF AVAILABLE addr_mstr THEN DO:
+                        ASSIGN
+                        addr-id = addr_id.
+                         
+												                         IF ITfeedback = YES THEN
+												                          {&OUT} "<p> this is the addr ID " addr-id  "</p>".                          
+                               
+                     END.  /* IF AVAILABLE addr_mstr */   
+                      
+                  ELSE
+												                         IF ITfeedback = YES THEN
+												                           {&out} "<p> No addr record found </p>".                                 
+                        
+                        
+                  FOR EACH people_mstr WHERE people_addr_id = addr-id AND 
+                           people_mstr.people_deleted       = ? NO-LOCK:
+                       
+                        ASSIGN                        
+                        cout = cout + 1.
+												                         IF ITfeedback = YES THEN 
+												                          {&OUT} "<p> cout is --- " cout "</p>".                           
+                        
+                  END.  /* FOR EACH people_mstr WHERE people_addr_id = addr-id: */               
+                                             
+                  IF cout <= 1 THEN DO: 
+                      
+/*                      {../datahub/src/webspeed/pathfix.i "ext-addr-delete.r"}. /* 1dot2 */*/
+                      
+/*                      RUN "../depot/rcode/ext-addr-delete.r"*/               /* 1dot2 */
+/*                        RUN VALUE(depotcode)                                   /* 1dot2 */*/
+                        RUN VALUE(SEARCH("ext-addr-delete.r"))               /* 1dot4 */
+                           (addr-id,
+                            OUTPUT addr-86) .              
+                       
+                  END. /* IF cout <= 1 THEN DO:  */ 
+                       
+                  
+                  IF  cust-id     = 0 AND                      
+                      doctor-id   = 0 THEN DO:
+                          
+/*                      {../datahub/src/webspeed/pathfix.i "ext-people-delete.r"}. /* 1dot2 */*/
+                          
+/*                      RUN "../depot/rcode/ext-people-delete.r"*/               /* 1dot2 */
+/*                        RUN VALUE(depotcode)                                     /* 1dot2 */*/
+                        RUN VALUE(SEARCH("ext-people-delete.r"))       /* 1dot4 */
+                           (peop-id,
+                            OUTPUT peop-86) .                                  
+										                                 IF ITfeedback = YES THEN
+										                                  {&OUT}
+										                                   "<p>Addr_mstr would have been flagged for deletion, Because there's no patient or Dr. ID or RP ID 
+										                                    patient-id is-- " cust-id "<br>doctor-id is -- " doctor-id "<br>This is the Value of sent-edit -- " sent-edit "</p>".                 
+                  END.  /*if patient-id = 0 and doctor-id = 0 then do: */                                 
+                         
+                  ELSE  
+										                                 IF ITfeedback = YES THEN
+										                                  {&OUT}
+										                                  "<p>Address and people records would NOT be deleted</p>"
+										                                  "<p>cust-id is-- " cust-id                                 
+										                                  "<br>doctor-is is -- " doctor-id "</p>"
+										                                  "<p>This is cout-- " cout  " </p>".                  
+ 
+                            /*    IF cust-86 = YES THEN                    
+                                 {&OUT} 
+                                    "<h3>You have Deleted a Customer Record</h3>".
+                           */        
+                              
+                                    
+                                IF peop-86 = YES THEN                    
+                                 {&OUT} 
+                                    "<center><h3>You have Deleted a People Record</h3></center>".      
+                                
+                                IF addr-86 = YES THEN                    
+                                 {&OUT} 
+                                    "<center><h3>You have Deleted a Address Record</h3></center>".                            
+                                   
+  
+  /*-------------------------------------------- End of Copy ----------------------------------------------------------*/                                      
+                              
+             END.  /* IF o-pat-exist = YES and sent-edit = 1 THEN DO: */ 
+             
+             {&OUT} "<br><center><a href=patientdelete.r?whattorun=" whattorun ">Click here for New Patient Delete</a></center>".
+            
+
+            
+                 
+            
+              
+</SCRIPT>
+</BODY>
+</HTML>

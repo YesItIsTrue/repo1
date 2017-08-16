@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <META NAME="AUTHOR" CONTENT="DOUG LUTTRELL">
+    <TITLE>FAQ Sheet</TITLE>
+    <META NAME="VERSION" CONTENT="1.0">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css">    
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='w3-black'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{CMS-theme_area-R.i}.
+ 
+{CMS-nav_area-R.i}.  
+ 
+{&OUT}
+    "<!-- Paragraph Section -->" SKIP
+    
+    "<div class='w3-row w3-container w3-content w3-medium' style='max-width:1400px;'>" SKIP    
+    "<BR><H2>FAQ Sheet</H2>" SKIP(1)
+    
+    "<P class='w3-col s12 m10'>Here's a list of questions that we keep getting asked.  As the list grows "
+    "we'll add to this page.  If you don't see your question here, or you want "
+    "more information about something, send us an "
+    "<a href='mailto:StakeYMPresidency@augustamainestake.org&subject=Man College!!! question'>email</a>. "
+    "We'd love to hear from you! </P>" SKIP(1)
+    
+    "<img src='/depot/src/HTMLContent/images/Youth-CMS/man-with-question-01.png' width='10%' class='w3-col s2 m2'></img>" SKIP
+    
+    "<DIV class='w3-container w3-padding'>" SKIP    
+        
+    "<ul class='w3-ul w3-hoverable w3-border-0'>" SKIP.
+    
+FOR EACH FAQ_det WHERE FAQ_det.FAQ_event_ID = v-event_ID AND
+        FAQ_det.FAQ_deleted = ? NO-LOCK
+    BREAK BY FAQ_det.FAQ_category BY FAQ_det.FAQ_ID:
+
+    IF FIRST-OF (FAQ_det.faq_category) THEN 
+        {&OUT}
+            "<BR><H4>" FAQ_det.FAQ_category "</H4><BR>" SKIP(1).
+            
+    {&OUT}
+        "   <li class='w3-hover-theme'><B>Q" FAQ_det.FAQ_ID "</B> – " SKIP
+        FAQ_det.FAQ_question "<BR>" SKIP
+        "<B>A" FAQ_det.FAQ_ID "</B> - " SKIP
+        FAQ_det.FAQ_answer SKIP
+        "</li><BR>" SKIP(1).
+
+END.  /*** of 4ea. FAQ_mstr ***/ 
+
+{&OUT}     
+    "</ul>" SKIP(1)
+    
+    "</DIV>     <!-- end of DIV container -->" SKIP
+    "<BR><BR><BR>".    
+    
+
+
+</SCRIPT>
+</BODY>
+</HTML>

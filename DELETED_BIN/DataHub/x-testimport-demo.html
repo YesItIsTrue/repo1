@@ -1,0 +1,77 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Your Name">
+<TITLE>WebSpeed Script</TITLE>
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+DEFINE TEMP-TABLE list-of-tests
+    FIELD testid-col-A AS int
+    FIELD testname-col-B AS char
+    FIELD testabbv-col-C AS char
+    FIELD attgrp-col-D AS char
+    FIELD sku-col-E AS char
+    FIELD price-col-f AS dec
+    FIELD vis-col-g AS char
+    FIELD stat-col-h AS char
+        INDEX main-list AS PRIMARY UNIQUE testid-col-a.
+    
+INPUT FROM "C:\progress\wrk\testlist-import.csv".
+    
+REPEAT:
+    
+    CREATE list-of-tests.
+    IMPORT list-of-tests.
+    
+END.
+
+INPUT CLOSE.
+
+{&OUT}
+    "<table border=7 cellspacing=3 cellpadding=3>" SKIP
+    "   <THEAD>" SKIP
+    "       <TH>Name</TH>" SKIP
+    "       <TH>Abbv</TH>" SKIP
+    "       <TH>SKU</TH>" SKIP
+    "       <TH>Price</TH>" SKIP
+    "   </THEAD>" SKIP.
+               
+FOR EACH list-of-tests NO-LOCK:
+    
+    {&OUT}
+        "   <TR>" SKIP
+        "       <TD>" testname-col-B "</TD>" SKIP 
+        "       <TD>" testabbv-col-C "</TD>" SKIP
+        "       <TD>" sku-col-E "</TD>" SKIP 
+        "       <TD>" price-col-F "</TD>" SKIP
+        "   </TR>" SKIP.
+        
+END.  /** of 4ea list-of-tests **/
+
+{&OUT}
+    "<TR>" SKIP
+    "   <TD COLSPAN=4>END OF REPORT</TD>" SKIP
+    "</TR>" SKIP
+    "</TABLE>" SKIP.
+            
+            
+        
+
+</SCRIPT>
+</BODY>
+</HTML>

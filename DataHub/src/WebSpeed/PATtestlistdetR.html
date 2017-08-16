@@ -1,0 +1,196 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Patient Test Detail Listing</TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.51">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="28/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="01/Jun/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+        
+        Version 
+        1.0 - written by DOUG LUTTRELL on 28/Oct/14.  Original Version.
+        1.1 - written by DOUG LUTTRELL on 09/Jan/15.  Linked to the TKtestresR.html.
+        1.2 - written by DOUG LUTTRELL on 11/Jul/15.  Modified hyperlink results
+                to work with changes to TKtestresR.html.  Continuing to pass older
+                HTML variables to it because I think that it has a problem.  Also 
+                added Lab Sample ID & Lab Seq to the display.  Marked by 1dot2.
+        1.21 - written by DOUG LUTTRELL on 13/Jan/15.  Slight bug that has been in 
+                there for a while.  It was only showing TK_sequence = 1 for some
+                unknown reason.  Also added in the CSS grid stuff.  Marked by 121. 
+        1.3 - written by DOUG LUTTRELL on 05/Oct/15.  Added in some visual components 
+                that were missing.  Marked by 1dot3.               
+        1.31 - Written by Jacob Luttrell on 12/Jan/16.  Added Lab Processed (Lab Completed)
+                to the displayed table. Marked by 1dot31  
+        1.32 - Written by Jacob Luttrell on 04/Mar/16. Updated testtype to test_type (unmarked).    
+        1.4  - written by DOUG LUTTRELL on 24/Mar/16.  Fixed problem with whattorun.  Marked by 1dot4.
+        1.41 - written by DOUG LUTTRELL on 25/May/16.  Changed the sorting to make more sense.  Marked by 141.
+        1.5  - written by DOUG LUTTRELL on 28/May/16.  Edited to have it pull more precise data 
+                from the trh_hist.  Marked by 1dot5.
+        1.51 - written by DOUG LUTTRELL on 01/Jun/16.  Needed to look at the new(ish) trh_date field
+                instead of the trh_create_date.  Marked by 151.                
+          
+  -------------------------------------------------------------------*/
+
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/                                                    /* 1dot3 */
+
+
+
+DEFINE VARIABLE testcount AS INTEGER NO-UNDO.
+DEFINE VARIABLE patid LIKE patient_mstr.patient_ID NO-UNDO.
+DEFINE VARIABLE testtype LIKE TK_mstr.TK_test_type NO-UNDO.
+DEFINE VARIABLE LPdate AS DATE NO-UNDO.
+
+DEFINE VARIABLE ITshowmsg AS LOGICAL INITIAL NO NO-UNDO.
+
+ASSIGN 
+    patid       = INTEGER(get-value('h-patid'))
+    testtype    = get-value('h-testtype').
+
+
+    
+FOR EACH patient_mstr WHERE 
+        (patient_mstr.patient_ID = patid OR 
+         patid = 0) AND 
+        patient_mstr.patient_deleted = ? NO-LOCK,
+    FIRST people_mstr WHERE people_mstr.people_id = patient_mstr.patient_ID AND 
+        people_mstr.people_deleted = ? NO-LOCK,
+    EACH TK_mstr WHERE TK_mstr.TK_patient_ID = patient_mstr.patient_ID AND 
+        TK_mstr.TK_deleted = ? AND 
+/*        TK_mstr.tk_test_seq = 1 AND  */                                                   /* 121 */
+        (TK_mstr.TK_test_type = testtype OR 
+         testtype = "") NO-LOCK   
+    BREAK BY patient_mstr.patient_ID BY TK_mstr.TK_test_type BY TK_mstr.TK_ID BY TK_mstr.tk_test_seq:       /* 141 */
+         
+    FIND FIRST trh_hist WHERE trh_hist.trh_item = TK_mstr.TK_test_type AND                      /* 1dot5 */ 
+        trh_hist.trh_serial = TK_mstr.TK_ID AND                                                 /* 1dot31 */
+        trh_hist.trh_sequence = TK_mstr.TK_test_seq AND                                           /* 1dot31 */
+		trh_hist.trh_action = "LAB_PROCESS"                                                       /* 1dot31 */
+            NO-LOCK NO-ERROR.                                                                   /* 1dot31 */
+                        
+    IF AVAILABLE (trh_hist) THEN                                                                        /* 1dot31 */
+        ASSIGN                                                                                          /* 1dot31 */
+            LPdate = trh_hist.trh_date.                                                          /* 1dot31 */           /* 151 */
+         
+    IF FIRST-OF(patient_mstr.patient_id) THEN DO: 
+    
+        {&OUT}  
+            "<DIV class='row'>" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP
+			"<DIV class='grid_8'>" SKIP
+			"<DIV class='table_report'>" SKIP  /** was wee_table **/                                     /* begin 1dot3 */
+		    "   <TABLE>" SKIP
+		    "       <THEAD>" SKIP
+		    "         <TR>" SKIP                                                                                      
+		    "             <TH colspan=5>" people_mstr.people_lastname ", " people_mstr.people_firstname " - " patient_mstr.patient_ID "</TH>" SKIP
+		    "         </TR>" SKIP
+		    "         <TR>" SKIP
+		    "           <TD>Test Type</TD>" SKIP
+		    "           <TD>Testkit Number / Seq</TD>" SKIP
+		    "           <TD>Lab Sample ID / Seq</TD>" SKIP
+		    "           <TD>Lab Processed<BR>(Lab Completed)</TD>" SKIP                                     /* 1dot31 */
+		    "           <TD>Status</TD>" SKIP
+		    "         </TR>" SKIP
+		    "       </THEAD>" SKIP
+		    "         <TFOOT>" SKIP
+		    "             <TR>" SKIP
+		    "                 <TD colspan=5>END OF REPORT</TD>" SKIP
+		    "             </TR>" SKIP
+		    "         </TFOOT>" SKIP.                                                                       /* end 1dot3 */
+            
+    END.  /** of if first-of patient_id **/                 
+                         
+    testcount = testcount + 1.
+    
+    {&OUT}
+        "<TR>" SKIP
+        "   <TD>" TK_mstr.TK_test_type "</TD>" SKIP
+        "   <TD><a href=~"TKtestresR.r?h-tk_id=" TK_mstr.TK_ID                                                          /* 1dot2 */
+        "&h-tk_test_seq=" TK_mstr.TK_test_seq                                                                           /* 1dot2 */
+        "&h-testtype=" TK_mstr.TK_test_type                                                                              /* 1dot2 */
+        "&h-patient_id=" patient_mstr.patient_ID                                                                        /* 1dot2 */
+        "&h-act=Report&whattorun=14.5&submit=Submit~" >" TK_mstr.TK_ID " / " TK_mstr.TK_test_seq                        /* 1dot2 */ 
+        "</a></TD>" SKIP                                                                                                /* 1dot2 */
+        "   <TD>" TK_mstr.TK_lab_sample_ID " / " TK_mstr.TK_lab_seq "</TD>" SKIP                                        /* 1dot2 */
+        "   <TD>" LPdate  "</TD>" SKIP                                                                                  /* 1dot31 */
+        "   <TD>" TK_mstr.TK_status "</TD>" SKIP                                                                        /* 1dot3 */
+        "</TR>" SKIP.
+        
+    
+    IF ITshowmsg = YES THEN 
+	    {&OUT}
+	        "<TR>" SKIP
+	        "   <TD>" people_firstname " " people_lastname "</TD>" SKIP
+	        "   <TD>" patient_id "</TD>" skip
+	        "   <TD>" TK_test_type "</TD>" skip
+	        "   <TD>" tk_id "</TD>" skip
+	        "   <td>" testcount "</td>" SKIP
+	        "</TR>" SKIP.
+        
+    /**
+    IF LAST-OF(TK_mstr.TK_test_type) THEN DO:
+        
+        {&OUT}
+            "<TR>" SKIP
+            "   <TD>" TK_mstr.TK_test_type "</TD>" SKIP
+            "   <TD>" testcount "</TD>" SKIP
+            "</TR>" SKIP.
+            
+        testcount = 0.
+        
+    END.  /** of if last-of TK_test_type **/
+    **/
+    
+    IF last-of(patient_mstr.patient_id) THEN DO: 
+    
+        {&OUT}    
+            "</TABLE>" SKIP
+            "</DIV>         <!-- End of table_col -->" SKIP            
+            "</CENTER>" SKIP
+            "<BR>" SKIP
+			"</DIV>         <!-- end of grid_8 -->" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP  
+			"</DIV>     <!-- end of row -->" SKIP
+			"<FORM action='PATmainviewR.r'>" SKIP                                                                /* begin 1dot3 */
+			"<input type='hidden' name='h-peopleid' value='" patient_mstr.patient_ID "' />" SKIP
+			"<input type='hidden' name='whattorun' value='3.11' />" SKIP
+			"<div class='row'>" SKIP
+			"   <div class='grid_5'> </DIV>" SKIP
+			"   <div class='grid_2'><button type='submit' name='h-act' value='SELECTED' class='btn'>Back to Patient</BUTTON></div>" SKIP
+			"   <div class='grid_5'> </DIV>" SKIP
+			"</div>" SKIP
+			"</FORM>" SKIP                                                                                       /* end 1dot3 */
+			"<BR>" SKIP
+			.
+            
+    END.  /** of if last patient_id **/        
+    
+END.  /*** of 4ea. patient_mstr, etc. ***/
+
+IF ITshowmsg = YES THEN 
+	{&OUT}
+	    "<H1>END OF REPORT</H1>" SKIP.
+    
+
+</SCRIPT>
+</BODY>
+</HTML>

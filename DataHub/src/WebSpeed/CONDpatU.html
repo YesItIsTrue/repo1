@@ -1,0 +1,339 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Patient with Conditions Maintenance</TITLE>
+    <META NAME="AUTDOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.2">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="11/Nov/14">
+    <META NAME="LAST_UPDATED" CONTENT="03/Nov/15">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Revision History:
+    -----------------
+    1.0 - written by DOUG LUTTRELL on 11/Nov/14.  Original Version.
+    1.1 - written by DOUG LUTTRELL on 20/Jan/15.  Modified to use proper
+            CSS commands.  Also to prevent the use of no Patient ID (wide open).
+    1.2 - written by Jacob Luttrell on 03/Nov/15. fixed button divs marked by 1dot2.        
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/  
+
+
+DEFINE VARIABLE patid LIKE patient_mstr.patient_ID NO-UNDO.
+DEFINE VARIABLE ischecked AS CHARACTER NO-UNDO.
+DEFINE VARIABLE condlist AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE act AS CHARACTER NO-UNDO.
+DEFINE VARIABLE ITshowmsg AS LOG INITIAL NO NO-UNDO.
+DEFINE VARIABLE x AS INTEGER NO-UNDO.                                           /** junk counter **/
+
+DEFINE VARIABLE cellcount AS INTEGER NO-UNDO.
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "Pre ASSIGN" SKIP
+                                                                                        "<OL>Variables" SKIP
+                                                                                        "<LI>act = " act "</LI>" skip
+                                                                                        "<LI>patid = " patid "</LI>" skip
+                                                                                        "<LI>condlist = " condlist "</LI>" skip
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width='90%'>" SKIP(1).
+
+ASSIGN 
+    patid       = INTEGER(get-value("h-patid"))
+    condlist    = get-value("h-cond")
+    act         = get-value("h-act").
+
+IF act = "" THEN
+    act = "INITIAL".
+    /***
+ELSE IF act = "INITIAL" THEN 
+    act = "INITIAL".
+
+ELSE IF act = "UPDATE" THEN
+    act = "UPDATE".
+
+ELSE IF act = "RESET" THEN
+    act = "RESET".
+***/
+
+IF patid = 0 THEN 
+    act = "BUSTED".
+    
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "Post Assign / Pre CASE" SKIP
+                                                                                        "<OL>Variables" SKIP
+                                                                                        "<LI>act = " act "</LI>" skip
+                                                                                        "<LI>patid = " patid "</LI>" skip
+                                                                                        "<LI>condlist = " condlist "</LI>" skip
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width='90%'>" SKIP(1).
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:    
+        
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "Inside INITIAL" SKIP
+                                                                                        "<OL>Variables" SKIP
+                                                                                        "<LI>act = " act "</LI>" skip
+                                                                                        "<LI>patid = " patid "</LI>" skip
+                                                                                        "<LI>condlist = " condlist "</LI>" skip
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width='90%'>" SKIP(1).        
+    
+		FOR EACH patient_mstr WHERE patient_mstr.patient_ID = patid AND 
+		        patient_mstr.patient_deleted = ? NO-LOCK,
+		    FIRST people_mstr WHERE people_mstr.people_id = patient_mstr.patient_ID AND 
+		        people_mstr.people_deleted = ? NO-LOCK 
+		    BREAK BY patient_mstr.patient_ID: 
+		        
+		    IF FIRST-OF(patient_mstr.patient_id) THEN DO: 
+		                
+                {&OUT}  
+                    "   <CENTER><H3>"  "</H3>" SKIP. 
+		     
+		        {&OUT} 
+                    "<DIV class='row'>" SKIP
+                    "<DIV class='grid_1'> </DIV>            <!-- grid_1 spacer -->" SKIP
+                    "<DIV class='grid_10'>" SKIP
+		            "<FORM method='get'>" SKIP 
+		            "<input type='hidden' name='h-patid' value=" patient_mstr.patient_ID " />" SKIP
+		            "<DIV class='table_col'>" SKIP
+		            "   <TABLE>" SKIP
+		            "       <THEAD>" SKIP
+		            "           <TH colspan=2>Conditions for " people_mstr.people_firstname " " people_mstr.people_lastname " - " patient_mstr.patient_ID "</TH>" SKIP
+		            "       </THEAD>" SKIP
+		            "       <TBODY>" SKIP
+		            "         <TR>" SKIP
+		            "           <TD>Notes</TD>" SKIP
+		            "           <TD>" patient_mstr.patient_notes "</TD>" SKIP
+		            "         </TR>" SKIP
+		            "         <TR>" SKIP
+		            "             <TD>Really Old Condition Field</TD>" SKIP
+		            "             <TD>" patient_mstr.patient_condition "</TD>" SKIP
+		            "         </TR>" SKIP
+		            "     </TABLE>" SKIP
+		            "</DIV>" SKIP
+		            "<DIV class='table_report fixed_table'>" SKIP
+		            "     <TABLE>" SKIP.       
+		            
+		        FOR EACH condition_mstr WHERE condition_mstr.condition_deleted = ? NO-LOCK 
+		            BREAK BY condition_mstr.condition_common DESCENDING BY condition_mstr.condition_name BY condition_mstr.condition_ID:
+		                
+		            IF FIRST-OF(condition_mstr.condition_common) THEN DO:  
+		              
+		              cellcount = 0.
+		              
+		              {&OUT}
+		                  "<TR class='break'>" SKIP.
+		                  
+		              IF  condition_mstr.condition_common = YES THEN 
+		                  {&OUT}
+		                      "   <TD colspan=6>Common Conditions</TD>" SKIP.
+		              ELSE 
+		                  {&OUT}
+		                      "   <TD colspan=6>Uncommon Conditions</TD>" SKIP.
+		                      
+		              {&OUT}
+		                  "</TR>" SKIP. 
+		            END.  /** of if first-of condition_common **/   
+		                
+		            FIND pcl_det WHERE pcl_det.pcl_patient_id = patient_mstr.patient_ID AND 
+		                pcl_det.pcl_cond_id = condition_mstr.condition_ID AND 
+		                pcl_det.pcl_deleted = ? 
+		                    NO-LOCK NO-ERROR.     
+		                
+		            IF AVAILABLE (pcl_det) THEN 
+		                ischecked = "CHECKED".
+		            ELSE 
+		                ischecked = "".
+		                
+																	            IF ITshowmsg = YES THEN 
+																	                {&OUT}
+																	                    "Patient ID = " patient_mstr.patient_ID "<BR>"
+																	                    "Condition ID = " condition_mstr.condition_ID "<BR>"
+																	                    "Is avail? = " RECID(pcl_det) "<BR>"
+																	                    "End of message <BR>" skip(1).
+		            
+		            IF cellcount MODULO 6 = 0 THEN 
+		              {&OUT}
+		                  "<TR>" SKIP.
+		            
+		            cellcount = cellcount + 1.
+		                
+		            {&OUT}
+		                "   <TD><input type='checkbox' name='h-cond' value='" condition_mstr.condition_ID "' " ischecked " />" 
+		                        condition_mstr.condition_name "</TD>" SKIP.
+		                
+		        END.  /* of 4ea. condition_mstr */                        
+		            
+		        {&OUT}
+		            "   </TABLE>" SKIP
+                    "</DIV>                                 <!-- end of table_report -->" SKIP 
+                    "</DIV>                           <!-- end of grid_10 -->" SKIP                                                             /* 1dot2 */
+                    "<DIV class='grid_1'> </DIV>                  <!-- grid_1 spacer -->" SKIP                                                  /* 1dot2 */
+                   "</DIV>                       <!-- end of row -->" SKIP (1)                                                                  /* 1dot2 */        
+                    "<BR>" SKIP
+                   
+                    "<div class='row'>" SKIP                                                                                                    /* 1dot2 */    
+					"   <div class='grid_3'> </DIV>" SKIP                                                                                       /* 1dot2 */
+					"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn'>Save Changes</BUTTON></div>" SKIP     /* 1dot2 */
+					"   <div class='grid_2'> </DIV>" SKIP                                                                                       /* 1dot2 */   
+					"   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP                                 /* 1dot2 */   
+					"   <div class='grid_3'> </DIV>" SKIP                                                                                       /* 1dot2 */
+					"</div>" SKIP                                                                                                               /* 1dot2 */
+					"</FORM>" SKIP.                                                                                                             /* 1dot2 */   
+                    
+/*                    "<DIV class='row'>" SKIP                                                                                        */
+/*                    "<div class='grid_2'> </DIV>" SKIP                                                                              */
+/*                    "<div class='grid_3'>" SKIP                                                                                     */
+/*                    "   <div class='button'><button type='SUBMIT' name='h-act' value='UPDATE' >Save Changes</button></DIV>" SKIP    */
+/*                    "</DIV>" SKIP                                                                                                   */
+/*                    "<div class='grid_2'> </DIV>" SKIP                                                                              */
+/*                    "<div class='grid_3'>" SKIP                                                                                     */
+/*                    "   <div class='button'><button type='RESET' name='h-act' value='RESET' >Clear Changes</button></DIV>" SKIP     */
+/*                    "</DIV>" SKIP                                                                                                   */
+/*                    "<div class='grid_2'> </DIV>" SKIP                                                                              */
+/*                    "</DIV>                                 <!-- end of row for buttons -->" SKIP                                   */
+/*/*                    "<BR>" SKIP                                                                                                 */*/
+/*		            "</FORM>" SKIP                                                                                                        */
+/*		            "</DIV>                           <!-- end of grid_10 -->" SKIP                                                       */
+/*		            "<DIV class='grid_1'> </DIV>                  <!-- grid_1 spacer -->" SKIP.                                           */
+/*		            "</DIV>                       <!-- end of row -->" SKIP (1).                                                          */
+		            
+		    END.  /** of if first-of patient_id **/                 
+		    
+		END.  /***  of 4ea. patient_mstr ***/
+		
+	END.  /*** of act = initial ***/
+	
+	WHEN "UPDATE" THEN DO: 
+	    
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "Inside UPDATE" SKIP
+                                                                                        "<OL>Variables" SKIP
+                                                                                        "<LI>act = " act "</LI>" skip
+                                                                                        "<LI>patid = " patid "</LI>" skip
+                                                                                        "<LI>condlist = " condlist "</LI>" skip
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width='90%'>" SKIP(1).	    
+	    
+	   DO x = 1 TO NUM-ENTRIES(condlist):                                       
+	       
+	       FIND FIRST pcl_det WHERE pcl_det.pcl_patient_id = patid AND 
+	           pcl_det.pcl_cond_id = INTEGER(entry(x,condlist)) 
+	               EXCLUSIVE-LOCK NO-ERROR.
+	               
+	       IF NOT AVAILABLE (pcl_det) THEN DO:                                  /** create new pcl_det records **/                         
+	           
+	           CREATE pcl_det.
+	           ASSIGN 
+	               pcl_det.pcl_patient_id  = patid 
+	               pcl_det.pcl_cond_id     = INTEGER(entry(x,condlist))
+	               pcl_det.pcl_created_by  = USERID("HHI")
+	               pcl_det.pcl_create_date = TODAY.
+	               
+	       END.  /** of if not avail pcl_det ---- create **/
+	       
+	       ASSIGN                                                               /** modify existing pcl_det records - including prev. deleted **/
+	           pcl_det.pcl_deleted         = ?
+	           pcl_det.pcl_modified_by     = USERID("HHI")
+	           pcl_det.pcl_modified_date   = TODAY
+	           pcl_det.pcl_prog_name       = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1).      
+	       
+	   END.  /** of x = 1 to num-entries(condlist) **/   
+	   
+	   FOR EACH pcl_det WHERE pcl_det.pcl_patient_id = patid AND                /** delete unwanted pcl_det records **/
+	       LOOKUP(STRING(pcl_det.pcl_cond_id),condlist) = 0:                    /** share lock upgrads to exclusive and back again per record **/ 
+	           
+	           
+	       ASSIGN 
+	           pcl_det.pcl_modified_by     = USERID("HHI")
+	           pcl_det.pcl_modified_date   = TODAY 
+	           pcl_det.pcl_deleted         = TODAY
+	           pcl_det.pcl_prog_name       = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1).
+	           
+	   END.  /** of 4ea. pcl_det **/ 
+	    
+	   {&OUT}
+	       "<DIV class='row'>" SKIP
+	       "   <DIV class='grid_1'> </DIV>" SKIP
+	       "   <DIV class='grid_10'>" SKIP
+	       "<FORM method='get'>" SKIP
+	       "<CENTER>" SKIP
+	       "<H3>Update Successful</H3>" SKIP
+	       "<a href=~"../../DataHub/rcode/PATmainviewR.r?h-act=SELECTED&h-peopleid=" patid 
+	       "~"> <DIV class='button'>Return to Patient Viewer</DIV></a>" SKIP
+	       "</FORM>" SKIP
+	       "   </DIV>" SKIP
+	       "   <DIV class='grid_1'> </DIV>" SKIP
+           "</DIV>" SKIP.                               /* of row */
+	        
+	END.  /*** of act = update ***/
+	
+	WHEN "RESET" THEN DO: 
+	    
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "Inside RESET" SKIP
+                                                                                        "<OL>Variables" SKIP
+                                                                                        "<LI>act = " act "</LI>" skip
+                                                                                        "<LI>patid = " patid "</LI>" skip
+                                                                                        "<LI>condlist = " condlist "</LI>" skip
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width='90%'>" SKIP(1).	    
+	
+	END.  /*** of act = reset ***/
+	
+	OTHERWISE DO:
+	    
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "Inside OTHERWISE" SKIP
+                                                                                        "<OL>Variables" SKIP
+                                                                                        "<LI>act = " act "</LI>" skip
+                                                                                        "<LI>patid = " patid "</LI>" skip
+                                                                                        "<LI>condlist = " condlist "</LI>" skip
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width='90%'>" SKIP(1).	    
+        {&OUT} 
+            "<P class='errmsg'>Unexpected Condition!  Please contact <a href='mailto:hhi.techsupport@mysolsource.com?subject=Error with CONDpatU.html -- " act "'>Solsource</a> immediately.</P>" SKIP             
+            "<FORM method='post'>" SKIP
+            "<center><INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP 
+            "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP  
+            "</FORM>" SKIP.   	    
+	    
+	END.   /*** of act = unexpected condition ***/
+		
+END CASE.   /*** of case act ***/
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "END OF LINE." SKIP
+                                                                                        "<OL>Variables" SKIP
+                                                                                        "<LI>act = " act "</LI>" skip
+                                                                                        "<LI>patid = " patid "</LI>" skip
+                                                                                        "<LI>condlist = " condlist "</LI>" skip
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width='90%'>" SKIP(1).
+</SCRIPT>
+</BODY>
+</HTML>

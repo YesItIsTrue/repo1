@@ -1,0 +1,478 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Administrator's Time Sheet Detail Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="07/Jul/16">
+    <META NAME="MODIFIED_DATE" CONTENT="07/Jul/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           TSdetU.html
+    Description:    Time Sheet Report
+    Created:        Jacob Luttrell
+    Version History:
+        1.0 - Created by Jacob Luttrell on 07/Jul/16.
+        Need to come back and touch this up to work with logins see 
+        commented out variables and TSentryU.
+  -------------------------------------------------------------------*/
+  
+  
+DEFINE VARIABLE from-date   LIKE Hours_Mstr.Hours_date         NO-UNDO.
+DEFINE VARIABLE to-date     LIKE Hours_Mstr.Hours_date         NO-UNDO.
+/*DEFINE VARIABLE empid       LIKE Hours_Mstr.Hours_employee_ID  NO-UNDO.*/
+DEFINE VARIABLE empid       like emp_mstr.emp_id NO-UNDO.
+DEFINE VARIABLE clientname  AS CHARACTER                       NO-UNDO.
+
+DEFINE VARIABLE x           AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE raw-week    AS CHARACTER                       NO-UNDO.
+DEFINE VARIABLE yr          AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE week        AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE days        AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE jan1        AS DATE                            NO-UNDO.
+DEFINE VARIABLE mondate     AS DATE                            NO-UNDO.
+DEFINE VARIABLE tuesdate    AS DATE                            NO-UNDO.
+DEFINE VARIABLE weddate     AS DATE                            NO-UNDO.
+DEFINE VARIABLE thursdate   AS DATE                            NO-UNDO.
+DEFINE VARIABLE fridate     AS DATE                            NO-UNDO.
+DEFINE VARIABLE satdate     AS DATE                            NO-UNDO.
+DEFINE VARIABLE sundate     AS DATE                            NO-UNDO.
+DEFINE VARIABLE dayadj      AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE itdate      AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE dateind     AS CHARACTER                       NO-UNDO.
+DEFINE VARIABLE empidlist   AS CHARACTER                       NO-UNDO.
+
+
+DEFINE VARIABLE clienttot   AS DECIMAL EXTENT 7 format ">>9.9" NO-UNDO.
+DEFINE VARIABLE projtot     AS DECIMAL EXTENT 7 format ">>9.9" NO-UNDO.
+DEFINE VARIABLE datetot     AS DECIMAL EXTENT 7 format ">>9.9" NO-UNDO. 
+DEFINE VARIABLE weektot     AS DECIMAL          format ">>9.9" NO-UNDO.
+DEFINE VARIABLE projwktot   AS DECIMAL          format ">>9.9" NO-UNDO.
+DEFINE VARIABLE clientwktot AS DECIMAL          format ">>9.9" NO-UNDO.
+
+DEFINE VARIABLE empname     AS CHARACTER                       NO-UNDO.
+DEFINE VARIABLE clientabbv  AS CHARACTER                       NO-UNDO.
+DEFINE VARIABLE projname    AS CHARACTER                       NO-UNDO.       
+DEFINE VARIABLE disp-date   AS CHARACTER EXTENT 7              NO-UNDO.
+DEFINE VARIABLE clientid    AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE o-hrs-date  AS CHARACTER                       NO-UNDO.
+
+DEFINE VARIABLE act         AS CHARACTER                       NO-UNDO.
+DEFINE VARIABLE itmessage   AS LOGICAL INITIAL NO              NO-UNDO.
+
+ASSIGN 
+    raw-week   = html-encode(get-value("html5-week"))
+    act        = html-encode(get-value("h-act"))
+    empidlist  = html-encode(get-value("h-empidlist"))
+    .
+
+    
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL".    
+
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_2col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Select a Week</td>" skip
+            "           <td><input type='week' name='html5-week' value='" raw-week "' /></td>" skip
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Select Employee(s)</td>" skip
+            "           <td colspan='3'><select name='h-empidlist' multiple>" skip. 
+    
+            FOR EACH Emp_Mstr WHERE Emp_Mstr.Emp_deleted = ?
+                                       NO-LOCK,
+                EACH people_mstr WHERE people_mstr.people_id = Emp_Mstr.Emp_ID AND 
+                                       people_mstr.people_deleted = ?
+                                       NO-LOCK
+                                       BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname: 
+                    ASSIGN 
+                        empname   = people_mstr.people_lastname + ", " + people_mstr.people_firstname
+                        empid     = people_mstr.people_id.
+            
+                {&OUT}                                                                                
+            "              <option value='" empid "'>" empname "</option>" SKIP.
+            
+            END.  /* 4ea. client_mstr */     
+            {&OUT} 
+            "           </td>" SKIP
+            "       </tr>" skip
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        
+        ASSIGN
+            yr = INTEGER(SUBSTRING(raw-week,1,4))
+            week = INTEGER(SUBSTRING(raw-week,INDEX(raw-week,"-w") + 2,2))
+            jan1 = DATE(1, 1, yr).
+            
+        IF WEEKDAY(jan1) > 5 THEN
+           ASSIGN 
+            itdate = WEEKDAY(jan1)
+            dateind = "First"       
+            days = (week * 7) + (2 - WEEKDAY(jan1)).
+        ELSE 
+           ASSIGN
+             itdate = WEEKDAY(jan1) 
+             dateind = "Second"      
+             days = (week * 7) - (5 + WEEKDAY(jan1)).  
+        
+        ASSIGN 
+            mondate = jan1 + days
+            tuesdate = mondate + 1
+            weddate = mondate + 2
+            thursdate = mondate + 3
+            fridate = mondate + 4
+            satdate = mondate + 5
+            sundate = mondate + 6.
+        
+       
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (
+                mondate,
+                OUTPUT disp-date[2]
+                ).
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (
+                tuesdate,
+                OUTPUT disp-date[3]
+                ).            
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (
+                weddate,
+                OUTPUT disp-date[4]
+                ).        
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (
+                thursdate,
+                OUTPUT disp-date[5]
+                ).        
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (
+                fridate,
+                OUTPUT disp-date[6]
+                ).        
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (
+                satdate,
+                OUTPUT disp-date[7]
+                ).
+       RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (
+                sundate,
+                OUTPUT disp-date[1]
+                ).
+                                                                                                IF itmessage = YES THEN 
+                                                                                                {&out}
+                                                                                                "empid = " empid "<BR>" skip
+                                                                                                "raw-week = " raw-week "<br>" skip
+                                                                                                "yr = " yr "<BR>" SKIP
+                                                                                                "week = " week "<BR>" SKIP
+                                                                                                "jan1 = " jan1 "<BR>" SKIP
+                                                                                                "days = " days "<BR>" SKIP
+                                                                                                "mondate = " mondate "<BR>" SKIP
+                                                                                                "itdate = " itdate "<br>" SKIP
+                                                                                                "dateind = " dateind "<br>" SKIP.         
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP
+            "<center><h2>Time Sheet Report: Monday " mondate " - Sunday " sundate "</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            .
+
+        FOR EACH emp_mstr WHERE LOOKUP(STRING(emp_mstr.emp_id),empidlist) > 0 no-lock,
+            EACH people_mstr WHERE people_mstr.people_id = Emp_Mstr.Emp_ID AND 
+                                       people_mstr.people_deleted = ?
+                                       NO-LOCK
+                                       BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname: 
+                    ASSIGN 
+                        empname   = people_mstr.people_lastname + ", " + people_mstr.people_firstname.
+            
+            {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP
+            "<center><h2>Employee: " empname "</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            .
+                                                                                          IF itmessage = YES THEN 
+                                                                                          {&OUT}
+                                                                                              "4ea. hours_mstr <BR>" SKIP
+                                                                                              "empid = " empid "<BR>" SKIP
+                                                                                              "mondate = " mondate "<BR>" SKIP
+                                                                                              "sundate = " sundate "<BR><BR>" SKIP.
+            FOR EACH Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = emp_mstr.emp_id AND
+                                      Hours_Mstr.Hours_date >= mondate AND
+                                      Hours_Mstr.Hours_date <= sundate AND 
+                                      Hours_Mstr.Hours_deleted = ? NO-LOCK,
+                EACH Client_Mstr WHERE Client_Mstr.Client_people_ID = Hours_Mstr.Hours_client_ID AND
+                                       Client_Mstr.Client_deleted = ? NO-LOCK
+                                   BREAK BY Hours_Mstr.Hours_client_ID BY Hours_Mstr.Hours_project_name: 
+                                                                     IF itmessage = YES THEN 
+                                                                     {&OUT}
+                                                                         "Just after 4ea. hours_mstr <BR>" SKIP
+                                                                         "empid = " empid "<BR>" SKIP
+                                                                         "date = " Hours_Mstr.Hours_date "<BR>" SKIP
+                                                                         "clientabbv = " Client_Mstr.Client_abbv "<BR>" 
+                                                                         "projname = " Hours_Mstr.Hours_project_name "<BR><BR>" SKIP.
+                ASSIGN 
+                    clientabbv  = Client_Mstr.Client_abbv
+                    projname    = Hours_Mstr.Hours_project_name
+                    clientid    = Hours_Mstr.Hours_client_ID.                                           
+                
+                IF FIRST-OF (Hours_Mstr.Hours_client_ID) THEN DO:
+                    clienttot = 0.
+                    
+                    {&out}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_2'> </DIV>" SKIP
+                "<DIV class='grid_8'>" SKIP
+                "<DIV class='table_report'>" SKIP
+                "    <TABLE>" SKIP
+                "        <THEAD>" SKIP
+                "            <TR>" SKIP
+                "                <TH colspan=9>" clientabbv "</TH>" SKIP    /* thead, tr, th makes the silver bar */
+                "            </TR>" SKIP
+                "            <TR>" SKIP
+                "                <TD rowspan='2' width='100'>Project</TD>" SKIP          /* thead, tr, td makes the blue bar */
+                "                <TD>Mon</TD>" SKIP
+                "                <TD>Tues</TD>" SKIP
+                "                <TD>Wed</TD>" SKIP
+                "                <TD>Thurs</TD>" SKIP
+                "                <TD>Fri</TD>" SKIP
+                "                <TD>Sat</TD>" SKIP
+                "                <TD>Sun</TD>" SKIP
+                "                <td rowspan='2'>Total</td>" SKIP
+                "            </TR>" SKIP
+                "            <TR>" SKIP
+                "               <td>" mondate "</td>" SKIP
+                "               <td>" tuesdate "</td>" SKIP
+                "               <td>" weddate "</td>" SKIP
+                "               <td>" thursdate "</td>" SKIP
+                "               <td>" fridate "</td>" SKIP
+                "               <td>" satdate "</td>" SKIP
+                "               <td>" sundate "</td>" SKIP
+                "           </tr>" SKIP
+                "        </THEAD>" SKIP(1).
+                END.
+                IF FIRST-OF (Hours_Mstr.Hours_project_name) THEN DO:
+                    projtot = 0.
+                END.
+                
+                ASSIGN 
+                    datetot[WEEKDAY(Hours_Mstr.Hours_date)]     = datetot[WEEKDAY(Hours_Mstr.Hours_date)]   + Hours_Mstr.Hours_amount
+                    clienttot[WEEKDAY(Hours_Mstr.Hours_date)]   = clienttot[WEEKDAY(Hours_Mstr.Hours_date)] + Hours_Mstr.Hours_amount
+                    projtot[WEEKDAY(Hours_Mstr.Hours_date)]     = projtot[WEEKDAY(Hours_Mstr.Hours_date)]   + Hours_Mstr.Hours_amount.
+                                                                                           IF itmessage = YES THEN 
+                                                                                           {&OUT}
+                                                                                               "Assign <BR>" SKIP
+                                                                                               "empid = " empid "<BR>" SKIP
+                                                                                               "clientabbv = " clientabbv "<BR>" SKIP
+                                                                                               "projname = " projname "<BR>" SKIP.                
+                IF LAST-OF (Hours_Mstr.Hours_project_name) THEN DO:
+                    
+                    projwktot = projtot[1] + projtot[2] + projtot[3] + projtot[4] + projtot[5] + projtot[6] + projtot[7].
+                               
+                {&OUT}
+                    "           <TR>" SKIP
+                    "               <TD align='center'>" projname "</TD>" SKIP
+                    "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+                                        "?h-empid=" empid
+                                        "&h-clientid=" clientid
+                                        "&h-projname=" projname
+                                        "&html5-date=" disp-date[2]
+                                        "&h-act=Select a Date"
+                                        "&whattorun=8.1"
+                    "                   '>" projtot[2] format ">>9.9<" "</a></td>" SKIP
+                    "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+                                        "?h-empid=" empid
+                                        "&h-clientid=" clientid
+                                        "&h-projname=" projname
+                                        "&html5-date=" disp-date[3]
+                                        "&h-act=Select a Date"
+                                        "&whattorun=8.1"
+                    "                   '>" projtot[3] format ">>9.9<" "</a></td>" SKIP
+                    "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+                                        "?h-empid=" empid
+                                        "&h-clientid=" clientid
+                                        "&h-projname=" projname
+                                        "&html5-date=" disp-date[4]
+                                        "&h-act=Select a Date"
+                                        "&whattorun=8.1"
+                    "                   '>" projtot[4] format ">>9.9<" "</a></td>" SKIP
+                    "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+                                        "?h-empid=" empid
+                                        "&h-clientid=" clientid
+                                        "&h-projname=" projname
+                                        "&html5-date=" disp-date[5]
+                                        "&h-act=Select a Date"
+                                        "&whattorun=8.1"
+                    "                   '>" projtot[5] format ">>9.9<" "</a></td>" SKIP
+                    "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+                                        "?h-empid=" empid
+                                        "&h-clientid=" clientid
+                                        "&h-projname=" projname
+                                        "&html5-date=" disp-date[6]
+                                        "&h-act=Select a Date"
+                                        "&whattorun=8.1"
+                    "                   '>" projtot[6] format ">>9.9<" "</a></td>" SKIP
+                    "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+                                        "?h-empid=" empid
+                                       "&h-clientid=" clientid
+                                        "&h-projname=" projname
+                                        "&html5-date=" disp-date[7]
+                                        "&h-act=Select a Date"
+                                        "&whattorun=8.1"
+                    "                   '>" projtot[7] format ">>9.9<" "</a></td>" SKIP
+                    "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+                                        "?h-empid=" empid
+                                        "&h-clientid=" clientid
+                                        "&h-projname=" projname
+                                        "&html5-date=" disp-date[1]
+                                        "&h-act=Select a Date"
+                                        "&whattorun=8.1"
+                    "                   '>" projtot[1] format ">>9.9<" "</a></td>" SKIP
+                    "               <td align='center'>" projwktot "</td>" SKIP
+                    "           </TR>" SKIP.
+                
+                END. /* if last-of proj_name */    
+                IF LAST-OF (Hours_Mstr.Hours_client_ID) THEN DO:
+                    
+                   clientwktot = clienttot[1] + clienttot[2] + clienttot[3] + clienttot[4] + clienttot[5] + clienttot[6] + clienttot[7].
+                    
+                    {&OUT}
+                "           <TFOOT>" SKIP
+                "               <TR>" SKIP
+                "                  <td>Total</td>" SKIP
+                "                  <td>" clienttot[2] format ">>9.9<" "</td>" SKIP
+                "                  <td>" clienttot[3] format ">>9.9<" "</td>" SKIP
+                "                  <td>" clienttot[4] format ">>9.9<" "</td>" SKIP
+                "                  <td>" clienttot[5] format ">>9.9<" "</td>" SKIP
+                "                  <td>" clienttot[6] format ">>9.9<" "</td>" SKIP
+                "                  <td>" clienttot[7] format ">>9.9<" "</td>" SKIP
+                "                  <td>" clienttot[1] format ">>9.9<" "</td>" SKIP
+                "                  <td>" clientwktot "</td>" SKIP
+                "               </tr>" SKIP
+                "           </TFOOT>" SKIP
+                "       </TABLE>" SKIP
+                "   </DIV>" SKIP
+                "</DIV>         <!-- end of grid_8 -->" SKIP
+                "<DIV class='grid_2'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP.
+                 END. /* if last-of client_id */   
+            END. /* 4ea. people, emp, emph */
+        end. /* 4ea. emp_mstr */
+        
+        weektot = datetot[1] + datetot[2] + datetot[3] + datetot[4] + datetot[5] + datetot[6] + datetot[7].
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan=9>Week Totals</TH>" SKIP    /* thead, tr, th makes the silver bar */
+            "            </TR>" SKIP
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD rowspan='3' width='100'>Total Hours/Day</TD>" SKIP          /* thead, tr, td makes the blue bar */
+            "                <TD>Mon</TD>" SKIP
+            "                <TD>Tues</TD>" SKIP
+            "                <TD>Wed</TD>" SKIP
+            "                <TD>Thurs</TD>" SKIP
+            "                <TD>Fri</TD>" SKIP
+            "                <TD>Sat</TD>" SKIP
+            "                <TD>Sun</TD>" SKIP
+            "                <td rowspan='2'>Total</td>" SKIP
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "               <td>" mondate "</td>" SKIP
+            "               <td>" tuesdate "</td>" SKIP
+            "               <td>" weddate "</td>" SKIP
+            "               <td>" thursdate "</td>" SKIP
+            "               <td>" fridate "</td>" SKIP
+            "               <td>" satdate "</td>" SKIP
+            "               <td>" sundate "</td>" SKIP
+            "           </tr>" SKIP
+            "            <TR>" SKIP
+                            "<td>" datetot[2] format ">>9.9<" "</td>" SKIP
+                            "<td>" datetot[3] format ">>9.9<" "</td>" SKIP
+                            "<td>" datetot[4] format ">>9.9<" "</td>" SKIP
+                            "<td>" datetot[5] format ">>9.9<" "</td>" SKIP
+                            "<td>" datetot[6] format ">>9.9<" "</td>" SKIP
+                            "<td>" datetot[7] format ">>9.9<" "</td>" SKIP
+                            "<td>" datetot[1] format ">>9.9<" "</td>" SKIP
+                            "<td>" weektot "</td>" SKIP
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN=9>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+
+END CASE.         
+        
+         
+</SCRIPT>
+</BODY>
+</HTML>
+</SCRIPT>
+</BODY>
+</HTML>

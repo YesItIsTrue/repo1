@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD> 
+<TITLE>Unit of Measure Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */ 
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:           UOMuomR.html
+    Description:    report page for the uom_mstr table in the General database
+    Created:        3/12/15
+    Notes:          
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE from_uom    LIKE uom_mstr.uom_uom NO-UNDO.
+DEFINE VARIABLE to_uom      LIKE uom_mstr.uom_uom NO-UNDO.
+DEFINE VARIABLE from_type   LIKE uom_mstr.uom_type NO-UNDO.
+DEFINE VARIABLE to_type     LIKE uom_mstr.uom_type NO-UNDO.
+DEFINE VARIABLE from_dest   LIKE uom_mstr.uom_dest_uom NO-UNDO.
+DEFINE VARIABLE to_dest     LIKE uom_mstr.uom_dest_uom NO-UNDO.
+
+DEFINE VARIABLE act         AS CHARACTER NO-UNDO.
+
+/********************** assign stuff ********************************/
+ASSIGN 
+    act         = get-value("s-act")
+
+    from_uom   = get-value("s-from_uom")
+    to_uom     = get-value("s-to_uom")
+    from_type  = get-value("s-from_type")
+    to_type    = get-value("s-to_type")
+    from_dest  = DECIMAL(get-value("s-from_dest"))
+    to_dest    = DECIMAL(get-value("s-to_dest")).
+
+IF act = "" THEN 
+    ASSIGN 
+        act = "Search".
+        
+/*********************** search **************************************/
+IF act = "Search" THEN DO:
+   {&OUT} 
+        "<CENTER>
+        <div class='table_2col'>
+            <FORM>   
+                <Table>
+                    <tr>
+                        <th colspan=4> Search Criteria</th>" SKIP "
+                    </tr>
+                    <tr>
+                        <td>Unit of Measure</td><td><INPUT type='text' name='s-from_uom'/></td> " SKIP "
+                        <td>To</td><td><INPUT type='text' name='s-to_uom'/></td> " SKIP "
+                    </tr>
+                    <tr>
+                        <td>Type</td><td><INPUT type='text' name='s-from_type'/></td>" SKIP "
+                        <td>To</td><td><INPUT type='text' name='s-to_type'/></td>" SKIP "
+                    </tr>
+                   "/*<tr>
+                        <td>Destination</td><td><INPUT type='text' name='s-from_dest'/></td>" SKIP "
+                        <td>To</td><td><INPUT type='text' name='s-to_dest'/></td>" SKIP "
+                    </tr>*/"
+                </Table>
+                <INPUT type='hidden' name='s-act' value='Results' />" SKIP "
+                <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP "
+                <INPUT type='submit' name='s-submit' value='Submit'/>" SKIP "
+                <INPUT type='reset' name='s-reset' value='Reset'/>" SKIP "
+            </FORM>  
+        </div>".
+END. /*** act 0 ***/
+/******************************************* results **************************************/
+IF act = "Results" THEN DO:
+    
+    {&OUT}
+        "<CENTER>
+        <form>
+            <div class='table_report_FromTo'>" SKIP "
+                <table>
+                    <thead>
+                        <tr>
+                            <th colspan=8>Unit of Measure Report</th>" SKIP "
+                        </tr>
+                        <tr>
+                            <td>From</th>" SKIP "
+                            <td>"from_uom "</td>" SKIP "
+                            <td>"from_type "</td>" SKIP "
+                          " /* "<td>"from_dest "</td>" SKIP */"
+                            <td>--</td>" SKIP "
+                        </tr>
+                        <tr>
+                            <td>To</td>
+                            <td>"to_uom "</td>" SKIP "
+                            <td>"to_type "</td>" SKIP "
+                         " /*<td>"to_dest "</td>" SKIP */"
+                            <td>--</td>" SKIP "
+                        </tr>        
+                        <tr>
+                            <td></td>
+                            <td>Unit of Meausure</td>" SKIP "
+                            <td>Type</td>" SKIP "
+                         " /* "<td>Destination</td>" SKIP */ "
+                            <td>Description</td>" SKIP "
+                        </tr>
+                    </thead>".      
+       
+FOR EACH uom_mstr WHERE
+    ((uom_mstr.uom_uom >= from_uom) OR
+     (from_uom = "")) AND
+    ((uom_mstr.uom_uom <= to_uom) OR
+     (to_uom = "")) AND
+    ((uom_mstr.uom_type >= from_type) OR
+     (from_type = "")) AND
+    ((uom_mstr.uom_type <= to_type) OR
+     (to_type = "")) AND 
+    ((uom_mstr.uom_dest >= from_dest) OR
+     (from_dest = 0)) AND
+    ((uom_mstr.uom_dest <= to_dest) OR
+     (to_dest = 0)) AND 
+     uom_mstr.uom_delete = ?
+    BY uom_mstr.uom_uom:
+        
+        {&OUT}
+            "<tr>
+                <td></td>
+                <td><a href='UOMmaintU.r?h-uomuom=" uom_mstr.uom_uom "&h-uomtype=" uom_mstr.uom_type "&h-uomdest=" uom_mstr.uom_dest_uom "&h-uomdesc=" uom_mstr.uom_descrip "&h-act=FIND_UOM&whattorun=" /**figure this out**/ "' >" uom_mstr.uom_uom "</a></td>" SKIP "
+                <td>" uom_mstr.uom_type "</td>" SKIP "
+              "/* "<td>" uom_mstr.uom_dest "</td>" SKIP */ "
+                <td>" uom_mstr.uom_descrip "</td>" SKIP "            
+            </tr>".
+            
+    
+    
+END. /*** for each ***/
+
+    {&OUT}
+        "<tfoot>" SKIP
+        "<tr>" SKIP
+            "<td colspan=8>End of Report</td>" SKIP 
+        "</tr>" SKIP
+     "</table>
+     <form>"
+    "<div class='row'>" SKIP
+	"   <div class='grid_3'> </DIV>" SKIP
+	"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='FINAL_UPDATE' class='btn'>Save Changes</BUTTON></div>" SKIP
+	"   <div class='grid_2'> </DIV>" SKIP
+	"   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+	"   <div class='grid_3'> </DIV>" SKIP
+	"</div>" SKIP
+	"<BR>" SKIP
+     
+        "<input type='hidden' name='s-act' value='Search' />" SKIP "
+        <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP "
+        <input type='submit' name='submit' value='Search Again' />" SKIP "
+     </form>
+     </div>".
+     
+END. /*** act 1 ***/
+</SCRIPT>
+</CENTER>
+</BODY>
+</HTML>

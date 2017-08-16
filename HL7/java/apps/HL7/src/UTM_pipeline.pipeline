@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<pipeline version="0.2" zoom="100">
+	<nodes>
+		<node ID="1" Operation="CONVERTTOXML" x="549" y="62" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="2">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="DataType" value="text"/>
+					<property name="Default Value" isURL="true" value="Inbound_EDI_Files\DONT_TOUCH\Sample_UTOX_HL7.txt"/>
+				</properties>
+			</input_port>
+			<output_port name="Output" ID="3">
+				<properties>
+					<property name="Name" value="Output"/>
+					<property name="DataType" value="node"/>
+					<property name="Copy to URL" isURL="true" value="HL7_XML_Files\HL7_HOLD.xml"/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="Convert to XML"/>
+				<property name="Adapter URL" isURL="true" value="converter:EDI:val=no:field=no:indent=yes:opt=yes:count=no:hexpand=yes:empty=empty"/>
+			</properties>
+		</node>
+		<node ID="4" Operation="XSLT" x="550" y="243" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="5">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="Default Value" isURL="true" value="HL7_XML_Files\DONT_TOUCH\DATE_HL7_FILENAME.xml"/>
+				</properties>
+			</input_port>
+			<output_port name="Output" ID="6">
+				<properties>
+					<property name="Name" value="Output"/>
+					<property name="DataType" value="any"/>
+					<property name="Copy to URL" isURL="true" value=""/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="XSLT operator"/>
+				<property name=".xsl file" isURL="true" value="HL7toUTM.xsl"/>
+				<property name="Base URL" isURL="true" value=""/>
+			</properties>
+		</node>
+		<node ID="7" Operation="VALIDATE" x="550" y="419" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="8">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="DataType" value="node"/>
+					<property name="Default Value" value=""/>
+				</properties>
+			</input_port>
+			<output_port name="Output valid" ID="9">
+				<properties>
+					<property name="Name" value="Output valid"/>
+					<property name="DataType" value="node"/>
+					<property name="Copy to URL" isURL="true" value="SS_XML_Files\SS_HOLD.xml"/>
+				</properties>
+			</output_port>
+			<output_port name="Output invalid" ID="10">
+				<properties>
+					<property name="Name" value="Output invalid"/>
+					<property name="DataType" value="node"/>
+					<property name="Copy to URL" isURL="true" value="Error_log\ERR_HOLD.xml"/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="Validate operator"/>
+				<property name="XML Schemas" isURL="true" value="SS_XML_Files\DONT_TOUCH\General_UTOX.xsd;"/>
+			</properties>
+		</node>
+	</nodes>
+	<edges>
+		<edge ID="11" fromNode="1" toNode="4" fromPort="3" toPort="5" style="line"/>
+		<edge ID="12" fromNode="4" toNode="7" fromPort="6" toPort="8" style="line"/>
+	</edges>
+	<scenarios current="Scenario1">
+		<scenario name="Scenario1">
+			<deployment DeploymentModule="Java Deployer">
+				<properties>
+					<DeployDialogProperties>
+						<property name="Target Directory" value="." type="6"/>
+						<property name="Package Name" value="" type="1"/>
+						<property name="Class Name" value="UTM_pipeline" type="1"/>
+						<property name="Execution Log" value="stdout" type="4"/>
+						<property name="Add to Project" value="No" type="5"/>
+						<property name="Generate Inline Code" value="Yes" type="5"/>
+						<property name="VS Project name" value="UTM_pipeline" type="1"/>
+						<property name="Open the C# file" value="Yes" type="5"/>
+						<property name="Main Method" value="Yes" type="5"/>
+						<property name="Create VS Project" value="Yes" type="5"/>
+						<property name="Embed XQuery" value="Yes" type="5"/>
+					</DeployDialogProperties>
+				</properties>
+			</deployment>
+			<execution-framework type="ddxq">
+				<component name="FO operator" value="RenderX XEP"/>
+				<component name="XSLT operator" value="Java built-in"/>
+				<component name="Validate operator" value="Java built-in"/>
+				<component name="XQuery operator" value="DataDirect XQuery"/>
+			</execution-framework>
+		</scenario>
+	</scenarios>
+	<merged-xquery-collections/>
+</pipeline>

@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    
+    <TITLE>Menu Detail Page</TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="3.5">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="01/Sep/14">
+    <META NAME="LAST_UPDATED" CONTENT="25/Dec/14">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+        
+        Initial page to show in the central iframe.  Should duplicate menu.
+        
+ ******************************************************************
+ * 
+ *  Revision History:
+ *  -----------------
+ *  1.0 - written by DOUG LUTTRELL on 01/Sep/14.  Original Version.
+ *  {missing some version history}
+ *  3.5 - written by DOUG LUTTRELL on 25/Dec/14.  Includes the new CSS
+ *          references from Quinton.  Syncs this file up with the menu.html
+ *          program.  Marked by 3dot5.
+ *
+ ******************************************************************
+ 
+  -------------------------------------------------------------------*/
+  
+  /*
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/    
+*/
+
+    DEFINE VARIABLE whichmenu LIKE menu_mstr.menu_exprog  NO-UNDO.
+    DEFINE VARIABLE showmsg AS LOG INITIAL NO NO-UNDO. 
+    DEFINE VARIABLE menuheadername LIKE menu_mstr.menu_title NO-UNDO.
+
+    DEFINE VARIABLE menexhold LIKE MENU_exprog NO-UNDO.
+    DEFINE VARIABLE menunumber LIKE menu_mstr.menu_exprog NO-UNDO.                
+    DEFINE VARIABLE modulepath AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE entryfill AS CHARACTER FORMAT "x(16)" NO-UNDO.
+    DEFINE VARIABLE x AS INTEGER NO-UNDO.                         /** junk counter for menu filling **/
+    DEFINE VARIABLE v-user-id AS CHARACTER INITIAL 0 NO-UNDO.
+    
+    ASSIGN v-user-id = get-value('c-usr').
+                                      
+    ASSIGN 
+        whichmenu   = IF get-value('whattorun') <> "" THEN 
+                            get-value('whattorun')
+                      ELSE 
+                            "0".
+    IF whichmenu = "0" THEN 
+        menuheadername  = "Main Menu".                                        
+    ELSE DO:
+         
+        menuheadername  = get-value('h-menuheadername').
+               
+        /*        
+	    FIND FIRST menu_mstr WHERE menu_mstr.menu_num = whichmenu
+	        NO-LOCK NO-ERROR.        
+	        
+	    IF AVAILABLE menu_mstr THEN 
+	        ASSIGN 
+	            menuheadername  = menu_mstr.menu_title.
+        */
+    END.  /** of else do **/
+    
+IF showmsg = YES THEN 
+  {&OUT}
+      "<P>whattorun = " get-value('whattorun') skip 
+      "<P>whichmenu = " whichmenu skip
+      "<P>menuheadername = " menuheadername skip(1).
+  
+{&OUT}
+    "<DIV class='row'>" SKIP                                                    /* 3dot5 */
+    "   <DIV class='grid_12'>" SKIP                                                /* 3dot5 */
+    "       <div class='table_col'>" skip 
+    "           <table>" skip         
+    "               <thead>" skip
+    "                   <TR>" skip
+    "                       <TH colspan=2>" whichmenu " - " menuheadername "</td>" skip
+    "                   </TR>" skip
+    "               </thead>" skip
+    "               <tfoot>" skip
+    "                   <tr>" skip
+    "                       <TD colspan=2>End of Menu</td>" skip
+    "                   </tr>" skip
+    "               </tfoot>" skip(1).
+    
+                                                                                                                  
+    FOR EACH menu_mstr WHERE menu_mstr.menu_num = whichmenu AND 
+            menu_mstr.menu_deleted = ? AND                                                                                      /* 3dot2 */
+            menu_mstr.menu__log01 = NO NO-LOCK                                  /* is menu item hidden? */                      /* 3dot2 */
+        BY menu_mstr.menu_num BY menu_mstr.menu_sel: 
+
+        ASSIGN 
+             menexhold   = IF INDEX(menu_mstr.menu_exprog,"?") = 0 THEN 
+                             menu_mstr.MENU_exprog + "?c-usr=" + v-user-id + "&whattorun=" + menu_mstr.menu_num + "." + string(menu_mstr.menu_sel) 
+                           ELSE 
+                             menu_mstr.MENU_exprog + "&c-usr=" + v-user-id + "&whattorun=" + menu_mstr.menu_num + "." + string(menu_mstr.menu_sel) 
+             modulepath  = IF menu_mstr.menu_module <> "" then
+                                "../../" + menu_mstr.menu_module + "/rcode/"
+                           ELSE 
+                             "".
+
+ 
+        IF menu_exprog < "a" THEN DO:
+   
+            IF menu_mstr.menu_exprog BEGINS "0." THEN 
+                menunumber  = SUBSTRING(menu_mstr.menu_exprog,3).
+            ELSE 
+                menunumber  = menu_mstr.menu_exprog.
+                        
+            {&OUT} 
+                "<TR>" skip
+                "   <TD>" menunumber "</TD>" SKIP 
+                "   <TD><a href='menupager.html?c-usr=" v-user-id "&whattorun=" menunumber "&h-menuheadername=" 
+                        menu_mstr.menu_title "'>" /* "' target='mainpage'>" */ 
+                        menu_mstr.MENU_title "</a></TD>" skip    
+                "</TR>" skip(1).
+                        
+        END. /** of if menu_exprog < a ***/
+
+        ELSE DO: 
+            
+            {&OUT} 
+                "<TR>" skip 
+                "   <TD>" menu_mstr.menu_num "." menu_mstr.menu_select "</TD>" SKIP 
+                "   <TD><a href='" modulepath menexhold "' target='mainpage'>" menu_mstr.MENU_title "</a></TD>" SKIP 
+                "</TR>" SKIP.
+         
+        END.  /** of else do **/
+                 
+    END. /** of 4ea. menu_mstr ***/
+
+    {&OUT}                                                                      /* 3dot5 */
+        "           </TABLE>" SKIP                                              /* 3dot5 */
+        "       </DIV> <!-- end of class='table_col' -->" SKIP                  /* 3dot5 */
+        "   </DIV> <!-- end of class='grid_12' -->" SKIP                        /* 3dot5 */
+        "</DIV> <!-- end of class='row' -->" SKIP(1).                           /* 3dot5 */
+
+</SCRIPT>
+</BODY>
+</HTML>

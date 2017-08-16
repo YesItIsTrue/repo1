@@ -1,0 +1,1122 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Item Maintenance</TITLE> 
+    <META NAME='AUTHOR' CONTENT='Trae Luttrell'>
+    <META NAME='VERSION' CONTENT='0.1'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT='18/Jun/16'>
+    <META NAME='LAST_UPDATED' CONTENT='18/Jun/16'>    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-item_nbr LIKE item_mstr.item_nbr NO-UNDO.
+DEFINE VARIABLE v-orig-item_nbr LIKE item_mstr.item_nbr NO-UNDO.
+DEFINE VARIABLE v-item_desc1 LIKE item_mstr.item_desc1 NO-UNDO.
+DEFINE VARIABLE v-item_desc2 LIKE item_mstr.item_desc2 NO-UNDO.
+DEFINE VARIABLE v-item_code LIKE item_mstr.item_code NO-UNDO.
+DEFINE VARIABLE v-item_group LIKE item_mstr.item_group NO-UNDO.
+DEFINE VARIABLE v-item_prod_line LIKE item_mstr.item_prod_line NO-UNDO.
+DEFINE VARIABLE v-item_status LIKE item_mstr.item_status NO-UNDO.
+DEFINE VARIABLE v-item_req_loc_type LIKE item_mstr.item_req_loc_type NO-UNDO.
+DEFINE VARIABLE v-item_upc_code LIKE item_mstr.item_upc_code NO-UNDO.
+DEFINE VARIABLE v-item_shelf_life LIKE item_mstr.item_shelf_life NO-UNDO. 
+DEFINE VARIABLE v-item_dea_ctrl LIKE item_mstr.item_dea_ctrl NO-UNDO.
+DEFINE VARIABLE v-item_fda_ctrl LIKE item_mstr.item_fda_ctrl NO-UNDO.
+DEFINE VARIABLE v-item_length LIKE item_mstr.item_length NO-UNDO.
+DEFINE VARIABLE v-item_length_uom LIKE item_mstr.item_length_uom NO-UNDO.
+DEFINE VARIABLE v-item_height LIKE item_mstr.item_height NO-UNDO.
+DEFINE VARIABLE v-item_height_uom LIKE item_mstr.item_height_uom NO-UNDO.
+DEFINE VARIABLE v-item_width LIKE item_mstr.item_width NO-UNDO.
+DEFINE VARIABLE v-item_width_uom LIKE item_mstr.item_width_uom NO-UNDO.
+DEFINE VARIABLE v-item_weight LIKE item_mstr.item_weight NO-UNDO.
+DEFINE VARIABLE v-item_weight_uom LIKE item_mstr.item_weight_uom NO-UNDO.
+DEFINE VARIABLE v-item_abc_class LIKE item_mstr.item_abc_class NO-UNDO.
+DEFINE VARIABLE v-item_abc_val_tol_over LIKE item_mstr.item_abc_val_tol_over NO-UNDO.
+DEFINE VARIABLE v-item_abc_qty_tol_over LIKE item_mstr.item_abc_qty_tol_over NO-UNDO.
+DEFINE VARIABLE v-item_def_cons_uom LIKE item_mstr.item_def_cons_uom NO-UNDO.
+DEFINE VARIABLE v-item_def_cons_qty LIKE item_mstr.item_def_cons_qty NO-UNDO.
+DEFINE VARIABLE v-item_def_purch_uom LIKE item_mstr.item_def_purch_uom NO-UNDO.
+DEFINE VARIABLE v-item_def_purch_qty LIKE item_mstr.item_def_purch_qty NO-UNDO.
+DEFINE VARIABLE v-item_def_sale_uom LIKE item_mstr.item_def_sale_uom NO-UNDO.
+DEFINE VARIABLE v-item_def_sale_qty LIKE item_mstr.item_def_sale_qty NO-UNDO.
+DEFINE VARIABLE v-item_def_store_uom LIKE item_mstr.item_def_store_uom NO-UNDO.
+DEFINE VARIABLE v-item_def_store_qty LIKE item_mstr.item_def_store_qty NO-UNDO.
+DEFINE VARIABLE v-item_cycle_interval   LIKE item_mstr.item_cycle_interval NO-UNDO.
+DEFINE VARIABLE v-item_cycle_date       LIKE item_mstr.item_cycle_date NO-UNDO.
+DEFINE VARIABLE v-item_min_QOH          LIKE item_mstr.item_min_QOH NO-UNDO.
+DEFINE VARIABLE v-item_max_qoh          LIKE item_mstr.item_max_qoh NO-UNDO.
+DEFINE VARIABLE v-item_order_mult       LIKE item_mstr.item_order_mult NO-UNDO.
+DEFINE VARIABLE v-item_min_order_qty    LIKE item_mstr.item_min_order_qty NO-UNDO.
+DEFINE VARIABLE v-item_def_reorder      LIKE item_mstr.item_def_reorder NO-UNDO.
+DEFINE VARIABLE v-item_min_max          LIKE item_mstr.item_min_max NO-UNDO.
+DEFINE VARIABLE v-item_other_id         LIKE item_mstr.item_other_id NO-UNDO.
+DEFINE VARIABLE v-item_type             LIKE item_mstr.item_type NO-UNDO.
+DEFINE VARIABLE v-item_sku_nbr          LIKE item_mstr.item_sku_nbr NO-UNDO.
+
+DEFINE VARIABLE c-qoh-name AS INTEGER NO-UNDO.
+
+/* ******************  SUB proc variables  ************************* */
+DEFINE VARIABLE o-create AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-update AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-success AS LOGICAL NO-UNDO.
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act             = html-encode(get-value("h-act"))
+    v-item_nbr      = html-encode(get-value("h-item_nbr"))
+    v-orig-item_nbr = html-encode(get-value("h-orig-item_nbr"))
+    v-item_desc1 = html-encode(get-value("h-item_desc1"))
+    v-item_desc2 = html-encode(get-value("h-item_desc2"))
+    v-item_code = html-encode(get-value("h-item_code"))
+    v-item_group = html-encode(get-value("h-item_group"))
+    v-item_prod_line = html-encode(get-value("h-item_prod_line"))
+    v-item_status = html-encode(get-value("h-item_status"))
+    v-item_req_loc_type = html-encode(get-value("h-item_req_loc_type"))
+    v-item_upc_code = html-encode(get-value("h-item_upc_code"))
+    v-item_shelf_life = INTEGER(html-encode(get-value("h-item_shelf_life")))
+    v-item_dea_ctrl = IF LOGICAL(html-encode(get-value("h-item_dea_ctrl"))) = YES THEN YES ELSE NO
+    v-item_fda_ctrl = IF LOGICAL(html-encode(get-value("h-item_fda_ctrl"))) = YES THEN YES ELSE NO
+    v-item_length = DECIMAL(html-encode(get-value("h-item_length")))
+    v-item_length_uom = html-encode(get-value("h-item_length_uom"))
+    v-item_height = DECIMAL(html-encode(get-value("h-item_height")))
+    v-item_height_uom = html-encode(get-value("h-item_height_uom"))
+    v-item_width = DECIMAL(html-encode(get-value("h-item_width")))
+    v-item_width_uom = html-encode(get-value("h-item_width_uom"))
+    v-item_weight = DECIMAL(html-encode(get-value("h-item_weight")))
+    v-item_weight_uom = html-encode(get-value("h-item_weight_uom"))
+    v-item_abc_class = html-encode(get-value("h-item_abc_class"))
+    v-item_abc_val_tol_over = DECIMAL(html-encode(get-value("h-item_abc_val_tol_over")))
+    v-item_abc_qty_tol_over = DECIMAL(html-encode(get-value("h-item_abc_qty_tol_over")))
+    v-item_def_cons_uom = html-encode(get-value("h-item_def_cons_uom"))
+    v-item_def_cons_qty = DECIMAL(html-encode(get-value("h-item_def_cons_qty")))
+    v-item_def_purch_uom = html-encode(get-value("h-item_def_purch_uom"))
+    v-item_def_purch_qty = DECIMAL(html-encode(get-value("h-item_def_purch_qty")))
+    v-item_def_sale_uom = html-encode(get-value("h-item_def_sale_uom"))
+    v-item_def_sale_qty = DECIMAL(html-encode(get-value("h-item_def_sale_qty")))
+    v-item_def_store_uom = html-encode(get-value("h-item_def_store_uom"))
+    v-item_def_store_qty = DECIMAL(html-encode(get-value("h-item_def_store_qty")))
+    v-item_cycle_interval   = INTEGER(html-encode(get-value("h-item_cycle_interval")))
+    v-item_cycle_date       = DATE(html-encode(get-value("h-item_cycle_date")))
+    v-item_min_QOH          = DECIMAL(html-encode(get-value("h-item_min_QOH")))
+    v-item_max_qoh          = DECIMAL(html-encode(get-value("h-item_max_qoh")))
+    v-item_order_mult       = DECIMAL(html-encode(get-value("h-item_order_mult")))
+    v-item_min_order_qty    = DECIMAL(html-encode(get-value("h-item_min_order_qty")))
+    v-item_def_reorder      = DECIMAL(html-encode(get-value("h-item_def_reorder")))
+    v-item_min_max          = IF LOGICAL(html-encode(get-value("h-item_min_max"))) = NO THEN NO ELSE YES
+    v-item_other_id         = html-encode(get-value("h-item_other_id"))
+    v-item_type             = html-encode(get-value("h-item_type"))
+    v-item_sku_nbr          = html-encode(get-value("h-item_sku_nbr"))
+    .
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP   
+            "<div class='table_col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Record to Maintain</th>" SKIP
+            "       </tr>" SKIP(1)           
+            "       <tr>" skip
+            "           <td>Item Number</td>" skip
+            "           <td class='req'><input type='text' name='h-item_nbr' value='" v-item_nbr "' required/></td>" skip           
+            "       </tr>" SKIP(1)
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<br></br>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Edit' class='btn'>Edit</BUTTON></form></div>" SKIP
+            "   <div class='grid_2'><form></DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Create' class='btn'>Create</BUTTON></div>" SKIP
+            "</form>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP      
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></DIV>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "</div>" SKIP.
+    
+    END. /* INITIAL */
+
+    WHEN "EDIT" THEN DO:
+    
+        FIND item_mstr WHERE item_mstr.item_nbr = v-item_nbr AND 
+            item_mstr.item_deleted = ? NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (item_mstr) THEN DO:
+        
+        ASSIGN 
+            v-item_nbr = item_mstr.item_nbr 
+            v-item_desc1 = item_mstr.item_desc1 
+            v-item_desc2 = item_mstr.item_desc2 
+            v-item_code = item_mstr.item_code 
+            v-item_group = item_mstr.item_group 
+            v-item_prod_line = item_mstr.item_prod_line 
+            v-item_status = item_mstr.item_status 
+            v-item_req_loc_type = item_mstr.item_req_loc_type 
+            v-item_upc_code = item_mstr.item_upc_code 
+            v-item_shelf_life = item_mstr.item_shelf_life 
+            v-item_dea_ctrl = item_mstr.item_dea_ctrl 
+            v-item_fda_ctrl = item_mstr.item_fda_ctrl 
+            v-item_length = item_mstr.item_length 
+            v-item_length_uom = item_mstr.item_length_uom 
+            v-item_height = item_mstr.item_height 
+            v-item_height_uom = item_mstr.item_height_uom 
+            v-item_width = item_mstr.item_width 
+            v-item_width_uom = item_mstr.item_width_uom 
+            v-item_weight = item_mstr.item_weight 
+            v-item_weight_uom = item_mstr.item_weight_uom 
+            v-item_abc_class = item_mstr.item_abc_class 
+            v-item_abc_val_tol_over = item_mstr.item_abc_val_tol_over 
+            v-item_abc_qty_tol_over = item_mstr.item_abc_qty_tol_over 
+            v-item_def_cons_uom = item_mstr.item_def_cons_uom 
+            v-item_def_cons_qty = item_mstr.item_def_cons_qty 
+            v-item_def_purch_uom = item_mstr.item_def_purch_uom 
+            v-item_def_purch_qty = item_mstr.item_def_purch_qty 
+            v-item_def_sale_uom = item_mstr.item_def_sale_uom 
+            v-item_def_sale_qty = item_mstr.item_def_sale_qty 
+            v-item_def_store_uom = item_mstr.item_def_store_uom 
+            v-item_def_store_qty = item_mstr.item_def_store_qty 
+            v-item_cycle_interval = item_mstr.item_cycle_interval 
+            v-item_cycle_date = item_mstr.item_cycle_date 
+            v-item_min_QOH = item_mstr.item_min_QOH 
+            v-item_max_qoh = item_mstr.item_max_qoh 
+            v-item_order_mult = item_mstr.item_order_mult 
+            v-item_min_order_qty = item_mstr.item_min_order_qty 
+            v-item_def_reorder = item_mstr.item_def_reorder
+            v-item_min_max = item_mstr.item_min_max
+            v-item_type = item_mstr.item_type
+            v-item_sku_nbr = item_mstr.item_sku_nbr
+            v-item_other_id = item_mstr.item_other_id
+            .
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP
+            "<DIV class='grid_10'>" SKIP
+            "<DIV class='table_3col'>" SKIP
+            "<FORM>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "           <input type='hidden' name='h-orig-item_nbr' value='" v-item_nbr "' />" SKIP
+            "  <TABLE>" SKIP(1)
+            "      <TR>" SKIP
+            "          <TH colspan=6>Edit this Item Master record.</TH>" SKIP
+            "      </TR>" SKIP(1)
+            
+            "      <TR>" SKIP
+            "          <TD>Item Number</TD>" SKIP
+            "          <TD class='req'><INPUT type='TEXT' name='h-item_nbr' value='" v-item_nbr "' required/></TD>" SKIP  
+            "          <TD>Description 1</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_desc1' value='" v-item_desc1 "' /></TD>" SKIP
+            "          <TD>Description 2</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_desc2' value='" v-item_desc2 "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Item Code</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_code' value='" v-item_code "' /></TD>" SKIP
+            "          <TD>Item Group</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_group' value='" v-item_group "' /></TD>" SKIP
+            "          <TD>Production Line</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_prod_line' value='" v-item_prod_line "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Item Status</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_status' value='" v-item_status "' /></TD>" SKIP
+            "          <TD>Required Location Type</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_req_loc_type' value='" v-item_req_loc_type "' /></TD>" SKIP
+            "          <TD>UPC Code</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_upc_code' value='" v-item_upc_code "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Days of Shelf Life</TD>" SKIP
+            "          <TD><INPUT type='NUMBER' name='h-item_shelf_life' value='" v-item_shelf_life "' min='0'/></TD>" SKIP
+            "          <TD>DEA controled?</TD>" SKIP
+            "          <TD><INPUT type='CHECKBOX' name='h-item_dea_ctrl' value='" v-item_dea_ctrl "' /></TD>" SKIP
+            "          <TD>FDA Controlled?</TD>" SKIP
+            "          <TD><INPUT type='CHECKBOX' name='h-item_fda_ctrl' value='" v-item_fda_ctrl "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Item Type</TD>" SKIP
+            "          <TD><INPUT type='text' name='h-item_type' value='" v-item_type "' /></TD>" SKIP
+            "          <TD>Item SKU</TD>" SKIP
+            "          <TD><INPUT type='text' name='h-item_sku_nbr' value='" v-item_sku_nbr "' /></TD>" SKIP
+            "          <TD>Other ID</TD>" SKIP
+            "          <TD><INPUT type='text' name='h-item_other_ID' value='" v-item_other_ID "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TH colspan=3>Cycle Count Settings</TH>" SKIP
+            "          <TH colspan=3>Order Settings</TH>" SKIP
+            "      </TR>" SKIP(1)
+            
+            "      <TR>" SKIP
+            "          <TD>Item ABC Class</TD>" SKIP
+            "          <TD colspan=2><INPUT type='TEXT' name='h-item_abc_class' value='" v-item_abc_class "' /></TD>" SKIP
+            "          <TD>Minimum QOH</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_min_QOH' value='" v-item_min_QOH "'  min='0'/></TD>" SKIP
+            "      </TR>" SKIP
+            "      <TR>" SKIP
+            "          <TD>ABC Value Tolerance Override</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_abc_val_tol_over' value='" v-item_abc_val_tol_over "' /></TD>" SKIP
+            "          <TD>Maximum QOH</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_max_qoh' value='" v-item_max_qoh "' min='0'/></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>ABC Quantity Tol Override</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_abc_qty_tol_over' value='" v-item_abc_qty_tol_over "' min=0/></TD>" SKIP 
+            "          <TD>Minimum Order Qty</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_min_order_qty' value='" v-item_min_order_qty "' min='0'/></TD>" SKIP 
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Cycle Count Interval</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_cycle_interval' value='" v-item_cycle_interval "' min='0'/></TD>" SKIP
+            "          <TD>Default Reorder Point</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_def_reorder' value='" v-item_def_reorder "' min='0'/></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "       <tr>" SKIP
+            "          <TD>Cycle Date</TD>" SKIP
+            "          <TD colspan=2><INPUT type='DATE' name='h-item_cycle_date' value='" v-item_cycle_date "' /></TD>" SKIP
+            "          <TD>Item Order Multiple</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_order_mult' value='" v-item_order_mult "' min='0'/></TD>" SKIP
+            "       </tr>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD></TD>" SKIP
+            "          <TD></TD>" SKIP
+            "          <TD>Ordering Style</TD>" SKIP
+            "          <TD><INPUT type='radio' name='h-item_min_max' value='yes'>Min</input><INPUT type='radio' name='h-item_fda_ctrl' value='no'>Max</input></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TH colspan=6>Dimensions</TH>" SKIP
+            "      </TR>" SKIP(1)
+            
+            "      <TR>" SKIP
+            "          <TD>Item Length</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_length' value='" v-item_length "' /></TD>" SKIP
+            "          <TD>Length UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_length_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_length_uom LENGTH}.
+
+        {&OUT}
+            "</select>" SKIP.
+            
+        {&OUT} 
+/*            "<INPUT type='TEXT' name='h-item_length_uom' value='" v-item_length_uom "' /></TD>" SKIP*/
+            "      </TR>" SKIP
+            
+            "        <tr>" SKIP
+            "          <TD>Item Height</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_height' value='" v-item_height "' min='0'/></TD>" SKIP
+            "          <TD>Height UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_height_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_height_uom HEIGHT}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP 
+            "        </tr>" SKIP
+                    
+            "      <TR>" SKIP
+            "          <TD>Item Width</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_width' value='" v-item_width "' min='0'/></TD>" SKIP
+            "          <TD>Width UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_width_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_width_uom WIDTH}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP 
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Item Weight</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_weight' value='" v-item_weight "' min='0'/></TD>" SKIP
+            "          <TD>Weight UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_weight_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_weight_uom WEIGHT}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP 
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TH colspan=6>Defaults</TH>" SKIP
+            "      </TR>" SKIP(1)
+ 
+            "      <TR>" SKIP
+            "          <TD>Consumption Qty</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_def_cons_qty' value='" v-item_def_cons_qty "' min='0'/></TD>" SKIP 
+            "          <TD>Consumption UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_def_cons_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_def_cons_uom CONSUMPTION}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP  
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Purchase Qty</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_def_purch_qty' value='" v-item_def_purch_qty "' min='0'/></TD>" SKIP
+            "          <TD>Purchase UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_def_purch_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_def_purch_uom PURCHACE}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP 
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Sale Qty</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_def_sale_qty' value='" v-item_def_sale_qty "' min='0'/></TD>" SKIP 
+            "          <TD>Sale UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_def_sale_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_def_sale_uom SALE}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP           
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Storage Qty</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_def_store_qty' value='" v-item_def_store_qty "' min='0'/></TD>" SKIP
+            "          <TD>Storage UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_def_store_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_def_store_uom STORAGE}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP 
+            "      </TR>" SKIP
+
+            "   </TABLE>" SKIP    
+            "</DIV>          <!-- end of table_3col -->" SKIP
+            "</DIV>         <!-- end of grid_8 -->" SKIP       
+            "<DIV class='grid_1'> </DIV>           <!-- spacer DIV -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<br></br>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='FORCE_UPDATE' class='btn'>Save Changes</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Delete' class='btn'>Delete</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "</div>" SKIP
+            "<BR>" SKIP
+            "</FORM>" SKIP
+            .
+            
+        END. /** available item ***/ 
+        
+        ELSE DO:
+        
+            {&OUT}
+                "<div class='row'><div class='grid_12'><center><h2>Sorry, there was no <b>'" v-item_nbr "'</b> in the database.</h2></center></div></div>"
+                "<BR>" SKIP 
+                "<form>" SKIP
+                "<div class='row'>" SKIP
+                "   <input type='hidden' name='h-item_nbr' value='" v-item_nbr "' />" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='CREATE' class='btn'>Create New Record</BUTTON></div>" SKIP
+                "   <div class='grid_2'> </DIV>" SKIP
+                "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP.
+            
+        END. /*** not avaiable item ***/
+        
+    END. /*** edit ***/
+    
+    WHEN "CREATE" THEN DO:
+    
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP
+            "<DIV class='grid_10'>" SKIP
+            "<DIV class='table_3col'>" SKIP
+            "<FORM>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "  <TABLE>" SKIP(1)
+            "      <TR>" SKIP
+            "          <TH colspan=6>Create a new Item Master record.</TH>" SKIP
+            "      </TR>" SKIP(1)
+            
+            "      <TR>" SKIP
+            "          <TD>Item Number</TD>" SKIP
+            "          <TD class='req'><INPUT type='TEXT' name='h-item_nbr' value='" v-item_nbr "' required /></TD>" SKIP
+            "          <TD>Item Description 1</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_desc1' value='" v-item_desc1 "' /></TD>" SKIP
+            "          <TD>Item Description 2</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_desc2' value='" v-item_desc2 "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Item Code</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_code' value='" v-item_code "' /></TD>" SKIP
+            "          <TD>Item Group</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_group' value='" v-item_group "' /></TD>" SKIP
+            "          <TD>Production Line</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_prod_line' value='" v-item_prod_line "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Item Status</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_status' value='" v-item_status "' /></TD>" SKIP
+            "          <TD>Required Location Type</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_req_loc_type' value='" v-item_req_loc_type "' /></TD>" SKIP
+            "          <TD>UPC Code</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-item_upc_code' value='" v-item_upc_code "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Days of Shelf Life</TD>" SKIP
+            "          <TD><INPUT type='NUMBER' name='h-item_shelf_life' value='" v-item_shelf_life "' /></TD>" SKIP
+            "          <TD>DEA controled?</TD>" SKIP
+            "          <TD><INPUT type='CHECKBOX' name='h-item_dea_ctrl' value='" v-item_dea_ctrl "' /></TD>" SKIP
+            "          <TD>FDA Controled?</TD>" SKIP
+            "          <TD><INPUT type='CHECKBOX' name='h-item_fda_ctrl' value='" v-item_fda_ctrl "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Item Type</TD>" SKIP 
+            "          <TD><INPUT type='text' name='h-item_type' value='" v-item_type "' /></TD>" SKIP
+            "          <TD>Item SKU</TD>" SKIP
+            "          <TD><INPUT type='text' name='h-item_sku_nbr' value='" v-item_sku_nbr "' /></TD>" SKIP
+            "          <TD>Other ID</TD>" SKIP
+            "          <TD><INPUT type='text' name='h-item_other_ID' value='" v-item_other_ID "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TH colspan=3>Cycle Count Settings</TH>" SKIP
+            "          <TH colspan=3>Order Settings</TH>" SKIP
+            "      </TR>" SKIP(1)
+            
+            "      <TR>" SKIP
+            "          <TD>Item ABC Class</TD>" SKIP
+            "          <TD colspan=2><INPUT type='TEXT' name='h-item_abc_class' value='" v-item_abc_class "' /></TD>" SKIP
+            "          <TD>Minimum QOH</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_min_QOH' value='" v-item_min_QOH "' /></TD>" SKIP
+            "      </TR>" SKIP
+            "      <TR>" SKIP
+            "          <TD>ABC Value Tol Override</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_abc_val_tol_over' value='" v-item_abc_val_tol_over "' /></TD>" SKIP
+            "          <TD>Maximum QOH</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_max_qoh' value='" v-item_max_qoh "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Cycle Count Interval</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_cycle_interval' value='" v-item_cycle_interval "' /></TD>" SKIP   
+            "          <TD>Minimum Order Qty</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_min_order_qty' value='" v-item_min_order_qty "' /></TD>" SKIP 
+            "      </TR>" SKIP
+            "      <TR>" SKIP
+            "          <TD>ABC Quantity Tol Override</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_abc_qty_tol_over' value='" v-item_abc_qty_tol_over "' /></TD>" SKIP
+            "          <TD>Def Reorder Point</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_def_reorder' value='" v-item_def_reorder "' /></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "       <tr>" SKIP
+            "          <TD>Cycle Date</TD>" SKIP
+            "          <TD colspan=2><INPUT type='DATE' name='h-item_cycle_date' value='" v-item_cycle_date "' /></TD>" SKIP
+            "          <TD>Item Order Multiple</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_order_mult' value='" v-item_order_mult "' /></TD>" SKIP
+            "       </tr>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD></TD>" SKIP
+            "          <TD></TD>" SKIP
+            "          <TD>Ordering Style</TD>" SKIP
+            "          <TD><INPUT type='radio' name='h-item_min_max' value='yes'>Min</input><INPUT type='radio' name='h-item_fda_ctrl' value='no'>Max</input></TD>" SKIP
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TH colspan=6>Dimensions</TH>" SKIP
+            "      </TR>" SKIP(1)
+            
+            
+            "      <TR>" SKIP
+            "          <TD>Item Length</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_length' value='" v-item_length "' /></TD>" SKIP
+            "          <TD>Length UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_length_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_length_uom LENGTH}.
+
+        {&OUT}
+            "</select>" SKIP.
+            
+        {&OUT} 
+/*            "<INPUT type='TEXT' name='h-item_length_uom' value='" v-item_length_uom "' /></TD>" SKIP*/
+            "      </TR>" SKIP
+            
+            "        <tr>" SKIP
+            "          <TD>Item Height</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_height' value='" v-item_height "' min='0'/></TD>" SKIP
+            "          <TD>Height UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_height_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_height_uom HEIGHT}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP 
+            "        </tr>" SKIP
+                    
+            "      <TR>" SKIP
+            "          <TD>Item Width</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_width' value='" v-item_width "' min='0'/></TD>" SKIP
+            "          <TD>Width UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_width_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_width_uom WIDTH}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP 
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Item Weight</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_weight' value='" v-item_weight "' min='0'/></TD>" SKIP
+            "          <TD>Weight UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_weight_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_weight_uom WEIGHT}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP 
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TH colspan=6>Defaults</TH>" SKIP
+            "      </TR>" SKIP(1)
+ 
+            "      <TR>" SKIP
+            "          <TD>Consumption Qty</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_def_cons_qty' value='" v-item_def_cons_qty "' min='0'/></TD>" SKIP 
+            "          <TD>Consumption UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_def_cons_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_def_cons_uom CONSUMPTION}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP  
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Purchase Qty</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_def_purch_qty' value='" v-item_def_purch_qty "' min='0'/></TD>" SKIP
+            "          <TD>Purchase UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_def_purch_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_def_purch_uom PURCHACE}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP 
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Sale Qty</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_def_sale_qty' value='" v-item_def_sale_qty "' min='0'/></TD>" SKIP 
+            "          <TD>Sale UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_def_sale_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_def_sale_uom SALE}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP           
+            "      </TR>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Storage Qty</TD>" SKIP
+            "          <TD colspan=2><INPUT type='NUMBER' name='h-item_def_store_qty' value='" v-item_def_store_qty "' min='0'/></TD>" SKIP
+            "          <TD>Storage UOM</TD>" SKIP
+            "          <TD colspan=2>" .
+        
+        {&OUT}
+            "<select name='h-item_def_store_uom'>" SKIP.
+
+        {UOMDropDown.i v-item_def_store_uom STORAGE}.
+
+        {&OUT}
+            "</select>" SKIP
+            "           </td>" SKIP 
+            "      </TR>" SKIP
+
+            "   </TABLE>" SKIP    
+            "</DIV>          <!-- end of table_3col -->" SKIP
+            "</DIV>         <!-- end of grid_8 -->" SKIP       
+            "<DIV class='grid_1'> </DIV>           <!-- spacer DIV -->" SKIP
+            "<br></br>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn'>Save Changes</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "<BR>" SKIP
+            "</FORM>" SKIP
+            .     
+        
+    END. /*** create ***/
+    
+    WHEN "UPDATE" THEN DO:
+        
+        IF itmessage = YES THEN {&OUT} 
+            "Here are some variables in the " act ":"
+            "v-item_min_max = " v-item_min_max "<br>"
+            "v-item_other_id = " v-item_other_id "<br>"
+            "v-item_type = " v-item_type "<br>"
+            "v-item_sku_nbr = " v-item_sku_nbr "<br>".
+        
+        RUN VALUE(SEARCH("SUBitem-ucU.r"))
+            (v-item_nbr,
+            v-item_desc1,
+            v-item_desc2,
+            v-item_code,
+            v-item_group,
+            v-item_prod_line,
+            v-item_status,
+            v-item_req_loc_type,
+            v-item_upc_code,
+            v-item_shelf_life,
+            v-item_dea_ctrl,
+            v-item_fda_ctrl,
+            v-item_length,
+            v-item_length_uom,
+            v-item_height,
+            v-item_height_uom,
+            v-item_width,
+            v-item_width_uom,
+            v-item_weight,
+            v-item_weight_uom,
+            v-item_abc_class,
+            v-item_abc_val_tol_over,
+            v-item_abc_qty_tol_over,
+            v-item_def_cons_uom,
+            v-item_def_cons_qty,
+            v-item_def_purch_uom,
+            v-item_def_purch_qty,
+            v-item_def_sale_uom,
+            v-item_def_sale_qty,
+            v-item_def_store_uom,
+            v-item_def_store_qty,
+            v-item_cycle_interval,
+            v-item_cycle_date,
+            v-item_min_QOH,
+            v-item_max_QOH,
+            v-item_order_mult,
+            v-item_min_order_qty,
+            v-item_def_reorder,
+            v-item_min_max,
+            v-item_other_id,
+            v-item_type,
+            v-item_sku_nbr,
+            OUTPUT o-create,
+            OUTPUT o-update,
+            OUTPUT o-success).
+    
+        IF o-success = YES THEN DO:
+        
+            {&OUT} 
+                "<form>" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP  
+                "<center><h2>The item record was successfully ".
+            
+            IF o-update = YES THEN {&OUT} "updated".
+            IF o-create = YES THEN {&OUT} "created".
+                
+            {&OUT}
+                ".</h2></center></DIV>" SKIP            
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'></DIV>     <!-- end of row -->" SKIP
+                "</div>" SKIP
+                "<BR></BR>" SKIP
+                "<div class='row'>" SKIP          
+                "   <div class='grid_5'> </DIV>" SKIP
+                "   <div class='grid_2'><button type='submit' name='h-act' value='initial' class='btn'>Search Again</BUTTON></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP 
+                "</div>" SKIP
+                "<BR>" SKIP
+                "</form>" SKIP.
+            
+        END. 
+    
+    END. /**** of update ****/
+
+    WHEN "FORCE_UPDATE" THEN DO:
+        
+                                                                                            IF itmessage = YES THEN {&OUT}
+                                                                                                "Here are some variables in the " act ":"
+                                                                                                "v-orig-item_nbr = " v-orig-item_nbr "<br>" SKIP
+                                                                                                "v-item_nrb = " v-item_nbr "<br>" SKIP
+                                                                                                "v-item_min_max = " v-item_min_max "<br>"
+                                                                                                "v-item_other_id = " v-item_other_id "<br>"
+                                                                                                "v-item_type = " v-item_type "<br>"
+                                                                                                "v-item_sku_nbr = " v-item_sku_nbr "<br>".
+        
+        FIND item_mstr WHERE 
+            item_mstr.item_nbr = v-orig-item_nbr EXCLUSIVE-LOCK NO-ERROR.
+
+        IF AVAILABLE (item_mstr) THEN DO:
+        
+                                                                                            IF itmessage = YES THEN {&OUT}
+                                                                                                "<br>The item was available.<br>".
+        
+            ASSIGN 
+                item_mstr.item_nbr = v-item_nbr
+                item_mstr.item_desc1 = v-item_desc1 
+                item_mstr.item_desc2 = v-item_desc2 
+                item_mstr.item_code = v-item_code 
+                item_mstr.item_group = v-item_group 
+                item_mstr.item_prod_line = v-item_prod_line 
+                item_mstr.item_status = v-item_status 
+                item_mstr.item_req_loc_type = v-item_req_loc_type 
+                item_mstr.item_upc_code = v-item_upc_code 
+                item_mstr.item_shelf_life = v-item_shelf_life 
+                item_mstr.item_dea_ctrl = v-item_dea_ctrl 
+                item_mstr.item_fda_ctrl = v-item_fda_ctrl 
+                item_mstr.item_length = v-item_length 
+                item_mstr.item_length_uom = v-item_length_uom 
+                item_mstr.item_height = v-item_height 
+                item_mstr.item_height_uom = v-item_height_uom 
+                item_mstr.item_width = v-item_width 
+                item_mstr.item_width_uom = v-item_width_uom 
+                item_mstr.item_weight = v-item_weight 
+                item_mstr.item_weight_uom = v-item_weight_uom 
+                item_mstr.item_abc_class = v-item_abc_class 
+                item_mstr.item_abc_val_tol_over = v-item_abc_val_tol_over 
+                item_mstr.item_abc_qty_tol_over = v-item_abc_qty_tol_over 
+                item_mstr.item_def_cons_uom = v-item_def_cons_uom 
+                item_mstr.item_def_cons_qty = v-item_def_cons_qty 
+                item_mstr.item_def_purch_uom = v-item_def_purch_uom 
+                item_mstr.item_def_purch_qty = v-item_def_purch_qty 
+                item_mstr.item_def_sale_uom = v-item_def_sale_uom 
+                item_mstr.item_def_sale_qty = v-item_def_sale_qty 
+                item_mstr.item_def_store_uom = v-item_def_store_uom 
+                item_mstr.item_def_store_qty = v-item_def_store_qty 
+                item_mstr.item_cycle_interval = v-item_cycle_interval 
+                item_mstr.item_cycle_date = v-item_cycle_date 
+                item_mstr.item_min_QOH = v-item_min_QOH 
+                item_mstr.item_max_QOH = v-item_max_QOH 
+                item_mstr.item_order_mult = v-item_order_mult 
+                item_mstr.item_min_order_qty = v-item_min_order_qty 
+                item_mstr.item_def_reorder = v-item_def_reorder
+                item_mstr.item_min_max = v-item_min_max
+                item_mstr.item_other_id = v-item_other_id
+                item_mstr.item_type = v-item_type
+                item_mstr.item_sku_nbr = v-item_sku_nbr.
+        
+            ASSIGN c-qoh-name = 0.
+        
+            IF v-orig-item_nbr <> v-item_nbr THEN DO:
+            
+                FOR EACH qoh_det WHERE 
+                    qoh_det.qoh_item_nbr = v-orig-item_nbr AND 
+                    qoh_det.qoh_deleted = ? 
+                    EXCLUSIVE-LOCK:
+                
+                    ASSIGN qoh_det.qoh_item_nbr = item_mstr.item_nbr
+                    c-qoh-name = c-qoh-name + 1.     
+                        
+                END. /***  qoh_det  ***/
+            
+                {&OUT} 
+                    "<form>" SKIP
+                    "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                    "<DIV class='row'>" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "<DIV class='grid_6'>" SKIP  
+                    "<center><h2>The item record was successfully updated, along with " c-qoh-name " QOH records which containted that item.</h2></center></DIV>" SKIP            
+                    "</DIV>         <!-- end of grid_6 -->" SKIP
+                    "<DIV class='grid_3'></DIV>     <!-- end of row -->" SKIP
+                    "</div>" SKIP
+                    "<BR></BR>" SKIP
+                    "<div class='row'>" SKIP          
+                    "   <div class='grid_5'> </DIV>" SKIP
+                    "   <div class='grid_2'><button type='submit' name='h-act' value='initial' class='btn'>Search Again</BUTTON></div>" SKIP
+                    "   <div class='grid_5'> </DIV>" SKIP 
+                    "</div>" SKIP
+                    "<BR>" SKIP
+                    "</form>" SKIP.
+        
+            END. /*** names have changes ***/
+            
+            ELSE {&OUT} 
+                "<form>" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP  
+                "<center><h2>The item record was successfully updated.</h2></center></DIV>" SKIP            
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'></DIV>     <!-- end of row -->" SKIP
+                "</div>" SKIP
+                "<BR></BR>" SKIP
+                "<div class='row'>" SKIP          
+                "   <div class='grid_5'> </DIV>" SKIP
+                "   <div class='grid_2'><button type='submit' name='h-act' value='initial' class='btn'>Search Again</BUTTON></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP 
+                "</div>" SKIP
+                "<BR>" SKIP
+                "</form>" SKIP.
+            
+        END. /*** end of available record ***/
+        
+        ELSE DO:
+        
+            {&OUT} 
+                "<form>" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP  
+                "<center><h2>The item record you selected is not available in the Database</h2></center></DIV>" SKIP            
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'></DIV>     <!-- end of row -->" SKIP
+                "</div>" SKIP
+                "<BR></BR>" SKIP
+                "<div class='row'>" SKIP          
+                "   <div class='grid_5'> </DIV>" SKIP
+                "   <div class='grid_2'><button type='submit' name='h-act' value='initial' class='btn'>Search Again</BUTTON></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP 
+                "</div>" SKIP
+                "<BR>" SKIP
+                "</form>" SKIP.    
+            
+        END. /*** not available to update. ***/
+    
+    END. /**** of force update ****/
+
+    WHEN "Delete" THEN DO:
+        
+        FIND item_mstr WHERE 
+            item_mstr.item_nbr = v-item_nbr EXCLUSIVE-LOCK NO-ERROR.
+
+        IF AVAILABLE (item_mstr) THEN DO:
+        
+            FIND FIRST qoh_det WHERE 
+                qoh_det.qoh_item_nbr = item_mstr.item_nbr AND 
+                qoh_det.qoh_deleted = ?
+                NO-LOCK NO-ERROR.
+                
+            IF NOT AVAILABLE (qoh_det) THEN DO:
+        
+                DELETE item_mstr.
+            
+                {&OUT} 
+                    "<form>" SKIP
+                    "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                    "<DIV class='row'>" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "<DIV class='grid_6'>" SKIP  
+                    "<center><h2>The item record was successfully deleted.</h2></center></DIV>" SKIP            
+                    "</DIV>         <!-- end of grid_6 -->" SKIP
+                    "<DIV class='grid_3'></DIV>     <!-- end of row -->" SKIP
+                    "</div>" SKIP
+                    "<BR></BR>" SKIP
+                    "<div class='row'>" SKIP          
+                    "   <div class='grid_5'> </DIV>" SKIP
+                    "   <div class='grid_2'><button type='submit' name='h-act' value='initial' class='btn'>Search Again</BUTTON></div>" SKIP
+                    "   <div class='grid_5'> </DIV>" SKIP 
+                    "</div>" SKIP
+                    "<BR>" SKIP
+                    "</form>" SKIP.
+        
+            END. /*** not available qoh records that contain the item that is geting deleted ***/
+            
+            ELSE DO:
+            
+                {&OUT} 
+                    "<form>" SKIP
+                    "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                    "<DIV class='row'>" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "<DIV class='grid_6'>" SKIP  
+                    "<center><h2>There are still QOH records that are using that item. Cannot delete.</h2></center></DIV>" SKIP            
+                    "</DIV>         <!-- end of grid_6 -->" SKIP
+                    "<DIV class='grid_3'></DIV>     <!-- end of row -->" SKIP
+                    "</div>" SKIP
+                    "<BR></BR>" SKIP
+                    "<div class='row'>" SKIP          
+                    "   <div class='grid_5'> </DIV>" SKIP
+                    "   <div class='grid_2'><button type='submit' name='h-act' value='initial' class='btn'>Search Again</BUTTON></div>" SKIP
+                    "   <div class='grid_5'> </DIV>" SKIP 
+                    "</div>" SKIP
+                    "<BR>" SKIP
+                    "</form>" SKIP.
+                
+            END. /****  there ARE some qoh records still using this item  ***/
+                
+        END. /*** end of available record ***/
+        
+        ELSE DO:
+        
+            {&OUT} 
+                "<form>" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP  
+                "<center><h2>The item record you selected is no longer available in the Database</h2></center></DIV>" SKIP            
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'></DIV>     <!-- end of row -->" SKIP
+                "</div>" SKIP
+                "<BR></BR>" SKIP
+                "<div class='row'>" SKIP          
+                "   <div class='grid_5'> </DIV>" SKIP
+                "   <div class='grid_2'><button type='submit' name='h-act' value='initial' class='btn'>Search Again</BUTTON></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP 
+                "</div>" SKIP
+                "<BR>" SKIP
+                "</form>" SKIP.    
+            
+        END. /*** not available to update. ***/
+    
+    END. /**** of force update ****/
+
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<div class='row'>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+            "<h2>Could not find act " act ".</h2>" SKIP
+            "</DIV><!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+
+</SCRIPT>
+</BODY>
+</HTML>

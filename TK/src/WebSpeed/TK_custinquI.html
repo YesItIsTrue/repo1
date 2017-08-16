@@ -1,0 +1,285 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>WebSpeed Script</TITLE>
+    <META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.2">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="02/Oct/15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+ * File:TK_custinquI.html
+ * Description: Starting procedure for doing an aninquiry of customer records. 
+ *              Three ranges; from last name, from first name, from customer ID. Input fields sent to TK_cust_secrch.html.
+ * Created:
+ *-------------------------------------------------------------------
+ * Revision History:    
+ * ---------------------
+ * 1.1  - The starting procedure didn't require any edits for allowing records to be retrieved without an address but this 
+ *           procedure is now capable of retrieving records without addresses because of edits to its support procedures.
+ *      
+ * 1.2  - written by Mark Jacobs on 02/Oct/15. Added in the code snippets for grid_* div, code snippets for Buttons,  META tags updated. Marked with 1dot2 
+ *
+ *
+ *-------------------------------------------------------------------- */
+
+
+
+
+{../depot/src/WebSpeed/menuname.i}. 
+
+    DEFINE VARIABLE f-cust-id LIKE cust_mstr.cust_id  NO-UNDO.
+    DEFINE VARIABLE t-cust-id LIKE cust_mstr.cust_id  NO-UNDO.
+    DEFINE VARIABLE f-fname   LIKE people_mstr.people_firstname  NO-UNDO.
+    DEFINE VARIABLE t-fname   LIKE people_mstr.people_firstname NO-UNDO.
+    DEFINE VARIABLE f-mname   LIKE people_mstr.people_midname NO-UNDO.
+    DEFINE VARIABLE t-mname   LIKE people_mstr.people_midname NO-UNDO.
+    DEFINE VARIABLE f-lname   LIKE people_mstr.people_lastname NO-UNDO.
+    DEFINE VARIABLE t-lname   LIKE people_mstr.people_lastname NO-UNDO.
+    DEFINE VARIABLE fdate     LIKE cust_mstr.cust_create_date NO-UNDO.
+    DEFINE VARIABLE tdate     LIKE cust_mstr.cust_create_date NO-UNDO.
+    DEFINE VARIABLE addr1     LIKE addr_mstr.addr_addr1 NO-UNDO.
+    DEFINE VARIABLE addr2     LIKE addr_mstr.addr_addr2 NO-UNDO.
+    DEFINE VARIABLE f-city    LIKE addr_mstr.addr_city NO-UNDO.
+    DEFINE VARIABLE t-city    LIKE addr_mstr.addr_city NO-UNDO.
+    DEFINE VARIABLE f-state   LIKE addr_mstr.addr_stateprov NO-UNDO.
+    DEFINE VARIABLE t-state   LIKE addr_mstr.addr_stateprov NO-UNDO.
+    DEFINE VARIABLE f-zip     LIKE addr_mstr.addr_zip NO-UNDO.
+    DEFINE VARIABLE t-zip     LIKE addr_mstr.addr_zip NO-UNDO.
+    DEFINE VARIABLE f-county  LIKE addr_mstr.addr_country NO-UNDO.
+    DEFINE VARIABLE t-county  LIKE addr_mstr.addr_country NO-UNDO.
+   
+    DEFINE VARIABLE h-phone   LIKE people_mstr.people_homephone NO-UNDO.
+    DEFINE VARIABLE email     LIKE people_mstr.people_email NO-UNDO.   
+    DEFINE VARIABLE fmoddate  LIKE cust_mstr.cust_modified_date NO-UNDO.
+    DEFINE VARIABLE tmoddate  LIKe cust_mstr.cust_modified_date NO-UNDO.
+    
+    DEFINE VARIABLE prof        AS LOG NO-UNDO.
+    DEFINE VARIABLE non-prof    AS LOG NO-UNDO.
+    
+    DEFINE VARIABLE prof-ck     AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE nonprof-ck  AS CHARACTER NO-UNDO.
+    
+  /*-----------------------------------------------------------*/      
+    DEF VAR ITfeedback AS LOGICAL INITIAL NO NO-UNDO.       /*---< ITfeedback (YES or NO)  */
+  /*-----------------------------------------------------------*/         
+    DEFINE VARIABLE whattorun AS CHARACTER NO-UNDO.
+    
+    ASSIGN
+        whattorun       =   get-value ("whattorun")
+        f-cust-id       =   INTEGER (get-value ("f-cust"))
+        t-cust-id       =   INTEGER (get-value ("t-cust"))
+        f-fname         =   get-value ("ffname")
+        t-fname         =   get-value ("tfname")
+        f-mname         =   get-value ("fmname")
+        t-mname         =   get-value ("tmname")
+        f-lname         =   get-value ("flname")
+        t-lname         =   get-value ("tlname")
+        addr1           =   get-value ("address1")
+        addr2           =   get-value ("adderss2")
+        f-city          =   get-value ("f-ci")
+        t-city          =   get-value ("t-ci")
+        f-state         =   get-value ("f-st")
+        t-state         =   get-value ("t-st")
+        f-zip           =   get-value ("f-zi")
+        t-zip           =   get-value ("t-zi")
+        f-county        =   get-value ("f-cou")
+        t-county        =   get-value ("t-cou")
+       
+        email           =   get-value ("e-mail")        
+        fdate           =   DATE (get-value("f-cdate"))
+        tdate           =   DATE (get-value("t-cdate"))
+        fmoddate        =   DATE (get-value("f-update"))
+        tmoddate        =   DATE (get-value("t-update"))
+        h-phone           =   get-value ("phon")
+        
+        prof            =   LOGICAL (get-value ("profal"))
+        non-prof        =   LOGICAL (get-value("non-profal"))
+        
+        prof-ck         =   IF prof = TRUE THEN
+					            "checked"
+					            ELSE
+					            ""
+        nonprof-ck      =   IF non-prof = FALSE THEN
+					            "checked"
+					            ELSE
+					            "".   
+        
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+
+<SCRIPT LANGUAGE="SpeedScript"> 
+
+{&OUT}
+    "<DIV class='row'>" SKIP                                                     /* 1dot2 */
+    "<DIV class='grid_2'> </DIV>" SKIP
+    "<DIV class='grid_8'>" SKIP.
+
+
+</SCRIPT>
+    
+  <div class='table_2col'>  
+  
+    <FORM ACTION="TK_custs_search.r" method="post">
+        <table >  
+            <th colspan="4" style='text-align:center;'>Search for Customer Records</th>
+            
+            
+              <tr>
+                <td align="right" >From Last Name</td><td align="lift"> <input type="text" name="flname" value="`f-lname`" autofocus></td>            
+                <td>To</td><td><input type="text" name="tlname" value="`t-lname`" ></td></tr> 
+                
+                 <tr>
+                <td align="right" >From First Name</td><td align="lift"> <input type="text" name="ffname" value="`f-fname`" ></td>            
+                <td>To</td><td><input type="text" name="tfname" value="`t-fname`" ></td></tr> 
+<!-- ------------------------------------------------------------------------------------------------------- -->        
+              <tr>
+                <td align="right" >From Customer ID</td>
+<SCRIPT LANGUAGE="SpeedScript"> 
+                    if f-cust-id = 0 then
+                    {&OUT}
+                        "<td> <input type='text' name='f-cust' value='' ></td>".  /*  Setting cursor in 1st input field on load using autofocus */
+                    else  
+</SCRIPT>                  
+                <td> <input type="text" name="f-cust" value="`f-cust-id`" autofocus></td>  <!-- Setting cursor in 1st input field on load using autofocus  -->   
+<!-- ---------------------------- -->                         
+                <td>To</td><td> 
+<SCRIPT LANGUAGE="SpeedScript">
+                    if t-cust-id = 0 then
+                    {&OUT}
+                         "<input type='text' name='t-cust' value=''></td></tr>".
+                         else                
+</SCRIPT>                  
+                <input type="text" name="t-cust" value="`t-cust-id`" ></td></tr>
+<!-- ------------------------------------------------------------------------------------------------------- -->                            
+                       
+          <!--  <tr>
+                <td align="right" >From Middle Name</td><td align="lift"> <input type="text" name="fmname" value="`f-mname`" ></td>            
+                <td>To</td><td><input type="text" name="tmname" value="`t-mname`" ></td></tr> 
+          -->               
+          
+           <!--               
+            <tr>
+                <td align="right" >Address1</td><td align="lift"> <input type="text" name="address1" value="`addr1`" ></td><td colspan="2"></t></tr>
+            <tr>            
+                <td align="right">Address2</td><td align="lift"> <input type="text" name="adderss2" value="`addr2`" ></td><td colspan="2"></t></tr>            
+            <tr>
+                <td align="right" >From City</td><td align="lift"> <input type="text" name="f-Ci" value="`f-city`" ></td>  
+                <td> To</td><td><input type="text" name="t-ci" value="`t-city`" ></td></tr>  
+            <tr>             
+                <td align="right"> From State</td><td align="lift"> <input type="text" name="f-st" value="`f-state`" ></td>
+                <td> To</td><td><input type="text" name="t-st" value="`t-state`" ></td></tr>
+                             
+            <tr>
+                <td align="right" > From Zip</td><td align="lift"> <input type="text" name="f-zi" value="`f-zip`" ></td> 
+                <td> To</td><td><input type="text" name="t-zi" value="`t-zip`" ></td></tr>
+            <tr>               
+                <td align="right" > From Country</td><td align="lift"> <input type="text" name="f-cou" value="`f-county`" ></td>
+                <td> To</td><td><input type="text" name="t-cou" value="`t-county`" ></td></tr> </tr>           
+            
+            <tr>
+                <td align="right" >Phone</td><td align="lift"> <input type="text" name="phon" value="`h-phone`" ></td><td colspan="2"></t></tr>
+            <tr>                
+                <td align="right" >E-mail</td><td align="lift"> <input type="text" name="e-mail" value="`email`"></td><td colspan="2"></t></tr>            
+            <tr>                                                 
+                <td align="right" >Professional  Customer</td><td align="lift"><input type="checkbox" name="Profal" value="true" `prof-ck`  </td><td colspan="2"></t></tr>           
+           <tr>
+                <td align="right" >Nonprofessional Customer</td><td align="lift"><input type="checkbox" name="non-profal" value="false" `nonprof-ck`  </td><td colspan="2"></td>          
+            </tr>                                                 
+           
+            <tr><td align="right" >From Creation Date</td>
+<SCRIPT LANGUAGE="SpeedScript">
+                    if fdate = ? then
+                    {&OUT}
+                        "<td align='lift'> <input type='text' name='f-cdate' value=''></td>".
+                        else                                                                                                                 
+</SCRIPT>              
+            <td align="lift"> <input type="text" name="f-cdate" value="`fdate`" ></td> 
+                       
+                <td>To</td><td> 
+<SCRIPT LANGUAGE="SpeedScript">   
+                    if tdate = ? then
+                    {&OUT}
+                        "<input type='text' name='t-cdate' value=''></td>".
+                        else                                 
+</SCRIPT>                  
+                <input type="text" name="t-cdate" value="`tdate`"></td>
+                
+            </tr>
+      
+          
+            <tr>
+            <td align="right" >From Last Update</td>
+ <SCRIPT LANGUAGE="SpeedScript">    
+                    if fmoddate = ? then
+                    {&OUT}
+                        "<td align='lift'> <input type='text' name='f-update' value=''></td>".   
+                        else                                    
+</SCRIPT>             
+            <td align="lift"> <input type="text" name="f-update" value="`fmoddate`" ></td> 
+                      
+                <td>To</td><td> 
+ <SCRIPT LANGUAGE="SpeedScript">   
+                    if tmoddate  = ? then
+                    {&OUT}
+                        "<input type='text' name='t-update' value=''></td></tr>".
+                        else                                 
+</SCRIPT>                
+                <input type="text" name="t-update" value="`tmoddate`" ></td></tr>                           
+           
+        -->
+            <input type="hidden" name="whattorun" value="`whattorun`">
+        </table>
+        
+<SCRIPT LANGUAGE="SpeedScript"> 
+/* --------------------------------------------------------------------------------------------------- */
+{&OUT}
+    "</DIV>         <!-- end of grid_8 -->" SKIP                                                              /* 1dot2 */
+    "<DIV class='grid_2'> </DIV>" SKIP
+    "</DIV>     <!-- end of row -->" SKIP
+    "</div>" skip
+
+/* --------------------------------------------------------------------------------------------------- */             
+                                                                                                     
+"<div class='row'>" SKIP                                                                                        /* 1 dot 2 */
+"   <div class='grid_3'></DIV>" SKIP
+/*"   <input type='hidden' name='whattorun' value=" whattorun ">" skip*/
+"     <div class='grid_2'><BUTTON type='submit' name='h-act' value='FINAL_UPDATE' class='btn'>Search</BUTTON></div>" SKIP
+"   <div class='grid_2'></DIV>" SKIP
+"   <div class='grid_2'><BUTTON type='reset' name='submit' value='Reset' class='btn'>Reset</BUTTON></div>" SKIP
+"   <div class='grid_3'></DIV>" SKIP
+/*"   <div class='grid_2'>" skip*/
+" </form>" skip
+/*" <form method='post'>" skip*/
+/*"   <input type='hidden' name='whattorun' value=" whattorun ">" skip*/
+/*"   <BUTTON type='submit' name='submit' value='New Search' class='btn'>New Search</BUTTON> </form></div>" SKIP*/
+
+/*"   <div class='grid_2'></DIV>" SKIP*/
+"</div>" SKIP
+"<BR>" SKIP.
+
+
+/*----------------------------------------------------------------------------------------------------- */
+</SCRIPT>        
+        
+        <!-- 
+        </div>
+         <div align="center">     
+                 <br></b><input type="submit" name="submit" value="Search"> 
+                &nbsp;&nbsp;<button type="reset" name="submit" value="reset">Reset</button>   
+         -->     
+            
+        
+
+<SCRIPT LANGUAGE="SpeedScript">
+
+</SCRIPT>
+</BODY>
+</HTML>

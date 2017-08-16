@@ -1,0 +1,623 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD> 
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<TITLE>Unplanned Inventory Receipt</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="10/Oct/2016">
+    <META NAME='LAST_UPDATED' CONTENT="10/Oct/2016">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File: ICinv-receiptU.html
+    Description: This is the inventory receipt program. You use it to document
+        receipts into the various quantities on hand at the different locations.
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/**********************  Variable Definitions  **************************/
+DEFINE VARIABLE x           AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE y           AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE act         AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE itmessage   AS LOGICAL INITIAL NO       NO-UNDO.
+DEFINE VARIABLE whichloc    AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE whichqoh    AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE v-site      LIKE qoh_det.qoh_site       NO-UNDO.
+DEFINE VARIABLE v-warehouse LIKE qoh_det.qoh_warehouse  NO-UNDO.
+DEFINE VARIABLE v-loc       LIKE qoh_det.qoh_loc        NO-UNDO.
+DEFINE VARIABLE v-from-loc  LIKE qoh_det.qoh_loc        NO-UNDO.
+DEFINE VARIABLE v-to-loc    LIKE qoh_det.qoh_loc        NO-UNDO.
+DEFINE VARIABLE v-item_nbr  LIKE qoh_det.qoh_item_nbr   NO-UNDO.
+DEFINE VARIABLE v-lot       LIKE qoh_det.qoh_lot        NO-UNDO.
+DEFINE VARIABLE v-serial    LIKE qoh_det.qoh_serial     NO-UNDO.
+DEFINE VARIABLE v-quantity  LIKE qoh_det.qoh_quantity   NO-UNDO.
+DEFINE VARIABLE v-merge-quantity  LIKE qoh_det.qoh_quantity   NO-UNDO.
+DEFINE VARIABLE v-status    LIKE qoh_det.qoh_status     NO-UNDO.
+DEFINE VARIABLE v-avail     LIKE qoh_det.qoh_avail      NO-UNDO.
+DEFINE VARIABLE v-expire_date LIKE qoh_det.qoh_expire_date NO-UNDO.
+DEFINE VARIABLE v-html-expire_date AS CHARACTER NO-UNDO.
+DEFINE VARIABLE c-loc-list  AS INTEGER                  NO-UNDO.
+
+DEFINE VARIABLE o-create    AS LOGICAL                  NO-UNDO.
+DEFINE VARIABLE o-update    AS LOGICAL                  NO-UNDO.
+DEFINE VARIABLE o-success   AS LOGICAL                  NO-UNDO.
+
+DEFINE VARIABLE o-ctrh-id       LIKE trh_hist.trh_id        NO-UNDO.
+DEFINE VARIABLE o-ctrh-error    AS LOGICAL INITIAL YES      NO-UNDO.  
+DEFINE VARIABLE v-po_nbr        AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE v-notes         LIKE trh_hist.trh_comments  NO-UNDO. 
+/*DEFINE VARIABLE v-last-count    LIKE qoh_det.qoh_last_count NO-UNDO.*/
+            
+/**********************  HTML Variable Get-Val's  ***********************/
+ASSIGN 
+    act         = html-encode(get-value("h-act"))  
+    whichloc    = INTEGER(html-encode(get-value("h-whichloc")))
+    v-site      = html-encode(get-value("h-site"))
+    v-warehouse = html-encode(get-value("h-warehouse"))
+    v-loc       = html-encode(get-value("h-loc"))
+    v-item_nbr  = html-encode(get-value("h-item_nbr"))
+    v-lot       = html-encode(get-value("h-lot"))
+    v-serial    = html-encode(get-value("h-serial"))
+    v-quantity  = DECIMAL(html-encode(get-value("h-quantity")))
+    v-avail     = IF LOGICAL(html-encode(get-value("h-avail"))) = NO THEN NO ELSE YES
+    v-status    = html-encode(get-value("h-status"))
+    v-po_nbr    = html-encode(get-value("h-po_nbr"))
+    v-html-expire_date = html-encode(get-value("h-expire_date"))
+    v-notes     = html-encode(get-value("h-notes")).
+                                                                        IF itmessage = YES THEN {&OUT} "whichloc = " whichloc "<br>".
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-expire_date, OUTPUT v-expire_date).
+
+/**************************  Other Nonsense  ***************************/    
+IF act= "" THEN 
+    act = "Site".
+
+IF v-loc = "" THEN DO:
+
+    FIND loc_mstr WHERE RECID(loc_mstr) = whichloc AND
+        loc_mstr.loc_deleted = ? NO-LOCK NO-ERROR.
+    
+    IF AVAILABLE(loc_mstr) THEN ASSIGN v-loc = loc_mstr.loc_name.
+    
+END. /*** blank loc fill in ***/
+
+/**************************  Main Program  ******************************/
+
+CASE act:
+
+    WHEN "Site" THEN DO:
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP
+            "<div class='table_col'>" SKIP
+            "<form>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Select Site of Unplanned Receipt</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Site Name</td>" SKIP
+            "           <td class='req'>" SKIP
+            "               <select name='h-site' required>" SKIP.
+            
+        FOR EACH site_mstr WHERE 
+            site_mstr.site_deleted = ? NO-LOCK:
+        
+            {&OUT} "                <option value'" site_mstr.site_name "'".
+        
+            IF site_mstr.site_name = v-site THEN {&OUT} " SELECTED ".
+        
+            {&OUT} ">" site_mstr.site_name "</option>" SKIP.
+            
+        END. /** 4ea site_mstr **/
+            
+        {&OUT}
+            "            </select>" SKIP
+/*            "<a href=~"../../InvCtrl/rcode/ICsite_maintU.r?h-item_nbr=&whattorun=&h-act=CREATE~" >Create New Site</a>" SKIP*/
+            "           </td>" SKIP
+            "       </tr>" SKIP(1)
+            "   </table>" SKIP
+            "</div> <!-- table col --->" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<br></br>" SKIP
+            "   <input type='hidden' name='h-warehouse' value='" v-warehouse "'/>" SKIP
+            "   <input type='hidden' name='h-item_nbr' value='" v-item_nbr "'/>" SKIP
+            "   <input type='hidden' name='h-quantity' value='" v-quantity "'/>" SKIP
+            "   <input type='hidden' name='h-lot' value='" v-lot "'/>" SKIP
+            "   <input type='hidden' name='h-serial' value='" v-serial "'/>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='warehouse' class='btn'>Select</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "<BR>" SKIP.
+        
+    END. /** Site **/
+    
+    WHEN "Warehouse" THEN DO:
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP
+            "<div class='table_col'>" SKIP
+            "<form>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Select Warehouse of Unplanned Receipt</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Site Name</td>" SKIP
+            "           <td>" v-site "</td>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP
+            "           <td>Warehouse Name</td>" SKIP
+            "           <td class='req'>" SKIP
+            "               <select name='h-warehouse' required>" SKIP.
+            
+        FOR EACH site_mstr WHERE 
+            site_mstr.site_name = v-site AND 
+            site_mstr.site_deleted = ? NO-LOCK,
+          EACH warehouse_mstr WHERE 
+            warehouse_mstr.warehouse_site = site_mstr.site_name AND 
+            warehouse_mstr.warehouse_deleted = ? NO-LOCK:
+        
+            {&OUT} "                <option value'" warehouse_mstr.warehouse_name "'>" warehouse_mstr.warehouse_name "</option>" SKIP.
+            
+        END. /** 4ea site_mstr **/
+            
+        {&OUT}
+            "            </select>" SKIP
+            "           </td>" SKIP
+            "       </tr>" SKIP(1)
+            "   </table>" SKIP
+            "</div> <!-- table col --->" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<br></br>" SKIP
+            "   <input type='hidden' name='h-site' value='" v-site "'/>" SKIP
+            "   <input type='hidden' name='h-item_nbr' value='" v-item_nbr "'/>" SKIP
+            "   <input type='hidden' name='h-quantity' value='" v-quantity "'/>" SKIP
+            "   <input type='hidden' name='h-lot' value='" v-lot "'/>" SKIP
+            "   <input type='hidden' name='h-serial' value='" v-serial "'/>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='Item' class='btn'>Select</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "<BR>" SKIP.
+        
+    END. /** Warehouse **/
+
+    WHEN "Item" THEN DO:
+        
+            {&OUT}
+            "<form>" SKIP
+            "   <input type='hidden' name='h-site' value='" v-site "'/>" SKIP
+            "   <input type='hidden' name='h-warehouse' value='" v-warehouse "'/>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "<DIV class='row'>" SKIP            
+            "<DIV class='grid_1'></DIV>" SKIP
+            "<DIV class='grid_10'>" SKIP
+            "<DIV class='table_col'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='4'>Inventory Receipt</TH>" SKIP    
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1)
+        
+            "      <TR>" SKIP
+            "          <TD>Site</TD>" SKIP
+            "          <TD colspan='1'>" v-site "</TD>" SKIP           
+            "      </TR>" SKIP
+            
+            "       <tr>" SKIP
+            "          <TD>Warehouse</TD>" SKIP
+            "          <TD>" v-warehouse "</TD>" SKIP
+            "       </tr>" SKIP
+            
+            "      <TR>" SKIP
+            "          <TD>Location</TD>" SKIP
+            "           <td class='req'>" SKIP
+            "               <select name='h-loc' required>" SKIP.
+            
+        FOR EACH site_mstr WHERE 
+            site_mstr.site_name = v-site AND 
+            site_mstr.site_deleted = ? NO-LOCK,
+          EACH warehouse_mstr WHERE 
+            warehouse_mstr.warehouse_site = site_mstr.site_name AND 
+            warehouse_mstr.warehouse_name = v-warehouse AND
+            warehouse_mstr.warehouse_deleted = ? NO-LOCK,
+          EACH loc_mstr WHERE 
+            loc_mstr.loc_site = site_mstr.site_name AND 
+            loc_mstr.loc_warehouse = warehouse_mstr.warehouse_name AND 
+            loc_mstr.loc_deleted = ? NO-LOCK:
+        
+            {&OUT} "                <option value'" loc_mstr.loc_name "'>" loc_mstr.loc_name "</option>" SKIP.
+            
+        END. /** 4ea site_mstr **/
+            
+        {&OUT}
+            "            </select>" SKIP
+            "           </td>" SKIP
+            "       </tr>" SKIP
+        
+            "      <TR>" SKIP
+            "          <TD>Item Number</TD>" SKIP
+            "          <TD colspan='1' class='req'><INPUT type='TEXT' name='h-item_nbr' value='" v-item_nbr "' required ></input></TD>" SKIP          
+            "      </TR>" SKIP
+        
+            "      <TR>" SKIP
+            "          <TD>Lot Nbr</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-lot' value='" v-lot "' /></TD>" SKIP            
+            "      </TR>" SKIP
+        
+            "       <tr>" SKIP
+            "          <TD>Expiration Date</TD>" SKIP
+            "          <TD><INPUT type='DATE' name='h-expire_date' value='" v-expire_date "' /></TD>" SKIP
+            "       </tr>" SKIP
+        
+            "      <TR>" SKIP
+            "          <TD>Serial</TD>" SKIP
+            "          <TD><INPUT type='TEXT' name='h-serial' value='" v-serial "' /></TD>" SKIP           
+            "      </TR>" SKIP
+            
+            "       <tr>" SKIP
+            "          <TD>Order Number</TD>" SKIP
+            "          <TD colspan='1'><INPUT type='TEXT' name='h-po_nbr' value='" v-po_nbr "' /></TD>" SKIP
+            "       </tr>" SKIP
+
+            "       <tr>" SKIP
+            "          <TD>Quantity</TD>" SKIP
+            "          <TD class='req'><INPUT type='NUMBER' name='h-quantity' value='" v-quantity "' required min='1'/></TD>" SKIP
+            "       </tr>" SKIP      
+
+            "      <tr>" SKIP
+            "          <TD>Notes</TD>" SKIP
+            "          <TD colspan='1' class='req'><textarea name='h-notes' value='" v-notes "' required ></textarea></TD>" SKIP
+            "      </tr>" SKIP
+
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_10-->" SKIP
+            "<DIV class='grid_1'></DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<br></br>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='Validation' class='btn'>Submit</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='site' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.    
+        
+    END. /** Item Selection **/
+    
+    WHEN "Validation" THEN DO:
+    
+                                                                    IF itmessage = YES THEN {&OUT} "validation act = " act "<br>" SKIP.
+        
+        FIND FIRST loc_mstr WHERE 
+            loc_mstr.loc_site = v-site AND 
+            loc_mstr.loc_warehouse = v-warehouse AND 
+            loc_mstr.loc_name = v-loc AND 
+            loc_mstr.loc_deleted = ? NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (loc_mstr) THEN DO:
+                                                                    
+            IF CAN-FIND (FIRST item_mstr WHERE 
+                item_mstr.item_nbr = v-item_nbr AND 
+                item_mstr.item_deleted = ?) THEN DO: 
+
+                FIND FIRST qoh_det WHERE 
+                    qoh_det.qoh_site = v-site AND 
+                    qoh_det.qoh_warehouse = v-warehouse AND 
+                    qoh_det.qoh_loc = v-loc AND 
+                    qoh_det.qoh_item_nbr = v-item_nbr AND 
+                    qoh_det.qoh_lot = v-lot AND
+                    qoh_det.qoh_serial = v-serial AND 
+                    qoh_det.qoh_deleted = ? NO-LOCK NO-ERROR.
+                                        
+                /*** some of same lot already there. ***/
+                IF AVAILABLE (qoh_det) THEN 
+                    ASSIGN v-merge-quantity = qoh_det.qoh_quantity + v-quantity.                 
+                
+                ELSE ASSIGN v-merge-quantity = v-quantity.
+
+                RUN VALUE(SEARCH("SUBqoh-ucU.r"))
+                    (v-site,
+                    v-warehouse,
+                    v-item_nbr,
+                    v-loc,
+                    v-lot,
+                    v-serial,
+                    v-merge-quantity,
+                    v-avail,
+                    v-status,
+                    v-expire_date,
+                    TODAY, /*** last count ***/
+                    OUTPUT o-create,
+                    OUTPUT o-update,
+                    OUTPUT o-success).    
+                
+                IF o-success = YES THEN DO:
+        
+                    RUN VALUE(SEARCH("SUBtrh-ucU.r"))
+                        (0, /*** trh_id ***/
+                        v-item_nbr, /*** trh_item ***/
+                        "UNP-RCPT", /*** trh_action ***/
+                        v-quantity, /*** trh_qty ***/
+                        v-loc, /*** trh_loc ***/
+                        v-lot, /*** trh_lot ***/
+                        v-serial, /*** trh_serial ***/
+                        v-site, /*** trh_site ***/
+                        0, /*** trh_sequence ***/
+                        v-notes, /*** trh_comments ***/
+                        "", /*** trh_other ***/
+                        0, /*** trh_people ***/
+                        v-po_nbr, /*** trh_order ***/
+                        TODAY, /*** trh_date ***/
+                        NOW, /*** trh_time ***/
+                        "", /*** trh_ref ***/
+                        OUTPUT o-ctrh-id,
+                        OUTPUT o-ctrh-error).
+                   
+                    IF o-ctrh-error = YES THEN DO:
+                    
+                        {&OUT}
+                            "<DIV class='row'>" SKIP
+                            "<DIV class='grid_3'> </DIV>" SKIP
+                            "<DIV class='grid_6'>" SKIP 
+                            "   <center><h2>An error happened, and a transaction history record failed. Contact Solsource.</h2></center>" SKIP
+                            "   <!-- Oh yeah. This is going to save your life. --->" SKIP
+                            "   <!-- v-site = " v-site " --->" SKIP
+                            "   <!-- v-warehouse = " v-warehouse " --->" SKIP
+                            "   <!-- v-loc = " v-loc " --->" SKIP
+                            "   <!-- v-item_nbr = " v-item_nbr " --->" SKIP
+                            "   <!-- v-lot = " v-lot " --->" SKIP
+                            "   <!-- v-serial = " v-serial " --->" SKIP
+                            "   <!-- v-quantity = " v-quantity " --->" SKIP
+                            "</DIV>         <!-- end of grid_6 -->" SKIP
+                            "<DIV class='grid_3'> </DIV>" SKIP
+                            "</DIV>     <!-- end of row -->" SKIP
+                            "<BR>" SKIP 
+                            "<form>" SKIP
+                            "<div class='row'>" SKIP
+                            "   <div class='grid_5'> </DIV>" SKIP
+                            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                            "   <div class='grid_2'><button type='submit' name='h-act' value='SITE' class='btn'>Return to Start</BUTTON></div>" SKIP
+                            "   <div class='grid_5'> </DIV>" SKIP
+                            "</div>" SKIP
+                            "</form>" SKIP.    
+                       
+                    END. /*** trh hist error ***/
+                   
+                    ELSE DO:
+                   
+                        {&OUT}
+                            "<DIV class='row'>" SKIP
+                            "<DIV class='grid_3'> </DIV>" SKIP
+                            "<DIV class='grid_6'>" SKIP 
+                            "   <center><h2>You've successfully Received that Inventory!</h2></center>" SKIP
+                            "   <!-- Oh yeah. This is going to save your life. --->" SKIP
+                            "   <!-- v-site = " v-site " --->" SKIP
+                            "   <!-- v-warehouse = " v-warehouse " --->" SKIP
+                            "   <!-- v-loc = " v-loc " --->" SKIP
+                            "   <!-- v-item_nbr = " v-item_nbr " --->" SKIP
+                            "   <!-- v-lot = " v-lot " --->" SKIP
+                            "   <!-- v-serial = " v-serial " --->" SKIP
+                            "   <!-- v-quantity = " v-quantity " --->" SKIP
+                            "</DIV>         <!-- end of grid_6 -->" SKIP
+                            "<DIV class='grid_3'> </DIV>" SKIP
+                            "</DIV>     <!-- end of row -->" SKIP
+                            "<BR>" SKIP. 
+                            
+                        {ICinv-alteredR.i o-ctrh-id v-site v-warehouse v-loc v-item_nbr v-lot v-serial}.
+                       
+                             
+                        {&OUT}
+                            "<form>" SKIP
+                            "<div class='row'>" SKIP
+                            "   <div class='grid_5'> </DIV>" SKIP
+                            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                            "   <div class='grid_2'><button type='submit' name='h-act' value='SITE' class='btn'>Return to Start</BUTTON></div>" SKIP
+                            "   <div class='grid_5'> </DIV>" SKIP
+                            "</div>" SKIP
+                            "</form>" SKIP.
+                       
+                    END. /*** of trh hist success = yes ***/
+                    
+                    /*** already has open ELSE ***/
+                                      
+                END. /*** of qoh success = yes ***/
+                
+                ELSE {&OUT}
+                    "<DIV class='row'>" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "<DIV class='grid_6'>" SKIP 
+                    "   <center><h2>Something Unexpected Happened.</h2></center>" SKIP
+                    "   <!-- Oh yeah. This is going to save your life. --->" SKIP
+                    "   <!-- v-site = " v-site " --->" SKIP
+                    "   <!-- v-warehouse = " v-warehouse " --->" SKIP
+                    "   <!-- v-loc = " v-loc " --->" SKIP
+                    "   <!-- v-item_nbr = " v-item_nbr " --->" SKIP
+                    "   <!-- v-lot = " v-lot " --->" SKIP
+                    "   <!-- v-serial = " v-serial " --->" SKIP
+                    "   <!-- v-quantity = " v-quantity " --->" SKIP
+                    "</DIV>         <!-- end of grid_6 -->" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "</DIV>     <!-- end of row -->" SKIP
+                    "<BR>" SKIP 
+                    "<form>" SKIP
+                    "<div class='row'>" SKIP
+                    "   <div class='grid_5'> </DIV>" SKIP
+                    "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                    "   <div class='grid_2'><button type='submit' name='h-act' value='SITE' class='btn'>Return to Start</BUTTON></div>" SKIP
+                    "   <div class='grid_5'> </DIV>" SKIP
+                    "</div>" SKIP
+                    "</form>" SKIP.
+            
+            END. /*** Can-FInd Item Number ***/
+                
+            ELSE DO:
+
+                {&OUT}
+                    "<DIV class='row'>" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "<DIV class='grid_6'>" SKIP 
+                    "   <center><h2>The Item Number '" v-item_nbr "' is not in the database.</h2></center>" SKIP
+                    "   <center><h2>Feel free to click the back button in your browser and try again.</h2></center>" SKIP
+                    "   <!-- Oh yeah. This is going to save your life. --->" SKIP
+                    "   <!-- v-site = " v-site " --->" SKIP
+                    "   <!-- v-warehouse = " v-warehouse " --->" SKIP
+                    "   <!-- v-loc = " v-loc " --->" SKIP
+                    "   <!-- v-item_nbr = " v-item_nbr " --->" SKIP
+                    "   <!-- v-lot = " v-lot " --->" SKIP
+                    "   <!-- v-serial = " v-serial " --->" SKIP
+                    "   <!-- v-quantity = " v-quantity " --->" SKIP
+                    "</DIV>         <!-- end of grid_6 -->" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "</DIV>     <!-- end of row -->" SKIP
+                    "<BR>" SKIP 
+                    "<form>" SKIP
+                    "<div class='row'>" SKIP
+                    "   <div class='grid_5'> </DIV>" SKIP
+                    "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                    "   <div class='grid_2'><button type='submit' name='h-act' value='SITE' class='btn'>Return to Start</BUTTON></div>" SKIP
+                    "   <div class='grid_5'> </DIV>" SKIP
+                    "</div>" SKIP
+                    "</form>" SKIP.
+
+            END. /*** Improper Item Number ***/
+        
+        END. /*** Can-Find Location ****/
+        
+        ELSE DO:
+
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                "   <center><h2>The Location '" v-loc "' is not in the database at " v-warehouse " in " v-site ".</h2></center>" SKIP
+                "   <center><h2>Feel free to click the back button in your browser and try again.</h2></center>" SKIP
+                "   <!-- Oh yeah. This is going to save your life. --->" SKIP
+                "   <!-- v-site = " v-site " --->" SKIP
+                "   <!-- v-warehouse = " v-warehouse " --->" SKIP
+                "   <!-- v-loc = " v-loc " --->" SKIP
+                "   <!-- v-item_nbr = " v-item_nbr " --->" SKIP
+                "   <!-- v-lot = " v-lot " --->" SKIP
+                "   <!-- v-serial = " v-serial " --->" SKIP
+                "   <!-- v-quantity = " v-quantity " --->" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP 
+                "<form>" SKIP
+                "<div class='row'>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                "   <div class='grid_2'><button type='submit' name='h-act' value='SITE' class='btn'>Return to Start</BUTTON></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP.
+
+        END. /*** Improper Location ***/
+        
+    END. /** Validation **/
+    
+    OTHERWISE DO:
+            
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<center><h2>Could not find act '" act "'.</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='SITE' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /*** otherwise ***/
+    
+END CASE.
+
+/********************************** End of Line ******************************/
+/******************************  Extra old stuff  ****************************/
+        
+/*        ASSIGN x = 0.                                                                                                                                    */
+/*                                                                                                                                                         */
+/*        FOR EACH qoh_det WHERE                                                                                                                           */
+/*            qoh_det.qoh_site = v-site AND                                                                                                                */
+/*            qoh_det.qoh_warehouse = v-warehouse AND                                                                                                      */
+/*            qoh_det.qoh_loc = v-loc AND                                                                                                                  */
+/*            qoh_det.qoh_deleted = ?                                                                                                                      */
+/*            NO-LOCK:                                                                                                                                     */
+/*                                                                                                                                                         */
+/*            ASSIGN x = x + 1.                                                                                                                            */
+/*                                                                                                                                                         */
+/*            IF itmessage = YES THEN                                                                                                                      */
+/*                {&OUT}                                                                                                                                   */
+/*                    "<div class='row'><div class='grid'4'></div><div class='grid_4'><table><tr><td>qoh_site</td><td>" qoh_det.qoh_site "</td></tr>" SKIP */
+/*                    "<tr><td>qoh_warehouse</td><td>" qoh_det.qoh_warehouse "</td></tr>" SKIP                                                             */
+/*                    "<tr><td>qoh_loc</td><td>" qoh_det.qoh_loc "</td></tr>" SKIP                                                                         */
+/*                    "<tr><td>qoh_item_nbr</td><td>" qoh_det.qoh_item_nbr "</td></tr>"                                                                    */
+/*                    "<tr><td>qoh_deleted</td><td>" qoh_det.qoh_deleted "</td></tr>"                                                                      */
+/*                    "<tr><td>x = </td><td>" x "</td></tr></table></div><div class='grid'4'></div></div>".                                                */
+/*                                                                                                                                                         */
+/*        END. /*** is there already something in the location? ***/                                                                                       */
+/*                                                                                                                                                         */
+/*        IF x > 0 THEN DO:                                                                                                                                */
+/*                                                                                                                                                         */
+/*            {&OUT}                                                                                                                                       */
+/*                "<DIV class='row'>" SKIP                                                                                                                 */
+/*                "<DIV class='grid_3'> </DIV>" SKIP                                                                                                       */
+/*                "<DIV class='grid_6'>" SKIP                                                                                                              */
+/*                    "<center><h2>Sorry there is already an item in the '" v-loc "' at the '" v-warehouse "' of '" v-site "'.</h2></center>" SKIP         */
+/*                "</DIV>         <!-- end of grid_6 -->" SKIP                                                                                             */
+/*                "<DIV class='grid_3'> </DIV>" SKIP                                                                                                       */
+/*                "</DIV>     <!-- end of row -->" SKIP                                                                                                    */
+/*                "<BR>" SKIP                                                                                                                              */
+/*                "<form>" SKIP                                                                                                                            */
+/*                "<div class='row'>" SKIP                                                                                                                 */
+/*                "   <div class='grid_5'> </DIV>" SKIP                                                                                                    */
+/*                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP                                                             */
+/*                "   <div class='grid_2'><button type='submit' name='h-act' value='SITE' class='btn'>Return to Start</BUTTON></div>" SKIP                 */
+/*                "   <div class='grid_5'> </DIV>" SKIP                                                                                                    */
+/*                "</div>" SKIP                                                                                                                            */
+/*                "</form>" SKIP.                                                                                                                          */
+/*                                                                                                                                                         */
+/*                                                                                                                                                         */
+/*                                                                            IF itmessage = YES THEN {&OUT} "item number = " qoh_det.qoh_item "<br>" SKIP.*/
+/*                                                                                                                                                         */
+/*        END. /*** there is something there! ***/                                                                                                         */
+
+</SCRIPT>
+</BODY>
+</HTML>

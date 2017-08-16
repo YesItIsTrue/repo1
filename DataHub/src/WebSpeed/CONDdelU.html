@@ -1,0 +1,186 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.2">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="06/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="19/Nov/14">  
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+    <TITLE>Condition Delete</TITLE>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL. 
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+/**********************************************************************************
+ *
+ *  CONDmaintU.html   -   Version 1.2
+ *
+ *  This program is designed to provide basic maintenance for the Conditions that could
+ *  be tied to a Patient.  Updates the condition_mstr table in the HHI database.
+ *
+ *  ----------------------------------------------------------------------------
+ *
+ *  Revision History:
+ *  -----------------
+ *  1.0 - written by Doug Luttrell on 06/Oct/14.  Original Version.
+ *  1.2 - written by DOUG LUTTRELL on 19/Nov/14.  Changed sort order.  Marked by 1dot2.
+ *
+ ***********************************************************************************/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/  
+
+/***************************  Variable Definition Section  *************************/
+ DEFINE VARIABLE condid     LIKE condition_mstr.condition_ID        NO-UNDO.
+ DEFINE VARIABLE condname   LIKE condition_mstr.condition_name      NO-UNDO.
+ DEFINE VARIABLE conddesc   LIKE condition_mstr.condition_desc      NO-UNDO.  
+ DEFINE VARIABLE iscommon   LIKE condition_mstr.condition_common    NO-UNDO.
+ 
+
+ DEFINE VARIABLE act        AS CHARACTER                    NO-UNDO. 
+ DEFINE VARIABLE ITshowmsg  AS LOG INITIAL NO               NO-UNDO.
+ 
+ DEFINE VARIABLE thiscondition AS CHARACTER                    NO-UNDO. 
+ 
+
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre get-value</P>" skip.
+        
+ ASSIGN 
+    act         = get-value('h-act')
+    condid      = integer(get-value('h-condid'))
+    condname    = get-value('h-condname')
+    conddesc    = get-value('h-conddesc')
+    iscommon    = IF LOGICAL(get-value('h-iscommon')) = YES THEN 
+                        YES
+                  ELSE 
+                        NO.
+    
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Post get-value</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>condid = " condid "</P>" skip    
+																				       "<P>condname = " condname "</P>" skip
+																				       "<P>conddesc = " conddesc "</P>" skip
+																				       "<P>iscommon = " iscommon "</P>" skip
+																				       "<P>h-iscommon = " get-value('h-iscommon') "</P>" skip
+																				       "<hr width=90%>" skip.
+        
+ IF act = "" THEN 
+    act = "INITIAL".
+    
+     
+																				IF ITshowmsg = YES THEN 
+																				   {&OUT}
+																				       "<P>Pre Case</P>" skip
+																				       "<P>Act = " act "</P>" skip
+																				       "<P>condid = " condid "</P>" skip   
+																				       "<P>condname = " condname "</P>" skip
+																				       "<P>conddesc = " conddesc "</P>" skip
+																				       "<hr width=90%>" skip.
+        
+/********************************  Main Program  ***********************************/
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:
+        
+        {CONDmaintU-form.i "FIND" "NOTHING" "DISABLED" "DELETE"}. 
+         
+    END.  /** of act = "INITIAL" **/
+    
+    WHEN "FIND" THEN DO:
+        
+        FIND condition_mstr WHERE condition_mstr.condition_ID = condid AND 
+            condition_mstr.condition_deleted = ?
+                NO-LOCK NO-ERROR.
+        IF AVAILABLE condition_mstr THEN 
+            ASSIGN 
+                condname    = condition_mstr.condition_name
+                conddesc    = condition_mstr.condition_desc
+                iscommon    = condition_mstr.condition_common. 
+ 
+        {CONDmaintU-form.i "DELETE" "DISABLED" "DISABLED" "DELETE"}.    
+                
+																				IF ITshowmsg = YES THEN 
+																				    {&OUT}
+																				        "<P>Post FIND</P>" skip  
+																				        "<P>Act = " act "</P>" skip
+																				        "<P>condid = " condid "</P>" skip   
+																				        "<P>condname = " condname "</P>" skip
+																				        "<P>conddesc = " conddesc "</P>" skip
+																				        "<hr width=90%>" skip.
+         
+    END.  /** of act = "FIND" **/ 
+    
+    WHEN "DELETE" THEN DO:
+        
+																		        IF ITshowmsg = YES THEN 
+																		            {&OUT}
+																		                "<P>Inside Update</P>" skip
+																		                "<P>Act = " act "</P>" skip
+																		                "<P>condid = " condid "</P>" skip   
+																		                "<P>condname = " condname "</P>" skip
+																		                "<P>conddesc = " conddesc "</P>" skip
+																		                "<hr width=90%>" skip.
+        
+        FIND condition_mstr WHERE condition_mstr.condition_ID = condid AND 
+            condition_mstr.condition_deleted = ? 
+                EXCLUSIVE-LOCK NO-ERROR.
+        IF AVAILABLE condition_mstr THEN 
+            ASSIGN 
+                condition_mstr.condition_deleted        = TODAY
+                condition_mstr.condition_modified_date  = TODAY 
+                condition_mstr.condition_modified_by    = USERID("HHI")
+                condid                                  = 0
+                condname                                = ""
+                conddesc                                = ""
+                iscommon                                = NO. 
+        ELSE 
+            {&OUT} "<P>ERROR - condition_mstr not found for condition = " condid ".</P>" skip.
+ 
+        {CONDmaintU-form.i "INITIAL" "DISABLED" "DISABLED" "DELETE"}.                
+        
+    END.  /** of act = "UPDATE" **/
+        
+    OTHERWISE DO: 
+                       
+																		        IF ITshowmsg = YES THEN 
+																		            {&OUT}
+																		                "<P>Inside Otherwise Do</P>" skip
+																		                "<P>Act = " act "</P>" skip
+																		                "<P>condid = " condid "</P>" skip   
+																		                "<P>condname = " condname "</P>" skip
+																		                "<P>conddesc = " conddesc "</P>" skip
+																		                "<hr width=90%>" skip.
+                                           
+        {&OUT} 
+            "<P class='errmsg'>Unexpected Condition!  Please contact <a href='mailto:hhi.techsupport@mysolsource.com?subject=Error with CONDdelU.html -- " act "'>Solsource</a> immediately.</P>" SKIP             
+            "<FORM method='post'>" skip
+            "<center><INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP 
+            "<INPUT type='submit' name='Submit' value='Return to Menu' /></center>" SKIP 
+            "</FORM>" skip.     
+        
+    END.  /** of otherwise **/
+    
+END CASE.  /*** case of act ***/
+
+																				IF ITshowmsg = YES THEN 
+																				    {&OUT} "<P>End OF LINE.</P>".
+
+/*******************************  End of Program  **********************************/
+</SCRIPT>
+</BODY>
+</HTML>

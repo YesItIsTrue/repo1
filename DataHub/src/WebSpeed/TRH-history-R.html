@@ -1,0 +1,419 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+	<TITLE>Transaction History Report</TITLE>
+	<META NAME="AUTHOR" CONTENT="Sara Luttrell">
+	<META NAME="VERSION" CONTENT="1.71">
+	<META NAME="COPYRIGHT" CONTENT="Solsource">
+	<META NAME="CREATE_DATE" CONTENT="15/August/14">
+	<META NAME="LAST_UPDATED" CONTENT="19/Mar/16">
+    
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+</HEAD>
+
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+
+/************************************************************
+*
+Version 1.31 (03/Mar/15) - Doug Luttrell
+a.  Removed a space that was showing up in the href tag that caused the hyperlink 
+        to not work properly.  Marked by 'space'.
+        
+Version 1.3 (2/21/15) - Sara Luttrell
+a.  Add a META tag to the top for the LAST_UPDATED value 
+b.  Change Test Kit ID to Testkit ID.  
+c.  Change the sort to be by the Date instead of the Transaction ID.
+d.  Fix some CSS wonkiness.
+e.  Change labels in the dropdown to match other sources
+f.  Change sort order to date
+g.  Move buttons to outside the table DIV's
+
+*
+* 1.4 - Writtrn by Mark Jacobs on 09/25/15. Marked by 1dot4.
+*           Editing the run statements to conform with new pathing practice; RUN VALUE(SEARCH(*)).
+*           Edited the display to use v-prog-low-date and v-prog-high-date variables.
+*
+*   1.41 - written by DOUG LUTTRELL on 01/Oct/15.  Corrected the pathing issues for the RUN command.
+*               Marked by 1dot41.
+*
+*   1.5 - written by DOUG LUTTRELL on 05/Oct/15.  Again with the pathing.  Also incorporated the changes
+*           that my Dad found relating to the sub date code when nothing is passed across.  Marked by 1dot5.
+*   1.51 - written by DOUG LUTTRELL on 08/Oct/15.  DIVs, etc.  Not marked.
+*   1.52 - Written by Jacob Luttrell on 09/Nov/15.  Added more statuses to the dropdown list.
+*           Marked by 1dot52.
+*   1.6 - Written by Jacob Luttrell on 3/Mar/16. Replaced the action list with the new .i file with v11.1 validated
+*           values and order. Added new fields for v11.1 release Marked by 1dot6.
+*   1.7 - Written by Jacob Luttrell on 17/Mar/16. Changed the date of the search from trh mod date to trh date and added
+*           the deleted field to the search. Marked by /* 1dot7 */
+*   1.71 - written by Jacob Luttrell on 19/Mar/16. sort by trh_date rather than trh_modified_date. Marked by 1dot71.
+************************************************************/
+
+{&OUT}
+    "</HEAD>" SKIP
+    "<BODY class='inside'>".
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+
+/********************************************  Variable Definitions  ****************************************************/
+
+/***  Database Variable  ***/
+
+DEFINE VARIABLE v-low-stateprov     LIKE addr_mstr.addr_stateprov           NO-UNDO.
+DEFINE VARIABLE v-high-stateprov    LIKE addr_mstr.addr_stateprov           NO-UNDO.
+DEFINE VARIABLE v-low-country       LIKE addr_mstr.addr_country             NO-UNDO.
+DEFINE VARIABLE v-high-country      LIKE addr_mstr.addr_country             NO-UNDO.
+DEFINE VARIABLE v-ID                LIKE trh_hist.trh_ID                    NO-UNDO.
+DEFINE VARIABLE v-low-item          LIKE trh_hist.trh_item                  NO-UNDO.
+DEFINE VARIABLE v-high-item         LIKE trh_hist.trh_item                  NO-UNDO.
+DEFINE VARIABLE v-action            LIKE trh_hist.trh_action                NO-UNDO.
+DEFINE VARIABLE v-low-qty           LIKE trh_hist.trh_qty                   NO-UNDO.
+DEFINE VARIABLE v-high-qty          LIKE trh_hist.trh_qty                   NO-UNDO.
+DEFINE VARIABLE v-low-date          AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE v-high-date         AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE v-low-ID            LIKE trh_hist.trh_ID                    NO-UNDO.
+DEFINE VARIABLE v-high-ID           LIKE trh_hist.trh_ID                    NO-UNDO.
+DEFINE VARIABLE v-low-serial        LIKE trh_hist.trh_serial                NO-UNDO.
+DEFINE VARIABLE v-high-serial       LIKE trh_hist.trh_serial                NO-UNDO.
+DEFINE VARIABLE v-low-seq           LIKE trh_hist.trh_sequence              NO-UNDO.
+DEFINE VARIABLE v-high-seq          LIKE trh_hist.trh_sequence              NO-UNDO.
+
+DEFINE VARIABLE v-from-peop-id      LIKE trh_hist.trh_people_id             NO-UNDO.        /* 1dot6 */
+DEFINE VARIABLE v-to-peop-id        LIKE trh_hist.trh_people_id             NO-UNDO.        /* 1dot6 */
+DEFINE VARIABLE v-from-other-id     LIKE trh_hist.trh_other_ID              NO-UNDO.        /* 1dot6 */
+DEFINE VARIABLE v-to-other-id       LIKE trh_hist.trh_other_ID              NO-UNDO.        /* 1dot6 */
+/***  Administrator Variables  ***/
+
+DEFINE VARIABLE v-act               AS INTEGER                              NO-UNDO.  /***  controls flow of program  ***/
+DEFINE VARIABLE v-ITfeedback        AS LOGICAL INITIAL NO                   NO-UNDO.  /***  debug messages  ***/
+
+DEFINE VARIABLE v-prog-low-date     LIKE trh_hist.trh_modified_date         NO-UNDO.
+DEFINE VARIABLE v-prog-high-date    LIKE trh_hist.trh_modified_date         NO-UNDO.
+
+DEFINE VARIABLE x AS INTEGER NO-UNDO.
+
+/* ************************************************  HTML get-values  ********************************************************* */
+
+														IF v-ITfeedback = YES THEN 
+														    {&OUT} 
+														       "<h3>After Progress Variable Definations, before HTML Assigns</h3>".
+        
+ASSIGN
+
+    v-act               = INTEGER (get-value ("h-act"))
+
+    v-low-date          = (get-value    ("h-low-date"))
+    v-high-date         = (get-value    ("h-high-date"))
+    v-low-qty           = DECIMAL (get-value ("h-low-qty"))
+    v-high-qty          = DECIMAL (get-value ("h-high-qty")) 
+    v-low-ID            = INTEGER (get-value ("h-low-ID"))
+    v-high-ID           = INTEGER (get-value ("h-high-ID"))
+    v-action            = get-value          ("h-action")
+    v-low-item          = get-value          ("h-low-item")
+    v-high-item         = get-value          ("h-high-item")
+    v-low-serial        = get-value          ("h-low-serial")
+    v-high-serial       = get-value          ("h-high-serial")
+    v-low-seq           = INTEGER (get-value ("h-low-seq"))
+    v-high-seq          = INTEGER (get-value ("h-high-seq"))
+    v-from-peop-id      = INTEGER (get-value("h-from-peop-id"))                                      /* 1dot6 */
+    v-to-peop-id        = INTEGER (get-value("h-to-peop-id"))                                        /* 1dot6 */
+    v-from-other-id     = get-value("h-from-other-id")                                               /* 1dot6 */
+    v-to-other-id       = get-value("h-to-other-id")                                                 /* 1dot6 */
+    .
+
+        
+IF v-low-date <> "" THEN DO:                                                                            /* 1dot5 */
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                                                            /* 1dot41 */
+        (v-low-date, OUTPUT v-prog-low-date).
+END.   /** of if v-low-date <> "" **/                                                                   /* 1dot5 */
+
+IF v-high-date <> "" THEN DO:                                                                           /* 1dot5 */
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                                                            /* 1dot41 */
+        (v-high-date, OUTPUT v-prog-high-date).
+END.  /** of if v-high-date <> "" **/                                                                   /* 1dot5 */
+
+																				IF v-ITfeedback = YES THEN 
+																				    {&OUT} 
+																				        "<h3>After  HTML Assigns</h3><br><h3>Act = "
+																				        v-act "... </h3>".
+
+/* ********************************************  Act - 0 "Search" Criteria  ************************************************** */
+IF v-act = 0 THEN DO:
+    
+																				    IF v-ITfeedback = YES THEN 
+																				    {&OUT} 
+																				        "<h3>Inside Act 0, Start</h3><br><h3>Act = "
+																				        v-act "...</h3> ".
+    
+    {&OUT}
+        "<div class='row'>"             SKIP
+        "<div class='grid_3'></div>"    SKIP
+        "<div class='grid_6'>"          SKIP
+        "<div class='table_2col'>"      SKIP
+        "<form>" SKIP
+        "   <table>"    SKIP
+        "       <tr>"   SKIP
+        "           <th colspan=4>Search Criteria</th>" SKIP
+        "       </tr>"  SKIP 
+        "       <tr>"   SKIP
+        "           <td> Test Type</td>" SKIP
+        "           <td><input type='text' name='h-low-item' value='" v-low-item "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-item' value='" v-high-item "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td>TestKit ID</td>" SKIP
+        "           <td><input type='text' name='h-low-serial' value='" v-low-serial "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-serial' value='" v-high-serial "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td> Test Sequence</td>" SKIP
+        "           <td><input type='text' name='h-low-seq' value='" v-low-seq "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-seq' value='" v-high-seq "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td> Date</td>" SKIP
+        "           <td><input type='date' name='h-low-date' value='" v-low-date "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='date' name='h-high-date' value='" v-high-date "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td> User ID</td>" SKIP
+        "           <td><input type='text' name='h-low-ID' value='" v-low-ID "'/></td>" SKIP
+        "           <td style='width:15px;'>To</td>" SKIP
+        "           <td><input type='text' name='h-high-ID' value='" v-high-ID "'/></td>" SKIP
+        "       </tr>"  SKIP
+        "       <tr>"   SKIP
+        "           <td> Action</td>" SKIP
+        "           <td colspan=3>" SKIP
+        "               <select name='h-action'>"                               SKIP.         
+        
+        {../depot/src/WebSpeed/StatusListDropDown.i}.                                                                                           /* 1dot6 */                                                                                
+        
+/*        "                   <option value=''></option>"                         SKIP                                                                                */
+/*        "                   <option value='Created'>Created</option>"           SKIP                                                                                */
+/*        "                   <option value='In Stock'>In_Stock</option>"         SKIP                                                                                */
+/*        "                   <option value='DELETED'>DELETED</option>"           SKIP                                                                    /* 1dot52 */*/
+/*        "                   <option value='Sold'>Sold</option>"                 SKIP                                                                                */
+/*        "                   <option value='Shipped'>Shipped</option>"           SKIP                                                                                */
+/*        "                   <option value='Collected'>Collected</option>"       SKIP                                                                    /* 1dot52 */*/
+/*        "                   <option value='Recieved'>Lab_RCVD</option>"         SKIP                                                                                */
+/*        "                   <option value='LAB_PROCESS'>LAB_PROCESS</option>"   SKIP                                                                                */
+/*        "                   <option value='HHI Recieved'>HHI_RCVD</option>"     SKIP                                                                                */
+/*        "                   <option value='Loaded'>Loaded</option>"             SKIP                                                                                */
+/*        "                   <option value='Processed'>Processed</option>"       SKIP                                                                                */
+/*        "                   <option value='Printed'>Printed (MPA)</option>"     SKIP                                                                                */
+/*        "                   <option value='Burned'>Burned (MPA)</option>"       SKIP                                                                                */
+/*        "                   <option value='Complete'>Completed</option>"        SKIP                                                                                */
+/*        "                   <option value='VOID'>VOID</option>"                 SKIP                                                                    /* 1dot52 */*/
+/*        "                   <option value='VEND_PAID'>VEND_PAID</option>"       SKIP                                                                    /* 1dot52 */*/
+/*        "                   <option value='BLANK'>BLANK</option>"               SKIP                                                                    /* 1dot52 */*/
+    {&OUT}
+        "               </select>"                                              SKIP                                                          
+        "           </td>" SKIP
+        "       </tr>" SKIP
+     /* 1dot6 --> */
+        "       <tr>" SKIP
+        "           <td>People ID</td>" SKIP
+        "           <td><input type='text' name='h-from-peop-id' value='" v-from-peop-id "'/></td>" SKIP
+        "           <td>To</td>" SKIP
+        "           <td><input type='text' name='h-to-peop-id' value='" v-to-peop-id "'/></td>" SKIP
+        "       </tr>" SKIP
+        "       <tr>" SKIP
+        "           <td>Magento ID</td>" SKIP
+        "           <td><input type='text' name='h-from-other-id' value='" v-from-other-id "'/></td>" SKIP
+        "           <td>To</td>" SKIP
+        "           <td><input type='text' name='h-to-other-ID' value='" v-to-other-ID "'/></td>" SKIP
+        "       </tr>" SKIP
+     /* <-- 1dot6 */
+        "   </table>"   SKIP
+        "</div>" SKIP        
+        "</div><!-- end of grid_6 -->"
+        "<div class='grid_3'></div>"
+        "</div>"
+        
+        "<div class='row'>" SKIP
+		"   <div class='grid_3'> </DIV>" SKIP
+		
+        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP
+		"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='1' class='btn'>Search</BUTTON></div>" SKIP
+		"   <div class='grid_2'> </DIV>" SKIP
+		"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+		"   <div class='grid_3'> </DIV>" SKIP
+		"</div>" SKIP
+		"<BR>" SKIP
+
+        "</form>"
+                .
+
+END. /*** of v-act = "Search" Then DO: ***/
+
+											IF v-ITfeedback = YES THEN 
+											    {&OUT} 
+											        "<h3>Just after END. /** v-act = 0 **/ about to start Act 1</h3><br><h3>Act = "
+											        v-act "... </h3>".
+
+/* *************************************************  Act - 1 "Report"  ****************************************************** */
+IF v-act = 1 THEN DO:
+    
+																				    IF v-ITfeedback = YES THEN 
+																				        {&OUT} 
+																				            "<h3>Inside Act 1</h3><br><h3>Act = "
+																				            v-act "... </h3>".
+
+    {&OUT}
+        "<div class='row'>" SKIP
+        "<div class='grid_1'></div>" SKIP
+        "<div class='grid_10'>" SKIP
+        "<form>"        SKIP
+        "<div class='table_report_FromTo'>" SKIP
+        "   <table>"    SKIP
+        "       <thead>"    SKIP
+        "           <tr>"   SKIP
+        "               <th colspan=12 " /* 15 */ ">Transaction History Report</th>" SKIP
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <td>From</th>"              SKIP
+        "               <td>" v-low-serial " / " v-low-seq "</td>"      SKIP            /* 1dot71 */
+        "               <td>" v-low-item "</td>"     SKIP      
+        "               <td>" v-prog-low-date "</td>"     SKIP  /* 1dot4 */
+        "               <td>" v-low-qty "</td>"      SKIP
+        "               <td rowspan=2>" v-action "</td>"       SKIP
+        "               <td>" v-low-ID "</td>"       SKIP 
+        "               <td>" v-from-peop-id "</td>" SKIP       /* 1dot6 */
+        "               <td>" v-from-other-id "</td>" SKIP      /* 1dot6 */
+        "               <td colspan=3 " /* 5 */ " rowspan=2></td>" SKIP     /* 1dot6 */                   
+        "           </tr>"  SKIP
+        "           <tr>"   SKIP
+        "               <td>To</th>"                SKIP
+        "               <td>"v-high-serial " / " v-high-seq "</td>"     SKIP            /* 1dot71 */
+        "               <td>"v-high-item "</td>"    SKIP       
+        "               <td>"v-prog-high-date "</td>"    SKIP  /* 1dot4 */
+        "               <td>"v-high-qty "</td>"     SKIP
+/*        "               <td>-</td>"                 SKIP*/
+        "               <td>"v-high-ID "</td>"      SKIP 
+        "               <td>" v-to-peop-id "</td>" SKIP       /* 1dot6 */
+        "               <td>" v-to-other-id "</td>" SKIP      /* 1dot6 */
+        "           </tr>"  SKIP                    
+        "           <tr>"   SKIP
+        "               <th></td>"                  SKIP
+        "               <th>TestKit ID / TK Sequence</th>"       SKIP                   /* 1dot71 */
+        "               <th>Test Type</th>"         SKIP
+        "               <th>Date </th>"             SKIP
+        "               <th>Quantity</th>"          SKIP
+        "               <th>Action</th>"            SKIP
+        "               <th>Transaction ID</th>"    SKIP
+        "               <th>Person</th>"            SKIP      /* 1dot7 */
+        "               <th>Magento ID</th>"        SKIP      /* 1dot6 */
+        "               <th>Order Number</th>"      SKIP      /* 1dot6 */
+        "               <th>Reference</th>"         SKIP      /* 1dot6 */        
+/*        "               <th>Date</th>"              SKIP      /* 1dot6 */*/
+/*        "               <th>Time</th>"              SKIP      /* 1dot6 */*/
+        "               <th>Comments</th>"          SKIP      /* 1dot6 */
+        "           </tr>"  SKIP
+        "       </thead>"   SKIP.
+    
+    /* 4ea of doom*/
+    FOR EACH trh_hist WHERE 
+        (trh_hist.trh_serial        >= v-low-serial  OR v-low-serial = "")     AND 
+        (trh_hist.trh_serial        <= v-high-serial OR v-high-serial = "")    AND
+        (trh_hist.trh_sequence      >= v-low-seq     OR v-low-seq = 0)         AND 
+        (trh_hist.trh_sequence      <= v-high-seq    OR v-high-seq = 0)        AND
+        
+        (trh_hist.trh_date >= v-prog-low-date    OR v-prog-low-date = ? )       AND     /* 1dot7 */
+        (trh_hist.trh_date <= v-prog-high-date   OR v-prog-high-date = ? )      AND     /* 1dot7 */
+        
+/*        (trh_hist.trh_modified_date >= v-prog-low-date    OR v-prog-low-date = ? )       AND*/
+/*        (trh_hist.trh_modified_date <= v-prog-high-date   OR v-prog-high-date = ? )      AND*/
+        (trh_hist.trh_qty           >= v-low-qty     OR v-low-qty = 0)         AND
+        (trh_hist.trh_qty           <= v-high-qty    OR v-high-qty = 0)        AND
+        (trh_hist.trh_item          >= v-low-item    OR v-low-item = "")       AND
+        (trh_hist.trh_item          <= v-high-item   OR v-high-item = "")      AND
+        (trh_hist.trh_ID            >= v-low-ID      OR v-low-ID = 0)          AND 
+        (trh_hist.trh_ID            <= v-high-ID     OR v-high-ID = 0)         AND
+        (trh_hist.trh_action         = v-action      OR v-action = "")         AND
+        (trh_hist.trh_people_id     <= v-from-peop-id OR v-from-peop-id = 0)   AND      /* 1dot6 */
+        (trh_hist.trh_people_id     >= v-to-peop-id OR v-to-peop-id = 0)       AND      /* 1dot6 */
+        (trh_hist.trh_other_ID      <= v-from-other-id OR v-from-other-id = "") AND     /* 1dot6 */
+        (trh_hist.trh_other_ID      >= v-to-other-id OR v-to-other-id = "")  AND        /* 1dot6 */
+        trh_hist.trh_deleted        = ?                                                 /* 1dot7 */
+        NO-LOCK
+                BREAK BY trh_hist.trh_serial BY trh_hist.trh_sequence BY trh_hist.trh_date BY trh_hist.trh_ID:   /* 1dot71 */
+                
+        
+        x = x + 1.
+                            
+            {&OUT}
+        "       <tr>" SKIP
+        "           <td></td>"  SKIP
+        "           <td>" trh_hist.trh_serial " / " trh_hist.trh_sequence      "</td>"     SKIP         /* 1dot71 */
+        "           <td>" trh_hist.trh_item          "</td>"     SKIP  
+/*        "           <td>" trh_hist.trh_modified_date "</td>"     SKIP*/
+        "           <td>" trh_hist.trh_date "</td>"     SKIP                /* 1dot7 */
+        "           <td>" trh_hist.trh_qty           "</td>"     SKIP
+        "           <td>" trh_hist.trh_action        "</td>"     SKIP 
+        "           <td><a href=~"../../DataHub/rcode/TRH-detail-R.r?h-tranID="        /* removed space after tranID= */
+                            trh_hist.trh_ID 
+					        "&h-act=1&whattorun=1.42&submit=Search~">" 
+					        trh_hist.trh_ID "</a></td>"          SKIP.
+	/* 1dot7 --> */		
+	   IF trh_hist.trh_people_id > 0 THEN 
+	   
+	       FIND people_mstr WHERE people_mstr.people_id = trh_hist.trh_people_id NO-LOCK NO-ERROR.
+	       
+	       IF AVAILABLE (people_mstr) THEN 
+	    
+	    {&OUT}   
+	    "         <td>" people_mstr.people_lastname ", " people_mstr.people_firstname "</td>" SKIP.   
+		  ELSE 
+		  {&OUT}
+		      "<td></td>" SKIP.
+	/* <-- 1dot7 */	  			        
+			{&OUT}		        
+/*		"           <td>" trh_hist.trh_people_id "</td>"         SKIP      /* 1dot6 */*/
+        "           <td>" trh_hist.trh_other_ID "</td>"          SKIP      /* 1dot6 */
+        "           <td>" trh_hist.trh_order "</td>"             SKIP      /* 1dot6 */
+        "           <td>" trh_hist.trh_ref "</td>"               SKIP      /* 1dot6 */
+/*        "           <td>" trh_hist.trh_date "</td>"              SKIP      /* 1dot6 */*/
+/*        "           <td>" trh_hist.trh_time "</td>"              SKIP      /* 1dot6 */*/
+        "           <td>" trh_hist.trh_comments "</td>"          SKIP      /* 1dot6 */
+        "       </tr>" SKIP.
+                                                                                  
+																		        IF v-ITfeedback = YES THEN 
+																		            {&OUT} 
+																		                "<h3>Inside 4ea of doom</h3><br><h3>Act = "
+																		                v-act "... </h3>".
+        
+    END. /* of 4ea of doom */
+    
+    {&OUT}    
+        "       <TFOOT>" SKIP
+        "           <tr>"   SKIP
+        "               <td colspan=12 " /* 15 */ ">End of Report" /* " - Record Count = " x */ "</td>" SKIP
+        "           </tr>"  SKIP
+        "       </TFOOT>" SKIP
+        "   </table>"       SKIP
+        "</div> "           SKIP
+
+        "</div><!-- of grid_10 -->" SKIP
+        "<div class='grid_1'></div>"
+        "</div>"
+        "<br/>"             SKIP
+        "<div class='row'>" SKIP
+        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP
+		"   <div class='grid_5'> </DIV>" SKIP
+		"   <div class='grid_2'><button type='submit' name='h-act' value='0' class='btn'>Search Again</BUTTON></div>" SKIP
+		"   <div class='grid_5'> </DIV>" SKIP
+		"</div>" SKIP
+		"<BR>" SKIP.
+
+END. /*** of If Act = "SEARCH" THEN DO: ***/  
+
+  
+</SCRIPT>
+</BODY>
+</HTML>

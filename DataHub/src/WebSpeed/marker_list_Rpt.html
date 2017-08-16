@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Marker List Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:           marker_list_Rpt.r
+    Description:    report page for the marker list table in the HHI database
+    Created:        10/14/14
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE from_item   LIKE marker_list.marker_item NO-UNDO.
+DEFINE VARIABLE to_item     LIKE marker_list.marker_item NO-UNDO.
+DEFINE VARIABLE from_disply LIKE marker_list.marker_display NO-UNDO.
+DEFINE VARIABLE to_disply   LIKE marker_list.marker_display NO-UNDO.
+DEFINE VARIABLE from_desc   LIKE marker_list.marker_desc NO-UNDO.
+DEFINE VARIABLE to_desc     LIKE marker_list.marker_desc NO-UNDO.
+
+DEFINE VARIABLE act         AS CHARACTER NO-UNDO.
+
+/********************** assign stuff ********************************/
+ASSIGN 
+    act         = get-value("s-act")
+
+    from_item   = get-value("s-from_item")
+    to_item     = get-value("s-to_item")
+    from_disply = get-value("s-from_disply")
+    to_disply   = get-value("s-to_disply")
+    from_desc   = get-value("s-from_desc")
+    to_desc     = get-value("s-to_desc").
+
+IF act = "" THEN 
+    ASSIGN 
+        act = "Search".
+        
+/*********************** search **************************************/
+IF act = "Search" THEN DO:
+   {&OUT} 
+		"<CENTER>
+		<div class='table_2col'>
+			<FORM>   
+				<Table>
+					<tr>
+					    <th colspan=4> Search Criteria</th>"
+					"</tr> 
+					<tr>
+					    <td>Item</td><td><INPUT type='text' name='s-from_item'/></td>
+					    <td>To</td><td><INPUT type='text' name='s-to_item'/></td>
+					</tr>
+					<tr>
+					    <td>Display</td><td><INPUT type='text' name='s-from_disply'/></td>
+					    <td>To</td><td><INPUT type='text' name='s-to_disply'/></td>
+					</tr>
+					<tr>
+					    <td>Description</td><td><INPUT type='text' name='s-from_desc'/></td>
+					    <td>To</td><td><INPUT type='text' name='s-to_desc'/></td>
+					</tr>
+				</Table>
+				<INPUT type='hidden' name='s-act' value='Results' />
+				<INPUT type='submit' name='s-submit' value='Submit'/>
+				<INPUT type='reset' name='s-reset' value='Reset'/>
+				<INPUT type='button' name='s-back' value='Back'/>
+		    </FORM>  
+		</div>".
+END. /*** act 0 ***/
+/******************************************* results **************************************/
+IF act = "Results" THEN DO:
+    
+    {&OUT}
+        "<CENTER>
+        <form>
+            <div class='table_report_FromTo'>
+                <table>
+                    <thead>
+                        <tr>
+                            <td colspan=8>Marker Report</td>
+                        </tr>
+                        <tr>
+                            <th>From</th>
+                            <th>"from_item "</th>
+                            <th>"from_disply "</th>
+                            <th>"from_desc "</th>
+                            <th colspan=5></th>
+                        </tr>
+                        <tr>
+	                        <th>To</th>
+	                        <th>"to_item "</th>
+	                        <th>"to_disply "</th>
+	                        <th>"to_desc "</th>
+	                        <th colspan=5></th>
+	                    </tr>        
+                        <tr>
+                            <td></td>
+                            <td>Item Name</td>
+                            <td>Display</td>
+                            <td>Description</td>
+                            <td>Created By</td>
+                            <td>Date Created</td>
+                            <td>Modified By</td>
+                            <td>Date Modified</td>
+                        </tr>
+                    </thead>".      
+       
+FOR EACH marker_list WHERE
+    ((marker_list.marker_item >= from_item) OR
+     (from_item = "")) AND
+    ((marker_list.marker_item <= to_item) OR
+     (to_item = "")) AND
+    ((marker_list.marker_display >= from_disply) OR
+     (from_disply = "")) AND
+    ((marker_list.marker_display <= to_disply) OR
+     (to_disply = "")) AND 
+    ((marker_list.marker_desc >= from_desc) OR
+     (from_desc = "")) AND
+    ((marker_list.marker_desc <= to_desc ) OR
+     (to_desc = "")) AND 
+     marker_list.marker_deleted = ?
+    BY marker_list.marker_item:
+        
+        {&OUT}
+            "<tr>
+                <td></td>
+                <td>" marker_list.marker_item "</td>
+                <td>" marker_list.marker_display "</td>
+                <td>" marker_list.marker_desc "</td>
+                <td>" marker_list.marker_created_by "</td>
+                <td>" marker_list.marker_create_date "</td>
+                <td>" marker_list.marker_modified_by "</td>
+                <td>" marker_list.marker_modified_date "</td>
+            </tr>".
+            
+    
+    
+END. /*** for each ***/
+
+    {&OUT}
+        "<tr>
+            <td colspan=8>End of Report</td>
+        </tr>
+     </table>
+     <form>
+        <input type='hidden' name='s-act' value='Search' />
+        <input type='submit' name='submit' value='Search Again' />
+     </form>
+     </div>".
+     
+END. /*** act 1 ***/
+</SCRIPT>
+</CENTER>
+</BODY>
+</HTML>

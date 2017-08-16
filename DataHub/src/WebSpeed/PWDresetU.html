@@ -1,0 +1,252 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Your Name">
+<TITLE>Password Reset</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="24/May/16">
+    <META NAME='LAST_UPDATED' CONTENT="24/May/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Template Notes: 
+        This template is designed to be used with a simple search report.
+        It has a link designed to send the user to a more advanced (From
+        To) search. The validation act allows you to decide weather the 
+        criteria the user is inputting is valid for your table to search
+        by (outside date range for example).  Quoted areas are either
+        instuctions or place holders for your variables and fields. 
+    
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-o-password    LIKE usr_mstr.usr_password NO-UNDO.
+DEFINE VARIABLE v-n-password    LIKE usr_mstr.usr_password NO-UNDO.
+DEFINE VARIABLE v-reenter-p     AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-usrname       LIKE usr_mstr.usr_name NO-UNDO.
+DEFINE VARIABLE v-usrid         LIKE usr_mstr.usr_people_ID NO-UNDO.
+/*DEFINE VARIABLE v-usrid         AS INTEGER INITIAL 108411 NO-UNDO.*/
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act             = get-value("h-act")
+    /* additional variables here */
+    v-o-password    = get-value("h-o-password")
+    v-n-password    = get-value("h-n-password")
+    v-usrname       = get-value("h-usrname")
+    v-usrid         = INTEGER(get-value("c-usrid"))
+    v-reenter-p     = get-value("h-reenter-p")
+    .
+
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+IF act = "VALIDATION" THEN DO: 
+    
+    /* add a validation for the search criteria based off of the table(s) you 
+    are searching by. */
+    
+    FIND usr_mstr WHERE usr_mstr.usr_people_ID = v-usrid AND 
+                        usr_mstr.usr_password = v-o-password NO-LOCK NO-ERROR.
+
+    IF AVAILABLE (usr_mstr) THEN
+      
+        IF v-n-password = v-reenter-p THEN
+      
+	        ASSIGN    
+	            act = "UPDATE".
+        
+        ELSE DO:  
+	        {&OUT}
+	            "<div class='row'>" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "<DIV class='grid_6'>" SKIP 
+	                "<center><h2>New password does not match reentered password. Reenter passwords.</h2></center>" SKIP
+	            "</DIV>         <!-- end of grid_6 -->" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "</div>" SKIP.
+	            
+	        ASSIGN
+	            act = "INITIAL".
+
+        END. /* else do not avail */    
+        
+    ELSE DO:
+        {&OUT}
+            "<div class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<center><h2>Incorrect old password. Reenter passwords.</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP.
+            
+        ASSIGN
+            act = "INITIAL".
+
+    END. /* else do not avail */
+END. /* validation */    
+        
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        FIND usr_mstr WHERE usr_mstr.usr_people_ID = v-usrid NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (usr_mstr) THEN DO:
+        
+            ASSIGN 
+                v-usrid = usr_mstr.usr_people_ID
+                v-usrname = usr_mstr.usr_name. 
+            
+	        {&OUT}
+	            "<form>" SKIP
+	            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP 
+	            "<DIV class='row'>" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "<DIV class='grid_6'>" SKIP   
+	            "<div class='table_col'>" SKIP
+	            "   <table>" SKIP(1)
+	            "       <tr>" SKIP
+	            "           <th colspan=2>Password Reset for " v-usrname "</th>" SKIP
+	            "       </tr>" SKIP(1)
+	            
+	            "       <tr>" skip
+	            "           <td>Old Password</td>" skip
+	            "           <td><input type='password' name='h-o-password'/></td>" skip           
+	            "       </tr>" SKIP(1)
+	        /* copy and paste above <tr>...</tr> for more fields */
+	            "       <tr>" skip
+                "           <td>New Password</td>" skip
+                "           <td><input type='password' name='h-n-password'/></td>" skip           
+                "       </tr>" SKIP(1)
+                "       <tr>" skip
+                "           <td>Reenter Password</td>" skip
+                "           <td><input type='password' name='h-reenter-p'/></td>" skip           
+                "       </tr>" SKIP(1)
+	            "   </table>" skip
+	            "</div>" skip      
+	            "</DIV>         <!-- end of grid_6 -->" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP  
+	            "</DIV>     <!-- end of row -->" SKIP
+	            "<BR>" SKIP
+	            "<div class='row'>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Submit</BUTTON></div>" SKIP
+				"   <div class='grid_2'> </DIV>" SKIP
+				"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+				"   <div class='grid_3'> </DIV>" SKIP
+				"</div>" SKIP
+				"</form>" SKIP.
+        END. 
+        ELSE 
+            {&OUT}
+                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP 
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP   
+                "<h2><center>Error: Unable to find user. Contact Solsource.</center></h2>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP  
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP
+                "<div class='row'>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Submit</BUTTON></div>" SKIP
+                "   <div class='grid_2'> </DIV>" SKIP
+                "   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "</div>" SKIP.
+    END. /* INITIAL */
+    WHEN "UPDATE" THEN DO:
+        
+        FIND FIRST usr_mstr WHERE usr_mstr.usr_people_ID = v-usrid EXCLUSIVE-LOCK. 
+        
+	       IF AVAILABLE (usr_mstr) THEN DO:        
+	            ASSIGN
+	                usr_mstr.usr_password = v-n-password
+	                usr_mstr.usr_password_reset = TODAY.          
+	        
+		        {&OUT}
+		            "<DIV class='row'>" SKIP
+		            "<DIV class='grid_12'>" SKIP
+		            "   <center><h2>Password has been reset.</h2></center>" SKIP  
+		            "</DIV>         <!-- end of grid_12 -->" SKIP
+		            "</DIV>     <!-- end of row -->" SKIP 
+		            "<BR>" SKIP 
+		            "<form action='../../DataHub/rcode/menu.html'>" SKIP
+		            "<div class='row'>" SKIP
+		            "   <div class='grid_5'> </DIV>" SKIP
+		            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+		            "   <div class='grid_2'><button type='submit' formaction='../../DataHub/rcode/menu.html' class='btn'>Enter InforMatrix</BUTTON></div>" SKIP
+		            "   <div class='grid_5'> </DIV>" SKIP
+		            "</div>" SKIP
+		            "</form>" SKIP.
+		    END. /* 4ea usr_mstr */ 
+		    ELSE 
+                {&OUT}
+		            "<DIV class='grid_3'> </DIV>" SKIP
+		            "<DIV class='grid_6'>" SKIP 
+		                "<h2>An error has occured while trying to update your password. Contact Solsource.</h2>" SKIP
+		            "</DIV>         <!-- end of grid_6 -->" SKIP
+		            "<DIV class='grid_3'> </DIV>" SKIP
+		            "<BR>" SKIP 
+		            "<form>" SKIP
+		            "<div class='row'>" SKIP
+		            "   <div class='grid_5'> </DIV>" SKIP
+		            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+		            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+		            "   <div class='grid_5'> </DIV>" SKIP
+		            "</div>" SKIP
+		            "</form>" SKIP.		           
+    END. /* SEARCH */
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<div class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<h2>Could not find act " act ".</h2>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

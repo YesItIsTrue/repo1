@@ -1,0 +1,293 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD> 
+
+<TITLE>Menu Report</TITLE>
+
+<META NAME="AUTHOR" CONTENT="Jacob luttrell">
+    <META NAME="VERSION" CONTENT="1.1">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="3/Feb/16">
+    <META NAME="LAST_UPDATED" CONTENT="24/May/16">
+    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */   
+CREATE WIDGET-POOL.
+ 
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT language='SpeedScript'>
+{../depot/src/WebSpeed/menuname.i}. 
+  /*------------------------------------------------------------------
+    File:           CMSmenuR.html
+    Description:    Replacement for CMS-menur.html
+    Created:        3/Feb/16
+    Version History:
+        
+        1.1 - Written by Jacob Luttrell on 24/May/16.  Added Groups.
+                Marked by 1dot1.
+        
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE from-root       LIKE menu_mstr.menu_num NO-UNDO.
+DEFINE VARIABLE to-root         LIKE menu_mstr.menu_num NO-UNDO.
+DEFINE VARIABLE from-select     LIKE menu_mstr.menu_select NO-UNDO.
+DEFINE VARIABLE to-select       LIKE menu_mstr.menu_select NO-UNDO.
+DEFINE VARIABLE from-title      LIKE menu_mstr.menu_title NO-UNDO.
+DEFINE VARIABLE to-title        LIKE menu_mstr.menu_title NO-UNDO.
+DEFINE VARIABLE from-module     LIKE menu_mstr.menu_module NO-UNDO.
+DEFINE VARIABLE to-module       LIKE menu_mstr.menu_module NO-UNDO.
+DEFINE VARIABLE from-program    LIKE menu_mstr.menu_exprog NO-UNDO.
+DEFINE VARIABLE to-program      LIKE menu_mstr.menu_exprog NO-UNDO.
+DEFINE VARIABLE hidd            LIKE menu_mstr.menu__log01 NO-UNDO.
+DEFINE VARIABLE act             AS CHARACTER NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO NO-UNDO. 
+DEFINE VARIABLE x               AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-grp           AS CHARACTER NO-UNDO.                       /* 1dot1 */
+DEFINE VARIABLE displaylist     AS CHARACTER NO-UNDO.                       /* 1dot1 */
+DEFINE VARIABLE comma           AS CHARACTER NO-UNDO.                       /* 1dot1 */
+
+
+ASSIGN 
+    from-root     = get-value("h-from-root")
+    to-root       = get-value("h-to-root")
+    from-select   = INTEGER(get-value("h-from-select"))
+    to-select     = INTEGER(get-value("h-to-select"))
+    from-title    = get-value("h-from-title")
+    to-title      = get-value("h-to-title")
+    from-module   = get-value("h-from-module")
+    to-module     = get-value("h-to-module")
+    from-program  = get-value("h-from-program")
+    to-program    = get-value("h-to-program")
+    hidd          = IF get-value("h-hidd") = "yes" THEN YES ELSE IF get-value("h-hidd") = "NO" THEN NO ELSE ?
+    act           = get-value("h-act")
+    v-grp         = get-value("h-grp")                                       /* 1dot1 */    
+    .
+    
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL".    
+
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP   
+            "<div class='table_2col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=4>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Menu Root</td>" skip
+            "           <td><input type='text' name='h-from-root' value='" from-root "' /></td>" skip
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-root' value='" to-root "' /></td>" skip            
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>From Menu Choice</td>" skip
+            "           <td><input type='text' name='h-from-select' /></td>" skip
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-select' /></td>" skip            
+            "       </tr>" SKIP(1)            
+            "       <tr>" skip
+            "           <td>From Menu Label</td>" skip
+            "           <td><input type='text' name='h-from-title' value='" from-title "' /></td>" skip
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-title' value='" to-title "' /></td>" skip            
+            "       </tr>" SKIP(1)
+            "       <tr>" SKIP            
+            "           <td>From Module</td>" skip          
+            "           <td><input type='text' name='h-from-module' value='" from-module "' /></td>" SKIP                   
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-module' value='" to-module "' /></td>" SKIP 
+            "       <tr>" SKIP
+            "           <td>From Program Name</td>" skip
+            "           <td><input type='text' name='h-from-program' value='" from-program "' /></td>" SKIP 
+            "           <td>To</td>" skip
+            "           <td><input type='text' name='h-to-program' value='" to-program "' /></td>" SKIP
+            "       </tr>" skip
+            "       <tr>" SKIP
+            "           <td>Hidden?</td>" skip
+            "           <td colspan='3'><input type='radio' name='h-hidd' value='yes' />YES<BR><input type='radio' name='h-hidd' value='no' />NO</td>" SKIP 
+            "       </tr>" skip
+            "       <TR>" skip                                                                                                  /* 1dot1 */
+            "           <TD>Group(s)</TD>" skip                                                                                 /* 1dot1 */
+            "           <td colspan='3'><select name='h-grp' multiple>" skip.                                                   /* 1dot1 */    
+
+    FOR EACH grp_mstr NO-LOCK:                                                                                                  /* 1dot1 */
+    
+        {&OUT}                                                                                                                  /* 1dot1 */                                                                           
+            "               <option value='" grp_mstr.grp_ID "'>" grp_mstr.grp_ID "</option>" SKIP.                             /* 1dot1 */
+    
+    END.  /* 4ea. client_mstr */                                                                                                /* 1dot1 */
+    
+    {&OUT}                                                                                                                      /* 1dot1 */    
+            "               </select>" SKIP                                                                                     /* 1dot1 */
+            "           </td>" SKIP                                                                                             /* 1dot1 */
+            "       </tr>" skip                                                                                                 /* 1dot1 */
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report_FromTo'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan=8>Testkits - Paid by Customer</TH>" SKIP    /* thead, tr, th makes the silver bar */
+            "            </TR>" SKIP
+            "            <tr>" SKIP
+            "               <th>From</th>" SKIP
+            "               <th>" from-root "</th>" SKIP
+            "               <th>" from-select "</th>" SKIP
+            "               <th>" from-title "</th>" SKIP
+            "               <th>" from-module "</th>" SKIP
+            "               <th>" from-program "</th>" SKIP
+            "               <th rowspan='2'>" hidd "</th>" SKIP
+            "               <th rowspan='2'>&nbsp;</th>" SKIP                           /* 1dot1 */
+            "            </TR>" SKIP
+            "            <tr>" SKIP
+            "               <th>To</th>" SKIP
+            "               <th>" to-root "</th>" SKIP
+            "               <th>" to-select "</th>" SKIP
+            "               <th>" to-title "</th>" SKIP
+            "               <th>" to-module "</th>" SKIP
+            "               <th>" to-program "</th>" SKIP
+            "            </TR>" SKIP            
+            "            <TR>" SKIP
+            "               <th></th>" SKIP            
+            "               <Th>Menu Root</Th>" SKIP
+            "               <Th>Menu Choice</Th>" SKIP          /* thead, tr, td makes the blue bar */
+            "               <Th>Menu Label</Th>" SKIP
+            "               <Th>Module</Th>" SKIP
+            "               <th>Program Name</th>" SKIP  
+            "               <Th>Hidden?</Th>" SKIP
+            "               <th>Group(s)</th>" SKIP                                     /* 1dot1 */  
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1).
+            
+            FOR EACH menu_mstr WHERE ((menu_mstr.menu_num >= from-root) OR 
+                                (from-root = "")) AND 
+                               ((menu_mstr.menu_num <= to-root) OR 
+                                (to-root = "")) AND 
+                               ((menu_mstr.menu_select >= from-select) OR 
+                                (from-select = 0)) AND 
+                               ((menu_mstr.menu_select <= to-select) OR 
+                                (to-select = 0)) AND  
+                               ((menu_mstr.menu_title >= from-title) OR 
+                                (from-title = "")) AND 
+                               ((menu_mstr.menu_title <= to-title) OR 
+                                (to-title = "")) AND                                                                  
+                               ((menu_mstr.menu_module >= from-module) OR 
+                                (from-module = "")) AND 
+                               ((menu_mstr.menu_module <= to-module) OR 
+                                (to-module = "")) AND 
+                               ((menu_mstr.menu_exprog >= from-program) OR 
+                                 (from-program = "")) AND                                                                                 
+                                ((menu_mstr.menu_exprog <= to-program) OR 
+                                 (to-program = "")) AND
+                                ((menu_mstr.menu__log01 = hidd) OR 
+                                 (hidd = ?)) AND 
+                                menu_mstr.menu_deleted = ? NO-LOCK
+                                    BREAK BY menu_mstr.menu_num BY menu_mstr.menu_select:                                          
+           
+		           x = x + 1. 
+		           		       
+		              {&OUT}
+		                "       <TR>" SKIP
+		                "           <TD></TD>" SKIP
+		                "           <TD>" menu_mstr.menu_num "</TD>" SKIP
+		                "           <TD>" menu_mstr.menu_select "</TD>" SKIP
+		                "           <TD>" menu_mstr.menu_title "</TD>" SKIP
+		                "           <TD>" menu_mstr.menu_module "</td>" SKIP
+		                "           <TD>" menu_mstr.menu_exprog "</TD>" SKIP                
+		                "           <TD>" menu_mstr.menu__log01 "</td>" SKIP
+		                "           <TD>" SKIP.                                                                        /* 1dot1 */
+		                
+		           FOR EACH gmd_det WHERE gmd_det.gmd_menu_num = menu_mstr.menu_num AND                                /* 1dot1 */
+                                          gmd_det.gmd_menu_select = menu_mstr.menu_select                              /* 1dot1 */
+                               NO-LOCK BREAK BY gmd_det.gmd_menu_select BY gmd_det.gmd_grp_ID:                         /* 1dot1 */
+                            
+                       IF LAST-OF(gmd_det.gmd_menu_select) THEN                                                        /* 1dot1 */     
+                           ASSIGN                                                                                      /* 1dot1 */    
+                               comma = "".                                                                             /* 1dot1 */    
+                       ELSE                                                                                            /* 1dot1 */
+                           ASSIGN                                                                                      /* 1dot1 */
+                               comma = ", ".                                                                           /* 1dot1 */
+                          
+                       IF LOOKUP(STRING(gmd_det.gmd_grp_ID),v-grp) > 0 THEN                                            /* 1dot1 */
+                           ASSIGN                                                                                      /* 1dot1 */
+                               displaylist = displaylist + "<font color='red'>" + gmd_det.gmd_grp_ID + "</font>" + comma. /* 1dot1 */
+                       ELSE                                                                                            /* 1dot1 */
+                           ASSIGN                                                                                      /* 1dot1 */
+                               displaylist = displaylist + gmd_det.gmd_grp_ID + comma.                                 /* 1dot1 */
+                		                      
+                   END. /*** 4ea. gmd_det ****/                                                                        /* 1dot1 */
+		               
+                   {&OUT}    
+                              displaylist "</td>" SKIP.                                                                /* 1dot1 */                                                                              
+		            
+		           ASSIGN                                                                                              /* 1dot1 */
+		               displaylist = "".                                                                               /* 1dot1 */
+		         
+                {&OUT}                                                                                                 /* 1dot1 */
+                        "       </TR>" SKIP.
+
+            END. /* 4ea. people, emp, emph */
+               
+        {&OUT}          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN=8>" x " Records</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN=8>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+
+END CASE.      
+</SCRIPT>
+</BODY>
+</HTML>

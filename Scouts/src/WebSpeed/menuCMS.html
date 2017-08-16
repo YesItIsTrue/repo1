@@ -1,0 +1,314 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<HTML>
+ 
+<HEAD>  
+
+    <TITLE>InforMatrix - DEV</TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="4.01">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="29/Nov/13">
+    <META NAME="LAST_UPDATED" CONTENT="01/Aug/16">    
+   
+<SCRIPT language="SpeedScript">
+
+/**********************************************************************************
+ *
+ *  menu.html   -   Version 4.01
+ *
+ *  This program is based on the "CMS-menu-walk-html -stream.p" program 
+ *  written by Mark Jacobs.  It is designed to read from a database table
+ *  in a cyclical way to produce a multi-level menu structure.  While in theory
+ *  this supports an infinitely deep menu, in practice that wouldn't look too
+ *  pretty.  3 or 4 levels deep is about all you'll really want to do.
+ *
+ *  ----------------------------------------------------------------------------
+ *
+ *  Revision History:
+ *  -----------------
+ *  1.0 - written by Mark Jacobs.  Original Version.
+ *  2.0 - written by Doug Luttrell. Porting Mark's code into the new WebSpeed
+ *          environment as a test of PROGRESS v. 11.3.  Not marked.
+ *  3.0 - written by Trae Luttrell.  Implemented stylesheets and javascript to run
+ *          the menus under the new layout.  Not marked.
+ *  3.1 - written by Doug Luttrell.  Changed the menu layout to be more in line with
+ *          what we're intending.  Not marked.
+ *  3.2 - written by Doug Luttrell.  Changed to use the new menu detail report for
+ *          the main page (menupager.html).  Needs a few more touch-ups.  Marked by 3dot2.
+ *  3.3 - written by DOUG LUTTRELL.  Added support for hidden menus and deleted menus.  
+ *          Will need to be changed when menu_hidden is added to the schema.  Marked
+ *          by 3dot3.
+ *  3.5 - written by DOUG LUTTRELL.  Modified to make use of the new CSS stuff from
+ *          Quinton called 3.0.  Marked by 3dot5.
+ *  3.51 - written by DOUG LUTTRELL on 19/Feb/15.  Modified to have the new system name
+ *          that came from the naming contest (won by Scott Murphy).  InforMatrix.  Not marked.
+ *  3.52 - written by DOUG LUTTRELL on 10/Oct/15.  Splitting into 3 copies, PROD, TEST, and DEV.
+ *  3.53 - written by DOUG LUTTRELL on 03/Mar/16.  Changed to use updated CSS from Quinton
+ *          that supports RWD style.  Marked by 353.
+ *  4.0  - written by DOUG LUTTRELL on 31/Mar/16.  Incorporates the new CSS changes from 
+ *          the 11.1 version of InforMatrix.  Marked by 4dot0.
+ *  4.01 - written by DOUG LUTTRELL on 01/Aug/16.  Trying out the w3schools W3.CSS stuff.
+ *
+ 
+     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/menu-dev.css' />
+ 
+ ***********************************************************************************/
+ 
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+
+CREATE WIDGET-POOL.
+
+DEFINE VARIABLE v-environment AS CHARACTER NO-UNDO.
+
+IF SUBSTRING(THIS-PROCEDURE:FILE-NAME,11,3) = "CMS" THEN 
+    v-environment = "CMS".          /** for the CMS environment **/
+ELSE IF SUBSTRING(THIS-PROCEDURE:FILE-NAME,11,3) = "DEV" THEN
+    v-environment = "DEV".          /** for the DEV environment **/
+ELSE IF SUBSTRING(THIS-PROCEDURE:FILE-NAME,11,4) = "TEST" THEN
+    v-environment = "TEST".         /** for the TEST environment **/
+ELSE IF SUBSTRING(THIS-PROCEDURE:FILE-NAME,11,4) = "PROD" THEN
+    v-environment = "PROD".         /** for the PROD environment **/
+ELSE 
+    v-environment = "PROD".         /** if no other picked **/
+
+
+
+IF v-environment = "CMS" THEN 
+    {&OUT}
+        "<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/w3.css' />".
+ELSE IF v-environment = "DEV" THEN 
+    {&OUT}
+        "<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/menu-dev.css' />".
+ELSE IF v-environment = "TEST" THEN 
+    {&OUT}
+        "<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/menu-test.css' />".
+ELSE IF v-environment = "PROD" THEN 
+    {&OUT}
+        "<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/menu-prod.css' />".
+    
+</SCRIPT>
+
+<script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+
+<script src='/depot/src/HTMLContent/javascript/menu.js'></script>
+
+<script type="text/javascript">
+  window.console = window.console || function(t) {};
+</script>
+
+<script type="text/javascript">
+function zPrint(oTgt)
+{
+    oTgt.focus();
+    oTgt.print();
+}
+</script> 
+
+<SCRIPT language="SpeedScript">
+
+ 
+{&OUT}
+    "</HEAD>" SKIP(1)
+    
+    "<BODY>" SKIP(1)
+      
+    "<header class='im-header'>" SKIP(1)
+    
+    "<button class='menu-button-target' data-im-class='button-trigger'>" SKIP
+    "   <span class='menu-button'></span>" SKIP
+    "</button>" SKIP(1)
+    
+    "<nav class='im-nav'>" SKIP(1)
+    
+    "<div id='ribbon'>" SKIP.
+
+IF v-environment = "CMS" THEN 
+    {&OUT} "   <span id='content'>CMS Version</span>" SKIP.    
+ELSE IF v-environment = "DEV" THEN 
+    {&OUT} "   <span id='content'>Development Version</span>" SKIP.
+ELSE IF v-environment = "TEST" THEN 
+    {&OUT} "   <span id='content'>TEST Version</span>" SKIP.
+ELSE IF v-environment = "PROD" THEN 
+    {&OUT} "   <span id='content'>Production Version</span>" SKIP.
+         
+{&OUT}
+    "</div>" SKIP(1).
+    
+DEFINE VARIABLE ITshowmsg AS LOG INITIAL NO NO-UNDO.
+DEFINE VARIABLE localpathing AS LOG INITIAL YES NO-UNDO.    /* change to NO before putting on server */
+
+													IF ITshowmsg = YES THEN 
+													    {&OUT}
+													        "<UL>Program Information" SKIP
+													        "<LI>v-environment = " v-environment "</LI>" SKIP
+													        "<LI>this-procedure:file-name = " THIS-PROCEDURE:FILE-NAME "</LI>" SKIP
+													        "</UL>" SKIP(1).
+
+																										IF ITshowmsg = YES THEN 
+																										    {&OUT} "<P>Begin</P>".
+		 		 
+PROCEDURE menuwalk:
+ 
+	DEFINE INPUT PARAMETER total-menu LIKE menu_exprog	NO-UNDO.
+	
+	DEFINE VARIABLE menexhold LIKE MENU_exprog NO-UNDO.
+	DEFINE VARIABLE menunumber LIKE menu_mstr.menu_exprog NO-UNDO.			      
+	DEFINE VARIABLE modulepath AS CHARACTER NO-UNDO.
+	DEFINE VARIABLE entryfill AS CHARACTER FORMAT "x(16)" NO-UNDO.
+	DEFINE VARIABLE x AS INTEGER NO-UNDO.                         /** junk counter for menu filling **/
+	  						                                      					  						      
+	FOR EACH menu_mstr WHERE menu_mstr.menu_num = total-menu AND 
+	        menu_mstr.menu_deleted = ? AND                                                                    /* 3dot3 */
+	        menu_mstr.menu__log01 = NO NO-LOCK              /* is menu item hidden? */                        /* 3dot3 */
+	    BY menu_mstr.menu_num BY menu_mstr.menu_sel: 
+
+	    ASSIGN 
+	         menexhold   = IF INDEX(menu_mstr.menu_exprog,"?") = 0 THEN 
+	                          menu_mstr.menu_exprog + "?whattorun=" + menu_mstr.menu_num + "." + string(menu_mstr.menu_sel) 
+	                       ELSE 
+	                          menu_mstr.menu_exprog + "&whattorun=" + menu_mstr.menu_num + "." + string(menu_mstr.menu_sel) 
+	         modulepath  = IF menu_mstr.menu_module <> "" AND localpathing = YES then
+	                          "../../" + menu_mstr.menu_module + "/rcode/"
+	                       ELSE 
+	                          "".
+
+		IF menu_mstr.menu_exprog < "a" THEN DO:
+	     
+			IF menu_mstr.menu_exprog BEGINS "0." THEN 
+			    menunumber  = SUBSTRING(menu_mstr.menu_exprog,3).
+			ELSE 
+			    menunumber  = menu_mstr.menu_exprog.
+	                          
+/*			{&OUT} "<a class='menuitem submenuheader' href='menupager.html?whattorun="*/
+/*				menunumber                                                               */
+/*				"&h-menuheadername="  /* 3dot2 */                                        */
+/*				menu_mstr.menu_title                                                     */
+/*				"' target='mainpage'>"                                                   */
+/*				/*                                                                       */
+/*				menu_num " - "   /** will be needed again if we do n-level submenus **/  */
+/*				*/                                                                       */
+/*				menu_mstr.menu_sel                                                       */
+/*				". "                                                                     */
+/*				menu_mstr.menu_title                                                     */
+/*				"</a>" SKIP                                                              */
+/*				"<div class='submenu'><UL>" SKIP.                                        */
+
+            IF v-environment = "CMS" THEN DO: 
+                
+                {&OUT}
+                    "<div id='demoAcc' class='w3-accordion-content w3-white w3-card-4'>" SKIP
+                    "<div class='section-title'>" menu_mstr.menu_select ".</div>" SKIP
+                    menu_mstr.menu_title SKIP.
+                
+            END.  /** of if v-environment = CMS **/
+            
+            ELSE 
+	            {&OUT}
+	                "<li class='im-nav-list-item'>" SKIP
+	                "   <a href='' class='im-nav-list-item-link im-parent-item'>" SKIP
+	                "       <div class='section-title'>" menu_mstr.menu_select ".</div>" SKIP
+	                menu_mstr.menu_title "</a>" SKIP
+	                "   <ul class='im-nav-sublist'>" SKIP.
+			
+	        RUN menuwalk(menunumber).
+	        
+	        {&OUT}
+	           "   </ul>" SKIP
+	           "</li>" SKIP.
+	                          
+		END. /** of if menu_exprog < a ***/
+
+		ELSE DO: 
+	
+			entryfill = menu_mstr.menu_num + "." + STRING(menu_mstr.menu_sel) + " -".
+			
+																IF ITshowmsg = YES THEN 
+																    {&OUT} "<P>Pre-fill = " length(entryfill) " " entryfill "</P>".
+			
+			DO x = 7 TO LENGTH(menu_mstr.menu_num + "." + STRING(menu_mstr.menu_sel) + " -") BY -1:
+			    entryfill = entryfill + "-".
+			END.    /* of do x = 8 down to length of menunumber */
+			
+																IF ITshowmsg = YES THEN 
+																    {&OUT} "<P>Post-fill = " length(entryfill) " " entryfill "</P>".
+			
+/*			{&OUT} "<LI>" /** Nav pages ***/                                                        */
+/*				"<a href='" modulepath                                                                 */
+/*				menexhold "' target='mainpage'>"                                                       */
+/*				"<div class='sectionBlock'>"                                                           */
+/*				menu_mstr.menu_num "."                                                                 */
+/*				menu_mstr.menu_sel                                                                     */
+/*				"</div>" SKIP                                                                          */
+/*				"<div class='titleBlock'>"                                                             */
+/*				/**                                                                                    */
+/*				" -- "                                                                                 */
+/*				entryfill " "                                                                          */
+/*				**/                                                                                    */
+/*				menu_mstr.menu_title "</DIV></a></LI>" skip.     /** END of class='box' id='indent'	**/*/
+
+            {&OUT}
+                "<li class='im-nav-sublist-item'>" SKIP
+                "   <a href='" modulepath menexhold "' target='mainpage' class='im-nav-sublist-item-link'>" SKIP
+                "       <div class='section'>" menu_mstr.menu_num "." menu_mstr.menu_select "</div>"
+                menu_mstr.menu_title "</div></a>" SKIP
+                "</li>" SKIP.
+		         
+		END.  /** of else do **/
+	                   
+	END. /** of 4ea. menu_mstr ***/
+                              
+/*    {&OUT} "</UL></div>" skip.    /** end of div submenu **/*/
+                              
+END. /** of PROCEDURE menuwalk ***/
+
+IF v-environment = "CMS" THEN DO: 
+    
+    {&OUT}
+        "<nav class='w3-sidenav w3-light-grey w3-card-2' style='width:200px;'>" SKIP
+        "<div class='w3-accordion'>" SKIP
+        "<a onclick='myAccFunc()' href='#'>Accordion</a>" SKIP.
+
+END.    /** of if v-environment = CMS **/
+
+ELSE 
+	{&OUT}
+	    "<ul class='im-nav-list'>" SKIP.
+
+FIND FIRST menu_mstr NO-LOCK NO-ERROR.
+
+RUN menuwalk(MENU_num). 
+
+{&OUT}
+    "</ul>" SKIP
+    "</nav>" SKIP(1)
+     
+    "<h1 class='im-header-title'>InforMatrix - " v-environment "</h1>" SKIP
+    "</header>" SKIP(1)
+    
+    "<div class='im-main'>" SKIP
+    "   <iframe src='menupager.html' name='mainpage' frameborder='0' scrolling='auto' width='100%' height='100%'></iframe>" SKIP
+    "</div>" SKIP(1)
+    
+    "<div class='im-flair'>made by Solsource</div>" SKIP(1)
+    
+    "<div id='print'>" SKIP
+    "   <a onclick='zPrint(mainpage);'>" SKIP
+    "       <img src='/depot/src/HTMLContent/images/button-print.gif'>" SKIP 
+    "   </a>" SKIP
+    "</div>" SKIP(1).
+    
+</SCRIPT>               <!-- end of speedscript -->    
+    
+<script type="text/javascript">
+    if (document.location.search.match(/type=embed/gi)) {
+      window.parent.postMessage('resize', '*');
+    }  
+    
+</script>  
+
+</BODY>
+</HTML>

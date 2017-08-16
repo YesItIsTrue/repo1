@@ -1,0 +1,289 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<TITLE>Blue Card Report</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="16/Mar/2017">
+    <META NAME='LAST_UPDATED' CONTENT="16/Mar/2017">    
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> 
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+<style>
+/***** ****** W3CSS THEME FOR #66A97C ***** *****/
+.w3-theme-l5 {color:#000 !important; background-color:#f6faf7 !important}
+.w3-theme-l4 {color:#000 !important; background-color:#e0eee5 !important}
+.w3-theme-l3 {color:#000 !important; background-color:#c2dccb !important}
+.w3-theme-l2 {color:#000 !important; background-color:#a3cbb0 !important}
+.w3-theme-l1 {color:#000 !important; background-color:#84ba96 !important}
+.w3-theme-d1 {color:#fff !important; background-color:#589c6e !important}
+.w3-theme-d2 {color:#fff !important; background-color:#4e8a62 !important}
+.w3-theme-d3 {color:#fff !important; background-color:#447956 !important}
+.w3-theme-d4 {color:#fff !important; background-color:#3a684a !important}
+.w3-theme-d5 {color:#fff !important; background-color:#31563d !important}
+
+.w3-theme-light {color:#000 !important; background-color:#f6faf7 !important}
+.w3-theme-dark {color:#fff !important; background-color:#31563d !important}
+.w3-theme-action {color:#fff !important; background-color:#31563d !important}
+
+.w3-theme {color:#fff !important; background-color:#66a97c !important}
+.w3-text-theme {color:#66a97c !important}
+.w3-border-theme {border-color:#66a97c !important}
+
+.w3-hover-theme:hover {color:#fff !important; background-color:#66a97c !important}
+.w3-hover-text-theme {color:#66a97c !important}
+.w3-hover-border-theme:hover {border-color:#66a97c !important}
+
+.w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
+.w3-theme-background {color::#000 !important; background-color:#fff !important}
+.w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
+.w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+.w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+
+</style>
+
+</HEAD>
+
+<BODY class='w3-theme-body'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+        
+  -----------------------------------------------------------------
+  Revision History:
+  -----------------
+  1.0 - written by TRAE LUTTRELL on 16/Mar/17.  Original version.
+  1.1 - written by DOUG LUTTRELL on 14/Aug/17.  Changed to work with
+            new CMC structure (Version 12).  Marked by 1dot1.      
+        
+  -------------------------------------------------------------------*/
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-period            LIKE sched_mstr.sched_period NO-UNDO.
+DEFINE VARIABLE v-class_id          LIKE sched_mstr.sched_class_ID NO-UNDO.
+DEFINE VARIABLE v-troop             LIKE speop_shadow.speop_troop NO-UNDO.                                  /* 1dot1 */
+DEFINE VARIABLE v-ward              LIKE speop_shadow.speop_ward NO-UNDO.                                   /* 1dot1 */
+DEFINE VARIABLE c-MBC_det           AS INTEGER NO-UNDO.
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act             = html-encode(get-value("h-act"))
+    v-period        = html-encode(get-value("h-period"))
+    v-class_ID      = INTEGER(html-encode(get-value("h-class_ID")))
+    v-troop         = integer(html-encode(get-value("h-troop")))                                            /* 1dot1 */
+    v-ward          = html-encode(get-value("h-ward"))
+    .
+
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+/*IF act = "VALIDATION" THEN DO:                                                               */
+/*                                                                                             */
+/*    /* add a validation for the search criteria based off of the table(s) you                */
+/*    are searching by. */                                                                     */
+/*                                                                                             */
+/*    FIND /* table */ WHERE /* table_field */ = /* v-field */ NO-LOCK NO-ERROR.               */
+/*                                                                                             */
+/*    IF AVAILABLE ( /* table */ ) THEN                                                        */
+/*                                                                                             */
+/*        ASSIGN                                                                               */
+/*            act = "SEARCH".                                                                  */
+/*                                                                                             */
+/*    ELSE DO:                                                                                 */
+/*        {&OUT}                                                                               */
+/*            "<DIV class='grid_3'> </DIV>" SKIP                                               */
+/*            "<DIV class='grid_6'>" SKIP                                                      */
+/*                "<h2>Incorrect parameters for table " /* table */ ". Search Again.</h2>" SKIP*/
+/*            "</DIV>         <!-- end of grid_6 -->" SKIP                                     */
+/*            "<DIV class='grid_3'> </DIV>" SKIP.                                              */
+/*        ASSIGN                                                                               */
+/*            act = "INITIAL".                                                                 */
+/*                                                                                             */
+/*    END. /* else do not avail */                                                             */
+/*END. /* validation */                                                                        */
+        
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+             "<div class=' w3-content w3-responsive'>" SKIP
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>Completed Requirement Report</h1>" SKIP
+            "   </header>" SKIP
+            
+            "<div class='w3-card-4 w3-content w3-white w3-container' style='max-width:1400px;'>" SKIP  
+            "<form>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <DIV class='w3-col s12'>" SKIP
+            "       <label class='w3-text-theme'><b>Ward or Branch</b></label>" SKIP
+            "       <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='h-ward' value='" v-ward "'/>" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <DIV class='w3-col s12'>" SKIP
+            "       <label class='w3-text-theme'><b>Troop</b></label>" SKIP
+            "       <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='h-troop' value='" v-troop "'/>" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+            "</div>" SKIP
+            "<br>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Report' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px; box-shadow:none'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+
+            "</form>" SKIP.
+    
+    END. /* INITIAL */
+    
+    WHEN "Report" THEN DO:
+        
+        {&OUT}
+            "<div class=' w3-content w3-responsive'>" SKIP
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>Blue Card Report</h1>" SKIP
+            "   </header>" SKIP
+            "   <div class='w3-card-4 w3-content w3-theme-background' style='max-width:1400px;'>" SKIP
+            "       <table class='w3-table-all'>" SKIP
+            "           <tr class='w3-theme-dark'>" SKIP
+            "               <th> Last Name </th>" SKIP
+            "               <th> First Name </th>" SKIP
+            "               <th> Date of Birth </th>" SKIP
+            "               <th> Period </th>" SKIP
+            "               <th> Merit Badge Name </th>" SKIP
+            "               <th> Requirement </th>" SKIP
+            "           </tr>" SKIP.
+        
+        ASSIGN c-MBC_det = 0.
+        
+        FOR EACH speop_shadow WHERE                                                                             /* 1dot1 */ 
+                (speop_shadow.speop_troop = v-troop OR                                                          /* 1dot1 */
+                 v-troop = 0) AND                                                                               /* 1dot1 */
+                (speop_shadow.speop_ward = v-ward OR                                                            /* 1dot1 */ 
+                 v-ward = "") NO-LOCK,                                                                          /* 1dot1 */                                                       
+/*        (people_shadow.people_troop = v-troop OR v-troop = "") AND                              /*** each person in troop x ... ***/*/
+/*        (people_shadow.people_ward = v-ward OR v-ward = "")NO-LOCK,                             /*** and in ward x ... ***/         */
+            FIRST people_mstr WHERE people_mstr.people_id = speop_shadow.speop_ID NO-LOCK,                      /* 1dot1 */
+            EACH regis_mstr WHERE regis_mstr.regis_people_id = speop_shadow.speop_ID NO-LOCK,   /*** who signed up for ... ***/  /* 1dot1 */
+            EACH sched_mstr WHERE sched_mstr.sched_class_id = regis_mstr.regis_class_id AND     /*** a class that ... ***/
+                sched_mstr.sched_start_date > (03/11/17) NO-LOCK,                               /*** happens this weekend ... ***/
+            FIRST MB_mstr WHERE MB_mstr.MB_BSA_ID = sched_mstr.sched_BSA_ID NO-LOCK,            /*** offering this MB ... ***/
+            EACH MBC_det WHERE MBC_det.MBC_people_ID = people_mstr.people_ID AND                /*** which completed each of these requirements. ***/   /* 1dot1 */
+                MBC_det.MBC_Class_ID = sched_mstr.sched_class_ID NO-LOCK          
+            BREAK 
+                BY speop_shadow.speop_ward                                                                      /* 1dot1 */
+                BY speop_shadow.speop_troop                                                                     /* 1dot1 */
+                BY people_mstr.people_lastname                                                                  /* 1dot1 */
+                BY people_mstr.people_firstname                                                                 /* 1dot1 */
+                BY people_mstr.people_ID                                                                        /* 1dot1 */
+                BY MB_mstr.MB_name
+                BY MBC_det.MBC_Req_Nbr:
+            
+            IF FIRST-OF(speop_shadow.speop_ward) THEN DO:                                                       /* 1dot1 */
+            
+                {&OUT} SKIP(1)
+                    "<tr class='w3-theme-accent'>" SKIP
+                    "   <th colspan='7'>" speop_shadow.speop_ward " </th>" SKIP                                 /* 1dot1 */
+                    "</tr>" SKIP.
+                        
+            END.  /** of if first-of people_unit **/
+            
+/*            IF FIRST-OF(people_shadow.people_ID) THEN DO:*/
+            IF FIRST-OF(MB_mstr.MB_name) THEN DO:                
+            
+                {&OUT} 
+                    "<tr>" SKIP
+                    "   <td>" people_mstr.people_lastname "</td>" SKIP                                          /* 1dot1 */
+                    "   <td>" people_mstr.people_firstname "</td>" SKIP                                         /* 1dot1 */
+                    "   <td>" people_mstr.people_DOB "</td>" SKIP                                               /* 1dot1 */
+                    "   <td>" sched_mstr.sched_period "</td>" SKIP
+                    "   <td>" MB_mstr.MB_name "</td>" SKIP
+                    "   <td>" MBC_det.MBC_Req_Nbr "</td>" SKIP
+                    "</tr>" SKIP .     
+            
+            END. /*** first people_ID ***/
+            
+            ELSE DO:
+                
+                {&OUT} 
+                    "<tr>" SKIP
+                    "   <td></td>" SKIP
+                    "   <td></td>" SKIP
+                    "   <td></td>" SKIP
+                    "   <td>" sched_mstr.sched_period "</td>" SKIP
+                    "   <td>" MB_mstr.MB_name "</td>" SKIP
+                    "   <td>" MBC_det.MBC_Req_Nbr "</td>" SKIP
+                    "</tr>" SKIP.
+
+            END.  /** of NOT the first of people_ID **/
+            
+            ASSIGN c-MBC_det = c-MBC_det + 1.
+            
+/*            IF LAST-OF (people_shadow.people_ward) THEN {&OUT} "<tr class='print_break'><td colspan='7'><center> End of " people_shadow.people_ward " records. </center></td></tr>" SKIP.*/
+                               
+        END.  /** of 4ea. people_mstr **/
+        
+        {&OUT}
+            "<tr>" SKIP
+            "   <td colspan=7> End of Blue Card Report, " c-MBC_det " Merit Badge Requirement records found. </td>" SKIP
+            "</tr>" SKIP
+            "</table>" SKIP
+            "</div>" SKIP
+            "</div>" SKIP
+            "<br>" SKIP
+            "<form>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Initial' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px; box-shadow:none'><b>Search Again</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<br>" SKIP
+            "</form>" SKIP.
+        
+    END. /*** report act ***/
+    
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<div class='w3-container'>" SKIP
+            "<form>" SKIP
+            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-red'>" SKIP
+            "       <h1>Error</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>Could not find act '" act "'.</p>" SKIP
+            "    </div>" SKIP
+
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+            
+    END. /* otherwise */      
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

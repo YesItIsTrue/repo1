@@ -1,0 +1,196 @@
+/** Container is the full page **/
+#container{
+  width:1300px;
+  height:2980px;
+  margin-left:auto;
+  margin-right:auto;
+  margin-top:20px;
+}
+/** For all tables **/
+table{
+  border:1px solid black;
+  border-collapse: collapse;
+}
+thead{
+  border:1px solid black;
+}
+tr{
+  
+}
+td{
+  border:1px solid black;
+}
+/** Classes **/
+.leftToRightBar{
+  background: -webkit-linear-gradient(left, rgba(10,200,10,.9), rgba(10,200,10,.8), rgba(255,255,0,.8), rgba(200,10,10,.8),  rgba(200,10,10,.9));
+  background: -o-linear-gradient(left, rgba(10,200,10,.9), rgba(10,200,10,.8), rgba(255,255,0,.8), rgba(200,10,10,.8),  rgba(200,10,10,.9));
+  background: -moz-linear-gradient(left, rgba(10,200,10,.9), rgba(10,200,10,.8), rgba(255,255,0,.8), rgba(200,10,10,.8),  rgba(200,10,10,.9));
+  background: linear-gradient(to right, rgba(10,200,10,.9), rgba(10,200,10,.8), rgba(255,255,0,.8), rgba(200,10,10,.8),  rgba(200,10,10,.9));
+}
+.centerBar{
+  background: -webkit-linear-gradient(left, rgba(200,10,10,.9), rgba(200,10,10,.9), rgba(255,255,0,.8), rgba(255,255,0,.8), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(255,255,0,.8), rgba(255,255,0,.8), rgba(200,10,10,.9), rgba(200,10,10,.9));
+  background: -o-linear-gradient(left, rgba(200,10,10,.9), rgba(200,10,10,.9), rgba(255,255,0,.8), rgba(255,255,0,.8), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(255,255,0,.8), rgba(255,255,0,.8), rgba(200,10,10,.9), rgba(200,10,10,.9));
+  background: -moz-linear-gradient(left, rgba(200,10,10,.9), rgba(200,10,10,.9), rgba(255,255,0,.8), rgba(255,255,0,.8), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(255,255,0,.8), rgba(255,255,0,.8), rgba(200,10,10,.9), rgba(200,10,10,.9));
+  background: linear-gradient(to right, rgba(200,10,10,.9), rgba(200,10,10,.9), rgba(255,255,0,.8), rgba(255,255,0,.8), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(10,200,10,.9), rgba(255,255,0,.8), rgba(255,255,0,.8), rgba(200,10,10,.9), rgba(200,10,10,.9));
+}
+.tables{
+  width:1300px;
+}
+.bar{
+  width:100%;
+  height:12px;
+  background:black;
+  border-radius:10px;
+  animation-name: stretch;
+  -webkit-animation-name: stretch;	
+	animation-duration: 1.5s;	
+  -webkit-animation-duration: 1.5s;
+	animation-timing-function: ease-out;	
+	-webkit-animation-timing-function: ease-out;	
+	transform-origin: 0% 0%;
+	-ms-transform-origin: 0% 0%;
+	-webkit-transform-origin: 0% 0%;
+}
+/** 
+For the center bars, treat 50% as the maximum width for the centerToLeft bar, 
+and 52% as the maximum width for the centerToRight bar. This is because in 
+order to have the centerToRight bar start more centered, the bar needs to 
+start slightly less than halfway.
+**/
+.centerToRight{
+  /** Having the margin-left at 48% looks more centered than 50% **/
+  margin-left:48%;
+  width:52%;
+  height:12px;
+  background:black;
+  border-radius:10px;
+  animation-name: stretch;
+  -webkit-animation-name: stretch;	
+	animation-duration: 1.5s;	
+  -webkit-animation-duration: 1.5s;
+	animation-timing-function: ease-out;	
+	-webkit-animation-timing-function: ease-out;	
+	transform-origin: 0% 0%;
+	-ms-transform-origin: 0% 0%;
+	-webkit-transform-origin: 0% 0%;
+}
+.centerToLeft{
+  margin-right:50%;
+  float:right;
+  width:50%;
+  height:12px;
+  background:black;
+  border-radius:10px;
+	animation-name: stretch;
+	-webkit-animation-name: stretch;	
+	animation-duration: 1.5s;	
+	-webkit-animation-duration: 1.5s;
+	animation-timing-function: ease-out;	
+	-webkit-animation-timing-function: ease-out;	
+	transform-origin: 100% 0%;
+	-ms-transform-origin: 100% 0%;
+	-webkit-transform-origin: 100% 0%; 
+}
+/** Animation keyframes **/
+@keyframes stretch {
+	0% {transform: scaleX(0.3);}
+	60% {transform: scaleX(1);}			
+	80% {transform: scaleX(0.98);}
+	100% {transform: scaleX(1);}							
+}
+@-webkit-keyframes stretch {
+	0% {-webkit-transform: scaleX(0.3);}
+	60% {-webkit-transform: scaleX(1);}
+	80% {-webkit-transform: scaleX(0.98);}
+	100% {-webkit-transform: scaleX(1);}		
+}
+/** Individual Items **/
+#patientInfo{
+  width:650px;
+}
+#bar1{width:50%;}
+#bar2{width:10%;}
+#bar3{width:15%;}
+#bar4{width:50%;}
+#bar5{width:10%;}
+#bar6{width:15%;}
+#bar7{width:50%;}
+#bar8{width:10%;}
+#bar9{width:15%;}
+#bar10{width:50%;}
+#bar11{width:10%;}
+#bar12{width:15%;}
+#bar13{width:70%;}
+#bar14{width:19%;}
+#bar15{width:15%;}
+#bar16{width:50%;}
+#bar17{width:30%;}
+#bar18{width:25%;}
+#bar19{width:56%;}
+#bar20{width:10%;}
+#bar21{width:65%;}
+#bar22{width:10%;}
+#bar23{width:10%;}
+#bar24{width:10%;}
+#bar25{width:10%;}
+#bar26{width:10%;}
+#bar27{width:10%;}
+#bar28{width:10%;}
+#bar29{width:10%;}
+#bar30{width:90%;}
+/** 31-36 are center bars **/
+#bar31{width:30%;}
+#bar32{width:30%;}
+#bar33{width:30%;}
+#bar34{width:30%;}
+#bar35{width:30%;}
+#bar36{width:30%;}
+/** back to left to right **/
+#bar37{width:50%;}
+#bar38{width:50%;}
+#bar39{width:50%;}
+#bar40{width:50%;}
+#bar41{width:50%;}
+#bar42{width:50%;}
+#bar43{width:50%;}
+#bar44{width:50%;}
+#bar45{width:50%;}
+#bar46{width:50%;}
+#bar47{width:50%;}
+#bar48{width:50%;}
+#bar49{width:50%;}
+#bar50{width:50%;}
+/** 51 and 52 are center bars **/
+#bar51{width:30%;}
+#bar52{width:40%;}
+/** lone left to right bar **/
+#bar53{width:80%;}
+/** 54 to 57 are center bars**/
+#bar54{width:15%;}
+#bar55{width:10%;}
+#bar56{width:20%;}
+#bar57{width:25%;}
+/** 58, 59, 60 are left to right **/
+#bar58{width:10%;}
+#bar59{width:15%;}
+#bar60{width:20%;}
+/** 61 and 62 are center bars **/
+#bar61{width:35%;}
+#bar62{width:40%;}
+/** 63 to 78 are left to right bars**/
+#bar63{width:20%;}
+#bar64{width:20%;}
+#bar65{width:20%;}
+#bar66{width:20%;}
+#bar67{width:20%;}
+#bar68{width:20%;}
+#bar69{width:20%;}
+#bar70{width:20%;}
+#bar71{width:20%;}
+#bar72{width:20%;}
+#bar73{width:20%;}
+#bar74{width:20%;}
+#bar75{width:20%;}
+#bar76{width:20%;}
+#bar77{width:20%;}
+#bar78{width:20%;}

@@ -1,0 +1,1276 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+<TITLE>Create Customer Record</TITLE>
+
+<META NAME="AUTHOR" CONTENT="DOUG LUTTRELL">
+<META NAME="VERSION" CONTENT="1.6">
+<META NAME="COPYRIGHT" CONTENT="Solsource">
+<META NAME="CREATE_DATE" CONTENT="08/May/14">
+<META NAME="LAST_UPDATED" CONTENT="17/Feb/16">
+<LINK rel='stylesheet' type='text/css'
+	href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+
+
+<SCRIPT LANGUAGE="SpeedScript">                  
+ /*------------------------------------------------------------------
+ * File:TK_custmakeU.html
+ * Description:  
+ * Created:
+ *-------------------------------------------------------------------
+ * Revision History:    
+ * ---------------------
+ * 1.01 - written by Mark Jacobs.  Original Version.
+ *      - 
+ * 1.2 - written by DOUG LUTTRELL on 01/Jun/15.  Added code to support the 
+ *          pathing workaround.  Marked by 1dot2.
+ * 1.3 - written by DOUG LUTTRELL on 11/Jul/15 through 15/Aug/15.  Program 
+ *          won't run properly when you go to the second form.  Fixed problem 
+ *          with ends in wrong places.  Fixed problem with forms.  Fixed 
+ *          problem with not passing data properly to the sub-procedures.  
+ *          Still have a problem with flow.  Adding in flowctrl variable 
+ *          like an act.  Pretty much re-written at this point.  Pathing
+ *          issue is different on server than on laptop.  Forcing forms
+ *          to submit to the r-code version of program on submit to see if
+ *          that will correct the problem.
+ * 1.4 - witten by Mark Jacobs on 9/10/15, Marked by 1dot4.
+ *          Edited the FOR EACH statements to protect against future deletes.
+ * 1.5 - witten by Mark Jacobs on 9/21/15, Marked by 1dot5.
+ *          Added preferred name to the forms.
+ *       14/Oct/15 copied recent edits made to this procedure over to the 
+ *          copy that was downloaded from release 10.2 NOT MARKED.   
+ * 1.6 - written by Jacob Luttrell on 17Feb16.  Added .i files for state and
+ *          country dropdowns. Marked by 1dot6.
+ *-------------------------------------------------------------------- */
+
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+</HEAD> 
+
+<BODY class='inside'>
+
+	<SCRIPT LANGUAGE="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}. 
+
+DEFINE VARIABLE flowctrl        AS CHARACTER                        NO-UNDO.    /* 1dot3 */  
+DEFINE VARIABLE recheck         AS LOGICAL                          NO-UNDO.    /* 1dot3 */
+DEFINE VARIABLE peopleid        LIKE people_mstr.people_id          NO-UNDO.    /* 1dot3 */
+DEFINE VARIABLE isselected      AS CHARACTER                        NO-UNDO.    /* 1dot3 */
+
+DEFINE VARIABLE ITmessages      AS LOGICAL          INITIAL NO     NO-UNDO.     /* 1dot3 */
+
+
+DEFINE VARIABLE codetorun       AS CHARACTER                        NO-UNDO.    /* 1dot2 */  
+DEFINE VARIABLE depotcode       AS CHARACTER                        NO-UNDO.    /* 1dot2 */  
+DEFINE VARIABLE drive_letter    AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+         
+DEFINE VARIABLE prefix          LIKE people_prefix                  NO-UNDO.
+DEFINE VARIABLE firstname       LIKE people_firstname               NO-UNDO. 
+DEFINE VARIABLE midname         LIKE people_midname                 NO-UNDO.
+DEFINE VARIABLE lastname        LIKE people_lastname                NO-UNDO.
+DEFINE VARIABLE suffix          LIKE people_suffix                  NO-UNDO. 
+DEFINE VARIABLE prefname        LIKE people_mstr.people_prefname    NO-UNDO.     /* 1dot 5 */
+
+DEFINE VARIABLE addr1           LIKE addr_addr1          NO-UNDO.
+DEFINE VARIABLE addr2           LIKE addr_addr2          NO-UNDO.
+DEFINE VARIABLE addr3           LIKE addr_addr3          NO-UNDO.
+DEFINE VARIABLE city            LIKE addr_city           NO-UNDO.
+DEFINE VARIABLE state           LIKE State_ISO          NO-UNDO. 
+DEFINE VARIABLE zipcode         LIKE addr_zip            NO-UNDO.
+DEFINE VARIABLE country         LIKE Country_ISO        NO-UNDO.
+DEFINE VARIABLE country-type    LIKE addr_mstr.addr_type NO-UNDO.
+DEFINE VARIABLE second-addr     LIKE people_mstr.people_second_addr_ID NO-UNDO.
+       
+DEFINE VARIABLE email1          LIKE people_email       NO-UNDO.    
+DEFINE VARIABLE email1-dupe     LIKE people_email       NO-UNDO. 
+DEFINE VARIABLE email2          LIKE people_email2      NO-UNDO.
+DEFINE VARIABLE email2-dupe     LIKE people_email2      NO-UNDO.        
+
+DEFINE VARIABLE cust-id         LIKE cust_ID            NO-UNDO.    
+DEFINE VARIABLE seq             LIKE cust_id            NO-UNDO. 
+DEFINE VARIABLE ddate           LIKE cust_create_date   NO-UNDO.
+DEFINE VARIABLE moddate         LIKE cust_modified_date NO-UNDO.
+DEFINE VARIABLE prof            LIKE scust_prof         NO-UNDO.         
+DEFINE VARIABLE act             AS INTEGER              NO-UNDO.  /* user feedback */ 
+DEFINE VARIABLE act2            AS INTEGER              NO-UNDO.  /* user feedback */ 
+
+DEFINE VARIABLE v-magentoID     LIKE scust_magento NO-UNDO.  
+DEFINE VARIABLE creat-num AS INTEGER         NO-UNDO. 
+
+/*DEFINE VARIABLE coname LIKE Country_Display_Name NO-UNDO.                            */
+/*DEFINE VARIABLE coabbv LIKE Country_ISO NO-UNDO.                            */
+/*DEFINE VARIABLE stname LIKE State_Display_Name   NO-UNDO. /* Used in selection box */*/
+/*DEFINE VARIABLE stabbv LIKE State_ISO   NO-UNDO. /* Used in selection box */*/
+
+DEFINE VARIABLE homephone       LIKE people_mstr.people_homephone   NO-UNDO.    /* 1dot3 */
+DEFINE VARIABLE workphone       LIKE people_mstr.people_workphone   NO-UNDO.
+DEFINE VARIABLE cellphone       LIKE people_mstr.people_cellphone   NO-UNDO.
+DEFINE VARIABLE faxphone        LIKE people_mstr.people_fax         NO-UNDO.
+
+DEFINE VARIABLE comp            LIKE people_mstr.people_company NO-UNDO.
+DEFINE VARIABLE gen             LIKE people_mstr.people_gender  NO-UNDO.
+DEFINE VARIABLE peop-id         LIKE people_mstr.people_id      NO-UNDO.
+DEFINE VARIABLE peop-addr-ID    LIKE people_mstr.people_addr_id NO-UNDO. 
+DEFINE VARIABLE peop-contact    LIKE people_mstr.people_contact NO-UNDO.
+DEFINE VARIABLE dob             LIKE people_mstr.people_DOB     NO-UNDO.
+
+DEFINE VARIABLE card            LIKE cust_mstr.cust_card_nbr        NO-UNDO.
+DEFINE VARIABLE card-expmonth   LIKE cust_mstr.cust_card_expmonth   NO-UNDO. 
+DEFINE VARIABLE card-expyear    LIKE cust_mstr.cust_card_expyear    NO-UNDO.
+DEFINE VARIABLE card-sec        LIKE cust_mstr.cust_card_seccode    NO-UNDO.
+DEFINE VARIABLE card-type       LIKE cust_mstr.cust_card_type       NO-UNDO. 
+
+DEFINE VARIABLE expyear-start   LIKE cust_mstr.cust_card_expyear NO-UNDO.
+DEFINE VARIABLE expyear-end     LIKE cust_mstr.cust_card_expyear NO-UNDO.   
+DEFINE VARIABLE x  AS INTEGER NO-UNDO.
+DEFINE VARIABLE whichmonth AS CHARACTER EXTENT 12 NO-UNDO.
+DEFINE VARIABLE monthname AS CHARACTER EXTENT 12 
+       INITIAL ["01 - Jan", "02 - Feb", "03 - Mar", "04 - Apr", "05 - May", "06 - Jun", "07 - Jul", "08 - Aug", "09 - Sep", "10 - Oct", "11 - Nov", "12 - Dec"]
+       NO-UNDO.
+       
+DEFINE VARIABLE i AS INTEGER NO-UNDO. /*Counter for month */
+
+DEFINE VARIABLE prof-ck AS CHARACTER    NO-UNDO. 
+        
+/*---------------------------------------------------------------------*/   
+    DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.           /*---< ITfeedback (YES or NO)  */ 
+/*---------------------------------------------------------------------*/ 
+   
+DEFINE VARIABLE o-peop-addr-id LIKE addr_mstr.addr_id     NO-UNDO.  /* People find output parameters */
+DEFINE VARIABLE o-peop-error     AS LOGICAL               NO-UNDO.
+DEFINE VARIABLE o-peop-ran       AS LOGICAL               NO-UNDO.
+
+DEFINE VARIABLE o-peop-id      LIKE people_mstr.people_id NO-UNDO. /*Both input and input and output people parameter*/
+ 
+DEFINE VARIABLE o-peop-crrate  AS LOGICAL NO-UNDO.  /*People create output parameters */
+DEFINE VARIABLE o-peop-update  AS LOGICAL NO-UNDO.     
+DEFINE VARIABLE o-peop-avail   AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-peop-success AS LOGICAL NO-UNDO.
+
+DEFINE VARIABLE addr-id      LIKE addr_mstr.addr_id NO-UNDO.
+
+DEFINE VARIABLE o-addr-id   LIKE addr-id NO-UNDO.  /* Addr. create output parameters */
+DEFINE VARIABLE o-addr-create AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-addr-update AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-addr-avail  AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-addr-succes AS LOGICAL NO-UNDO.
+
+DEFINE VARIABLE o-addr-error AS LOGICAL  NO-UNDO.
+DEFINE VARIABLE o-addr-ran   AS LOGICAL  NO-UNDO.
+
+
+DEFINE VARIABLE o-cust-id     LIKE cust_mstr.cust_id NO-UNDO.
+DEFINE VARIABLE o-cust-create AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-cust-update AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-cust-error  AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-cust-succes AS LOGICAL NO-UNDO.
+
+
+DEFINE VARIABLE o-cust-addr-id LIKE addr_mstr.addr_id NO-UNDO.
+DEFINE VARIABLE o-cust-exist   AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-cust-ran     AS LOGICAL NO-UNDO.  
+                    
+
+DEFINE VARIABLE o-scust-id     LIKE scust_shadow.scust_ID NO-UNDO.
+DEFINE VARIABLE o-scust-crrat  AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-scust-update AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-scust-error  AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-scust-succes AS LOGICAL NO-UNDO.
+
+/*----------------------------------------------------------------*/
+DEFINE VARIABLE o-people-id      LIKE people_mstr.people_id NO-UNDO.
+DEFINE VARIABLE o-people-addr-id LIKE people_mstr.people_addr_id NO-UNDO.
+DEFINE VARIABLE o-people-error     AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-people-ran       AS LOGICAL NO-UNDO.
+/*---------------------------------------------------------------*/
+
+DEFINE VARIABLE cust-addr-id LIKE addr_mstr.addr_id      NO-UNDO. 
+
+DEFINE VARIABLE doc-id LIKE scust_shadow.scust_doctor_ID NO-UNDO.
+DEFINE VARIABLE whattorun AS CHARACTER NO-UNDO.
+
+
+
+ASSIGN
+    flowctrl        =   get-value("h-flowctrl")                                         /* 1dot3 */
+    recheck         =   IF get-value("h-recheck") = "YES" THEN 
+                            YES
+                        ELSE 
+                            NO
+    peopleid        =   INTEGER(get-value("h-peopleid"))                                /* 1dot3 */                                   
+	whattorun       =   get-value ("whattorun") 
+	drive_letter    =   SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1)                      /* 1dot2 */
+	
+    prefix          =   get-value ("h-prefix")          
+	firstname       =   get-value ("h-firstname")
+	midname         =   get-value ("h-midname")
+	lastname        =   get-value ("h-lastname")
+	suffix          =   get-value ("h-suffix")
+	prefname        =   get-value ("h-prefname")                                      /* 1dot5 */
+	
+	addr1           =   get-value ("h-addr1")
+	addr2           =   get-value ("h-addr2")
+	addr3           =   get-value ("h-addr3")
+	city            =   get-value ("h-city")
+	state           =   get-value ("h-state")
+	country         =   get-value ("h-country")
+	zipcode         =   get-value ("h-zipcode")   
+	
+	homephone       =   get-value ("h-homephone")                                        /* 1dot3 */
+    workphone       =   get-value ("h-workphone")
+    cellphone       =   get-value ("h-cellphone")
+    faxphone        =   get-value ("h-faxphone")
+    
+    email1          =   get-value ("h-email1")
+    email1-dupe     =   get-value ("h-email1-dupe")
+    email2          =   get-value ("h-email2")
+    email2-dupe     =   get-value ("h-email2-dupe")        
+    
+	card            =   get-value ("h-card")
+	card-expmonth   =   INTEGER (get-value("h-card-expmonth"))
+	card-expyear    =   INTEGER (get-value("h-card-expyear"))
+	card-sec        =   INTEGER (get-value ("h-card-sec"))
+	card-type       =   get-value ("h-card-type")
+
+	prof            =   IF (LOGICAL (get-value ("prof_al"))) = YES then 
+	                          yes
+	                     else
+	                          no	
+	v-magentoID           =   get-value("h-magentoID")                            
+	 
+	seq             =   INTEGER (get-value ("cust_id"))   
+	ddate           =   DATE (get-value ("crea_date"))
+	moddate         =   DATE (get-value ("mod"))
+	
+	act2            =   INTEGER (get-value ("formact"))
+	act             =   INTEGER (get-value("act-back"))
+	prof-ck         =   IF prof = yes THEN
+	                          "checked"
+	                    ELSE
+	                          "".
+                     
+		                          
+																				IF ITfeedback = YES THEN
+																				    {&OUT} "<H1>" THIS-PROCEDURE:FILE-NAME "</H1>".
+ 
+IF flowctrl = "" THEN 
+    flowctrl = "INITIAL". 
+    
+ELSE IF flowctrl = "UPDATE" THEN DO:        /*** coming from previously existing record ***/
+
+    FIND people_mstr WHERE people_mstr.people_id = peopleid 
+        NO-LOCK NO-ERROR.
+        
+    IF AVAILABLE (people_mstr) THEN DO: 
+              
+	    ASSIGN 
+	        prefix     = people_mstr.people_prefix
+	        firstname  = people_mstr.people_firstname
+	        midname    = people_mstr.people_midname
+	        lastname   = people_mstr.people_lastname
+	        suffix     = people_mstr.people_suffix
+	        prefname   = people_mstr.people_prefname
+	        email1     = people_mstr.people_email
+	        email2     = people_mstr.people_email2
+	        homephone  = people_mstr.people_homephone
+	        workphone  = people_mstr.people_workphone
+	        cellphone  = people_mstr.people_cellphone
+	        faxphone   = people_mstr.people_fax.
+	    
+	    IF people_mstr.people_addr_id <> 0 THEN DO: 
+	        
+	        FIND addr_mstr WHERE addr_mstr.addr_id = people_mstr.people_addr_id
+	           NO-LOCK NO-ERROR.
+	           
+	        IF AVAILABLE (addr_mstr) THEN DO: 
+	            
+	            ASSIGN 
+	               addr1       = addr_mstr.addr_addr1
+	               addr2       = addr_mstr.addr_addr2
+	               addr3       = addr_mstr.addr_addr3
+	               city        = addr_mstr.addr_city
+	               state       = addr_mstr.addr_state
+	               zipcode     = addr_mstr.addr_zip
+	               country     = addr_mstr.addr_country.    
+	               
+	        END.  /** of if avail addr_mstr **/  
+                   
+        END. /** of if people_addr_id <> 0 **/
+        
+        FIND cust_mstr WHERE cust_mstr.cust_id = people_mstr.people_id 
+            NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (cust_mstr) THEN DO: 
+            
+            ASSIGN 
+                card            = cust_mstr.cust_card_nbr
+                card-expmonth   = cust_mstr.cust_card_expmonth
+                card-expyear    = cust_mstr.cust_card_expyear
+                card-sec        = cust_mstr.cust_card_seccode
+                card-type       = cust_mstr.cust_card_type.
+
+        END.  /** of if avail cust_mstr **/    
+        
+    END.  /*** of if avail people_mstr ***/                                   
+	        
+END.  /** of else if flowctrl = update **/	        
+	        
+	        
+
+CASE flowctrl:
+    
+    WHEN "INITIAL" THEN DO: 
+        
+        {&OUT}
+			"<FORM action='TK_custmakeU.r'>" SKIP
+			"<INPUT type='hidden' name='whattorun' value=~"" whattorun "~" />" SKIP
+			"<DIV class='row'>" SKIP			
+			"<DIV class='grid_12'>" SKIP
+			"<div class='table_3col'>" SKIP
+			"<table>" SKIP
+			"   <THEAD>" SKIP
+			"       <TR>" SKIP
+			"           <TH colspan=2>Personal</TH>" SKIP
+			"           <TH colspan=2>Address</TH>" SKIP
+			"           <TH colspan=2>Contact</TH>" SKIP
+			"       </TR>" SKIP
+			"   </THEAD>" SKIP
+			"   <TR>" SKIP
+			"       <TD>Prefix</TD>" SKIP
+			"       <TD><input type='text' name='h-prefix' value=~"" prefix "~" tabindex=1 autofocus /></TD>" SKIP
+			"       <TD>Address Line 1</TD>" SKIP
+			"       <TD class='REQ'><input type='text' name='h-addr1' value=~"" addr1 "~" tabindex=7 />" SKIP         
+			"       <TD>Home Number</TD>" SKIP
+			"       <TD><input type='text' name='h-homephone' value=~"" homephone "~" tabindex=14></TD>" SKIP
+			"   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TD>First Name</TD>" SKIP
+            "       <TD class='REQ'><input type='text' name='h-firstname' value=~"" firstname "~" tabindex=2 /></TD>" SKIP
+            "       <TD>Address Line 2</TD>" SKIP
+            "       <TD><input type='text' name='h-addr2' value=~"" addr2 "~" tabindex=8 />" SKIP         
+            "       <TD>Work Number</TD>" SKIP
+            "       <TD><input type='text' name='h-workphone' value=~"" workphone "~" tabindex=15></TD>" SKIP
+            "   </TR>" SKIP			    
+            "   <TR>" SKIP
+            "       <TD>Middle Name</TD>" SKIP
+            "       <TD><input type='text' name='h-midname' value=~"" midname "~" tabindex=3 /></TD>" SKIP
+            "       <TD>Address Line 3</TD>" SKIP
+            "       <TD><input type='text' name='h-addr3' value=~"" addr3 "~" tabindex=9 />" SKIP         
+            "       <TD>Cell Number</TD>" SKIP
+            "       <TD><input type='text' name='h-cellphone' value=~"" cellphone "~" tabindex=16></TD>" SKIP
+            "   </TR>" SKIP    			
+            "   <TR>" SKIP
+            "       <TD>Last Name</TD>" SKIP
+            "       <TD class='REQ'><input type='text' name='h-lastname' value=~"" lastname "~" tabindex=4 /></TD>" SKIP
+            "       <TD>City</TD>" SKIP
+            "       <TD class='REQ'><input type='text' name='h-city' value=~"" city "~" tabindex=10 />" SKIP         
+            "       <TD>Fax Number</TD>" SKIP
+            "       <TD><input type='text' name='h-faxphone' value=~"" faxphone "~" tabindex=17></TD>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TD>Suffix</TD>" SKIP
+            "       <TD><input type='text' name='h-suffix' value=~"" suffix "~" tabindex=5></TD>" SKIP
+            "       <TD>State</TD>" SKIP
+            "       <TD class='REQ'>" SKIP
+            "           <select name='h-state' tabindex=11>" SKIP
+            "               <option value=''></option>" SKIP.
+
+/*        FOR EACH state_mstr NO-LOCK :*/
+
+            {../depot/src/WebSpeed/StateDropDown.i state country}.                       /* 1dot6 */
+          
+/*          FOR EACH state_mstr  WHERE                                                                                                  */
+/*                   state_mstr.state_deleted = ? NO-LOCK:  /* 1dot4 */  /* MJ added 9/9 This edit was made In case of future deletes */*/
+/*                                                                                                                                      */
+/*            IF state_mstr.State_ISO = state AND                                                                                       */
+/*                state_mstr.state_country = country THEN                                                                               */
+/*                isselected  = "SELECTED".                                                                                             */
+/*            ELSE                                                                                                                      */
+/*                isselected  = "".                                                                                                     */
+/*                                                                                                                                      */
+/*            {&OUT}                                                                                                                    */
+/*                "<option value=~"" state_mstr.State_ISO "~" " isselected " >" state_mstr.State_Display_Name "</option>" SKIP.         */
+/*                                                                                                                                      */
+/*        END.  /** of 4ea. state_mstr **/                                                                                              */
+
+        {&OUT}
+            "           </SELECT>" SKIP
+            "       </TD>" SKIP
+            "       <td>Magento Customer Number</td>" SKIP
+            "       <td><input type='text' name='h-magentoID' value=~"" v-magentoID "~" tabindex=18 /></TD>" SKIP           
+            "   </tr>" SKIP
+            "   <tr>" SKIP
+            "       <td>Preferred Name</td>" SKIP
+            "       <TD><input type='text' name='h-prefname' value=~"" prefname "~" tabindex=6 /></TD>" SKIP      /* 1dot5 */
+            "       <td>Zip Code</td>" SKIP
+            "       <td class='REQ'><input type='text' name='h-zipcode' value=~"" zipcode "~" tabindex=12 /></td>" SKIP
+            "       <td>Professional Customer</td>" SKIP
+            "       <td><input type='checkbox' name='prof_al' value='true' tabindex=19 /></td>" SKIP         /* needs help? */
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <td></td>" SKIP
+            "       <TD></TD>" SKIP            
+            "       <td>Country</td>" SKIP
+            "       <TD>" SKIP
+            "           <SELECT name='h-country' tabindex=13>" SKIP
+            "               <option value=''></option>".
+    
+    {../depot/src/WebSpeed/CountryDropDownList.i country}.                               /* 1dot6 */
+            
+/*        FOR EACH country_mstr WHERE                                                                                                  */
+/*                 country_mstr.country_deleted = ? NO-LOCK      /* 1dot4 */                                                           */
+/*            BREAK BY country_mstr.Country_Display_Name:                                                                              */
+/*                                                                                                                                     */
+/*            IF country_mstr.Country_ISO = country THEN                                                  /** I know **/               */
+/*                isselected = "SELECTED".                                                                                             */
+/*            ELSE                                                                                                                     */
+/*                isselected = "".                                                                                                     */
+/*                                                                                                                                     */
+/*            {&OUT}                                                                                                                   */
+/*                "<option value=~"" country_mstr.Country_ISO "~" " isselected " >" country_mstr.Country_Display_Name "</option>" SKIP.*/
+/*                                                                                                                                     */
+/*        END.  /* FOR EACH country_mstr */                                                                                            */
+        
+        {&OUT}
+            "           </SELECT>" SKIP
+            "       </TD>" SKIP
+            "       <TD colspan=2></TD>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TH colspan=6>Email Information</TH>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TD>E-mail Address</TD>" SKIP
+            "       <td colspan=2 class='REQ'><input size=50 type='text' name='h-email1' value=~"" email1 "~" tabindex=20 /></td>" SKIP
+            "       <td>Reenter E-mail</td>" SKIP
+            "       <td colspan=2 class='REQ'><input size=50 type='text' name='h-email1-dupe' value=~"" email1-dupe "~" tabindex=21 /></td>" SKIP
+            "   </tr>" SKIP
+            "   <tr>" SKIP
+            "       <td>Second E-mail Address</td>" SKIP
+            "       <td colspan=2><input size=50 type='text' name='h-email2' value=~"" email2 "~" tabindex=22 /></td>" SKIP
+            "       <td>Second Reenter E-mail</td>" SKIP
+            "       <td colspan=2><input size=50 type='text' name='h-email2-dupe' value=~"" email2-dupe "~" tabindex=23 /></td>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TH colspan=6>Credit Card Information</TH>" SKIP
+            "   </TR>" SKIP
+            "   <tr>" SKIP
+            "       <td>Credit Card Type</td>" SKIP
+            "       <td colspan=2>" SKIP
+            "           <select name='h-card-type' tabindex=24>" SKIP
+            "               <option value=~"" card-type "~" selected>" card-type "</option>" SKIP
+            "               <option value='Visa'>Visa</option>" SKIP
+            "               <option value='MasterCard'>MasterCard</option>" SKIP
+            "               <option value='Discover'>Discover</option>" SKIP
+            "               <option value='AMEX'>American Express</option>" SKIP
+            "           </select>" SKIP
+            "       </TD>" SKIP
+            "       <td>Credit Card Number</td>" SKIP
+            "       <td colspan=2><input maxlength='16' type='text' name='h-card' value=~"" card "~" tabindex=25 /></td>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <td>Expiration Date</td>" SKIP
+            "       <td colspan=2>" SKIP 
+            "           <select name='h-card-expmonth' tabindex=26>" SKIP.
+            
+        IF card-expmonth = 0 THEN 
+            {&OUT}                           
+                "               <option value=0 SELECTED>Select Exp. Month</option>" SKIP.
+        ELSE 
+            {&OUT}    
+                "               <option value=0>Select Exp. Month</option>" SKIP. 
+  
+        DO i = 1 TO 12:
+            
+            IF i = card-expmonth THEN 
+                {&OUT}
+                    "               <option value=" i "  SELECTED>" monthname[i] "</option>" SKIP.
+            ELSE     
+                {&OUT} 
+                    "               <option value=" i " >" monthname[i] "</option>" SKIP.
+                    
+        END.  /** of do i = 1 to 12 --- output month options **/
+
+        {&OUT}
+            "           </select>" SKIP.
+                                              
+  
+        ASSIGN 
+            expyear-start = YEAR(TODAY) - 3
+            expyear-end   = expyear-start + 8.
+ 
+        {&OUT} 
+            "           <select name='h-card-expyear' tabindex=27>" SKIP.
+             
+        IF card-expyear = 0 THEN 
+            {&OUT} 
+                "               <option value=0 SELECTED>Year</option>" SKIP.
+        ELSE 
+            {&OUT} 
+                "               <option value=0 >Year</option>" SKIP.                
+         
+        DO x = expyear-start TO expyear-end:
+            
+            IF x = card-expyear THEN 
+                {&OUT}
+                    "               <option Value=" x " SELECTED>" x "</option>" SKIP.
+            ELSE 
+                {&OUT}
+                    "               <option value=" x " >" x "</option>" SKIP.   
+                     
+        END.  /** of do - build year list **/ 
+  
+        {&OUT}
+            "           </select>" SKIP
+            "       </td>" SKIP
+            "       <TD>Security Code</TD>" SKIP.        
+                           
+		IF card-sec = 0 THEN
+            {&OUT}
+                "       <td colspan=2><input maxlength='3' size='2' type='text' name='h-card-sec' value='' tabindex=28></td>" SKIP. 
+		ELSE
+            {&OUT}
+                "       <td colspan=2><input maxlength='3' size='2' type='text' name='h-card-sec' value=~"" card-sec 
+                "~" tabindex=27></td>" SKIP.
+
+        {&OUT}
+            "</tr>" SKIP
+            "<input type='hidden' name='cust_id' value=~"" seq "~" />" SKIP
+            "<input type='hidden' name='crea_date' value=" ddate " />" SKIP 
+            "<input type='hidden' name='mod' value=" moddate " />" SKIP         
+            "<input type='hidden' name='formact' value='5' />" SKIP
+            "</table>" SKIP
+            "</DIV>     <!-- end of div class='table_3col'> -->" SKIP        
+	        "</DIV>         <!-- end of grid_12 -->" SKIP
+	        
+	        "</DIV>     <!-- end of row -->" SKIP    
+	        "<BR>" SKIP      
+	        "<div class='row'>" SKIP
+	        "   <div class='grid_3'> </DIV>" SKIP
+	        "   <div class='grid_2'><BUTTON type='submit' name='h-flowctrl' value='VALIDATION' class='btn'>Create Customer</BUTTON></div>" SKIP
+	        "   <div class='grid_2'> </DIV>" SKIP
+	        "   <div class='grid_2'><BUTTON type='reset' name='submit' value='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+	        "   <div class='grid_3'> </DIV>" SKIP
+	        "</div>" SKIP
+	        "<BR>" SKIP                       
+	        "</form>" SKIP.
+          
+    END.  /** of flowctrl = initial **/
+    
+    WHEN "VALIDATION" THEN DO:
+        
+        
+        /*** Basics - did you fill out the required fields?  ***/
+        {&OUT}
+			"<DIV class='row'>" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP
+			"<DIV class='grid_8'>" SKIP
+			"<CENTER><B>" SKIP.
+            
+		IF firstname = "" THEN
+		     {&OUT} "<P class='errmsg'>You are missing the First name.</P>". 
+		     
+		IF lastname = "" THEN
+		     {&OUT} "<P class='errmsg'>You are missing the Last name.</P>".
+		     
+		IF addr1 = "" THEN          
+		     {&OUT} "<P class='errmsg'>You are missing Address Line1 Info.</P>".
+		     
+		IF city = "" THEN          
+		     {&OUT} "<P class='errmsg'>You are missing the City Info.</P>".  
+		     
+		IF zipcode = "" THEN          
+		     {&OUT} "<P class='errmsg'>You are missing the Zip Info.</P>".  
+		     
+		IF state = "" THEN          
+		     {&OUT} "<P class='errmsg'>You are missing Address State Info.</P>". 
+		               
+		IF email1 = "" THEN
+		     {&OUT} "<P class='errmsg'>You are missing an E-mail Address.</P>".  
+		         
+		IF (email1 <> email1-dupe) OR (email2 <> email2-dupe) THEN
+		     {&OUT} "<P class='errmsg'>Your E-mail entries don't match.</P>".   
+                                        
+        IF firstname     = "" OR
+			lastname     = "" OR
+			addr1        = "" OR
+			city         = "" OR
+			zipcode      = "" OR
+			state        = "" OR
+			email1       = "" OR
+			email1-dupe  = "" OR
+			email1       <> email1-dupe OR 
+			email2       <> email2-dupe THEN
+
+            ASSIGN 
+                flowctrl = "ERRMSG".
+                   
+        {&OUT} 
+            "</B></CENTER>" SKIP        
+			"</DIV>         <!-- end of grid_8 -->" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP  
+			"</DIV>     <!-- end of row -->" SKIP.    
+
+        IF flowctrl <> "ERRMSG" THEN DO:
+                                            
+					            IF ITmessages = YES THEN 
+							        {&OUT}
+							            "<P>PROPATH = " PROPATH "</P>" SKIP 
+							            "<P>Program = " THIS-PROCEDURE:FILE-NAME "</P>" SKIP
+							            "<P>Location 1 = " SEARCH(THIS-PROCEDURE:FILE-NAME) "</P>" SKIP
+							            "<P>Location 2 = " SEARCH("rcode/" + THIS-PROCEDURE:FILE-NAME) "</P>" SKIP
+							            "<P>Location 3 = " SEARCH("./rcode/" + THIS-PROCEDURE:FILE-NAME) "</P>" SKIP
+							            "<P>Location 4 = " SEARCH("../rcode/" + THIS-PROCEDURE:FILE-NAME) "</P>" SKIP
+							            "<P>Location 5 = " SEARCH("TK/rcode/" + THIS-PROCEDURE:FILE-NAME) "</P>" SKIP
+							            "<P>Location 6 = " SEARCH("./TK/rcode/" + THIS-PROCEDURE:FILE-NAME) "</P>" SKIP
+							            "<P>Location 7 = " SEARCH("../TK/rcode/" + THIS-PROCEDURE:FILE-NAME) "</P>" SKIP
+							            "<P>Location 8 = " SEARCH("P:/OpenEdge/WRK/TK/rcode/" + THIS-PROCEDURE:FILE-NAME) "</P>" SKIP
+							            "<P>Location 9 = " SEARCH("P:/OpenEdge/WRK/depot/rcode/SUBcust-findR.r") "</P>" SKIP
+							            "<P>Location 10 (preferred technique) = " SEARCH("SUBcust-findR.r") "</P>" SKIP
+							            "<P>Location 11 = " SEARCH("./depot/rcode/SUBcust-findR.r") "</P>" SKIP
+							            "<BR><BR>" SKIP
+							            "<P>VARIABLES</P>" SKIP
+							            "<UL>" SKIP
+							            "<LI>Prefix = " prefix "</LI>" SKIP
+							            "<LI>First Name = " firstname "</LI>" SKIP
+							            "<LI>Middle Name = " midname "</LI>" SKIP
+							            "<LI>Last Name = " lastname "</LI>" SKIP
+							            "<LI>Suffix = " suffix "</LI>" SKIP
+							            "<LI>Email 1 = " email1 "</LI>" SKIP
+							            "<LI>Cust ID = " o-cust-id "</LI>" SKIP
+							            "<LI>Addr ID = " o-cust-addr-id "</LI>" SKIP
+							            "<LI>Cust Exist = " o-cust-exist "</LI>" SKIP
+							            "<LI>People Ran = " o-peop-ran "</LI>" SKIP
+							            "<LI>Cust Error = " o-cust-error "</LI>" SKIP
+							            "<BR><BR>" SKIP.
+							            
+		                
+	        RUN VALUE(SEARCH("SUBcust-findR.r"))      /* here a clue */
+/*            RUN "./depot/rcode/SUBcust-findR.r"*/
+/*            RUN "P:/OpenEdge/WRK/depot/rcode/SUBcust-findR.r"*/
+				(prefix,
+				firstname, 
+				midname,
+				lastname,
+				suffix,
+				email1,
+				OUTPUT o-cust-id,
+				OUTPUT o-cust-addr-id,
+				OUTPUT o-cust-exist,
+				OUTPUT o-peop-ran,  
+				OUTPUT o-cust-error) 
+				    NO-ERROR.
+				
+	        IF ERROR-STATUS:ERROR OR ERROR-STATUS:NUM-MESSAGES > 0 THEN
+	            {&OUT}
+	                "<H2>ERROR! Notify Solsource immediately.  " ERROR-STATUS:GET-MESSAGE (1) "</H2>" SKIP.
+	                             
+																	        IF ITmessages = YES THEN 
+																		        {&OUT} "POST<BR>" SKIP
+																		            "<LI>Cust ID = " o-cust-id "</LI>" SKIP
+																	                "<LI>Addr ID = " o-cust-addr-id "</LI>" SKIP
+																	                "<LI>Cust Exist = " o-cust-exist "</LI>" SKIP
+																	                "<LI>People Ran = " o-peop-ran "</LI>" SKIP
+																	                "<LI>Cust Error = " o-cust-error "</LI>" SKIP
+																	                "<LI>recheck = " recheck "</LI>" SKIP
+																	                "<LI>flowctrl = " flowctrl "</LI>" SKIP.
+	                                 
+            IF recheck = NO THEN DO: 
+                	                                 
+		        /*** What do I do now that I've tried to find it? ***/
+		        IF o-cust-exist THEN DO:
+		            
+			        FIND people_mstr WHERE people_mstr.people_id = o-cust-id 
+			            NO-LOCK NO-ERROR.
+			            
+			        {&OUT}
+			            "<DIV class='row'>" SKIP
+			            "<DIV class='grid_2'> </DIV>" SKIP
+			            "<DIV class='grid_8'>" SKIP
+			            "<CENTER><B>" SKIP
+			            "<P class='errmsg'>Customer already exists with these values.</P></B>" SKIP
+			            "<FORM action='TK_custmakeU.r'>" SKIP
+			            "<INPUT type='hidden' name='whattorun' value=~"" whattorun "~" />" SKIP
+			            "<DIV class='table_col'>" SKIP
+			            "<TABLE>" SKIP
+			            "   <THEAD>" SKIP
+			            "       <TR>" SKIP
+			            "           <TH>Fields</TH>" SKIP 
+			            "           <TH>Your Entries</TH>" SKIP
+			            "           <TH><INPUT type='hidden' name='h-peopleid' value=~"" 
+			            people_mstr.people_id "~" />Existing Customer - " 
+			            people_mstr.people_id "</TH>" SKIP
+			            "       </TR>" SKIP
+			            "   </THEAD>" SKIP
+			            "   <TR>" SKIP
+			            "       <TD>Prefix</TD>" SKIP
+			            "       <TD>" prefix "</TD>" SKIP
+			            "       <TD>" people_mstr.people_prefix "</TD>" SKIP
+			            "   </TR>" SKIP
+			            "   <TR>" SKIP
+			            "       <TD>First Name</TD>" SKIP
+			            "       <TD>" firstname "</TD>" SKIP
+			            "       <TD>" people_mstr.people_firstname "</TD>" SKIP
+			            "   </TR>" SKIP
+			            "   <TR>" SKIP
+			            "       <TD>Middle Name</TD>" SKIP
+			            "       <TD>" midname "</TD>" SKIP
+			            "       <TD>" people_mstr.people_midname "</TD>" SKIP
+			            "   </TR>" SKIP
+			            "   <TR>" SKIP
+			            "       <TD>Last Name</TD>" SKIP
+			            "       <TD>" lastname "</TD>" SKIP
+			            "       <TD>" people_mstr.people_lastname "</TD>" SKIP
+			            "   </TR>" SKIP
+			            "   <TR>" SKIP
+			            "       <TD>Suffix</TD>" SKIP
+			            "       <TD>" suffix "</TD>" SKIP
+			            "       <TD>" people_mstr.people_suffix "</TD>" SKIP
+			            "   </TR>" SKIP
+			            "   <TR>" SKIP 
+			            "        <TD>Preferred Name</TD>" SKIP              /* 1dot5 */
+			            "        <TD>" prefname "</TD>" skip
+			            "        <TD>" people_mstr.people_prefname "</TD>" skip
+			            "   </TR>" skip
+			            "   <TR>" SKIP
+			            "       <TD>Email</TD>" SKIP
+			            "       <TD>" email1 "</TD>" SKIP
+			            "       <TD>" people_mstr.people_email "</TD>" SKIP
+			            "   </TR>" SKIP
+			            "   <TR>" SKIP
+			            "      <TH colspan=3> </TH>" SKIP
+			            "   </TR>" SKIP
+			            "   <TR>" SKIP
+			            "       <TD></TD>" SKIP
+			            "       <TD><BUTTON type='submit' name='h-flowctrl' value='INITIAL' class='btn'>Create NEW Customer</BUTTON></TD>" SKIP
+			            "       <TD><BUTTON type='submit' name='h-flowctrl' value='UPDATE' class='btn'>Edit EXISTING Customer</BUTTON></TD>" SKIP
+			            "   </TR>"
+			            "</TABLE>" SKIP
+			            "</DIV>    <!-- end of table_col -->" SKIP
+				        "</DIV>         <!-- end of grid_8 -->" SKIP
+				        "<DIV class='grid_2'> </DIV>" SKIP  
+				        "</DIV>     <!-- end of row -->" SKIP    
+				        "</form>" SKIP.            
+		                                
+		        END.  /** of if customer already exists **/
+		             
+		            
+		        ELSE IF flowctrl <> "ERRMSG" THEN 
+		            ASSIGN 
+		                flowctrl = "SAVE_DATA".    
+	            
+	        END.  /** of recheck = NO **/
+	        
+	        ELSE 
+	           ASSIGN 
+	               flowctrl = "SAVE_DATA".
+	        
+	                                                                            IF ITfeedback = YES THEN  
+	                                                                               {&OUT}  "<p>1st find - customer" SKIP
+	                                                                                       "<br>o-cust-id--" o-cust-id SKIP
+	                                                                                       "<br>o-cust-addr-id--" o-cust-addr-id SKIP
+	                                                                                       "<br>o-cust-exist--" o-cust-exist SKIP
+	                                                                                       "<br>o-peop-ran--" o-peop-ran SKIP  
+	                                                                                       "<br>o-cust-error--" o-cust-error SKIP
+	                                                                                       "<br>email1 -- " email1 SKIP "</p>" .
+
+        END.  /** of if flowctrl <> "ERRMSG" **/
+    
+    END.  /*** of flowctrl = validate ***/
+    
+    WHEN "UPDATE" THEN DO: 
+
+        {&OUT}
+            "<FORM action='TK_custmakeU.r'>" SKIP            
+            "<INPUT type='hidden' name='whattorun' value=~"" whattorun "~" />" SKIP
+            "<DIV class='row'>" SKIP
+            
+            "<DIV class='grid_12'>" SKIP
+            "<div class='table_3col'>" SKIP
+            "<table>" SKIP
+            "   <THEAD>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan=2>Personal</TH>" SKIP                               
+            "           <TH colspan=2>Address</TH>" SKIP
+            "           <TH colspan=2>Contact</TH>" SKIP
+            "       </TR>" SKIP
+            "   </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <TD>Prefix</TD>" SKIP
+            "       <TD><input type='text' name='h-prefix' value=~"" prefix "~" tabindex=1 autofocus /></TD>" SKIP
+            "       <TD>Address Line 1</TD>" SKIP
+            "       <TD class='REQ'><input type='text' name='h-addr1' value=~"" addr1 "~" tabindex=7 />" SKIP         
+            "       <TD>Home Number</TD>" SKIP
+            "       <TD><input type='text' name='h-homephone' value=~"" homephone "~" tabindex=14></TD>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TD>First Name</TD>" SKIP
+            "       <TD class='REQ'><input type='text' name='h-firstname' value=~"" firstname "~" tabindex=2 /></TD>" SKIP
+            "       <TD>Address Line 2</TD>" SKIP
+            "       <TD class='REQ'><input type='text' name='h-addr2' value=~"" addr2 "~" tabindex=8 />" SKIP         
+            "       <TD>Work Number</TD>" SKIP
+            "       <TD><input type='text' name='h-workphone' value=~"" workphone "~" tabindex=15></TD>" SKIP
+            "   </TR>" SKIP             
+            "   <TR>" SKIP
+            "       <TD>Middle Name</TD>" SKIP
+            "       <TD><input type='text' name='h-midname' value=~"" midname "~" tabindex=3 /></TD>" SKIP
+            "       <TD>Address Line 3</TD>" SKIP
+            "       <TD><input type='text' name='h-addr3' value=~"" addr3 "~" tabindex=9 />" SKIP         
+            "       <TD>Cell Number</TD>" SKIP
+            "       <TD><input type='text' name='h-cellphone' value=~"" cellphone "~" tabindex=16></TD>" SKIP
+            "   </TR>" SKIP             
+            "   <TR>" SKIP
+            "       <TD>Last Name</TD>" SKIP
+            "       <TD class='REQ'><input type='text' name='h-lastname' value=~"" lastname "~" tabindex=4 /></TD>" SKIP
+            "       <TD>City</TD>" SKIP
+            "       <TD class='REQ'><input type='text' name='h-city' value=~"" city "~" tabindex=10 />" SKIP         
+            "       <TD>Fax Number</TD>" SKIP
+            "       <TD><input type='text' name='h-faxphone' value=~"" faxphone "~" tabindex=17></TD>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TD>Suffix</TD>" SKIP
+            "       <TD><input type='text' name='h-suffix' value=~"" suffix "~" tabindex=5></TD>" SKIP
+            "       <TD>State</TD>" SKIP
+            "       <TD class='REQ'>" SKIP
+            "           <select name='h-state' tabindex=11>" SKIP
+            "               <option value=''></OPTION>" SKIP.
+
+            {../depot/src/WebSpeed/StateDropDown.i state country}.                       /* 1dot6 */
+
+/*        FOR EACH state_mstr  WHERE                                                                                      */
+/*                 state_mstr.state_deleted = ? NO-LOCK:  /* 1dot4 */                                                     */
+/*                                                                                                                        */
+/*            IF state_mstr.State_ISO = state THEN                                                                        */
+/*                isselected  = "SELECTED".                                                                               */
+/*            ELSE                                                                                                        */
+/*                isselected  = "".                                                                                       */
+/*                                                                                                                        */
+/*            {&OUT}                                                                                                      */
+/*                "<option value=~"" state_mstr.State_ISO "~" " isselected " >" state_mstr.State_Display_Name "</option>".*/
+/*                                                                                                                        */
+/*        END.  /** of 4ea. state_mstr **/                                                                                */
+
+        {&OUT}
+            "           </SELECT>" SKIP
+            "       </TD>" SKIP
+            "       <td>Magento Customer Number</td>" SKIP
+            "       <td><input type='text' name='h-magentoID' value=~"" v-magentoID "~" tabindex=18 /></TD>" SKIP           
+            "   </tr>" SKIP
+            "   <tr>" SKIP            
+            "       <td>Preferred Name</td>" SKIP
+            "       <TD><input type='text' name='h-prefname' value=~"" prefname "~" tabindex=6 /></TD>" SKIP      /* 1dot5 */            
+            "       <td>Zip Code</td>" SKIP
+            "       <td class='REQ'><input type='text' name='h-zipcode' value=~"" zipcode "~" tabindex=12 /></td>" SKIP
+            "       <td>Professional Customer</td>" SKIP
+            "       <td><input type='checkbox' name='prof_al' value='true' tabindex=19 /></td>" SKIP              /* needs help? */
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <td></td>" SKIP
+            "       <TD></TD>" SKIP            
+            "       <td>Country</td>" SKIP
+            "       <TD>" SKIP
+            "           <SELECT name='h-country' tabindex=13>" SKIP
+            "               <option value=''></option>".                                      
+
+        {../depot/src/WebSpeed/CountryDropDownList.i country}.                               /* 1dot6 */
+            
+/*        FOR EACH country_mstr WHERE                                                                                             */
+/*                 country_mstr.country_deleted = ? NO-LOCK      /* 1dot4 */                                                      */
+/*            BREAK BY country_mstr.Country_Display_Name:                                                                         */
+/*                                                                                                                                */
+/*            IF country_mstr.Country_ISO = country THEN                                                                          */
+/*                isselected = "SELECTED".                                                                                        */
+/*            ELSE                                                                                                                */
+/*                isselected = "".                                                                                                */
+/*                                                                                                                                */
+/*            {&OUT}                                                                                                              */
+/*                "<option value=~"" country_mstr.Country_ISO "~" " isselected " >" country_mstr.Country_Display_Name "</option>".*/
+/*                                                                                                                                */
+/*        END.  /* FOR EACH country_mstr */                                                                                       */
+        
+        {&OUT}
+            "           </SELECT>" SKIP
+            "       </TD>" SKIP
+            "       <TD colspan=2></TD>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TH colspan=6>Email Information</TH>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TD>E-mail Address</TD>" SKIP
+            "       <td colspan=2 class='REQ'><input size=50 type='text' name='h-email1' value=~"" email1 "~" tabindex=20 /></td>" SKIP
+            "       <td>Reenter E-mail</td>" SKIP
+            "       <td colspan=2 class='REQ'><input size=50 type='text' name='h-email1-dupe' value=~"" email1-dupe "~" tabindex=21 /></td>" SKIP
+            "   </tr>" SKIP
+            "   <tr>" SKIP
+            "       <td>Second E-mail Address</td>" SKIP
+            "       <td colspan=2><input size=50 type='text' name='h-email2' value=~"" email2 "~" tabindex=22 /></td>" SKIP
+            "       <td>Second Reenter E-mail</td>" SKIP
+            "       <td colspan=2><input size=50 type='text' name='h-email2-dupe' value=~"" email2-dupe "~" tabindex=23 /></td>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <TH colspan=6>Credit Card Information</TH>" SKIP
+            "   </TR>" SKIP
+            "   <tr>" SKIP
+            "       <td>Credit Card Type</td>" SKIP
+            "       <td colspan=2>" SKIP
+            "           <select name='h-card-type' tabindex=24>" SKIP
+            "               <option value=~"" card-type "~" selected>" card-type "</option>" SKIP
+            "               <option value='Visa'>Visa</option>" SKIP
+            "               <option value='MasterCard'>MasterCard</option>" SKIP
+            "               <option value='Discover'>Discover</option>" SKIP
+            "               <option value='AMEX'>American Express</option>" SKIP
+            "           </select>" SKIP
+            "       </TD>" SKIP
+            "       <td>Credit Card Number</td>" SKIP
+            "       <td colspan=2><input maxlength='16' type='text' name='h-card' value=~"" card "~" tabindex=25 /></td>" SKIP
+            "   </TR>" SKIP
+            "   <TR>" SKIP
+            "       <td>Expiration Date</td>" SKIP
+            "       <td colspan=2>" SKIP 
+            "           <select name='h-card-expmonth' tabindex=26>" SKIP.
+            
+        IF card-expmonth = 0 THEN 
+            {&OUT}                           
+                "               <option value=0 SELECTED>Select Exp. Month</option>" SKIP.
+        ELSE 
+            {&OUT}    
+                "               <option value=0>Select Exp. Month</option>" SKIP. 
+  
+        DO i = 1 TO 12:
+            
+            IF i = card-expmonth THEN 
+                {&OUT}
+                    "               <option value=" i "  SELECTED>" monthname[i] "</option>" SKIP.
+            ELSE     
+                {&OUT} 
+                    "               <option value=" i " >" monthname[i] "</option>" SKIP.
+                    
+        END.  /** of do i = 1 to 12 --- output month options **/
+
+        {&OUT}
+            "           </select>" SKIP.
+                                              
+  
+        ASSIGN 
+            expyear-start = YEAR(TODAY) - 3
+            expyear-end   = expyear-start + 8.
+
+        {&OUT} 
+            "           <select name='h-card-expyear' tabindex=27>" SKIP.
+             
+        IF card-expyear = 0 THEN 
+            {&OUT} 
+                "               <option value=0 SELECTED>Year</option>" SKIP.
+        ELSE 
+            {&OUT} 
+                "               <option value=0 >Year</option>" SKIP.                
+         
+        DO x = expyear-start TO expyear-end:
+            
+            IF x = card-expyear THEN 
+                {&OUT}
+                    "               <option Value=" x " SELECTED>" x "</option>" SKIP.
+            ELSE 
+                {&OUT}
+                    "               <option value=" x " >" x "</option>" SKIP.   
+                     
+        END.  /** of do - build year list **/
+  
+        {&OUT}
+            "           </select>" SKIP
+            "       </td>" SKIP
+            "       <TD>Security Code</TD>" SKIP.        
+                           
+        IF card-sec = 0 THEN
+            {&OUT}
+                "       <td colspan=2><input maxlength='3' size='2' type='text' name='h-card-sec' value='' tabindex=29></td>" SKIP. 
+        ELSE
+            {&OUT}
+                "       <td colspan=2><input maxlength='3' size='2' type='text' name='h-card-sec' value=~"" card-sec 
+                "~" tabindex=30></td>" SKIP.
+
+        {&OUT}
+            "</tr>" SKIP
+            "<input type='hidden' name='cust_id' value=~"" seq "~" />" SKIP
+            "<input type='hidden' name='crea_date' value=" ddate " />" SKIP
+            "<input type='hidden' name='mod' value=" moddate " />" SKIP
+            "<input type='hidden' name='formact' value='5' />" SKIP
+            "</table>" SKIP
+            "</DIV>     <!-- end of div class='table_3col'> -->" SKIP        
+            "</DIV>         <!-- end of grid_10 -->" SKIP
+              
+            "</DIV>     <!-- end of row -->" SKIP    
+            "<BR>" SKIP      
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <div class='grid_2'><INPUT TYPE='hidden' name='h-recheck' value='YES' /><BUTTON type='submit' name='h-flowctrl' value='VALIDATION' class='btn'>Save Customer</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' name='submit' value='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "<BR>" SKIP                       
+            "</form>" SKIP.        
+    
+        
+    END.  /*** of flowctrl = update ***/
+        
+    WHEN "FEEDBACK" THEN DO:
+        
+        {&OUT}
+            "<H2>Inside Feedback</H2>" SKIP.
+        
+    END.  /*** of flowctrl = feedback ***/
+    
+    WHEN "SAVE_DATA" THEN DO: 
+        
+        {&OUT}
+            "<H2>Inside Save_Data</H2>" SKIP.
+        
+    END.  /** of flowctrl = save_data **/
+        
+    OTHERWISE DO:
+        
+        {&OUT}
+			"<DIV class='row'>" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP
+			"<DIV class='grid_8'>" SKIP
+            "   <CENTER><B><P class='errmsg'>Something unexpected happened.  Please contact "
+            "<A href='mailto:hhi.techsupport@mysolsource.com'>Solsource</A> immediately.</P>" SKIP
+			"</DIV>         <!-- end of grid_8 -->" SKIP
+			"<DIV class='grid_2'> </DIV>" SKIP  
+			"</DIV>     <!-- end of row -->" SKIP.
+        
+    END.  /*** of otherwise do ***/
+    
+END CASE. /** of case flowctrl **/
+
+IF flowctrl = "SAVE_DATA" THEN DO:
+
+												    IF ITmessages = YES THEN 
+												        {&OUT}
+												            "<DIV class='row'>" SKIP
+												            "<DIV class='grid_2'> </DIV>" SKIP
+												            "<DIV class='grid_8'>" SKIP
+												            "   <P class='errmsg'>Write records to the database in here.</P>" SKIP
+												            "   <OL>" SKIP
+												            "       <LI>people_id   = " peopleid    "</LI>" SKIP
+												            "       <LI>Prefix      = " prefix      "</LI>" SKIP
+												            "       <LI>Firstname   = " firstname       "</LI>" SKIP
+												            "       <LI>Middlename  = " midname       "</LI>" SKIP
+												            "       <LI>Lastname    = " lastname       "</LI>" SKIP
+												            "       <LI>Suffix      = " suffix      "</LI>" SKIP
+												            "       <LI>Email       = " email1      "</LI>" SKIP
+												            "       <LI>Email 2     = " email2      "</LI>" SKIP
+												            
+												/*            "       <LI>addr_id     = " addrid      "</LI>" SKIP*/
+												            "       <LI>Address 1   = " addr1       "</LI>" SKIP
+												            "       <LI>Address 2   = " addr2       "</LI>" SKIP
+												            "       <LI>Address 3   = " addr3       "</LI>" SKIP
+												            "       <LI>City        = " city        "</LI>" SKIP
+												            "       <LI>State       = " state  "</LI>" SKIP
+												            "       <LI>ZIP         = " zipcode         "</LI>" SKIP
+												            
+												            "   </OL>" SKIP
+												            "</DIV>         <!-- end of grid_8 -->" SKIP
+												            "<DIV class='grid_2'> </DIV>" SKIP  
+												            "</DIV>     <!-- end of row -->" SKIP.    
+
+    SAVE-LOOP:
+    DO TRANSACTION ON ERROR UNDO save-loop: 
+        
+        /**************  Create an Address Record *****************/
+        RUN VALUE(SEARCH("SUBaddr-findR.r"))
+		   (addr1,
+		    addr2,
+		    addr3,
+		    city,
+		    state,
+		    zipcode,
+		    country,
+		    OUTPUT o-addr-id,
+		    OUTPUT o-addr-error,
+		    OUTPUT o-addr-ran).
+                            
+
+        RUN VALUE(SEARCH("SUBaddr-ucU.r"))        
+            (o-addr-id,
+            addr1,
+            addr2,
+            addr3,
+            city,
+            state,
+            zipcode,
+            country,
+            country-type,
+            OUTPUT o-addr-id,
+            OUTPUT o-addr-create,
+            OUTPUT o-addr-update,
+            OUTPUT o-addr-avail,
+            OUTPUT o-addr-succes).        
+        
+        
+        /**************  Create a People Record *******************/
+        RUN VALUE(SEARCH("SUBpeop-findR.r"))        
+            (prefix,
+             firstname,
+             midname,
+             lastname,
+             suffix,
+             OUTPUT o-people-id,
+             OUTPUT o-people-addr-id,
+             OUTPUT o-people-error,
+             OUTPUT o-people-ran).
+                                 
+        RUN VALUE(SEARCH("SUBpeop-ucU.r"))
+		    (o-people-id,
+		    firstname,
+		    midname,
+		    lastname,
+		    prefix,
+		    suffix,
+		    comp,
+		    gen,                            
+		    homephone,
+		    workphone,
+		    cellphone,
+		    faxphone,
+		    email1,
+		    email2,
+		    o-addr-id,  
+		    peop-contact,
+		    dob,
+		    second-addr,
+		    "",           /* prefname */
+		    "",           /* title */
+		    OUTPUT o-peop-id,
+		    OUTPUT o-peop-crrate,
+		    OUTPUT o-peop-update,
+		    OUTPUT o-peop-avail,
+		    OUTPUT o-peop-success).    
+		    
+		/************ Workaround for adding preferred name to people record creation *********/    
+		
+		FIND people_mstr WHERE people_mstr.people_id = o-peop-id EXCLUSIVE-LOCK NO-ERROR.  /* 1dot5 */
+		IF AVAILABLE (people_mstr) THEN DO:
+		    ASSIGN
+		      people_mstr.people_prefname = prefname.
+		END. /** of if avail people_mstr**/		    
+		          
+   
+        /*************************  Create a Customer Record  **************************/
+        RUN VALUE(SEARCH("SUBcust-ucU.r"))
+	        (o-peop-id,
+	        card,                                   
+	        card-sec,
+	        card-type,
+	        card-expmonth,
+	        card-expyear,
+	        OUTPUT o-cust-id,
+	        OUTPUT o-cust-create,
+	        OUTPUT o-cust-update,
+	        OUTPUT o-cust-error,
+	        OUTPUT o-cust-succes).
+        
+        /**************************  Create a Shadow Customer Record  *******************/
+        RUN VALUE(SEARCH("SUBscust-ucU.r"))
+		    (o-cust-id,
+		    v-magentoID,
+		    prof,
+		    doc-id,
+		    OUTPUT o-scust-id,
+		    OUTPUT o-scust-crrat,
+		    OUTPUT o-scust-update,
+		    OUTPUT o-scust-error,
+		    OUTPUT o-scust-succes).               
+   
+																								        IF ITmessages = YES THEN  
+																								            {&OUT} "All is well".   
+            
+        {&OUT}
+            "<form action='TK_custmakeU.r'>"            
+            "<INPUT type='hidden' name='whattorun' value=~"" whattorun "~" />" SKIP
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP
+            "   <CENTER><B><P class='errmsg'>Database Updated.</P>" SKIP
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+			"<div class='row'>" SKIP
+			"   <div class='grid_5'> </DIV>" SKIP
+			"   <div class='grid_2'><button type='submit' name='h-flowctrl' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+			"   <div class='grid_5'> </DIV>" SKIP
+			"</div>" SKIP
+		    "</FORM>" SKIP
+			"<BR>" SKIP.            
+                     
+        
+    END.    /** of transaction --- save-loop **/   
+            
+END.  /* of if flowctrl = save_data */
+
+IF flowctrl = "ERRMSG" THEN DO:    
+                                                                        
+                                                             IF ITfeedback = YES THEN
+                                                                                  {&OUT} "<p> state -- " state SKIP  
+                                                                                         "<br> Zip -- " zipcode  SKIP
+                                                                                         "<br> country -- " country " </p>".
+                                                             
+
+        {&OUT}
+            "<form action='TK_custmakeU.r'>" SKIP
+            "<INPUT type='hidden' name='whattorun' value=~"" whattorun "~" />" SKIP
+            
+            "<INPUT type='hidden' name='h-peopleid' value=~"" peopleid "~" />" SKIP
+            "<INPUT type='hidden' name='h-prefix' value=~"" prefix "~" />" SKIP
+            "<INPUT type='hidden' name='h-firstname' value=~"" firstname "~" />" SKIP
+            "<INPUT type='hidden' name='h-midname' value=~"" midname "~" />" SKIP
+            "<INPUT type='hidden' name='h-lastname' value=~"" lastname "~" />" SKIP
+            "<INPUT type='hidden' name='h-suffix' value=~"" suffix "~" />" SKIP
+            "<INPUT type='hidden' name='h-prefname' value=~"" prefname "~" />" SKIP       /* 1dot5 */
+            
+            "<INPUT type='hidden' name='h-addr1' value=~"" addr1 "~" />" SKIP
+            "<INPUT type='hidden' name='h-addr2' value=~"" addr2 "~" />" SKIP
+            "<INPUT type='hidden' name='h-addr3' value=~"" addr3 "~" />" SKIP
+            "<INPUT type='hidden' name='h-city' value=~"" city "~" />" SKIP
+            "<INPUT type='hidden' name='h-state' value=~"" state "~" />" SKIP
+            "<INPUT type='hidden' name='h-zipcode' value=~"" zipcode "~" />" SKIP
+            "<INPUT type='hidden' name='h-country' value=~"" country "~" />" SKIP
+            
+            "<INPUT type='hidden' name='h-homephone' value=~"" homephone "~" />" SKIP
+            "<INPUT type='hidden' name='h-workphone' value=~"" workphone "~" />" SKIP
+            "<INPUT type='hidden' name='h-cellphone' value=~"" cellphone "~" />" SKIP
+            "<INPUT type='hidden' name='h-faxphone' value=~"" faxphone "~" />" SKIP
+            
+            "<INPUT type='hidden' name='h-email1' value=~"" email1 "~" />" SKIP
+            "<INPUT type='hidden' name='h-email2' value=~"" email2 "~" />" SKIP           
+            
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP                                                           
+            "   <CENTER><B><P class='errmsg'>Validation Error!</P>" SKIP
+            "           <P class='errmsg'>Please re-enter data.</P>" SKIP
+            "   </CENTER>" SKIP
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<div class='row'>" SKIP
+			"   <div class='grid_5'> </DIV>" SKIP
+			"   <div class='grid_2'><button type='submit' name='h-flowctrl' value='UPDATE' class='btn'>Correct Data</BUTTON></div>" SKIP
+			"   <div class='grid_5'> </DIV>" SKIP
+			"</div>" SKIP
+			"<BR>" SKIP.
+            
+END.  /* of if flowctrl = errmsg */    
+  
+</SCRIPT>
+</BODY>
+</HTML>

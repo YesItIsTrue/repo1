@@ -1,0 +1,367 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<TITLE>Lab/Test Report Page</TITLE>
+
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.3">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="06/Nov/15">
+    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+
+/*------------------------------------------------------------------
+    File:           Test_Rpt.r
+    Description:    report page for lab_mstr and test_mstr tables in the HHI database
+    Created:   
+    Version 1.1 - By Jacob Luttrell 1/Oct/15 
+                    - Table title correction
+                    - extra column removal
+                    - added start and end effectivity dates to criteria
+                    - added Test_family
+                    - added Test_def_dom
+                    - added Test_def_Prof
+                    - added Test_lblpertest
+                    - added test_grp_qty           
+                    - added web name
+                    - fixed divs
+                    - added test_grp_qty 
+                    - Marked by 1dot1.   
+                    
+    Version: 1.2    By Harold Luttrell, Sr.
+            Date: 5/Oct/15
+            Removed the 'migration' from the Magento link.
+            Identified by /* 1dot2 */     
+ 
+    Version: 1.3 By Jacob Luttrell
+            Date: 6/Nov/15
+            Added tfoot and whattorun for the hyperlink          
+-------------------------------------------------------------------*/
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT>
+<SCRIPT LANGUAGE="SpeedScript">
+
+DEFINE VARIABLE f-lab-id        LIKE lab_mstr.lab_ID NO-UNDO.
+DEFINE VARIABLE t-lab-id        LIKE lab_mstr.lab_ID NO-UNDO.
+DEFINE VARIABLE f-tst-type      LIKE test_mstr.test_type NO-UNDO.
+DEFINE VARIABLE t-tst-type      LIKE test_mstr.test_type NO-UNDO.
+DEFINE VARIABLE f-tst-name      LIKE test_mstr.test_name NO-UNDO.
+DEFINE VARIABLE t-tst-name      LIKE test_mstr.test_name NO-UNDO.
+DEFINE VARIABLE f-tst-sku       LIKE test_mstr.test_sku NO-UNDO.
+DEFINE VARIABLE t-tst-sku       LIKE test_mstr.test_sku NO-UNDO.
+DEFINE VARIABLE f-tst-lab-desc  LIKE test_mstr.test_lab_desc NO-UNDO.   
+DEFINE VARIABLE t-tst-lab-desc  LIKE test_mstr.test_lab_desc NO-UNDO.
+DEFINE VARIABLE f-start-eff     LIKE test_mstr.test_starteff NO-UNDO.       /* 1dot1 */
+DEFINE VARIABLE t-start-eff     LIKE test_mstr.test_starteff NO-UNDO.       /* 1dot1 */
+DEFINE VARIABLE f-end-eff       LIKE test_mstr.test_endeff NO-UNDO.         /* 1dot1 */
+DEFINE VARIABLE t-end-eff       LIKE test_mstr.test_endeff NO-UNDO.         /* 1dot1 */
+DEFINE VARIABLE ppl-name        AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE act             AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE f-disp-start  AS CHARACTER                 NO-UNDO.                   /* 1dot3 */       /* search by and display search */
+DEFINE VARIABLE f-disp-end    AS CHARACTER                 NO-UNDO.                   /* 1dot3 */                   /* | */
+DEFINE VARIABLE f-out-start   AS CHARACTER                 NO-UNDO.                   /* 1dot3 */                   /* | */
+DEFINE VARIABLE f-out-end     AS CHARACTER                 NO-UNDO.                   /* 1dot3 */                   /* | */
+DEFINE VARIABLE f-starteff    AS DATE                      NO-UNDO.                   /* 1dot3 */                   /* | */
+DEFINE VARIABLE f-endeff      AS DATE                      NO-UNDO.                   /* 1dot3 */                   /* | */
+
+DEFINE VARIABLE t-disp-start  AS CHARACTER                 NO-UNDO.                   /* 1dot3 */                   /* | */
+DEFINE VARIABLE t-disp-end    AS CHARACTER                 NO-UNDO.                   /* 1dot3 */                   /* | */
+DEFINE VARIABLE t-out-start   AS CHARACTER                 NO-UNDO.                   /* 1dot3 */                   /* | */
+DEFINE VARIABLE t-out-end     AS CHARACTER                 NO-UNDO.                   /* 1dot3 */                   /* | */
+DEFINE VARIABLE t-starteff    AS DATE                      NO-UNDO.                   /* 1dot3 */                   /* | */
+DEFINE VARIABLE t-endeff      AS DATE                      NO-UNDO.                   /* 1dot3 */                   /* _ */
+
+DEFINE VARIABLE disp-start  AS CHARACTER                 NO-UNDO.                     /* 1dot3 */         /* Display in fromto table */
+DEFINE VARIABLE disp-end    AS CHARACTER                 NO-UNDO.                     /* 1dot3 */                   /* | */
+DEFINE VARIABLE out-start   AS CHARACTER                 NO-UNDO.                     /* 1dot3 */                   /* | */
+DEFINE VARIABLE out-end     AS CHARACTER                 NO-UNDO.                     /* 1dot3 */                   /* | */
+DEFINE VARIABLE starteff    AS DATE                      NO-UNDO.                     /* 1dot3 */                   /* | */
+DEFINE VARIABLE endeff      AS DATE                      NO-UNDO.                     /* 1dot3 */                   /* _ */
+
+/********************** assign stuff ********************************/
+ASSIGN 
+    act             = get-value("s-act")
+
+    f-lab-id        = get-value("s-from_id")
+    t-lab-id        = get-value("s-to_id")
+    f-tst-type      = get-value("s-from_type")
+    t-tst-type      = get-value("s-to_type")
+    f-tst-name      = get-value("s-from_name")
+    t-tst-name      = get-value("s-to_name")
+    f-tst-sku       = get-value("s-f-tst-sku")
+    t-tst-sku       = get-value("s-t-tst-sku")
+    f-tst-lab-desc  = get-value("s-f-tst-lab-desc")
+    t-tst-lab-desc  = get-value("s-t-tst-lab-desc")
+/*    f-start-eff     = DATE(get-value("s-f-start-eff"))                    /* 1dot1 */*/
+/*    t-start-eff     = DATE(get-value("s-t-start-eff"))                    /* 1dot1 */*/
+/*    f-end-eff       = DATE(get-value("s-f-end-eff"))                     /* 1dot1 */ */
+/*    t-end-eff       = DATE(get-value("s-t-end-eff"))                     /* 1dot1 */ */
+    f-disp-start      = get-value('f-html5-start')                                      /* 1dot3 */
+    f-disp-end        = get-value('f-html5-end')                                        /* 1dot3 */
+    t-disp-start      = get-value('t-html5-start')                                      /* 1dot3 */
+    t-disp-end        = get-value('t-html5-end')                                        /* 1dot3 */
+    .
+    
+        RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                        /* 1dot3 */
+            f-disp-start,                                                               /* 1dot3 */
+            OUTPUT f-starteff                                                           /* 1dot3 */    
+            ).                                                                          /* 1dot3 */
+        
+        RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                        /* 1dot3 */
+            f-disp-end,                                                                 /* 1dot3 */
+            OUTPUT f-endeff                                                             /* 1dot3 */
+            ).                                                                          /* 1dot3 */
+
+        RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                        /* 1dot3 */
+            t-disp-start,                                                               /* 1dot3 */
+            OUTPUT t-starteff                                                           /* 1dot3 */    
+            ).                                                                          /* 1dot3 */
+        
+        RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                        /* 1dot3 */
+            t-disp-end,                                                                 /* 1dot3 */
+            OUTPUT t-endeff                                                             /* 1dot3 */
+            ).                                                                          /* 1dot3 */ 
+               
+IF act = "" THEN 
+    ASSIGN 
+        act = "Search".
+        
+/*********************** body **************************************/
+IF act = "Search" THEN DO:
+   {&OUT} 
+/*"        <CENTER>" SKIP*/
+		"<DIV class='row'>" SKIP                                                                                                      /* 1dot1 */
+		"<DIV class='grid_3'> </DIV>" SKIP                                                                                            /* 1dot1 */
+		"<DIV class='grid_6'>" SKIP                                                                                                   /* 1dot1 */
+"        <div class='table_2col'>" SKIP                                                                                                 
+"            <FORM>"    SKIP
+"                <Table>" SKIP
+"                    <tr>" SKIP
+"                        <th colspan=4> Search Criteria</th>" SKIP
+"                    </tr>"  SKIP
+"                    <tr>" SKIP
+"                        <td>Lab ID</td><td><INPUT type='text' name='s-from_id' /></td>" SKIP
+"                        <td>To</td><td><INPUT type='text' name='s-to_id'/></td>" SKIP
+"                    </tr>" SKIP
+"                    <tr>" SKIP
+"                        <td>Test Type</td><td><INPUT type='text' name='s-from_type' /></td>" SKIP
+"                        <td>To</td><td><INPUT type='text' name='s-to_type'/></td>" SKIP
+"                    </tr>" SKIP
+"                    <tr>" SKIP
+"                        <td>Name</td><td><INPUT type='text' name='s-from_name' /></td>" SKIP
+"                        <td>To</td><td><INPUT type='text' name='s-to_name'/></td>" SKIP
+"                    </tr>" SKIP
+"                    <tr>" SKIP
+"                        <td>Sku Number</td><td><INPUT type='text' name='s-f-tst-sku' /></td>" SKIP
+"                        <td>To</td><td><input type='text' name='s-t-tst-sku' /></td>" SKIP
+"                    </tr>" SKIP
+"                    <tr>" SKIP
+"                        <td>Lab Description</td><td><input type='text' name='s-f-tst-lab-desc' /></td>" SKIP
+"                        <td>To</td><td><input type='text' name='s-t-tst-lab-desc' /></td>" SKIP
+"                    </tr>" SKIP
+"                    <tr>" SKIP
+"                        <td>Start Effectivity Date</td><td><input type='date' name='f-html5-start' /></td>" SKIP                       /* 1dot3 */
+"                        <td>To</td><td><input type='date' name='t-html5-start' /></td>" SKIP                                           /* 1dot3 */
+"                    </tr>" SKIP
+"                    <tr>" SKIP
+"                        <td>End Effectivity Date</td><td><input type='date' name='f-html5-end' /></td>" SKIP                           /* 1dot3 */
+"                        <td>To</td><td><input type='date' name='t-html5-end' /></td>" SKIP                                             /* 1dot3 */
+"                    </tr>" SKIP
+"                </Table>" SKIP
+"                </div>" SKIP                                                                                                           /* 1dot1 */
+				"</DIV>         <!-- end of grid_6 -->" SKIP                                                                            /* 1dot1 */
+				"<DIV class='grid_3'> </DIV>" SKIP                                                                                      /* 1dot1 */
+				"</DIV>     <!-- end of row -->" SKIP                                                                                   /* 1dot1 */
+				"<BR>" SKIP                                                                                                             /* 1dot1 */
+				"<div class='row'>" SKIP                                                                                                /* 1dot1 */
+				"   <div class='grid_3'> </DIV>" SKIP                                                                                   /* 1dot1 */ 
+		        "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                                    /* 1dot1 */  		   
+				"   <div class='grid_2'><BUTTON type='submit' name='s-act' value='Results' class='btn'>Search</BUTTON></div>" SKIP      /* 1dot1 */    
+				"   <div class='grid_2'> </DIV>" SKIP                                                                                   /* 1dot1 */
+				"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP                                     /* 1dot1 */        
+				"   <div class='grid_3'> </DIV>" SKIP                                                                                   /* 1dot1 */    
+				"</div>" SKIP                                                                                                           /* 1dot1 */
+				"<BR>" SKIP                                                                                                             /* 1dot1 */
+				
+/*"                <INPUT type='hidden' name='s-act' value='Results' />" SKIP */
+/*"                <INPUT type='submit' name='s-submit' value='Submit'/>" SKIP*/
+/*"                <INPUT type='reset' name='s-reset' value='Reset'/>" SKIP   */
+/*"                <INPUT type='button' name='s-back' value='Back'/>" SKIP    */
+"            </FORM>"   SKIP.
+END. /*** act 0 ***/
+/******************************************* Act 1 **************************************/
+IF act = "Results" THEN DO:
+    
+    {&OUT}
+/*        "<CENTER>" SKIP*/
+/*"        <form>" SKIP*/
+			"<DIV class='row'>" SKIP                                                                     /* 1dot1 */  
+/*			"<DIV class='grid_1'> </DIV>" SKIP                                                           /* 1dot1 */*/
+			"<DIV class='grid_12'>" SKIP                                                                 /* 1dot3 */
+"            <div class='table_report_FromTo'>" SKIP                                                     
+"                <table>" SKIP
+"                    <thead>" SKIP
+"                        <tr>" SKIP
+"                            <td colspan=14>Lab/Test Report</td>" SKIP                                     /* 1dot1 */
+"                        </tr>" SKIP
+"                        <tr>" SKIP
+"                            <th>From</th>" SKIP
+"                            <th>" f-lab-id "</th>" SKIP
+"                            <th>" f-tst-type "</th>" SKIP
+"                            <th>" f-tst-name "</th>" SKIP
+"                            <th>" f-tst-sku "</th>" SKIP
+"                            <th>" f-tst-lab-desc "</th>" SKIP
+                            "<th>" f-disp-start "</th>" SKIP                                                /* 1dot3 */
+                            "<th>" f-disp-end "</th>" SKIP                                                  /* 1dot3 */
+"                           <th colspan=6>  </th> " SKIP
+"                        </tr>" SKIP
+"                        <tr>" SKIP
+"                            <th>To</th>" SKIP
+"                            <th>" t-lab-id "</th>" SKIP
+"                            <th>" t-tst-type "</th>" SKIP
+"                            <th>" t-tst-name "</th>" SKIP
+"                            <th>" t-tst-sku "</th>" SKIP
+"                            <th>" t-tst-lab-desc "</th>" SKIP
+                            "<th>" t-disp-start "</th>" SKIP                                                /* 1dot3 */
+                            "<th>" t-disp-end "</th>" SKIP                                                  /* 1dot3 */
+"                            <th colspan=6>  </th>" SKIP
+"                        </tr>"         SKIP
+"                        <tr>" SKIP
+"                            <td></td>" SKIP
+"                            <td>Lab ID</td>" SKIP
+"                            <td>Test Type</td>" SKIP
+"                            <td>Test Name</td>" SKIP
+"                            <td>Sku Number</td>" SKIP
+"                            <td>Lab Description</td>" SKIP
+                            "<th>Start Effectivity Date</th>" SKIP                                          /* 1dot1 */
+                            "<th>End Effectivity Date</th>" SKIP                                            /* 1dot1 */
+                            "<th>Test Family</th>" SKIP                                                     /* 1dot1 */
+                            "<th>Domestic?</th>" SKIP                                        /* 1dot1 */
+                            "<th>Professional Default</th>" SKIP                                            /* 1dot1 */
+                            "<th>Quanty of Tests</th>" SKIP                                                 /* 1dot1 */
+                            "<th>Labels Per test</th>" SKIP                                                 /* 1dot1 */
+"                            <td>Contact Name</td>" SKIP                          
+"                        </tr>" SKIP
+"                    </thead>" SKIP.      
+       
+FOR EACH lab_mstr           WHERE ((lab_mstr.lab_ID >= f-lab-id) OR
+                                 (f-lab-id = "")) AND
+                                ((lab_mstr.lab_ID <= t-lab-id) OR
+                                 (t-lab-id = "")) AND 
+                                lab_mstr.lab_deleted = ? NO-LOCK,
+    EACH test_mstr          WHERE test_mstr.test_lab_ID = lab_mstr.lab_ID AND                                 
+                                ((test_mstr.test_type >= f-tst-type) OR
+                                 (f-tst-type = "")) AND
+                                ((test_mstr.test_type <= t-tst-type) OR
+                                 (t-tst-type = "")) AND 
+                                ((test_mstr.test_name >= f-tst-name) OR
+                                 (f-tst-name = "")) AND
+                                ((test_mstr.test_name <= t-tst-name) OR
+                                 (t-tst-name = "")) AND
+                                ((test_mstr.test_sku >= f-tst-sku) OR 
+                                 (f-tst-sku = "")) AND 
+                                ((test_mstr.test_sku <= t-tst-sku) OR 
+                                 (t-tst-sku = "")) AND 
+                                ((test_mstr.test_lab_desc >= f-tst-lab-desc) OR 
+                                 (f-tst-lab-desc = "")) AND 
+                                ((test_mstr.test_lab_desc <= t-tst-lab-desc) OR 
+                                 (t-tst-lab-desc = "")) AND 
+                                ((test_mstr.test_starteff >= f-starteff) OR                         /* 1dot3 */    
+                                 (f-starteff = ?)) AND                                                  /* 1dot3 */
+                                ((test_mstr.test_starteff <= t-starteff) OR                         /* 1dot3 */
+                                 (t-starteff = ?)) AND                                                  /* 1dot3 */
+                                ((test_mstr.test_endeff >= f-endeff ) OR                            /* 1dot3 */
+                                 (f-endeff = ?)) AND                                                    /* 1dot3 */
+                                ((test_mstr.test_endeff <= t-endeff ) OR                            /* 1dot3 */
+                                 (t-endeff = ?)) AND                                                    /* 1dot3 */
+                                test_mstr.test_deleted = ?                                          
+    BREAK BY lab_mstr.lab_ID:
+   
+                RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot3 */
+                    test_mstr.test_starteff,                                                        /* 1dot3 */
+                    OUTPUT out-start                                                                    /* 1dot3 */    
+                    ).                                                                                  /* 1dot3 */
+         
+                RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                                /* 1dot3 */
+                    test_mstr.test_endeff,                                                          /* 1dot3 */
+                    OUTPUT out-end                                                                      /* 1dot3 */    
+                    ).                                                                                  /* 1dot3 */
+            
+                ASSIGN                                                                                  /* 1dot3 */ 
+                    disp-start = out-start                                                              /* 1dot3 */   
+                    disp-end   = out-end.                                                               /* 1dot3 */                  
+    
+    FIND people_mstr    WHERE people_mstr.people_id = lab_mstr.lab_contact_ID AND                             
+                                people_mstr.people_deleted = ? NO-LOCK NO-ERROR. 
+   
+    IF AVAILABLE people_mstr THEN 
+        ASSIGN 
+            ppl-name    =   people_mstr.people_firstname + " " + people_mstr.people_lastname.
+    ELSE 
+            ppl-name    =   "&nbsp;".
+          
+        {&OUT}
+"            <tr>" SKIP
+"                <td></td>"  SKIP
+"                <td>" lab_mstr.lab_ID "</td>" SKIP
+"                <td>" test_mstr.test_type "</td>" SKIP
+"                <td>" test_mstr.test_name "</td>"  SKIP
+"                <td><a href='http://www.holisticheal.com/catalogsearch/result/?q=" test_mstr.test_sku "' target='_blank' >" test_mstr.test_sku "</a></td>" SKIP  /* 1dot2 */
+"                <td>" test_mstr.test_lab_desc "</td>" SKIP
+                "<td>" disp-start "</td>" SKIP                                                                                           /* 1dot3 */
+                "<td>" disp-end "</td>" SKIP                                                                                             /* 1dot3 */             
+"                <td>" test_mstr.test_family "</td>" SKIP                                                                            /* 1dot1 */
+"                <td>" test_mstr.test_def_dom "</td>" SKIP                                                                           /* 1dot1 */
+"                <td>" test_mstr.test_def_prof "</td>" SKIP                                                                          /* 1dot1 */
+"                <td>" test_mstr.test_group_qty "</td>" SKIP                                                                         /* 1dot1 */    
+"                <td>" test_mstr.test_lblpertest "</td>" SKIP                                                                        /* 1dot1 */
+"                <td><a href='LABS-Update-Begin.r?h-lababbv=" lab_mstr.lab_ID "&h-Submit=Enter&whattorun=35.12'>" ppl-name "</a></td>" SKIP                         /* 1dot3 */
+"            </tr>" SKIP.
+            
+END. /*** for each ***/
+
+    {&OUT}
+    "   <tfoot>" SKIP                                                                                                       /* 1dot3 */
+        "<tr>" SKIP
+"            <td colspan=14>End of Report</td>" SKIP
+"        </tr>" SKIP
+    "   </tfoot>" SKIP                                                                                                      /* 1dot3 */
+"     </table>" SKIP
+"     </div>" SKIP                                                                                                          /* 1dot1 */
+     "</DIV>         <!-- end of grid_12 -->" SKIP                                                                          /* 1dot3 */
+/*     "<DIV class='grid_1'> </DIV>" SKIP                                                                                     /* 1dot1 */*/
+     "</DIV>     <!-- end of row -->" SKIP                                                                                  /* 1dot1 */
+        "<BR>" SKIP                                                                                                         /* 1dot1 */    
+"     <form>" SKIP
+	"<div class='row'>" SKIP                                                                                                /* 1dot1 */   
+	"   <div class='grid_5'> </DIV>" SKIP                                                                                   /* 1dot1 */
+    "       <input type='hidden' name='whattorun'   value='" whatshouldrun "'/>"    SKIP                                    /* 1dot1 */  	
+	"   <div class='grid_2'><button type='submit' name='s-act' value='Search' class='btn'>Search Again</BUTTON></div>" SKIP /* 1dot1 */   
+	"   <div class='grid_5'> </DIV>" SKIP                                                                                   /* 1dot1 */           
+	"</div>" SKIP                                                                                                           /* 1dot1 */   
+	"<BR>" SKIP                                                                                                             /* 1dot1 */       
+/*"        <input type='hidden' name='s-act' value='Search' />" SKIP       */
+/*"        <input type='submit' name='submit' value='Search Again' />" SKIP*/
+"     </form>" SKIP.
+     
+END. /*** act 1 ***/
+</SCRIPT>
+ 
+</CENTER>
+</BODY>
+</HTML>

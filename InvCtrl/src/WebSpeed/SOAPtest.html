@@ -1,0 +1,562 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae">
+<TITLE>SOAP Test</TITLE>
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created: 
+    Notes: 
+        
+        /*-WSDLUserid 'solsource_invctrl' -WSDLPassword 'HJ9d3D3SrfDjLE1JCaNP'*/
+        -Service 'modify_qoh' 
+  -------------------------------------------------------------------*/
+
+ 
+/* client_ValidateEmail.p */
+/*DEFINE VARIABLE MagentoConnection AS HANDLE NO-UNDO.                  */
+/*DEFINE VARIABLE v-whathappened AS CHARACTER INITIAL "Nothing" NO-UNDO.*/
+/*DEFINE VARIABLE hXWebEmailValidationInterface AS HANDLE NO-UNDO.      */
+/*CREATE SERVER MagentoConnection.                                                                          */
+/*MagentoConnection:CONNECT("-WSDL 'https://test-store.holisticheal.com/index.php/api/soap/index/?wsdl=1'").*/
+/*/*MagentoConnection:INITIALIZE ("solsource_invctrl" , "HJ9d3D3SrfDjLE1JCaNP" ).*/                         */
+
+/*RUN XWebEmailValidationInterface SET hXWebEmailValidationInterface ON MagentoConnection.*/
+/*                                                                                        */
+/*RUN modify_qoh                                                                          */
+/*/*IN hXWebEmailValidationInterface*/                                                    */
+/*  (INPUT "1307 + 11", OUTPUT v-whathappened).                                           */
+/*{&OUT} "<h2>Here is what happened: " v-whathappened "</h2>".*/
+/* client_GetExternalIP.p */
+
+/*DEFINE VARIABLE hWebService AS HANDLE NO-UNDO.                                                      */
+/*DEFINE VARIABLE hGetExternalIP2Soap AS HANDLE NO-UNDO.                                              */
+/*CREATE SERVER hWebService.                                                                          */
+/*hWebService:CONNECT("-WSDL 'https://test-store.holisticheal.com/index.php/api/soap/index/?wsdl=1'").*/
+/*/*RUN GetExternalIP2Soap SET hGetExternalIP2Soap ON hWebService.*/                                  */
+/*RUN modify_qoh SET hGetExternalIP2Soap ON hWebService.                                              */
+/*FUNCTION getExternalIp RETURNS CHARACTER                                                            */
+/*  IN hGetExternalIP2Soap.                                                                           */
+/*/*MESSAGE  getExternalIp() VIEW-AS ALERT-BOX.*/                                                     */
+/*{&OUT} "<h2>Here is what happened: " getExternalIp() "</h2>".                                       */
+/*hWebService:DISCONNECT().                                                                           */
+
+/*****  Define Variables  ******/
+DEFINE VARIABLE pn AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-qoh AS DECIMAL NO-UNDO.
+DEFINE VARIABLE v-operand AS CHARACTER NO-UNDO.
+DEFINE VARIABLE ITmessages AS LOGICAL INITIAL YES NO-UNDO. 
+
+
+DEFINE VARIABLE hWebService AS HANDLE NO-UNDO.
+DEFINE VARIABLE hPortType AS HANDLE NO-UNDO.
+DEFINE VARIABLE sessionId AS CHARACTER NO-UNDO.
+DEFINE VARIABLE callResults AS CHARACTER FORMAT "x(65)" NO-UNDO.
+DEFINE VARIABLE endSessionResults AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-connect AS LOGICAL NO-UNDO.
+
+/*** specific to Magento catalogCategoryTree data ***/
+DEFINE VARIABLE parentId AS CHARACTER NO-UNDO.
+DEFINE VARIABLE storeView AS CHARACTER NO-UNDO.
+
+
+
+/*****  Set Up for Web Server Thing ****/
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>About to connect to Magento webservice - " string(time,"HH:MM:SS") "</P>" SKIP.
+        
+CREATE SERVER hWebService.
+hWebService:CONNECT("-WSDL 'https://demo.mysolsource.com/index.php/api/v2_soap/index/?wsdl=1' -Service 'MagentoService' -Port 'Port'").
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>About to run Magento PortType - " string(time,"HH:MM:SS") "</P>" SKIP.
+        
+RUN PortType SET hPortType ON hWebService.
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>About to run Magento login - " string(time,"HH:MM:SS") "</P>" SKIP.
+        
+RUN login IN hPortType(INPUT 'solsource_invctrl', INPUT 'P@55w0rd', OUTPUT sessionId).
+IF sessionID <> "" THEN {&OUT} "<h1> Successful connection to Magento, session ID = " sessionID " </h1><br>" SKIP(1).
+    ELSE {&OUT} "<p> Unsuccessfull </p><br>".
+
+
+/******************************************  Magento storeList code *************************************************/
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>Defining stuff for Magento storeList - " string(time,"HH:MM:SS") "</P>" SKIP.
+        
+DEFINE TEMP-TABLE Item NO-UNDO        /** List Of Stores **/
+    NAMESPACE-URI "" 
+    FIELD store_id AS INTEGER 
+    FIELD code AS CHARACTER 
+    FIELD website_id AS INTEGER 
+    FIELD group_id AS INTEGER 
+    FIELD name AS CHARACTER 
+    FIELD sort_order AS INTEGER 
+    FIELD is_active AS INTEGER .
+
+DEFINE DATASET stores NAMESPACE-URI "urn:Magento" 
+    FOR Item.
+    
+PROCEDURE storeList:
+  DEFINE INPUT PARAMETER sessionId AS CHARACTER NO-UNDO.
+  DEFINE OUTPUT PARAMETER DATASET FOR stores.
+END PROCEDURE.
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>About to run storeList procedure - " string(time,"HH:MM:SS") "</P>" SKIP.
+        
+RUN storeList IN hPortType(INPUT sessionId, OUTPUT DATASET stores).
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>Finished storeList procedure - " string(time,"HH:MM:SS") "</P>" SKIP.
+        
+{&OUT} "<BR><TABLE border=7 cellpadding=3 cellspacing=3>" SKIP
+    "<TR>" SKIP
+    "   <TH colspan=7 bgcolor='#ff1166'>storeList</TH>" SKIP
+    "</TR>" SKIP
+    "<TR>" SKIP
+    "   <TH>Store ID</TH>" SKIP
+    "   <TH>Code</TH>" SKIP
+    "   <TH>Website ID</TH>" SKIP
+    "   <TH>Group ID</TH>" SKIP
+    "   <TH>Name</TH>" SKIP
+    "   <TH>Sort Order</TH>" SKIP
+    "   <TH>Is Active</TH>" SKIP
+    "</TR>" SKIP.        
+        
+FOR EACH Item NO-LOCK: 
+    
+    {&OUT}
+        "<TR>" SKIP
+        "   <TD>" Item.store_ID "</TD>" SKIP
+        "   <TD>" Item.code "</TD>" SKIP
+        "   <TD>" Item.website_ID "</TD>" SKIP
+        "   <TD>" Item.group_ID "</TD>" SKIP
+        "   <TD>" Item.name "</TD>" SKIP
+        "   <TD>" Item.sort_order "</TD>" SKIP
+        "   <TD>" Item.is_active "</TD>" SKIP
+        "</TR>" SKIP(1).
+        
+        
+END.    /** of 4ea. Item **/
+
+{&OUT} 
+    "<TR>" SKIP
+    "   <TH colspan=7 bgcolor='#ff1166'>End of Report.</TH>" SKIP
+    "</TR>" SKIP
+    "</TABLE><BR><BR>" SKIP. 
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>End of 4ea. los-stores - " string(time,"HH:MM:SS") "</P>" SKIP.
+    
+
+        
+        
+/*******************************************   Magento catalogCategoryTree code  ***************************************/
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>Starting catalogCategoryTree</P>" SKIP.
+        
+DEFINE TEMP-TABLE tree NO-UNDO
+    NAMESPACE-URI "urn:Magento" 
+    FIELD category_id AS INTEGER 
+    FIELD parent_id AS INTEGER 
+    FIELD name AS CHARACTER 
+    FIELD position AS INTEGER 
+    FIELD level AS INTEGER .
+
+
+
+DEFINE TEMP-TABLE children NO-UNDO
+    NAMESPACE-URI "" 
+    FIELD Item_id AS RECID 
+        XML-NODE-TYPE "HIDDEN" 
+    FIELD tree_id AS RECID 
+        XML-NODE-TYPE "HIDDEN" .
+
+DEFINE TEMP-TABLE Item2 NO-UNDO
+    NAMESPACE-URI "" 
+    FIELD category_id AS INTEGER 
+    FIELD parent_id AS INTEGER 
+    FIELD name AS CHARACTER 
+    FIELD is_active AS INTEGER 
+    FIELD position AS INTEGER 
+    FIELD level AS INTEGER .
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>Temp Tables defined</P>" SKIP.
+
+DEFINE DATASET treeDset NAMESPACE-URI "urn:Magento" 
+    XML-NODE-TYPE "HIDDEN" 
+    FOR tree, children, Item2
+    PARENT-ID-RELATION RELATION1 FOR Item2, children
+        PARENT-ID-FIELD Item_id
+    PARENT-ID-RELATION RELATION2 FOR tree, children
+        PARENT-ID-FIELD tree_id.
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>Dataset Defined</P>" SKIP.
+
+PROCEDURE catalogCategoryTree:
+  DEFINE INPUT PARAMETER sessionId AS CHARACTER NO-UNDO.
+  DEFINE INPUT PARAMETER parentId AS CHARACTER NO-UNDO.
+  DEFINE INPUT PARAMETER storeView AS CHARACTER NO-UNDO.
+  DEFINE OUTPUT PARAMETER DATASET FOR treeDset.
+END PROCEDURE.
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>Procedure defined</P>" SKIP.
+
+RUN catalogCategoryTree IN hPortType(INPUT sessionId, INPUT "1" /* parentID */, INPUT "1" /* storeView */, OUTPUT DATASET treeDset).
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>Procedure ran.</P>" SKIP.
+        
+        
+        
+IF ITmessages = YES THEN 
+    {&OUT}        
+        "<P>Starting tree report</P>" SKIP.
+        
+        
+{&OUT} "<BR><TABLE border=7 cellpadding=3 cellspacing=3>" SKIP
+    "<TR>" SKIP
+    "   <TH colspan=5 bgcolor='#ff6666'>Catalog Category Tree --> TREE table</TH>" SKIP
+    "</TR>" SKIP
+    "<TR>" SKIP
+    "   <TH>Category ID</TH>" SKIP
+    "   <TH>Parent ID</TH>" SKIP
+    "   <TH>Name</TH>" SKIP
+    "   <TH>Position</TH>" SKIP
+    "   <TH>Level</TH>" SKIP
+    "</TR>" SKIP.
+    
+                   
+FOR EACH tree NO-LOCK:
+    
+    {&OUT} "<TR>" SKIP    
+        "   <TD>" tree.category_id "</TD>" SKIP
+        "   <TD>" tree.parent_id "</TD>" SKIP
+        "   <TD>" tree.name "</TD>" SKIP
+        "   <TD>" tree.position "</TD>" SKIP
+        "   <TD>" tree.level "</TD>" SKIP
+        "</TR>" SKIP(1).
+    
+END.  /*** of 4ea. tree ***/        
+        
+{&OUT} 
+    "<TR>" SKIP
+    "   <TH colspan=5 bgcolor='#ff6666'>End of Report.</TH>" SKIP
+    "</TR>" SKIP
+    "</TABLE><BR><BR>" SKIP. 
+
+
+
+/**** 2nd Table - Children ****/
+IF ITmessages = YES THEN 
+    {&OUT}        
+        "<P>Starting children report</P>" SKIP.
+        
+{&OUT} "<BR><TABLE border=7 cellpadding=3 cellspacing=3>" SKIP
+    "<TR>" SKIP
+    "   <TH colspan=2 bgcolor='#00cc66'>Catalog Category Tree --> Children table</TH>" SKIP
+    "</TR>" SKIP
+    "<TR>" SKIP
+    "   <TH>Item ID</TH>" SKIP
+    "   <TH>Tree ID</TH>" SKIP
+    "</TR>" SKIP.
+    
+                   
+FOR EACH children NO-LOCK:
+    
+    {&OUT} "<TR>" SKIP    
+        "   <TD>" children.item_id "</TD>" SKIP
+        "   <TD>" children.tree_id "</TD>" SKIP
+        "</TR>" SKIP(1).
+    
+END.  /*** of 4ea. children ***/        
+        
+{&OUT} 
+    "<TR>" SKIP
+    "   <TH colspan=2 bgcolor='#00cc66'>End of Report.</TH>" SKIP
+    "</TR>" SKIP
+    "</TABLE><BR><BR>" SKIP.
+
+
+
+/**** 3rd Table - Item ****/
+IF ITmessages = YES THEN 
+    {&OUT}        
+        "<P>Starting item report</P>" SKIP.
+        
+{&OUT} "<BR><TABLE border=7 cellpadding=3 cellspacing=3>" SKIP
+    "<TR>" SKIP
+    "   <TH colspan=6 bgcolor='#3399ff'>Catalog Category Tree --> Item table</TH>" SKIP
+    "</TR>" SKIP
+    "<TR>" SKIP
+    "   <TH>Category ID</TH>" SKIP
+    "   <TH>Parent ID</TH>" SKIP
+    "   <TH>Name</TH>" SKIP
+    "   <TH>Is Active</TH>" SKIP
+    "   <TH>Position</TH>" SKIP
+    "   <TH>Level</TH>" SKIP
+    "</TR>" SKIP.
+    
+                   
+FOR EACH item2 NO-LOCK:
+    
+    {&OUT} 
+        "<TR>" SKIP    
+        "   <TD>" item2.category_id "</TD>" SKIP
+        "   <TD>" ITEM2.parent_id "</TD>" SKIP
+        "   <TD>" ITEM2.name "</TD>" SKIP
+        "   <TD>" ITEM2.is_active "</TD>" SKIP
+        "   <TD>" ITEM2.position "</TD>" SKIP
+        "   <TD>" ITEM2.level "</TD>" SKIP
+        "</TR>" SKIP(1).
+    
+END.  /*** of 4ea. children ***/        
+        
+{&OUT} 
+    "<TR>" SKIP
+    "   <TH colspan=6 bgcolor='#3399ff'>End of Report.</TH>" SKIP
+    "</TR>" SKIP
+    "</TABLE><BR><BR>" SKIP.
+
+IF ITmessages = YES THEN 
+    {&OUT}        
+        "<P>Done with catalogCategoryTree</P>" SKIP.
+        
+        
+        
+        
+        
+    /***** Temp Table for the MakeAwesomeTable Procedure ***/
+    DEFINE TEMP-TABLE MagNewOrders NO-UNDO
+/*        NAMESPACE-URI "urn:Magento"*/
+        NAMESPACE-URI ""
+        FIELD mq-PartNumber AS CHARACTER 
+        FIELD mq-Qty AS DECIMAL  
+        FIELD mq-Operand AS CHARACTER.
+        
+    DEFINE DATASET callResults NAMESPACE-URI "urn:Magento"
+        FOR magneworders.     
+
+
+/*****  Internal Procedures  ******/
+PROCEDURE getData: 
+    DEFINE INPUT PARAMETER searchstring AS CHARACTER NO-UNDO.
+    DEFINE INPUT PARAMETER searchfor AS CHARACTER NO-UNDO.
+    DEFINE OUTPUT PARAMETER partnumber AS CHARACTER NO-UNDO.
+    
+    DEFINE VARIABLE huntstart AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE huntend AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE v-start AS INTEGER NO-UNDO.
+    DEFINE VARIABLE v-end AS INTEGER NO-UNDO.
+    
+    ASSIGN 
+        huntstart   = (chr(asc("&")) + "lt" + chr(asc(";"))) + searchfor + (chr(asc("&")) + "gt" + chr(asc(";")))
+        huntend     = (chr(asc("&")) + "lt" + chr(asc(";"))) + "/" + searchfor + (chr(asc("&")) + "gt" + chr(asc(";"))).
+    
+/*    DISPLAY substring(searchstring,1,50) FORMAT "x(50)" skip  */
+/*        substring(searchstring,51,100) format "x(50)" skip    */
+/*        substring(searchstring,101,150) FORMAT "x(50)" skip   */
+/*        substring(searchstring,151,200) format "x(50)" skip   */
+/*        substring(searchstring,201,250) format "x(50)" skip   */
+/*        substring(searchstring,251,300) format "x(50)" skip   */
+/*        substring(searchstring,301,350) format "x(50)" skip   */
+/*        substring(searchstring,351,400) format "x(50)" skip   */
+/*        substring(searchstring,401,450) format "x(50)" skip   */
+/*        substring(searchstring,451,500) format "x(50)" skip   */
+/*        substring(searchstring,501,550) format "x(50)" skip(1)*/
+/*        huntstart FORMAT "x(50)" skip                         */
+/*        huntend FORMAT "x(50)" skip(1)                        */
+/*            WITH FRAME abc NO-LABELS.                         */
+         
+    v-start = index(searchstring,huntstart).
+    IF v-start = 0 THEN
+        DISPLAY "ERR FLAG - Start" v-start.
+    
+    v-end = index(searchstring,huntend).
+    IF v-end = 0 THEN
+        DISPLAY "ERR FLAG - End" v-end.
+        
+    IF v-start > 0 AND v-end > 0 THEN 
+        partnumber = substring(searchstring,(v-start + length(huntstart)),(v-end - (v-start + length(huntstart)))).
+        
+END.  /** of procedure getdata **/        
+     
+PROCEDURE call:
+    DEFINE INPUT PARAMETER sessionId AS CHARACTER NO-UNDO. 
+    DEFINE INPUT PARAMETER resourcePath AS CHARACTER NO-UNDO.
+    DEFINE INPUT PARAMETER args AS LONGCHAR NO-UNDO.
+/*    DEFINE OUTPUT PARAMETER callReturn AS LONGCHAR NO-UNDO.*/
+    DEFINE OUTPUT PARAMETER DATASET FOR callResults . 
+END PROCEDURE. 
+
+PROCEDURE endSession:
+  DEFINE INPUT PARAMETER sessionId AS CHARACTER NO-UNDO.   
+  DEFINE OUTPUT PARAMETER endSessionReturn AS LOGICAL NO-UNDO.
+END PROCEDURE.
+
+/*PROCEDURE MakeAwesomeTable:                               */
+/*    DEFINE INPUT PARAMETER sessionID AS CHARACTER NO-UNDO.*/
+/*    DEFINE OUTPUT PARAMETER TABLE FOR MakeAwesomeTable.   */
+/*END PROCEDURE.                                            */
+
+/*DEFINE VARIABLE sessionId AS CHARACTER NO-UNDO.*/
+DEFINE VARIABLE customerId AS INTEGER NO-UNDO.
+DEFINE VARIABLE attributes AS CHARACTER EXTENT 18 NO-UNDO.
+ASSIGN 
+    attributes[1] = "firstname"
+    attributes[2] = "lastname"
+    attributes[3] = "dob"
+    attributes[4] = "email"
+/*    attributes[5] = ''*/
+/*    attributes[6] = ''*/
+/*    attributes[7] = ''*/
+    .
+
+DEFINE TEMP-TABLE customerInfo NO-UNDO
+/*    NAMESPACE-URI "urn:Magento"*/
+    FIELD customer_id AS INTEGER 
+    FIELD created_at AS CHARACTER 
+    FIELD updated_at AS CHARACTER 
+    FIELD increment_id AS CHARACTER 
+    FIELD store_id AS INTEGER 
+    FIELD website_id AS INTEGER 
+    FIELD created_in AS CHARACTER 
+    FIELD email AS CHARACTER 
+    FIELD firstname AS CHARACTER 
+    FIELD middlename AS CHARACTER 
+    FIELD lastname AS CHARACTER 
+    FIELD group_id AS INTEGER 
+    FIELD prefix AS CHARACTER 
+    FIELD suffix AS CHARACTER 
+    FIELD dob AS CHARACTER 
+    FIELD taxvat AS CHARACTER 
+    FIELD confirmation AS LOGICAL 
+    FIELD password_hash AS CHARACTER .
+
+DEFINE DATASET customerInfoDset 
+/*    NAMESPACE-URI "urn:Magento"*/
+/*    XML-NODE-TYPE "HIDDEN"     */
+    FOR customerInfo.
+
+
+
+PROCEDURE PROGcustomerCustomerInfo:
+  DEFINE INPUT PARAMETER sessionId AS CHARACTER NO-UNDO.
+  DEFINE INPUT PARAMETER customerId AS INTEGER NO-UNDO.
+  DEFINE INPUT PARAMETER attributes AS CHARACTER NO-UNDO.
+  DEFINE OUTPUT PARAMETER DATASET FOR customerInfoDset.
+END PROCEDURE.
+
+{&OUT} "I'm about to run awesome stuff <br><br><br>" SKIP.
+
+RUN customerCustomerInfo IN hPortType(INPUT sessionId, INPUT 1000, INPUT attributes, OUTPUT DATASET customerInfoDset).
+        
+{&OUT} "<TABLE border=7 cellpadding=3 cellspacing=3>" SKIP
+    "<TR>" SKIP
+    "   <TH colspan=4 bgcolor='grey'>Customer Listing</TH>" SKIP
+    "</TR>" SKIP
+    "<TR>" SKIP
+    "   <TH>Customer ID</TH>" SKIP
+    "   <TH>Firstname</TH>" SKIP
+    "   <TH>Lastname</TH>" SKIP
+    "   <TH>Email</TH>" SKIP
+    "</TR>" SKIP.
+    
+                   
+FOR EACH customerInfo NO-LOCK:
+    
+    {&OUT} "<TR>" SKIP
+        "   <TD>" customer_id "</TD>" SKIP
+        "   <TD>" firstname "</TD>" SKIP
+        "   <TD>" lastname "</TD>" SKIP
+        "   <TD>" email "</TD>" SKIP
+        "</TR>" SKIP(1).
+    
+END.  /*** of 4ea. customerInfo ***/        
+        
+{&OUT} 
+    "<TR>" SKIP
+    "   <TH colspan=4 bgcolor='grey'>End of Report.</TH>" SKIP
+    "</TR>" SKIP
+    "</TABLE>" SKIP.        
+        
+/******  Main Program  *******/
+/*RUN call IN hPortType(INPUT sessionId, INPUT 'invctrl_order_data.get_new_orders', INPUT '', OUTPUT callResults).*/
+/*                                                                                                                             */
+/*RUN call IN hPortType(INPUT sessionId, INPUT 'invctrl_connect.modify_qoh', INPUT '1600 - 11111', OUTPUT DATASET callResults).*/
+/*/*                                         */                                                                                */
+/*/*CREATE magneworders.                     */                                                                                */
+/*/*SET STREAM-HANDLE hporttype magNewOrders.*/                                                                                */
+/*                                                                                                                             */
+/*RUN getData (callResults, "PartNumber", OUTPUT pn).                                                                          */
+/*RUN getData (callResults, "Qty", OUTPUT v-qoh).                                                                              */
+/*RUN getData (callResults, "Operand", OUTPUT v-operand).                                                                      */
+/*                                                                                                                             */
+/*{&OUT} "<p><i> Call Results: </i>" callResults "</p><br>".                                                                   */
+/*                                                                                                                             */
+/*{&OUT} "<P>" SKIP                                                                                                            */
+/*        "<H1>What I found:</H1>" SKIP                                                                                        */
+/*        "<UL>" SKIP                                                                                                          */
+/*        "   <LI>Part Number = " pn "</LI>" skip                                                                              */
+/*        "   <LI>Qty = " v-qoh "</LI>" SKIP                                                                                   */
+/*        "   <LI>Operand = " v-operand "</LI>" SKIP                                                                           */
+/*        "</UL>" SKIP                                                                                                         */
+/*        "</P><BR>" SKIP(1).                                                                                                  */
+/*                                                                                                                             */
+/*{&OUT} "<H1>Here's SOME more</H1>" SKIP                                                                                      */
+/*    "<PRE>" SKIP.                                                                                                            */
+/*                                                                                                                             */
+/*    FOR EACH magNewOrders:                                                                                                   */
+/*                                                                                                                             */
+/*        {&OUT} mq-PartNumber  mq-Qty  mq-Operand.                                                                            */
+/*                                                                                                                             */
+/*    END.                                                                                                                     */
+    
+{&OUT} "</PRE><BR><BR>" SKIP.
+
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>About to run Magento endSession - " string(time,"HH:MM:SS") "</P>" SKIP.
+        
+RUN endSession IN hPortType(INPUT sessionId, OUTPUT endSessionResults).
+
+IF ITmessages = YES THEN 
+    {&OUT}
+        "<P>Finished running Magento endSession - " string(time,"HH:MM:SS") "</P>" SKIP.
+        
+IF endSessionResults = YES THEN {&OUT} "<h1> Successful disconnection from Magento </h1><br>".
+    ELSE {&OUT} "<h1> Unsuccessful disconnection from Magento </h1><br>".
+
+</SCRIPT>
+</BODY>
+</HTML>

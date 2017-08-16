@@ -1,0 +1,409 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Patient by Conditions Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.11">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="06/Dec/14">
+    <META NAME="LAST_UPDATED" CONTENT="16/Oct/15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+    
+<script>
+function myFunction() {
+    window.print();
+}
+</script>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+
+ /*------------------------------------------------------------------
+    File:           PATbycondR.html
+    Description:    Report displaying patients according to their conditions
+    Created:        12/6/14
+    Notes:          to create new files to test got to this web site
+                    http://localhost:3333/HHI/rcode/CONDpatU.r?h-patid=* insert patient id here *
+*  -------------------------------------------------------------------
+*   Revision History:
+*  -------------------                   
+*   1.0 - written by R.J. LUTTRELL on 06/Dec/14.  Original Version.
+*   1.1 - written by Mark Jacobs on 11/Oct/15. Marked with 1dot1.
+*         Added in the code snippets for grid_* div, code snippets for Buttons,TFOOT 
+*         and META tags updated. Edited RUN Statements To conform to RUN VALUE(SEARCH("*")).
+*         Combined the 2 Report Tables into 1 Table. 
+*   1.11 - written by DOUG LUTTRELL on 16/Oct/15.  Corrected the "no records found" problem.
+*           Marked by 111.
+*
+*
+* 
+  -------------------------------------------------------------------*/
+ DEFINE VARIABLE allpart        AS CHARACTER NO-UNDO.
+ DEFINE VARIABLE x              AS INTEGER NO-UNDO.
+ DEFINE VARIABLE y              AS INTEGER NO-UNDO.
+ DEFINE VARIABLE z              AS INTEGER NO-UNDO.
+ DEFINE VARIABLE numcells       AS INTEGER INITIAL 8 NO-UNDO. 
+ DEFINE VARIABLE condlist       AS CHARACTER NO-UNDO.
+ DEFINE VARIABLE act            AS CHARACTER NO-UNDO.
+ DEFINE VARIABLE displaylist    AS CHARACTER NO-UNDO.
+ DEFINE VARIABLE comma          AS CHARACTER NO-UNDO.
+ 
+ DEFINE VARIABLE f-lastname     LIKE people_mstr.people_lastname NO-UNDO.
+ DEFINE VARIABLE t-lastname     LIKE people_mstr.people_lastname NO-UNDO.
+ DEFINE VARIABLE f-firstname    LIKE people_mstr.people_firstname NO-UNDO.
+ DEFINE VARIABLE t-firstname    LIKE people_mstr.people_firstname NO-UNDO.
+ DEFINE VARIABLE f-DOB          AS   CHARACTER FORMAT "x(10)" NO-UNDO.
+ DEFINE VARIABLE t-DOB          AS   CHARACTER FORMAT "x(10)" NO-UNDO.
+ 
+ DEFINE VARIABLE v-fromDOB      LIKE people_mstr.people_dob NO-UNDO.
+ DEFINE VARIABLE v-toDOB        LIKE people_mstr.people_dob NO-UNDO.
+
+
+DEFINE VARIABLE ip-Calendar-Date            AS CHARACTER FORMAT "x(10)"     NO-UNDO.
+DEFINE VARIABLE ip-Stripped-Calendar-Date   AS DATE                         NO-UNDO.
+DEFINE VARIABLE CCYY-Date                   AS CHARACTER  FORMAT "x(10)"    NO-UNDO.
+
+
+DEFINE VARIABLE check_date                  AS DATE                         NO-UNDO.
+ 
+DEFINE VARIABLE codetorun                   AS CHARACTER  FORMAT "x(60)"    NO-UNDO.
+ 
+ DEFINE BUFFER  pcl_buffer FOR pcl_det.
+ 
+ 
+ DEFINE VARIABLE ITmessage  AS LOGICAL INITIAL NO NO-UNDO.
+ 
+ ASSIGN 
+    allpart             = get-value("s-allpart")
+    condlist            = get-value("s-cond-id") 
+    act                 = get-value("s-act")
+    f-lastname          = get-value("s-f-lastname")
+    t-lastname          = get-value("s-t-lastname")
+    f-firstname         = get-value("s-f-firstname")
+    t-firstname         = get-value("s-t-firstname")
+    f-DOB               = get-value("s-f-DOB")
+    t-DOB               = get-value("s-t-DOB")
+    ip-Calendar-Date    = get-field("h-Calendar-Date")
+    codetorun           = "./depot/rcode/subr_CCYY_to_YY.r".
+    
+ IF act = "" THEN 
+    ASSIGN 
+        act = "SEARCH".
+
+CASE act:
+    
+    WHEN "SEARCH" THEN DO:
+ 
+	   {&OUT}
+		"<DIV class='row'>" SKIP                                        /* 1dot1 */
+		"<DIV class='grid_12'>" SKIP        
+		
+		 "   <div class='table_2col'>                                                                           " SKIP 
+		 "       <form>                                                                                           " SKIP
+		 "          <table>                                                                                       " SKIP
+		 "              <THEAD>                                                                                   " SKIP
+		 "                  <tr>                                                                                  " SKIP
+		 "                      <th colspan=" numcells ">Search Criteria</th>                                     " SKIP 
+		 "                  </tr>                                                                                 " SKIP
+		 "              </THEAD>                                                                                  " SKIP
+		/* "               <tr>                    this is for 2.0                                                                          " SKIP
+		 "                   <td colspan=" numcells ">All<INPUT type='radio' name='s-allpart'/> Patial<INPUT type='radio' name='s-allpart' /></td>    " SKIP
+		 "               </tr>                                                                                                              " SKIP */
+		 "               <tr>                                                                                     " SKIP
+		 "                   <td colspan=" (numcells / 4)  ">Last Name</td><td colspan=" (numcells / 4)  ">
+		                        <INPUT type='text' name='s-f-lastname'/></td>                                     " SKIP 
+		 "                   <td colspan=" (numcells / 4)  ">To</td><td colspan=" (numcells / 4)  ">
+		                        <INPUT type='text' name='s-t-lastname'/></td>                                     " SKIP 
+		 "               </tr>                                                                                    " SKIP
+		 "               <tr>                                                                                     " SKIP
+		 "                   <td colspan=" (numcells / 4)  ">First Name</td><td colspan=" (numcells / 4)  ">
+		                        <INPUT type='text' name='s-f-firstname'/></td>                                    " SKIP 
+		 "                   <td colspan=" (numcells / 4)  ">To</td><td colspan=" (numcells / 4)  ">
+		                        <INPUT type='text' name='s-t-firstname'/></td>                                    " SKIP 
+		 "               </tr>                                                                                    " SKIP
+		 "               <tr>                                                                                     " SKIP
+		 "                   <td colspan=" (numcells / 4)  ">Date of Birth</td><td colspan=" (numcells / 4)  ">
+		                        <INPUT type='date' name='s-f-DOB' value='" f-DOB "'/></td>                        " SKIP 
+		 "                   <td colspan=" (numcells / 4)  ">To</td><td colspan=" (numcells / 4)  ">
+		                        <INPUT type='date' name='s-t-DOB' value='" t-DOB "'/></td>                        " SKIP 
+		 "               </tr>                                                                                    " SKIP
+		 "          </TABLE>" SKIP                                                                                                 /* 111 */
+		 "      </DIV>      <!-- end of table -->" SKIP(1).                                                                        /* 111 */
+	 
+    {&OUT}
+	    "<DIV class='table_report fixed_table'>" SKIP
+	    "   <TABLE>" SKIP
+	    "       <THEAD>                                                                                   " SKIP
+	    "           <tr><th colspan=" numcells ">Conditions List - Choose at least one.</th></tr>         " SKIP
+	    "       </THEAD>                                                                                  " SKIP.
+
+
+	FOR EACH condition_mstr WHERE condition_mstr.condition_deleted = ?
+	    BREAK BY condition_mstr.condition_common DESCENDING 
+	        BY condition_mstr.condition_name:
+	      
+	    x = x + 1.
+	    
+	    IF FIRST-OF (condition_mstr.condition_common) THEN DO: 
+	        
+	        {&OUT}
+	            "<THEAD>" SKIP
+	            "   <TR>" SKIP.
+	            
+	        IF condition_mstr.condition_common = YES THEN 
+	            {&OUT}    
+	                "       <TD colspan=" numcells ">Common Conditions</TD>" SKIP.
+	        ELSE 
+	            {&OUT}
+	                "       <TD colspan=" numcells ">Uncommon Conditions</TD>" SKIP.
+	    
+	        {&OUT}
+	            "   </TR>" SKIP
+	            "</THEAD>" SKIP
+	            "<tr>" SKIP.
+	    
+	    END.  /** of if first-of condition_common **/
+	        
+	    {&OUT}
+	        "      <td><INPUT type='checkbox' value='" condition_mstr.condition_ID "' name='s-cond-id' /> " SKIP
+	        condition_mstr.condition_name "</td>" SKIP.  
+     
+		IF x MODULO numcells = 0 THEN DO:  
+		
+		     {&OUT} 
+		        "</tr>" SKIP
+		        "<tr>"  SKIP. 
+		
+		     ASSIGN
+		         x = 0.  
+		
+		END.  /*** of if x modulo 12 = 0 ***/
+        
+		IF LAST-OF (condition_mstr.condition_common) THEN DO:
+		    
+			IF x < (numcells - 1) THEN DO y = 1 TO (numcells - x):
+			      
+				{&OUT}
+				    "<td>&nbsp;</td>".
+			                       
+			END. /*** y x stuff ***/
+			
+			{&OUT} 
+			    "</TR>" SKIP.
+			    
+			x = 0.
+			               
+        END. /*** last of ***/
+            
+    END. /*** for each conditions_mstr ***/
+ 
+    {&OUT}
+		"           </table>                                                                                                   " SKIP
+		
+		"</DIV>         <!-- end of grid_12 -->" SKIP                   /* 1dot1 */
+		"</DIV>     <!-- end of row -->" SKIP
+		"</div>" skip
+		"<BR><BR>" SKIP                                                 /* 1dot11 */
+		 "<div class='row'>" SKIP                                       /* 1dot1 */
+		"   <div class='grid_3'> </DIV>" SKIP
+		"   <div class='grid_2'>" skip
+		"   <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />"
+		"   <BUTTON type='submit' name='s-act' value='RESULTS' class='btn'>Submit</BUTTON></div>" SKIP
+		"   <div class='grid_2'> </DIV>" SKIP
+		"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+		"   <div class='grid_3'> </DIV>" SKIP
+		"</div>" SKIP
+		"<BR>" SKIP
+        "    </FORM>                                                                                                           " SKIP
+        "  </div>                                                                                                              " SKIP.
+
+END. /***** search act *****/
+
+
+/******************************************************************************************************************************/
+
+WHEN "RESULTS" THEN DO:
+    
+    {&OUT}
+		"<DIV class='row'>" SKIP                            /* 1dot1 */
+		"<DIV class='grid_12'>" SKIP         
+      
+        "<form>" SKIP
+        "<div class='table_report_fromTo'>" SKIP
+        "   <table>" SKIP
+        "       <thead>" SKIP
+        "           <tr>" SKIP
+        "               <th colspan=4>Patient Report</th>" SKIP
+        "           </tr>" SKIP
+        "           <tr>" SKIP    
+        "               <td>From</td>" SKIP
+        "               <td>" f-lastname "</td>" SKIP
+        "               <td>" f-firstname "</td>" SKIP
+        "               <td>" f-DOB "</td>" SKIP    
+        "           </tr>" SKIP
+        "           <tr>" SKIP
+        "               <td>To</td>" SKIP
+        "               <td>" t-lastname "</td>" SKIP
+        "               <td>" t-firstname "</td>" SKIP
+        "               <td>" t-DOB "</td>" SKIP
+        "           </tr>" SKIP
+        "           <tr>" SKIP
+        "               <td>&nbsp;</td>" SKIP
+        "               <td>Last Name</td>" SKIP
+        "               <td>First Name</td>" SKIP
+        "               <td>Date of Birth</td>" SKIP
+        "           </tr>" SKIP  
+        "       </THEAD>" SKIP        
+        "       <thead>" SKIP    
+        "           <tr>" SKIP
+        "               <th colspan=2>Patient Name</th>" SKIP
+        "               <th>Conditions</th>" SKIP
+        "               <th>Date of Birth</th>" SKIP 
+        "           </tr>" SKIP
+        "       </thead>" SKIP.
+    
+
+                                                                                IF ITmessage = YES THEN 
+                                                                                {&OUT}
+                                                                                    "Before 4ea. pcl_det, etc.<BR>"
+                                                                                    "Condition List =" condlist "<BR>"
+                                                                                    "<OL>" SKIP
+                                                                                    "<LI>From Lastname = " f-lastname "</LI>" SKIP
+                                                                                    "<LI>To Lastname = " t-lastname "</LI>" SKIP
+                                                                                    "<LI>From Firstname = " f-firstname "</LI>" SKIP
+                                                                                    "<LI>To Firstname = " t-firstname "</LI>" SKIP
+                                                                                    "<LI>From DOB = " f-DOB "</LI>" SKIP
+                                                                                    "<LI>To DOB = " t-DOB "</LI>" SKIP.
+    
+    ASSIGN                                                                                      /* 1dot11 */ 
+        v-fromDOB   = ?                                                                         /* 1dot11 */
+        v-toDOB     = ?.                                                                        /* 1dot11 */
+        
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (f-DOB, OUTPUT v-fromDOB).     /* 1dot1 */           /* 1dot11 */
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (t-DOB, OUTPUT v-toDOB).     /* 1dot1 */             /* 1dot11 */
+    
+        FOR EACH pcl_det WHERE LOOKUP(STRING(pcl_det.pcl_cond_id),condlist) > 0 AND
+                 pcl_det.pcl_deleted = ?
+                    NO-LOCK,
+            FIRST people_mstr WHERE people_mstr.people_id = pcl_det.pcl_patient_id AND  /**** cannot search by these alone ****/
+                 ((people_mstr.people_lastname >= f-lastname) OR  
+			      (f-lastname = "")) AND
+			     ((people_mstr.people_lastname <= t-lastname) OR
+			      (t-lastname = "")) AND
+			     ((people_mstr.people_firstname >= f-firstname) OR  
+			      (f-firstname = "")) AND
+			     ((people_mstr.people_firstname <= t-firstname) OR
+			      (t-firstname = "")) AND                                                    
+			     ((people_mstr.people_DOB >= v-fromDOB) OR                                                           /* 1dot11 */
+			      (v-fromDOB = ?)) AND                                                          /* 1dot1 */          /* 1dot11 */
+			     ((people_mstr.people_DOB <= v-toDOB) OR                                                             /* 1dot11 */
+			      (v-toDOB = ?)) AND                                                          /* 1dot1 */            /* 1dot11 */
+			     people_mstr.people_deleted = ?
+                    NO-LOCK
+            BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname BY people_mstr.people_id:
+            
+                                                                                IF ITmessage = YES THEN 
+                                                                                {&OUT}
+                                                                                    "f-DOB =" f-DOB "<BR>"
+                                                                                    "t-DOB =" t-DOB "<BR>"
+                                                                                    "Inside for each pcl_det before the amper-out <BR>"
+                                                                                    "Condition ID =" pcl_det.pcl_cond_id "<BR>"
+                                                                                    "Patient ID =" people_mstr.people_id "<BR>".
+       
+       
+       
+       IF LAST-OF(people_mstr.people_id) THEN DO: 
+           
+           FOR EACH pcl_buffer WHERE pcl_buffer.pcl_patient_id = people_mstr.people_id AND 
+                    pcl_buffer.pcl_deleted = ? 
+                        NO-LOCK,
+               EACH condition_mstr WHERE condition_mstr.condition_ID = pcl_buffer.pcl_cond_id AND 
+                    condition_mstr.condition_deleted = ?
+                        NO-LOCK   
+              BREAK BY pcl_buffer.pcl_patient_id BY condition_mstr.condition_name:  
+                  
+                IF LAST-OF(pcl_buffer.pcl_patient_id) THEN 
+                    ASSIGN 
+                        comma = "".
+                ELSE
+                    ASSIGN 
+                        comma = ", ".
+                  
+                IF LOOKUP(STRING(pcl_buffer.pcl_cond_id),condlist) > 0 THEN 
+                    ASSIGN
+                        displaylist = displaylist + "<font color='red'>" + condition_mstr.condition_name + "</font>" + comma.
+                ELSE 
+                    ASSIGN
+                        displaylist = displaylist + condition_mstr.condition_name + comma.
+              END. /*** for each buffer ****/  
+       
+        {&OUT}
+            "<TR>" SKIP
+            "    <td colspan=2>"  people_mstr.people_lastname ", " people_mstr.people_firstname "</td>" SKIP
+            "   <td>" displaylist "</td>" skip
+            "   <td>" people_mstr.people_DOB "</td>" SKIP                                                       /* 1dot11 */ 
+            "</TR>".
+            
+         ASSIGN 
+            displaylist = "".
+         
+       END. /**** last of *****/
+                  
+       END. /**** for each plc_det ****/
+        
+                                                                             IF ITmessage = YES THEN 
+                                                                                {&OUT}
+                                                                                    "after for end of for each plc_det <BR>" SKIP 
+                                                                                    "after end of do z <BR>".
+    
+    {&OUT}
+		"   <TFOOT>" SKIP                                               /* 1dot1 */
+		"       <TR>" SKIP
+		"           <TD COLSPAN=4>END OF REPORT</TD>" SKIP  
+		"       </TR>" SKIP
+		"   </TFOOT>" SKIP
+		"   </TABLE>" SKIP
+		"</DIV>                 <!-- end of table_report -->" SKIP(1)    
+   
+		"</DIV>         <!-- end of grid_12 -->" SKIP                 /* dot1 */
+		"</DIV>     <!-- end of row -->" SKIP
+		"</div>" skip    
+   
+  
+		"<div class='row'>" SKIP                                      /* 1dot1 */
+		"   <div class='grid_3'> </DIV>" SKIP
+		"   <div class='grid_2'>" skip
+		"<form>" skip
+		"    <button type='submit' name='whattorun' value='3.12' class='btn'>Search Again</BUTTON></div>" SKIP
+		"</form>" skip
+		"     <DIV class='grid_2'> </DIV>" SKIP
+		"     <DIV CLASS='grid_2'><button onclick='myFunction()' name='printme' class='btn'>Print this page</button>"
+		"   <div class='grid_3'> </DIV>" SKIP
+		"</div>" SKIP
+		"<BR>" SKIP.     
+  
+
+  
+  
+END. /**** results act ****/                                                                            
+
+END CASE.
+
+                                                                            IF ITmessage = YES THEN 
+                                                                                {&OUT}
+                                                                                    "after end of results act <BR>".
+</SCRIPT>
+</BODY>
+</HTML>

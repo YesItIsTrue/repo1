@@ -1,0 +1,518 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Time Sheet Entry</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="04/Jan/16">
+    <META NAME="MODIFIED_DATE" CONTENT="04/Jan/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+<BODY class='inside'>
+<script type="text/javascript">
+function CheckMaxLength(target, txt, maxLen) {
+   try {
+     if(txt.value.length > (maxLen)) {
+       txt.value = txt.value.substring(0, maxLen)
+       document.getElementById(target).innerText = (maxLen -
+txt.value.length) + " characters remaining. (" + maxLen + " Max.)";
+       document.getElementById(target).textContent = (maxLen -
+txt.value.length) + " characters remaining. (" + maxLen + " Max.)";
+       return false;
+     }
+   }
+   catch(Err) {
+   }
+
+   document.getElementById(target).innerText = (maxLen -
+txt.value.length) + " characters remaining. (" + maxLen + " Max.)";
+   document.getElementById(target).textContent = (maxLen -
+txt.value.length) + " characters remaining. (" + maxLen + " Max.)";
+}
+</script>
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           TSentryU.html
+    Description:    Employee time sheet entry form 
+    Created:        Jacob Luttrell 
+    NOTE: act names are based on previous act to make the buttons make sense.
+    Version History: 
+        1.0 - Created by Jacob Luttrell on 04/Jan/16.
+        Need to come back and touch this up to work with logins.
+        
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE firstname   LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE lastname    LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE dob         LIKE people_mstr.people_DOB         NO-UNDO.
+DEFINE VARIABLE disp-dob    AS CHARACTER                        NO-UNDO.
+
+DEFINE VARIABLE amount      LIKE Hours_Mstr.Hours_amount        NO-UNDO.
+DEFINE VARIABLE clientid    LIKE Hours_Mstr.Hours_client_ID     NO-UNDO.
+DEFINE VARIABLE hours-date  LIKE Hours_Mstr.Hours_date          NO-UNDO.
+DEFINE VARIABLE disp-date   AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE hours-desc  LIKE Hours_Mstr.Hours_description   NO-UNDO.
+DEFINE VARIABLE empid       LIKE Hours_Mstr.Hours_employee_ID   NO-UNDO. 
+DEFINE VARIABLE projname    LIKE Hours_Mstr.Hours_project_name  NO-UNDO.
+
+DEFINE VARIABLE progname      AS CHARACTER                      NO-UNDO. 
+
+DEFINE VARIABLE clientabbv  LIKE Client_Mstr.Client_abbv        NO-UNDO. 
+DEFINE VARIABLE clnt-trans  LIKE Client_Mstr.Client_trans_def   NO-UNDO.
+
+DEFINE VARIABLE act           AS CHARACTER                      NO-UNDO.
+DEFINE VARIABLE itmessage     AS LOGICAL INITIAL NO             NO-UNDO.
+DEFINE VARIABLE isselected    AS CHARACTER                      NO-UNDO. 
+DEFINE VARIABLE isdisabled    AS CHARACTER                      NO-UNDO. 
+
+DEFINE VARIABLE old-clientid LIKE Hours_Mstr.Hours_client_ID    NO-UNDO.
+DEFINE VARIABLE old-projname LIKE Hours_Mstr.Hours_project_name NO-UNDO.
+DEFINE VARIABLE old-date     LIKE Hours_Mstr.Hours_date         NO-UNDO.
+DEFINE VARIABLE old-time-desc LIKE Hours_Mstr.Hours_time_desc   NO-UNDO.
+DEFINE VARIABLE pass-old-date AS CHARACTER                      NO-UNDO. 
+
+DEFINE VARIABLE empname       AS CHARACTER                      NO-UNDO.
+
+DEFINE VARIABLE o-create      AS LOGICAL                        NO-UNDO.
+DEFINE VARIABLE o-update      AS LOGICAL                        NO-UNDO.
+DEFINE VARIABLE o-avail       AS LOGICAL                        NO-UNDO. 
+DEFINE VARIABLE o-successful  AS LOGICAL                        NO-UNDO.
+DEFINE VARIABLE o-error       AS LOGICAL                        NO-UNDO.
+DEFINE VARIABLE o-addrid      AS INTEGER                        NO-UNDO.
+DEFINE VARIABLE o-fpat-ran    AS LOGICAL                        NO-UNDO.
+
+DEFINE VARIABLE v-admin       AS LOGICAL INITIAL NO             NO-UNDO.             
+
+DEFINE VARIABLE v-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE c-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE db-time       LIKE Hours_Mstr.Hours_time          NO-UNDO.
+DEFINE VARIABLE h-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE m-time        AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE old-time      LIKE Hours_Mstr.Hours_time          NO-UNDO.
+DEFINE VARIABLE pass-old-time AS   CHARACTER                      NO-UNDO.
+DEFINE VARIABLE time-desc     AS   CHARACTER                      NO-UNDO.  
+DEFINE VARIABLE time-desclist AS   CHARACTER INITIAL "CLOCKED_IN,CLOCKED_OUT,BREAK_OUT,BREAK_IN" NO-UNDO.
+DEFINE VARIABLE x             AS   INTEGER                        NO-UNDO.																																			             
+                                                                           IF itmessage = YES THEN
+                                                                               {&OUT} "cookie id = " get-value("c-usr") "<BR>" SKIP.                          
+ASSIGN 
+    v-admin         = IF get-value("h-admin") = "yes" THEN YES ELSE NO
+    empid           = IF v-admin = YES THEN INTEGER(get-value("h-empid")) ELSE INTEGER(get-value("c-usr")) 
+    disp-date       = get-value("html5-date")
+    amount          = DECIMAL(get-value("h-amount"))
+    clientid        = INTEGER(get-value("h-clientid"))
+    hours-desc      = get-value("h-hours-desc")
+    projname        = get-value("h-projname")
+    act             = get-value("h-act")
+    empname         = get-value("h-empname")
+    old-clientid    = INTEGER(get-value("h-old-clientid"))
+    old-projname    = get-value("h-old-projname")
+    old-time-desc   = get-value("h-old-time-desc")
+    pass-old-date   = get-value("h-old-date")
+    progname        = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1) 
+    clnt-trans      = get-value("h-clnt-trans")
+    v-time          = get-value("h-time")
+    time-desc       = get-value("h-time-desc")
+    pass-old-time   = get-value("h-old-time")
+    .
+
+FIND Emp_Mstr WHERE Emp_Mstr.Emp_ID = empid AND 
+                    Emp_Mstr.Emp_deleted = ?
+                        NO-LOCK NO-ERROR. 
+ 
+IF AVAILABLE Emp_Mstr THEN DO:                      
+     IF clientid = 0 THEN 
+        ASSIGN 
+            clientid = Emp_Mstr.Emp_def_client.
+            
+     IF projname = "" THEN 
+        ASSIGN
+            projname = Emp_Mstr.Emp_def_proj.
+END.                                    
+																		    IF itmessage = YES THEN
+																		        {&OUT} "cookie id = " get-value("c-usr") "<BR>" SKIP.
+
+FOR FIRST people_mstr WHERE people_mstr.people_id = empid AND 
+                            people_mstr.people_deleted = ?
+         NO-LOCK:                      
+     ASSIGN 
+         empname = people_mstr.people_lastname + ", " + people_mstr.people_firstname + " " + STRING(people_mstr.people_id).       
+END. /* for first people_mstr */ 
+
+FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid AND  
+                       Client_Mstr.Client_deleted = ? NO-LOCK NO-ERROR.
+   IF AVAILABLE (Client_Mstr) THEN 
+   ASSIGN clientabbv = Client_Mstr.Client_abbv. 
+    
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    pass-old-date,                                                               
+    OUTPUT old-date                                                             
+    ).                                                                          
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                   
+    disp-date,                                                                  
+    OUTPUT hours-date                                                               
+    ).                                          
+
+/* ********************************************** admin code ************************************************** */
+IF pass-old-time <> "" THEN 
+    ASSIGN
+        h-time      = SUBSTRING(pass-old-time,1,2)
+        m-time      = SUBSTRING(pass-old-time,4,2)
+        old-time    = DATETIME(MONTH(old-date),DAY(old-date),YEAR(old-date),int(h-time),int(m-time),0).
+ELSE
+    ASSIGN 
+        old-time    = ?.
+                
+        
+IF v-time <> "" THEN 
+    ASSIGN
+        h-time  = SUBSTRING(v-time,1,2)
+        m-time  = SUBSTRING(v-time,4,2)
+        db-time = DATETIME(MONTH(hours-date),DAY(hours-date),YEAR(hours-date),int(h-time),int(m-time),0).
+ELSE
+    ASSIGN 
+        db-time = ?. 
+/* ********************************************** admin code ******************************************************** */
+
+IF act = "TIME" THEN DO: 
+    FIND Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid AND 
+                             Proj_Mstr.Proj_name = projname NO-LOCK NO-ERROR.
+    
+    IF NOT AVAILABLE (Proj_Mstr) THEN DO: 
+    
+        {&OUT}
+            "<div class='row'>" skip
+            "   <div class='grid_3'></div>" skip
+            "       <div class='grid_6'>" skip             
+            "           <center><h2>Dwight Error: You tried to break this so you are a bad person.</h2></center>" skip
+            "       </DIV>" SKIP
+            "   <div class='grid_3'></div>" skip
+            "</DIV>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" skip
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-update-act' value='NEW' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</DIV>" SKIP
+            "</form>" SKIP.
+    
+    END. 
+    ELSE DO:     
+            IF hours-date < Proj_Mstr.Proj_start_date OR hours-date > Proj_Mstr.Proj_end_date THEN DO: 
+                {&OUT}
+                    "<div class='row'><div class='grid_12'><center><h2>" hours-date " is out of the date range for " projname ". Time Sheet Entry restarted.</h2></center></div></div>" SKIP.    
+                ASSIGN act = "".
+            END.
+    END.            
+END. /* if act = select a date */
+IF act = "REMOVE" THEN DO: 
+    
+    FIND Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = empid AND 
+                              Hours_Mstr.Hours_client_ID = clientid AND   
+                              Hours_Mstr.Hours_project_name = projname AND
+                              Hours_Mstr.Hours_date = hours-date
+                              EXCLUSIVE-LOCK NO-ERROR.
+    
+    IF AVAILABLE (Hours_Mstr) THEN     
+        DELETE Hours_Mstr. 
+    
+    {&OUT}                                  
+        "<div class='row'>" skip 
+        "   <div class='grid_2'></div>" skip
+        "       <div class='grid_8'>" skip 
+        "           <Center><h2>Entry for " projname " for " clientabbv " on " hours-date " has been deleted.</h2></center>" SKIP
+        "       </div>" skip 
+        "   </div class='grid_2'></div>" SKIP
+        "</div>" skip.
+        
+    ASSIGN 
+        act = ""
+        clientid = 0 
+        projname = ""
+        hours-date = ?.   
+END. /* REMOVE */ 
+
+IF v-admin = YES AND act = "" THEN 
+    ASSIGN 
+         act = "EMPLOYEE".
+
+IF v-admin = NO AND act = "" THEN 
+    ASSIGN 
+        act = "CLIENT".
+
+IF v-admin = YES AND act = "TIME" AND projname = "Regular / Salary" THEN 
+    ASSIGN 
+        act = "TIME".
+ELSE IF v-admin = YES AND act = "TIME" AND projname <> "Regular / Salary" THEN
+    ASSIGN 
+        act = "FIND".    
+
+
+IF v-admin = NO AND act = "TIME" THEN 
+    ASSIGN 
+        act = "FIND".         
+ 
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "EMPLOYEE" THEN DO:
+        
+        {TSentryU.i "CLIENT" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "REQ" "REQUIRED" "Select an Employee" "NOTHING" "DISABLED"}.
+    
+    END. /* EMPLOYEE */
+    WHEN "CLIENT" THEN DO:      
+
+        {TSentryU.i "PROJECT" "REQ" "REQUIRED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "Select a Client" "NOTHING" "DISABLED"}.          
+        
+    END. /* CLIENT */
+    WHEN "PROJECT" THEN DO: 
+  
+        {TSentryU.i "DATE" "NOTHING" "DISABLED" "REQ" "REQUIRED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "Select a Project" "NOTHING" "DISABLED"}.
+      
+    END. /* PROJECT */ 
+    WHEN "DATE" THEN DO:    
+        
+        {TSentryU.i "TIME" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "REQ" "REQUIRED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "Select a Date" "NOTHING" "DISABLED"}.
+      
+    END. /* DATE */  
+    WHEN "TIME" THEN DO: 
+        
+        {TSentryU.i "FIND" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "Select a Time" "REQ" "REQUIRED"}.
+       
+    END. /* TIME */                  
+    WHEN "FIND" THEN DO:                               
+                                    
+        FOR FIRST Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid AND  
+                                    people_mstr.people_deleted = ?  
+                NO-LOCK:
+            ASSIGN 
+                clientabbv = Client_Mstr.Client_abbv
+                clnt-trans = Client_Mstr.Client_trans_def.            
+        END. /* for first client_mstr */            
+
+        FIND Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = empid AND  
+                              Hours_Mstr.Hours_client_ID = clientid AND 
+                              Hours_Mstr.Hours_project_name = projname AND  
+                              Hours_Mstr.Hours_date = hours-date AND 
+                              Hours_Mstr.Hours_time = db-time AND 
+                              Hours_Mstr.Hours_deleted = ?
+                               NO-LOCK NO-ERROR.        
+                
+            IF AVAILABLE (Hours_Mstr) THEN DO: 
+                ASSIGN  
+                    old-clientid = Hours_Mstr.Hours_client_ID
+                    old-projname = Hours_Mstr.Hours_project_name  
+                    old-date     = Hours_Mstr.Hours_date
+                    old-time-desc = Hours_Mstr.Hours_time_desc
+                    amount       = Hours_Mstr.Hours_amount
+                    hours-desc   = Hours_Mstr.Hours_description
+                    c-time        = STRING(Hours_Mstr.Hours_time)
+	                pass-old-time = IF c-time <> ? THEN SUBSTRING(c-time,index(c-time," ") + 1,5) ELSE ""
+	                v-time        = IF c-time <> ? THEN SUBSTRING(c-time,index(c-time," ") + 1,5) ELSE ""
+	                time-desc     = Hours_Mstr.Hours_time_desc
+                    .                        
+              
+                RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                               
+		            old-date,                                                                             
+		            OUTPUT pass-old-date                                                                          
+		            ).
+            
+            END. 
+                                                                                    IF itmessage = YES THEN 
+                                                                                        {&OUT}
+                                                                                        " act = select a date<BR>" SKIP
+                                                                                        "Client ID = " clientid "<BR>" SKIP
+                                                                                        "Projname = " projname "<BR>" SKIP
+                                                                                        "hours-date = " hours-date "<BR>" SKIP
+                                                                                        "old client id = " old-clientid "<BR>" SKIP
+                                                                                        "old projname = " old-projname "<BR>" SKIP
+                                                                                        "old date = " old-date "<BR>" SKIP
+                                                                                        "amount = " amount "<BR>" SKIP
+                                                                                        "hours-desc = " hours-desc "<BR>" SKIP
+                                                                                        .
+        
+        IF v-admin = YES THEN DO:
+            
+            IF projname = "Regular / Salary" THEN DO: 
+                {TSentryU.i "UPDATE" "NOTHING" "DISABLED" "NOTHING" "NOTHING" "NOTHING" "NOTHING" "NOTHING" "NOTHING" "NOTHING" "DISABLED" "Update Entry" "NOTHING" "NOTHING"}.            
+            END.
+            ELSE DO: 
+                {TSentryU.i "UPDATE" "NOTHING" "DISABLED" "NOTHING" "NOTHING" "NOTHING" "NOTHING" "REQ" "REQUIRED" "NOTHING" "DISABLED" "Update Entry" "NOTHING" "DISABLED"}.
+            END.
+            
+        END.
+        ELSE DO:                                                                                 
+            {TSentryU.i "UPDATE" "NOTHING" "DISABLED" "NOTHING" "NOTHING" "NOTHING" "NOTHING" "REQ" "REQUIRED" "NOTHING" "DISABLED" "Update Entry" "NOTHING" "NOTHING"}.
+        END. 
+                   
+    END. /* FIND */            
+    WHEN "UPDATE" THEN DO:
+                                                                                     IF itmessage = YES THEN 
+                                                                                        {&OUT}
+                                                                                        " act = update entry<BR>" SKIP
+                                                                                        "Client ID = " clientid "<BR>" SKIP
+                                                                                        "Projname = " projname "<BR>" SKIP
+                                                                                        "hours-date = " hours-date "<BR>" SKIP
+                                                                                        "old client id = " old-clientid "<BR>" SKIP
+                                                                                        "old projname = " old-projname "<BR>" SKIP
+                                                                                        "old date = " old-date "<BR>" SKIP
+                                                                                        "amount = " amount "<BR>" SKIP
+                                                                                        "hours-desc = " hours-desc "<BR>" SKIP
+                                                                                        .
+                                                                                        
+        FIND Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid AND 
+                         Proj_Mstr.Proj_name = projname NO-LOCK NO-ERROR.
+               
+        IF AVAILABLE (Proj_Mstr) THEN DO:                                                                                 
+                                                                                        
+	        RUN VALUE(SEARCH("SUBhours-ucU.r")) (
+				amount,					/*Hours_Mstr.Hours_amount      */ 
+				clientid,				/*Hours_Mstr.Hours_client_ID   */
+				projname,				/*Hours_Mstr.Hours_project_name*/
+				hours-date,				/*Hours_Mstr.Hours_date        */
+				html-encode(hours-desc),				/*Hours_Mstr.Hours_description */
+				empid,   				/*Hours_Mstr.Hours_employee_ID */
+				clnt-trans,				/*Hours_Mstr.Hours_translation */
+				?,						/*Hours_Mstr.Hours_billed      */  
+	            db-time,                /*Hours_Mstr.Hours_time        */
+	            time-desc,              /*Hours_Mstr.Hours_time_desc   */
+				
+				old-clientid, 
+		        old-projname,
+		        old-date,
+		        old-time,
+		        old-time-desc,
+				
+				OUTPUT clientid,        
+				OUTPUT projname,        
+				OUTPUT empid,          
+				OUTPUT hours-date,            
+				OUTPUT o-create,                           
+				OUTPUT o-update,                           
+				OUTPUT o-avail,                          
+				OUTPUT o-successful,                        
+				OUTPUT o-error                                
+				).        
+	                                                                                        IF itmessage = YES AND o-error = YES OR o-successful = NO THEN 
+	                                                                                            {&OUT}
+	                                                                                                "<P>SUBhour-ucU.r Failed.</P>" SKIP
+	                                                                                                "<P>o-error = " o-error "</P>" skip
+	                                                                                                "<P>o-successful = " o-successful "</P>" skip.         
+	        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                               
+	            hours-date,                                                                             
+	            OUTPUT disp-date                                                                        
+	            ).
+	                                                                                        IF itmessage = YES THEN 
+	                                                                                        {&OUT}
+	                                                                                        "after run statement<BR>" SKIP
+	                                                                                        "Client ID = " clientid "<BR>" SKIP
+	                                                                                        "Projname = " projname "<BR>" SKIP
+	                                                                                        "hours-date = " hours-date "<BR>" SKIP
+	                                                                                        "old client id = " old-clientid "<BR>" SKIP
+	                                                                                        "old projname = " old-projname "<BR>" SKIP
+	                                                                                        "old date = " old-date "<BR>" SKIP
+	                                                                                        "amount = " amount "<BR>" SKIP
+	                                                                                        "hours-desc = " hours-desc "<BR>" SKIP
+	                                                                                        .  
+	        FOR FIRST Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid AND   
+	                               Client_Mstr.Client_deleted = ?
+	                NO-LOCK:
+	 
+		             ASSIGN 
+		                clientabbv = Client_Mstr.Client_abbv	                
+	                    clnt-trans = Client_Mstr.Client_trans_def.  
+		                          
+	        END. /* for first client_mstr */
+	        FIND Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = empid AND 
+	                              Hours_Mstr.Hours_client_ID = clientid AND 
+	                              Hours_Mstr.Hours_project_name = projname AND  
+	                              Hours_Mstr.Hours_date = hours-date AND
+	                              Hours_Mstr.Hours_time = db-time AND   
+	                              Hours_Mstr.Hours_deleted = ?
+	                               NO-LOCK NO-ERROR.        
+	                
+	            IF AVAILABLE (Hours_Mstr) THEN 
+	                ASSIGN 
+	                    old-clientid = 0
+	                    old-projname = ""
+	                    old-date     = ?
+	                    old-time     = ?
+	                    old-time-desc = ""
+	                    amount       = Hours_Mstr.Hours_amount 
+	                    hours-desc   = Hours_Mstr.Hours_description.                                         
+	                                                                                    IF itmessage = YES THEN 
+	                                                                                        {&OUT}
+	                                                                                        "after find and assign<BR>" SKIP
+	                                                                                        "Client ID = " clientid "<BR>" SKIP
+	                                                                                        "Projname = " projname "<BR>" SKIP
+	                                                                                        "hours-date = " hours-date "<BR>" SKIP
+	                                                                                        "old client id = " old-clientid "<BR>" SKIP
+	                                                                                        "old projname = " old-projname "<BR>" SKIP
+	                                                                                        "old date = " old-date "<BR>" SKIP
+	                                                                                        "amount = " amount "<BR>" SKIP
+	                                                                                        "hours-desc = " hours-desc "<BR>" SKIP.
+	                                                                                                 
+	         {TSentryU.i "EMPLOYEE" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "NOTHING" "DISABLED" "Create Another Entry" "NOTHING" "DISABLED"}.                          
+        END. /* if avail proj_mstr */
+        ELSE DO:
+        
+	        {&OUT}
+	        "<div class='row'>" skip
+	        "   <div class='grid_3'></div>" skip
+	        "       <div class='grid_6'>" skip             
+	        "           <center><h2>Dwight Error: You tried to break this so you are a bad person.</h2></center>" skip
+	        "       </DIV>" SKIP
+	        "   <div class='grid_3'></div>" skip
+	        "</DIV>" SKIP
+	        "<form>" SKIP
+	        "<div class='row'>" skip
+	        "   <div class='grid_5'> </DIV>" SKIP
+	        "   <div class='grid_2'><BUTTON type='submit' name='h-update-act' value='NEW' class='btn'>Search Again</BUTTON></div>" SKIP
+	        "   <div class='grid_5'> </DIV>" SKIP
+	        "</DIV>" SKIP
+	        "</form>" SKIP.
+        
+        END. /* Dwight Error */
+                         
+    END. /* UPDATE */    
+        WHEN "DELETE" THEN DO:
+    
+        {&OUT}
+            "<div class='row'>" skip
+            "   <div class='grid_2'></div>" skip
+            "       <div class='grid_8'>" skip 
+            "           <Center><h2>Are you Sure you want to delete the entry for " projname " for " clientabbv " on " hours-date "?</h2></center>" SKIP
+            "       </div>" skip
+            "   </div class='grid_2'></div>" SKIP
+            "</div>" skip 
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP 
+            "   <input type='hidden' name='h-admin' value='" v-admin "'>" SKIP
+            "   <INPUT type='hidden' name='h-empid' value='" empid "' />" SKIP
+            "   <input type='hidden' name='h-clientid'  value='" clientid "' />" SKIP
+            "   <input type='hidden' name='h-projname'  value='" projname "' />" SKIP
+            "   <INPUT type='hidden' name='html5-date' value='" disp-date "' />" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='REMOVE' class='btn'>YES</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='MAINTENANCE' class='btn'>NO</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* DELETE */       
+END CASE.      
+</SCRIPT>
+</BODY>
+</HTML>

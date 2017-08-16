@@ -1,0 +1,236 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Tld_det Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.1">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <META NAME="MODIFIED_DATE" CONTENT="24/Feb/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+ 
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+
+{../depot/src/WebSpeed/menuname.i}.
+
+  /*------------------------------------------------------------------
+    File:           tld_det_Rpt.html
+    Description:    report page for tld_det in the HHI database
+    Created:
+            Version 1.1 - Written by Jacob Luttrell on 24Feb16.
+                        made updates for v11.1 database and css changes.
+                        Marked by 1dot1.
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE testtype        LIKE tl_mstr.tl_testtype NO-UNDO.
+DEFINE VARIABLE thismarker      AS CHARACTER NO-UNDO.
+DEFINE VARIABLE act             AS CHARACTER NO-UNDO.
+DEFINE VARIABLE start_holder    AS CHARACTER INITIAL "" NO-UNDO.
+DEFINE VARIABLE end_holder      AS CHARACTER INITIAL "" NO-UNDO.
+
+/********************** assign stuff ********************************/
+ASSIGN 
+    testtype        = get-value("h-testtype")
+    act             = get-value("s-act").
+
+IF act = "" THEN 
+    ASSIGN 
+        act = "Search".
+        
+/*********************** Search Act **************************************/ 
+IF act = "Search" THEN DO:
+   {&OUT}
+        "<DIV class='row'>" SKIP
+        "<DIV class='grid_3'></DIV>" SKIP
+        "<DIV class='grid_6'>" SKIP     
+        "    <div class='table_2col'>" SKIP 
+        "        <form method='get' ACTION='TLitemdetR.r'>" skip
+        "           <table>" skip
+        "               <tr>                                            " SKIP
+        "                   <th colspan=2> Search Criteria</th>         " SKIP
+        "               </tr>                                           " SKIP
+        "               <tr>                                            " SKIP
+        "                   <td> Test Type </td>                        " SKIP
+        "                   <td>                                        " SKIP
+        "          <select name='h-testtype' value='" testtype "' {2} > " SKIP.
+       
+    FOR EACH test_mstr WHERE
+        (test_mstr.test_starteff <= TODAY OR
+         test_mstr.test_starteff = ?) AND
+        (test_mstr.test_endeff >= TODAY OR
+         test_mstr.test_endeff = ?) AND
+        test_mstr.test_deleted = ? NO-LOCK
+            BY test_mstr.test_type:
+                
+        IF test_mstr.test_type = testtype THEN
+                thismarker  = "SELECTED".
+            ELSE
+                thismarker  = "".
+               
+            {&OUT}
+                "               <option value='" test_mstr.test_type "' " thismarker " > " test_mstr.test_type " </option>" SKIP.
+               
+    END.    /** of 4ea test_mstr **/           
+    
+    {&OUT}
+        "                       </select>                                                   " SKIP 
+        "                    </td>                                                          " SKIP
+        "               </tr>                                                               " SKIP
+        "           </table>                                                                " SKIP
+        "</div>   <!-- end of table div -->                                                 " skip
+        " </div> <!-- end of grid_6 -->" skip 
+        "<DIV class='grid_3'> </DIV>" SKIP  
+        "</DIV>     <!-- end of row -->" SKIP
+       
+        
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP      
+        "   <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='s-act' value='Results' class='btn'>Make Selection</BUTTON></div>" SKIP /*Save Changes*/
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Selection</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</div>" SKIP
+        "<BR>" SKIP
+        
+/*        "       <INPUT type='hidden' name='s-act' value='Results' />                        " SKIP*/
+/*        "       <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' /> " SKIP*/
+/*        "       <INPUT type='submit' name='s-submit' value='Submit'/>                       " SKIP*/
+/*        "       <INPUT type='reset' name='s-reset' value='Reset'/>                          " SKIP*/
+        "   </FORM>                                                                         " SKIP.      
+     
+END. /*** act 0 ***/
+/******************************************* Results Act **************************************/
+IF act = "Results" THEN DO: 
+
+    FIND FIRST test_mstr    WHERE test_mstr.test_type = testtype AND  
+                                      test_mstr.test_deleted = ?
+                                    NO-LOCK NO-ERROR.
+   
+    {&OUT}
+        "<DIV class='row'>" SKIP
+        "<DIV class='grid_2'></DIV>" SKIP
+        "<DIV class='grid_8'>" SKIP          
+        "<CENTER>                                                               " SKIP
+        "   <div class='table_report fixed_table'>                              " SKIP
+        "       <table>                                                         " SKIP
+        "           <thead>                                                     " SKIP
+        " <tr>" skip
+         "   <th colspan=4>" test_mstr.test_type " - " test_mstr.test_name "</th>  " SKIP
+         "</tr>" SKIP
+        "           </thead>                                                    " SKIP.
+/*        "   <h2>" test_mstr.test_type " - " test_mstr.test_name "</h2>  " SKIP.*/
+       
+        FOR EACH tl_mstr       WHERE tl_mstr.tl_testtype = test_mstr.test_type AND 
+                                      tl_mstr.tl_deleted = ?
+                                    NO-LOCK
+                                BREAK BY tl_mstr.tl_order:
+                                
+          
+        {&OUT}
+/*        "<form>                                                                 " SKIP*/
+       
+        "           <thead>                                                     " SKIP
+        "               <tr>                                                    " SKIP
+        "                   <td colspan=4>" tl_mstr.tl_section_desc "</td>  " SKIP
+        "               </tr>                                                   " SKIP                                          
+        "           </thead>                                                    " SKIP
+        "               <tr>                                                    " SKIP
+        "                   <td>Sort Order</TD>                                 " SKIP        
+        "                   <td>Item Name</td>                                  " SKIP
+        "                   <td>Effective Start Date</td>                       " SKIP
+        "                   <td>Effective End Date</td>                         " SKIP
+        "               </TR>                                                   " SKIP.
+            
+        FOR EACH tld_det        WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+                                          tld_det.tld_deleted = ?
+                                        NO-LOCK,
+            FIRST marker_list   WHERE marker_list.marker_ID = tld_det.tld_item_ID AND               /* 1dot1 */
+                                          marker_list.marker_deleted = ?
+                                        NO-LOCK                          
+                                BREAK BY tld_det.tld_order:
+                                    
+             {&OUT}
+                "<tr>                                                               " SKIP
+                "   <TD>" tld_det.tld_order "</TD>                                  " SKIP  
+                "   <td><a href=~"TLitemmaintU.r?h-testtype=" test_mstr.test_type 
+                "&h-sectid=" tld_det.tld_sect_id 
+                "&h-sectdesc=" tl_mstr.tl_section_desc 
+                "&h-itemid=" tld_det.tld_item_id
+                "&whattorun=4.8"  
+                "&h-act=FIND ITEM~" >                                               " SKIP
+                        marker_list.marker_item "</a></td>                      " SKIP.                     /* 1dot1 */
+                                    
+	        IF tld_det.tld_start_eff = ? THEN 
+	            {&OUT}
+	            "   <td>" start_holder "</td>                                       " SKIP.                   
+
+            ELSE 
+                {&OUT}
+                "   <td>" tld_det.tld_start_eff "</td>                          " SKIP.
+                
+            IF tld_det.tld_end_eff = ? THEN 
+                {&OUT}
+                "    <td>" end_holder "</td>                                        " SKIP
+                "</tr>                                                              " SKIP.
+            ELSE 
+                {&OUT}
+                "   <td>" tld_det.tld_end_eff "</td>                            " SKIP 
+                "</tr>                                                              " SKIP.  
+               
+        END. /** for each tdl_det **/
+     END. /*** for each tl_mstr ***/   
+   {&OUT}
+    "           <thead>                                                     " SKIP
+    "       <tr>                                                                    " SKIP
+    "           <td colspan=4>End of Report</td>                                    " SKIP
+    "       </tr>                                                                   " SKIP
+    "           </thead>                                                    " SKIP
+       "   </table>                                                                 " SKIP
+       "</div>    <!--End of table Report -->                                       " SKIP.
+       
+       
+/*END. /*** for each tl_mstr ***/*/
+
+    {&OUT}
+
+  
+    "</div>" skip /* end of grid 8 */
+    "<DIV class='grid_2'></div>" skip
+    "</div>" skip  /* end of row */
+    "<br><br>" skip
+      "<form>                                                                         " SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_5'></DIV>" SKIP        
+        "<input type='hidden' name='s-act' value='Search' />" SKIP 
+        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP         
+        "   <div class='grid_2'><button type='submit' name='h-act' value='Search Again' class='btn'>Search Again</BUTTON></div>" SKIP
+        "   <div class='grid_5'></DIV>" SKIP    
+        
+        "</div>" SKIP
+        "</form>" skip.
+        
+        
+    
+    
+    
+/*    "   <input type='hidden' name='s-act' value='Search' />                         " SKIP                 */
+/*    "       <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' /> " SKIP  /* today */*/
+/*    "   <input type='submit' name='submit' value='Search Again' />                  " SKIP                 */
+/*    "</form>                                                                        ".                     */
+     
+END. /*** act 1 ***/
+</SCRIPT>
+ 
+</CENTER>
+</BODY>
+</HTML>

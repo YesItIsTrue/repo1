@@ -1,0 +1,594 @@
+/** 
+  CSS reboot of the core.css catering specifically to the page contents
+  - Tables, Spacing, and Flowcharts
+  
+  Full compatibility with existing html - Quinton Schafer
+  Feb 3, 2016, Alpha
+**/
+/** 
+  Body Tag(s) 
+Notes: the .inside class won't be necessary anymore, as this css document 
+  will only be attached to the content pages and not the menu.
+  This is the base body style.
+  If we add additional page types in the future that require separate body tags,
+  we can add those as additional classes of the body.
+**/
+body{
+  font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; /** Font used in the menu **/
+  margin-top:8px;
+  line-height:normal;
+}
+/** Links **/
+a{
+  text-decoration:none;
+  color:blue;
+}
+/** 
+  Legacy Tags
+Notes: The only one of these that I understand is the footer.
+**/
+.leftlogo{
+  Display:inline;
+  Float:left;
+}
+.rightlogo{
+  Display:inline;
+  Float:right;
+}
+.centerheader{
+  Display:inline;
+  Width:80%;
+}
+.webpagetitle{
+  font-size:xx-large;
+  font-style:italic;
+  font-weight:bold;
+  margin:8px;
+}
+.btn{
+  font-size:1em;
+  width:100%;
+  text-align:center;
+}
+.req,
+.required,
+.yellow{
+  background-color:#ffff99 !important; /** Yellow **/
+}
+.alt,
+.altered,
+.col,
+.orange{
+  background-color:#ffcc66 !important; /** Orange **/
+}
+.light_green{
+  background-color:#99FF33 !important; /** Light Green **/
+}
+.green{
+  background-color:#99FF99 !important; /** Green **/
+}
+.blue{
+  background-color:#98cdde !important; /** blue **/
+}
+.cell_10{
+  width:10%;
+}
+.cell_15{
+  width:15%;
+}
+.cell_20{
+  width:20%;
+}
+.cell_25{
+  width:25%;
+}
+.cell_30{
+  width:30%;
+}
+/*****************************************************
+  Print Label table?
+*****************************************************/
+.print_label{
+  background-color:white;
+  border:thin solid black;
+  box-shadow: 0px 0px 10px rgba(0,0,0,.5);
+  border-radius:2.5px;
+  padding:8px;
+}
+/** Alignment Tags **/
+.align_right{
+  text-align:right;
+}
+.align_left{
+  text-align:left;
+}
+.align_center{
+  text-align:center;
+}
+/***************************************************************************
+    THE NEW GRID SYSTEM
+***************************************************************************/
+.row{
+  margin-right: auto;
+  margin-left: auto;
+  display: -webkit-flex;
+  display: flex;
+}
+div[class*='grid_']{
+  position: relative;
+  min-height: 1px;
+  padding-right: 15px;
+  padding-left: 15px;
+  float:left;
+  box-sizing:border-box;
+}
+.grid_0-25{
+  width: 2.08333333%;
+}
+.grid_0-5{
+  width: 4.16666667%;
+}
+.grid_1{
+  width: 8.33333333%;
+}
+.grid_1-5{
+  width: 12.5%;
+}
+.grid_2{
+  width: 16.66666667%;
+}
+.grid_2_5,
+.grid_2-5{
+  width: 20.83333333%;
+}
+.grid_3{
+  width: 25%;
+}
+.grid_3-5{
+  width: 29.16666667%;
+}
+.grid_4{
+  width: 33.33333333%;
+}
+.grid_4-5{
+  width: 37.5%;
+}
+.grid_5{
+  width: 41.66666667%;
+}
+.grid_5-5{
+  width: 45.83333333%;
+}
+.grid_6{
+  width: 50%;
+}
+.grid_6-5{
+  width: 54.16666667%;
+}
+.grid_7{
+  width: 58.33333333%;
+}
+.grid_7-5{
+  width: 62.5%;
+}
+.grid_8{
+  width: 66.66666667%;
+}
+.grid_8-5{
+  width: 70.83333333%;
+}
+.grid_9{
+  width: 75%;
+}
+.grid_9_5,
+.grid_9-5{
+  width: 79.16666667%;
+}
+.grid_10{
+  width: 83.33333333%;
+}
+.grid_10-5{
+  width: 87.5%;
+}
+.grid_11{
+  width: 91.66666667%;
+}
+.grid_11-5{
+  width: 95.83333333%;
+}
+.grid_12{
+  width:100%;
+}
+/** 
+  Tables
+Notes: I have redesigned some of the tables to fit the menu style. I have also
+  made some adjustments to make the tables more printer friendly. 
+Colors:
+  #333333; - Dark Grey used for table headers and borders
+  #b7b7b7; - Light Grey used for alternate colored table cells
+**/
+/** Shared Table Tags **/
+table{
+  border-collapse:collapse;
+  width:100%; /** might mess up wee table **/
+}
+table, table th, table tr td{
+  border:1px solid #333333;
+}
+div[class*='table_']{
+  margin-top:8px;
+  margin-left:auto;
+  margin-right:auto;
+  table-layout:fixed; /** might mess up fromTo table **/
+}
+th, .break{ /** Is the Table header supposed to be all caps? **/
+  font-size:1.5em;
+  font-weight:bold;
+  text-transform:Capitalize;
+  background:#333333;
+  Color:white;
+  padding:5px;
+  height:auto;
+}
+td{
+  font-weight:bold;
+  text-align:right;
+  font-size:1em;
+  height:30px;
+  padding:5px;
+}
+tr{
+  background-color:white;
+}
+.table_col td:first-child,.table_2col td:first-child,.table_2col td:nth-child(3),
+.table_3col td:first-child,.table_3col td:nth-child(3),.table_3col td:nth-child(5){
+  background-color:#98cdde; /** blue **/
+}
+.table_col td:nth-child(2),.table_2col td:nth-child(2),.table_2col td:nth-child(4),
+.table_3col td:nth-child(2),.table_3col td:nth-child(4),.table_3col td:nth-child(6){
+  text-align:left;
+}
+/** Single Column Table **/
+
+.table_col th{
+  text-transform:normal;
+}
+.table_col td:first-child{
+  width:20%;
+}
+/** Two Column Table **/
+.table_2col td:first-child,
+.table_2col td:nth-child(3){
+  min-width:10%;
+}
+.table_2col td:nth-child(2),
+.table_2col td:nth-child(4){
+  min-width:30%;
+}
+/** Three Column Table **/
+.table_3col td:first-child,
+.table_3col td:nth-child(3),
+.table_3col td:nth-child(5){
+  width:10%;
+  min-width:75px;
+}
+.table_3col td:nth-child(2),
+.table_3col td:nth-child(4),
+.table_3col td:nth-child(6){
+  min-width:25%;
+}
+/** Pancake Table**/
+.pancake td{
+  text-align:center;
+  font-weight:normal;
+  background-color:white;
+}
+.pancake tr:first-child td{
+  background-color:#98cdde;
+  font-weight:bold;
+}
+/** Report Table **/
+.table_report td, .table_report_short td{
+  text-align:left;
+  font-weight:normal;
+}
+.break td{
+  text-align:center;
+  font-weight:bold;
+}
+.table_report thead tr:nth-child(2){
+  
+}
+.table_report thead td,
+.table_report_short thead td,
+.table_report tfoot td,
+.table_report_short tfoot td,
+.table_report thead tr:nth-child(2) th{
+  background-color:#98cdde;
+  font-size:1em;
+  font-weight:bold;
+  text-align:center;
+  color:black;
+}
+.table_report tr:nth-child(even){
+	background-color:#99ff99; /** greenish **/
+}
+.table_report td:nth-child(3){
+  text-align:center;
+}
+/** Clickable Table coloration **/
+.clickable tr:hover{
+  background-color:lightgrey !important;
+}
+/** FromTo Table **/
+.table_report_FromTo thead tr:first-child th{
+  text-align:left;
+}
+.table_report_FromTo thead tr:nth-child(2) th,.table_report_FromTo thead tr:nth-child(3) th{
+  background-color:white;
+}
+.table_report_FromTo thead tr:nth-child(2) th,.table_report_FromTo thead tr:nth-child(3) th,.table_report_FromTo thead tr:last-child th{
+  color:black;
+  font-size:1em;
+}
+.table_report_FromTo thead tr:last-child th,.table_report_FromTo tbody tr:last-child,.table_report_FromTo tfoot tr{
+  background-color:#98cdde; /** blue **/
+}
+.table_report_FromTo td{
+  font-weight:normal;
+  text-align:center;
+}
+.table_report_FromTo tbody tr:nth-child(even){
+  background-color:#99ff99; /** greenish **/
+}
+/**
+  Inner Table Class - for 4 columns
+  to be used when you need a table inside a
+  specific table cell, for example in the:
+  TLrecR.html
+  
+  Notes: The inner table class works for inner tables with 4 cells, 
+**/
+.inner,.inner2,.inner5,.inner6,.inner9{
+  padding:0;
+  width:80%;
+}
+.inner table,.inner2 table,.inner5 table,.inner6 table,.inner9 table{
+  border:none;
+}
+.inner th,.inner td,.inner2 th,.inner2 td,.inner5 td,.inner5 th,.inner6 td,.inner6 th,.inner9 td,.inner9 th{
+  height:30px;
+  font-size:1em;
+  text-align:center;
+  color:black;
+  border:none;
+  border-right:1px solid #333333;
+}
+.inner th,.inner2 th,.inner5 th,.inner6 th,.inner9 th{
+  background-color:#98cdde;
+}
+.inner td,.inner2 td,.inner5 td,.inner6 td,.inner9 td{
+  background-color:white;
+}
+.inner tr,.inner2 tr,.inner5 tr,.inner6 tr,.inner9 tr{
+  border-bottom:1px solid #333333;
+}
+.inner tr:last-child,.inner2 tr:last-child,.inner5 tr:last-child,.inner6 tr:last-child,.inner9 tr:last-child{
+  border-bottom:none;
+}
+.inner td:first-child,.inner th:first-child{
+  width:30% !important;
+}
+.inner td:nth-child(2),.inner th:nth-child(2){
+  width:11% !important;
+}
+.inner td:nth-child(3),.inner th:nth-child(3),{
+  width:14% !important;
+}
+.inner td:last-child,.inner th:last-child{
+  width:45% !important;
+  border-right:none;
+}
+/**
+  inner2
+**/
+.inner2{
+  width:35%;
+}
+.inner2 td:first-child,.inner2 th:first-child{
+  width:74% !important;
+}
+.inner2 td:last-child,.inner2 th:last-child{
+  width:26% !important;
+  border-right:none;
+}
+/**
+  inner5
+**/
+.inner5{
+  width:85%;
+}
+.inner5 td:first-child,.inner5 th:first-child{
+  width:32%!important;
+}
+.inner5 td:nth-child(2),.inner5 th:nth-child(2){
+  width:9%!important;
+}
+.inner5 td:nth-child(3),.inner5 th:nth-child(3){
+  width:8%!important;
+}
+.inner5 td:nth-child(4),.inner5 th:nth-child(4){
+  width:10%!important;
+}
+.inner5 td:last-child,.inner5 th:last-child{
+  width:41%!important;
+  border-right:none;
+}
+/**
+  inner6
+**/
+.inner6{
+  width:90%;
+}
+.inner6 td:first-child,.inner6 th:first-child{
+  width:7%;
+}
+.inner6 td:nth-child(2),.inner6 th:nth-child(2){
+  width:30%;
+}
+.inner6 td:nth-child(3),.inner6 th:nth-child(3){
+  width:7%;
+}
+.inner6 td:nth-child(4),.inner6 th:nth-child(4){
+  width:7%;
+}
+.inner6 td:nth-child(5),.inner6 th:nth-child(5){
+  width:8%;
+}
+.inner6 td:last-child,.inner6 th:last-child{
+  width:41%;
+  border-right:none;
+}
+/**
+  inner9
+**/
+.inner9{
+  width:90%;
+}
+.inner9 td:first-child,.inner9 th:first-child{
+  width:6%;
+}
+.inner9 td:nth-child(2),.inner9 th:nth-child(2){
+  width:6%;
+}
+.inner9 td:nth-child(3),.inner9 th:nth-child(3){
+  width:6%;
+}
+.inner9 td:nth-child(4),.inner9 th:nth-child(4){
+  width:6%;
+}
+.inner9 td:nth-child(5),.inner9 th:nth-child(5){
+  width:21%;
+}
+.inner9 td:nth-child(6),.inner9 th:nth-child(6){
+  width:5%;
+}
+.inner9 td:nth-child(7),.inner9 th:nth-child(7){
+  width:5%;
+}
+.inner9 td:nth-child(8),.inner9 th:nth-child(8){
+  width:7%;
+}
+.inner9 td:last-child,.inner9 th:last-child{
+  width:38%;
+  border-right:none;
+}
+/**
+  Wee Table
+**/
+.wee_table{
+  margin-top:8px;
+}
+.wee_table tbody td{
+  font-weight:normal;
+}
+.wee_table tbody td:first-child{
+  text-align:left;
+}
+/** 
+  Fixed Table Header 
+  -Addon class
+  Set the table that you want to have its header fixed to fixed_table
+  All of the header must be done in 'th' including inner tables, which also need to have their 'th' cells wrapped in a 'thead'
+  jQuery is required on the page.
+  fixed.js is required on the page.
+**/
+.fixed_table{
+  /** identifier tag for a fixed table **/
+}
+.fixed{
+  top:0;
+  position:fixed;
+  width:auto;
+  display:none;
+  border:none;
+  margin-top:0px!important;
+}
+/** 
+  Tablesorter
+  -Adds the arrows
+  All of the headers for sortable tables must be done in 'th'
+**/
+.header {
+	background-image: url(bg.gif);
+	background-repeat: no-repeat;
+	background-position: center right;
+	cursor: pointer;
+}
+.headerSortUp {
+	background-image: url(asc.gif);
+}
+.headerSortDown {
+	background-image: url(desc.gif);
+}
+.printfix{
+  page-break-inside:avoid;
+}
+.page-break{
+  page-break-after:always;
+}
+/** Print CSS Settings **/
+@media print{
+  *{
+    font-size:10px !important;
+    padding:0;
+    line-height:10px;
+  }
+  .webpagetitle{
+    display:none;
+  }
+  .bar,.centerToLeft,.centerToRight{
+    height:10px !important;
+  }
+  br{
+    display:none;
+  }
+  table{
+    page-break-inside:avoid;
+  }
+  tr{
+    page-break-inside:avoid;
+  }
+  td,.inner td,.inner2 td{
+    height:20px;
+    page-break-inside:avoid;
+    page-break-after:auto;
+  }
+  td{
+    height:10px;
+  }
+  th,.inner th,.inner2 th{
+    height:20px;
+  }
+  th{
+    height:10px;
+  }
+  thead{
+    display:table-header-group;
+  }
+  tfoot{
+    display:table-footer-group;
+  }
+  .pancake{
+    width:100%;
+  }
+  .grid_1{
+    width:0;
+  }
+  .grid_10{
+    width:100%;
+  }
+  button{
+    display:none;
+  }
+}

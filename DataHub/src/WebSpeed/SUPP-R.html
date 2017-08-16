@@ -1,0 +1,229 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <TITLE>Supplement Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Sara Luttrell">
+    <META NAME="VERSION" CONTENT="1.41">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="10/July/14">
+    <META NAME="LAST_UPDATED" CONTENT="21/Mar/16">
+    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+
+<SCRIPT LANGUAGE="SpeedScript">
+
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside' > 
+<SCRIPT LANGUAGE="SpeedScript">
+
+/************************************************************
+*
+Version 1.2 - Sara Luttrell
+a. move buttons to outside the table DIVs
+b. Update to new CSS changes
+c. add menuname.i
+d. fix some structual errors and css stuff
+e. added hyperlink for sku#'s
+
+Version 1.3 - Jacob Luttrell 06/Oct/15
+    - button fixes 
+    - marked by 1dot3
+
+Version 1.4 - Jaocb Luttrell 05/Nov/15
+    - added tfoot
+    - changed from to display on report page
+    - fixed sku hyperlink
+    - marked by 1dot4
+    
+Version 1.41 - Jacob Luttrell on 21/Mar/16. Changed the titles 
+    of the column headers. Marked by /* 1dot41 */
+************************************************************/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+
+/************************************************************/
+ 
+DEFINE VARIABLE f-suppl-name  LIKE suppl_list.suppl_name NO-UNDO.
+DEFINE VARIABLE t-suppl-name  LIKE suppl_list.suppl_name NO-UNDO.
+DEFINE VARIABLE suppl-desc    LIKE suppl_list.suppl_desc NO-UNDO.
+
+DEFINE VARIABLE desplay-desc  AS CHARACTER FORMAT 'x(30)' NO-UNDO. 
+
+DEFINE VARIABLE act           AS CHARACTER NO-UNDO.
+/****************************** Assign ************************************/
+ASSIGN 
+    act         = get-value("s-act")
+    
+    f-suppl-name  = get-value("s-f-suppl-name")
+    t-suppl-name  = get-value("s-t-suppl-name")
+    suppl-desc    = get-value("s-suppl-desc").
+    
+IF act = "" THEN 
+    ASSIGN act = "Search".
+/*************************** Search *****************************/
+IF act = "Search" THEN 
+DO:
+    {&OUT}
+        "<div class='row'>"                                                                                             SKIP
+        "<div class='grid_2'></div>"                                                                                    SKIP
+        "<div class='grid_8'>"                                                                                          SKIP
+        "<div class='table_2col'>"                                                                                      SKIP                                                                                         
+        "<form>" 
+        "   <table>" 
+        "       <tr>"                                                                                                   SKIP
+        "           <th colspan='4'> Search Criteria</th>"                                                              SKIP 
+        "       </tr>"                                                                                                  SKIP
+        "       <tr>"                                                                                                   SKIP
+        "           <td>Supplement Name From</td>
+        <td><INPUT type='text' name='s-f-suppl-name' value='" f-suppl-name "'/></td>"                                   SKIP 
+        "           <td>To</td>
+        <td><INPUT type='text' name='s-t-suppl-name' value='" t-suppl-name "'/></td>"                                   SKIP 
+        "       </tr>"                                                                                                  SKIP
+        "       <tr>"                                                                                                   SKIP
+        "           <td>Description Containing</td>"
+        "           <td colspan='3'><INPUT type='text' size='98' name='s-suppl-desc' value='" suppl-desc "'/></td>"     SKIP 
+        "       </tr>"                                                                                                  SKIP
+        "   </table>"                                                                                                   SKIP
+        "</div>" SKIP 
+/* *** removed in 1dot3 ***        
+        "   <center>"                                                                                                   SKIP
+        "       <INPUT type='hidden' name='s-act' value='Results' />"                                                   SKIP 
+        "       <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' /> "                                    SKIP 
+        "       <INPUT type='submit' name='s-submit' value='Submit'/> "                                                 SKIP 
+        "       <INPUT type='reset' name='s-reset' value='Reset'/> "
+        "   </center>"                                                                                                  SKIP
+        "</FORM>"                                                                                                       SKIP
+    *** end of removal *** */
+        "</div><!-- end of grid_8 -->"                                                                                  SKIP
+        "<div class='grid_2'></div></div>"  SKIP
+        "<BR>" SKIP                                                                                                                 /* 1dot3 */       
+        "<div class='row'>" SKIP                                                                                                    /* 1dot3 */
+		"   <div class='grid_3'> </DIV>" SKIP                                                                                       /* 1dot3 */
+		"       <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' /> "                                    SKIP 
+		"   <div class='grid_2'><BUTTON type='submit' name='s-act' value='Results' class='btn'>Submit</BUTTON></div>" SKIP          /* 1dot3 */
+		"   <div class='grid_2'> </DIV>" SKIP                                                                                       /* 1dot3 */
+		"   <div class='grid_2'><BUTTON type='reset' name='s-reset' class='btn'>Reset</BUTTON></div>" SKIP                          /* 1dot3 */
+		"   <div class='grid_3'> </DIV>" SKIP                                                                                       /* 1dot3 */
+		"</div>" SKIP                                                                                                               /* 1dot3 */
+		"<BR>" SKIP                                                                                                                 /* 1dot3 */
+		"</FORM>"                                                                                                       SKIP
+        .  
+                     
+END. /*** act 0 ***/
+/**************************** Results ****************************/
+IF act = "Results" THEN DO:
+    
+{&out}
+   "<div class='row'>"                                              SKIP
+/*   "<div class='grid_1'></div>"                                     SKIP*/
+   "<div class='grid_12'>"                                          SKIP
+   "   <form>"                                                      SKIP
+   "       <div class='table_report_FromTo'>"                       SKIP 
+   "           <table>"                                             SKIP
+   "               <thead>"                                         SKIP
+   "                  <tr>"                                         SKIP
+   "                       <th colspan=8>Conditions</th>"           SKIP 
+   "                  </tr> "                                       SKIP
+   "                  <tr>"                                         SKIP
+   "                       <td>From</td>"                           SKIP 
+   "                       <td>" f-suppl-name "</td>"               SKIP 
+   "                       <td rowspan=2></td>"                     SKIP
+   "                       <td rowspan=2>" suppl-desc "</td>"       SKIP                                    /* 1dot4 */   
+   "                       <td colspan=4 rowspan=2></td>"           SKIP                                    /* 1dot4 */
+/*   "                       <td></td>"                               SKIP*/
+/*   "                       <td></td>"                               SKIP*/
+/*   "                       <td></td>"                               SKIP*/
+   "                  </tr>"                                        SKIP
+   "                  <tr>"                                         SKIP
+   "                       <td>To</td>"                             SKIP
+   "                       <td>" t-suppl-name "</td>"               SKIP 
+/*   "                       <td></td>"                               SKIP*/
+/*   "                       <td></td>"                               SKIP*/
+/*   "                       <td></td>"                               SKIP*/
+/*   "                       <td></td>"                               SKIP*/
+/*   "                       <td></td>"                               SKIP*/
+/*   "                       <td></td>"                               SKIP*/
+   "                    </tr> "                                     SKIP 
+   "                    <tr> "                                      SKIP
+   "                        <th>-</th>"                             SKIP
+   "                        <th>ID</th>"                            SKIP 
+   "						<th>Name</th>"                          SKIP 
+   "						<th>Description</th>"                   SKIP                               /* 1dot41 */
+   "					    <th>SKU Number</th>"                    SKIP                               /* 1dot41 */
+   "						<th>Default Quanty</th>"                SKIP                               /* 1dot41 */
+   "						<th>Default UoM</th>"                   SKIP                               /* 1dot41 */       
+   "						<th>Default Notes</th>"                 SKIP                               /* 1dot41 */       
+   "                   </tr>"
+   "			   </thead>".
+     
+     FOR EACH suppl_list WHERE 
+        ((suppl_list.suppl_name >= f-suppl-name) OR
+         (f-suppl-name = "")) AND
+        ((suppl_list.suppl_name <= t-suppl-name) OR
+         (t-suppl-name = "")) AND
+        ((suppl_list.suppl_desc CONTAINS suppl-desc) OR 
+         (suppl-desc = "")) AND 
+         suppl_list.suppl_deleted = ?
+         NO-LOCK     
+     BY suppl_list.suppl_id: 
+
+    ASSIGN 
+        desplay-desc = suppl_list.suppl_desc.
+
+        {&out} 
+                "<tr>
+                    <td></td>"
+                    "<td>" suppl_list.suppl_id        "</td>"   SKIP
+                    "<td>" suppl_list.suppl_name      "</td>"   SKIP
+                    "<td>" desplay-desc               "</td>"   SKIP
+                    "<td><a target='_blank' href=~"http://www.holisticheal.com/catalogsearch/result/?q="
+                            suppl_list.suppl_sku  "~">" SKIP
+/*                            "&h-act=1&whattorun=12.2&submit=Search~">"*/                                                  /* 1dot4 */
+                            suppl_list.suppl_sku  "</a></td>"   SKIP
+                    "<td>" suppl_list.suppl_def_qty   "</td>"   SKIP
+                    "<td>" suppl_list.suppl_def_uom   "</td>"   SKIP
+                    "<td>" suppl_list.Suppl_def_notes "</td>"   SKIP    
+                "</tr>". 
+                 
+      END. /*********** for each ***********/             
+                                    
+        {&OUT} 
+   "        <tfoot>"                                    SKIP                                                                /* 1dot4 */                  
+   "           <tr>"                                    SKIP
+   "               <td colspan=8>End of Report</td>"    SKIP
+   "           </tr>"                                   SKIP
+   "        </tfoot>"                                   SKIP                                                                /* 1dot4 */
+   "        </table>"                                   SKIP
+   "</div> "                                            SKIP
+   "<br/>"                                              SKIP
+/* *** removed in 1dot3 ***   
+   "        <center>"                                   SKIP                                         
+   "        <form>"                                                                         SKIP
+   "           <input type='hidden' name='s-act' value='Search' />"                         SKIP  
+   "           <input type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP 
+   "           <input type='submit' name='submit' value='Search Again' />"                  SKIP 
+   "        </form>" 
+   "        </center>"
+    *** end of removal *** */
+   "</div><!-- of grid_12 -->"      SKIP
+/*   "<div class='grid_1'></div>"*/
+   "</div>"
+   "<div class='row'>" SKIP                                                                                                 /* 1dot3 */
+   "   <div class='grid_5'> </DIV>" SKIP                                                                                    /* 1dot3 */
+   "           <input type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                            /* 1dot3 */
+   "   <div class='grid_2'><button type='submit' name='h-act' value='Search' class='btn'>Search Again</BUTTON></div>" SKIP  /* 1dot3 */
+   "   <div class='grid_5'> </DIV>" SKIP                                                                                    /* 1dot3 */
+   "</div>" SKIP                                                                                                            /* 1dot3 */
+   "<BR>" SKIP                                                                                                              /* 1dot3 */
+   .
+                                                                           
+        
+END. /***** results *****/
+       
+</SCRIPT>
+</BODY>
+</HTML>

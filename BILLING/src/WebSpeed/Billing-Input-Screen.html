@@ -1,0 +1,152 @@
+  
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>       
+<HEAD> 
+    
+    <TITLE>Billing Input Screen</TITLE>
+    
+    <META NAME="AUTHOR" CONTENT="Harold Luttrell, Sr.">
+    <META NAME="VERSION" CONTENT="1.4">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="3/Apr/14">
+    <META NAME="LAST_UPDATED" CONTENT="25/Oct/14">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+      
+<SCRIPT LANGUAGE="SpeedScript">
+    /*----------------------------------------------------------------------
+      Main-program  : Billing-Input-Screen.html.
+      Description   : This is the main User-Interface for entering the 
+                    :     billing/Invoices from the different Labs for payment.
+                  
+      Sub-programs  : Billing-Input-(lab name)-Screen.html,
+                    : Billing-CREATE-bip-bill-input-Record.html.
+      Description   : This program creates the 
+                    :     record using the data that was entered
+                    :     on the input screens. 
+             
+      - - Version History - -
+      
+          1.0 - April 3, 2014 - Original code.
+
+          1.1 - June 16, 2014.  Modified previous code to reference/access the 
+                new Progress Databases: General and 
+                
+          1.2 - July 8, 2014.  Modified previous code to reference/access the 
+	            new Progress Databases: General and HHI tables and apply the
+	            RStP find-patient.p code. 
+
+          1.3 - August 26, 2014.  Added CSS commands to the screen displays.
+                Added code to display different screen formats to try and
+                match the invoice format from each lab.  
+                Also set up a free form invoice format incase we need one.
+                
+          1.4 - Oct 25, 2014 - removed all '../..' from the html code and 
+                                    changed '.html' to '.r' and
+                                    added the META & css.
+                       
+  ----------------------------------------------------------------------*/ 
+   
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD> 
+      
+<BODY class="inside">
+
+<SCRIPT LANGUAGE="SpeedScript">
+ 
+/* Define Variables. */
+DEFINE VARIABLE act                 AS INTEGER                          NO-UNDO .
+/*  
+    act values: 86 = new lab - no input screen.
+                1 = DDI format.
+                2 = GENOVA format.
+                3 = NS format.
+                4 = SABRE format. 
+*/
+
+DEFINE VARIABLE loop                AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE whotocall           AS CHARACTER FORMAT "x(80)"         NO-UNDO.
+DEFINE VARIABLE s-Submit            AS CHARACTER                        NO-UNDO.
+
+DEFINE VARIABLE whattorun           AS CHARACTER                        NO-UNDO.  /* to get the menu title */
+
+DEFINE VARIABLE lababbv             LIKE lab_mstr.lab_ID            NO-UNDO.  /* DROP-DOWN BOX. */
+DEFINE VARIABLE h-lab-id            LIKE lab_mstr.lab_ID            NO-UNDO.  /* DROP-DOWN BOX. */
+
+/* Assign Values to Variable statements. */
+ASSIGN  
+
+/* Logical variables. */ 
+                 
+/* Date variables. */ 
+  
+/* Integer variables. */        
+        loop                = 0            
+/* Character variables. */
+        s-Submit            = get-field("s-Submit")
+        h-lab-id            = get-field("h-lab-id")
+        whattorun           = get-field("whattorun").           /* to get the menu title */     
+
+/* Check to see if the user has selected a Lab for processing. */
+          
+IF  s-Submit = "Select" THEN DO:
+   
+    IF  h-lab-ID = "DDI" THEN DO:  
+        RUN  "../BILLING/rcode/Billing-IP-DDI-Screen.r?whattorun". 
+    END.   
+    ELSE 
+    IF  h-lab-ID = "GENOVA" THEN 
+        RUN  "../BILLING/rcode/Billing-IP-GENOVA-Screen.r?whattorun".
+    ELSE
+    IF  h-lab-ID = "NS" THEN 
+        RUN  "../BILLING/rcode/Billing-IP-NS-Screen.r?whattorun".
+    ELSE
+    IF  h-lab-ID = "SABRE" THEN 
+        RUN  "../BILLING/rcode/Billing-IP-SABRE-Screen.r?whattorun".
+    ELSE
+    RUN  "../DataHub/rcode/trn-hist-Report.r".
+/*        RUN  "../BILLING/rcode/Billing-IP-UNKNOWN-Lab-Screen.r?whattorun&h-lab-id".  */     
+
+END.   
+ 
+ELSE DO: 
+    
+/* User has not selected a Lab for processing yet. */ 
+/* Include code. */
+
+{../depot/src/WebSpeed/menuname.i}.                     /*** menu name assignment ***/  
+
+    ASSIGN whattorun  = get-value("whattorun").         /* to get the menu title */
+                              
+</SCRIPT> 
+<center>     
+    <form  method="get">
+        <table > 
+            <center>
+                <tr>
+<SCRIPT LANGUAGE="SpeedScript">  
+ 
+			         FOR EACH lab_mstr NO-LOCK :  
+			           
+			             ASSIGN loop = (loop + 1).  
+			                               
+			             ASSIGN  lababbv = lab_mstr.lab_ID.        
+			
+					     {&OUT} "<TR><TD align='left'> <input type='radio' name='h-lab-ID' value='" lababbv "'>" lab_mstr.lab_name "  </TD>" SKIP. 
+					     
+			         END.  /**  FOR EACH lab_mstr  **/ 
+			         
+			         {&OUT}   "<input type='hidden' name='whattorun'    value='" whattorun "' >" SKIP
+			                  "</tr>" SKIP
+			                  "<td>" "<center><input type='image' src='/depot/src/HTMLContent/images/submit_image.gif'  
+                                        alt='Submit' value='Select' name='s-Submit'>" "</td>" SKIP.
+</SCRIPT>          
+              </center>
+         </table> 
+    </form> 
+<SCRIPT LANGUAGE="SpeedScript"> 
+END.        
+   
+</SCRIPT>     
+</BODY>
+</HTML>

@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Patient Test Listing</TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META NAME="VERSION" CONTENT="1.1">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="28/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="04/Mar/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/table.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/quinton2.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+        1.1 - Written by Jacob Luttrell on 04/Mar/16. changed testtype
+                to test_type for v11.1 release (unmakred).
+  -------------------------------------------------------------------*/
+
+DEFINE VARIABLE testcount AS INTEGER NO-UNDO.
+DEFINE VARIABLE patid LIKE patient_mstr.patient_ID NO-UNDO. 
+DEFINE VARIABLE ITshowmsg AS LOGICAL INITIAL NO NO-UNDO.
+
+patid = INTEGER(get-value('h-patid')).
+
+
+    
+FOR EACH patient_mstr WHERE 
+        (patient_mstr.patient_ID = patid OR 
+         patid = 0) AND 
+        patient_mstr.patient_deleted = ? NO-LOCK,
+    FIRST people_mstr WHERE people_mstr.people_id = patient_mstr.patient_ID AND 
+        people_mstr.people_deleted = ? NO-LOCK,
+    EACH TK_mstr WHERE TK_mstr.TK_patient_ID = patient_mstr.patient_ID AND 
+        TK_mstr.TK_deleted = ? AND 
+        TK_mstr.tk_test_seq = 1 NO-LOCK
+    BREAK BY patient_mstr.patient_ID BY TK_mstr.TK_test_type BY TK_mstr.TK_ID:
+         
+         
+    IF FIRST-OF(patient_mstr.patient_id) THEN DO: 
+    
+        {&OUT}  
+            "<DIV class='wee_table'>" SKIP  
+            "   <CENTER><H3>" people_mstr.people_firstname " " people_mstr.people_lastname " - " patient_mstr.patient_ID "</H3>" SKIP
+		    "   <TABLE>" SKIP
+		    "       <THEAD>" SKIP
+		    "           <TH>Test Type</TH>" SKIP
+		    "           <TH>Qty</TH>" SKIP
+		    "       </THEAD>" SKIP.       
+            
+    END.  /** of if first-of patient_id **/                 
+                         
+    testcount = testcount + 1.
+    
+    IF ITshowmsg = YES THEN 
+	    {&OUT}
+	        "<TR>" SKIP
+	        "   <TD>" people_firstname " " people_lastname "</TD>" SKIP
+	        "   <TD>" patient_id "</TD>" skip
+	        "   <TD>" TK_test_type "</TD>" skip
+	        "   <TD>" tk_id "</TD>" skip
+	        "   <td>" testcount "</td>" SKIP
+	        "</TR>" SKIP.
+        
+    
+    IF LAST-OF(TK_mstr.TK_test_type) THEN DO:
+        
+        {&OUT}
+            "<TR>" SKIP
+            "   <TD><a href='PATtestlistdetR.r?h-patid=" patient_mstr.patient_ID "&h-testtype=" TK_mstr.TK_test_type "'>" TK_mstr.TK_test_type "</a></TD>" SKIP
+            "   <TD>" testcount "</TD>" SKIP
+            "</TR>" SKIP.
+            
+        testcount = 0.
+         
+    END.  /** of if last-of TK_test_type **/
+    
+    IF last-of(patient_mstr.patient_id) THEN DO: 
+    
+        {&OUT}    
+            "</TABLE>" SKIP
+            "</DIV>" SKIP            
+            "</CENTER>" SKIP
+            "<BR></BR>" SKIP.
+            
+    END.  /** of if last patient_id **/        
+    
+END.  /*** of 4ea. patient_mstr, etc. ***/
+
+IF ITshowmsg = YES THEN 
+	{&OUT}
+	    "<H1>END OF REPORT</H1>" SKIP.
+    
+
+</SCRIPT>
+</BODY>
+</HTML>

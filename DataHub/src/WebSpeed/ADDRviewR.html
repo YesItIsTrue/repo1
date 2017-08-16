@@ -1,0 +1,270 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<TITLE>HHI Label View</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.1">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
+    <META NAME="CREATE_DATE" CONTENT="17/Feb/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT language="SpeedScript"> 
+{../depot/src/WebSpeed/menuname.i}.
+</SCRIPT> 
+<CENTER>
+<SCRIPT LANGUAGE="SpeedScript"> 
+  /*------------------------------------------------------------------
+    File:           hhi_label_view.html -> ADRSviewR.html 
+    Description:    2 of 3 files in label creation 
+    Created:        6/23/2014
+    Author:         Jacob Luttrell 
+    
+    Version History:
+        1.1 - Written by Jacob Luttrell on 05/Nov/15
+                fixed button divs unmarked.
+        1.2 - Written by Jacob Luttrell on 17/Feb/16 added new 
+                country and state display sub procedures for v11.1
+                release. Changes to code occur on ADDRdisplayR.i.
+                Marked by /* 1dot2 */       
+  -------------------------------------------------------------------*/
+/*************************** Define Vars *****************************/
+DEFINE VARIABLE hhi_pat_ver     LIKE patient_mstr.patient_verified NO-UNDO.  
+DEFINE VARIABLE hhi_pat_id      LIKE patient_mstr.patient_ID  NO-UNDO.
+DEFINE VARIABLE tk_pat_id       LIKE tk_mstr.tk_patient_ID NO-UNDO.
+DEFINE VARIABLE tk_prt_date     LIKE tk_mstr.tk__date03 NO-UNDO.
+DEFINE VARIABLE tk_ttype        LIKE tk_mstr.tk_test_type NO-UNDO.
+DEFINE VARIABLE gen_pep_id      LIKE people_mstr.people_id NO-UNDO.
+DEFINE VARIABLE gen_pep_add_id  LIKE people_mstr.people_addr_id NO-UNDO.
+DEFINE VARIABLE gen_add_add_id  LIKE addr_mstr.addr_id NO-UNDO.
+
+DEFINE VARIABLE suffix          LIKE people_mstr.people_suffix NO-UNDO EXTENT 3.
+DEFINE VARIABLE address1        LIKE addr_mstr.addr_addr1 NO-UNDO EXTENT 3.
+DEFINE VARIABLE address2        LIKE addr_mstr.addr_addr2 NO-UNDO EXTENT 3. 
+DEFINE VARIABLE address3        LIKE addr_mstr.addr_addr3 NO-UNDO EXTENT 3.
+DEFINE VARIABLE city            LIKE addr_mstr.addr_city NO-UNDO EXTENT 3.
+DEFINE VARIABLE stateprov       LIKE addr_mstr.addr_stateprov NO-UNDO EXTENT 3.
+DEFINE VARIABLE cntry           LIKE addr_mstr.addr_country NO-UNDO EXTENT 3.
+DEFINE VARIABLE zip             LIKE addr_mstr.addr_zip NO-UNDO EXTENT 3.
+
+DEFINE VARIABLE o-fstate-disp-name AS CHARACTER NO-UNDO.                                    /* 1dot2 */
+DEFINE VARIABLE o-fstate-disp-error AS LOGICAL NO-UNDO.                                     /* 1dot2 */
+DEFINE VARIABLE o-fcountry-disp-name AS CHARACTER NO-UNDO.                                  /* 1dot2 */
+DEFINE VARIABLE o-fcountry-disp-error AS LOGICAL NO-UNDO.                                   /* 1dot2 */
+DEFINE VARIABLE o-fstate-ISO AS CHARACTER NO-UNDO.                                          /* 1dot2 */
+DEFINE VARIABLE o-fstate-error AS LOGICAL NO-UNDO.                                          /* 1dot2 */
+DEFINE VARIABLE o-fcountry-ISO AS CHARACTER NO-UNDO.                                        /* 1dot2 */
+DEFINE VARIABLE o-fcountry-error AS LOGICAL NO-UNDO.                                        /* 1dot2 */
+
+DEFINE VARIABLE x               AS INTEGER NO-UNDO.
+DEFINE VARIABLE y               AS INTEGER NO-UNDO.
+DEFINE VARIABLE z               AS INTEGER NO-UNDO.
+DEFINE VARIABLE testkitcount    AS INTEGER NO-UNDO.
+DEFINE VARIABLE confirm         AS CHARACTER NO-UNDO.
+DEFINE VARIABLE denied          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE labelline       AS CHARACTER FORMAT "x(25)" NO-UNDO EXTENT 18.
+DEFINE VARIABLE showmsg         AS LOGICAL INITIAL NO.
+
+DEFINE BUFFER morepeople        FOR people_mstr.
+DEFINE VARIABLE lastname        AS CHARACTER NO-UNDO EXTENT 3.
+DEFINE VARIABLE firstname       AS CHARACTER NO-UNDO EXTENT 3.
+DEFINE VARIABLE fromTK          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toTK            AS CHARACTER NO-UNDO.
+DEFINE VARIABLE fromLN          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toLN            AS CHARACTER NO-UNDO.
+DEFINE VARIABLE fromFN          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE toFN            AS CHARACTER NO-UNDO.
+DEFINE VARIABLE numpgs          AS INTEGER NO-UNDO.
+DEFINE VARIABLE labelcount      AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE ITmessage       AS LOGICAL INITIAL NO NO-UNDO. 
+
+    IF ITmessage = YES THEN
+    {&OUT}
+        get-value('a-numpgs').
+
+ASSIGN 
+    confirm     = get-value('s-Submit')
+    denied      = get-value('s-Submit')
+    fromTK      = get-value('a-fromTK')
+    toTK        = get-value('a-toTK')
+    fromLN      = get-value('a-fromLN')
+    toLN        = get-value('a-toLN')
+    fromFN      = get-value('a-fromFN')
+    toFN        = get-value('a-toFN')
+    numpgs      = INTEGER(get-value('a-numpgs')).
+
+ IF ITmessage = YES THEN
+    {&OUT}
+        "after assigning <BR>" SKIP
+        "numpgs = " numpgs SKIP
+        "a-fromTK = " get-value('a-fromTK') "<br>" SKIP
+        "a-toTK = " get-value('a-toTK') SKIP(1). 
+ 
+ {&OUT}   
+"<div class='row'>
+    <div class='grid_3'></div>
+    <div class='grid_6'>
+       <P>Does this look right?</P>".
+/*		<table>                                                                                */
+/*			<tr>                                                                               */
+/*				<td><FORM action='ADDRprintR.r' method='post'>                                 */
+/*				    <INPUT type='hidden' name='b-fromTK' value='" fromTK "' />                 */
+/*				    <INPUT type='hidden' name='b-toTK' value='" toTK "' />                     */
+/*				    <INPUT type='hidden' name='b-fromFN' value='" fromFN "' />                 */
+/*				    <INPUT type='hidden' name='b-toFN' value='" toFN "' />                     */
+/*				    <INPUT type='hidden' name='b-fromLN' value='" fromLN "' />                 */
+/*				    <INPUT type='hidden' name='b-toLN' value='" toLN "' />                     */
+/*				    <INPUT type='hidden' name='b-numpgs' value=" numpgs " />                   */
+/*				    <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />*/
+/*				    <INPUT type='submit' value='Yes' name='s-Submit' />                        */
+/*				</FORM></td>."                                                                 */
+		
+												                                    IF ITmessage = Yes THEN DO:
+												                                    {&OUT}
+												                                        "<P> b-fromTK = " fromTK "<br>"
+												                                        "b-toTK = " toTK "<br>"
+												                                        "b-fromFN = " fromFN "<br>"
+												                                        "b-toFN = " toFN "<br>"
+												                                        "b-fromLN = " fromLN "<br>"
+												                                        "b-toLN = " toLN "<br>"
+												                                        "b-numpgs = " numpgs "<br></P>".
+												                                   END.
+{&OUT}		
+/*				"<td><FORM action='ADDRcriteriaR.r' method='post'>                                             */
+/*				    <INPUT type='hidden' name='h-act' value='INITIAL' />                                       */
+/*                    <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />				*/
+/*				    <INPUT type='submit' value='No' name='s-Submit' />                                         */
+/*				    </FORM>                                                                                    */
+/*				</td>                                                                                          */
+/*			</tr>                                                                                           */
+/*		</table>                                                                                         */
+"</div> <!-- grid_6 -->" SKIP
+"     <div class='grid_3'></div>" SKIP
+"</div> <!-- row -->" SKIP
+"<BR>" SKIP
+"<div class='row'>" SKIP
+"   <div class='grid_3'> </DIV>" SKIP
+"   <div class='grid_2'>"
+"<FORM action='ADDRprintR.r' method='post'>
+                    <INPUT type='hidden' name='b-fromTK' value='" fromTK "' />
+                    <INPUT type='hidden' name='b-toTK' value='" toTK "' />
+                    <INPUT type='hidden' name='b-fromFN' value='" fromFN "' />
+                    <INPUT type='hidden' name='b-toFN' value='" toFN "' />
+                    <INPUT type='hidden' name='b-fromLN' value='" fromLN "' />
+                    <INPUT type='hidden' name='b-toLN' value='" toLN "' />
+                    <INPUT type='hidden' name='b-numpgs' value=" numpgs " />
+                    <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                
+"<BUTTON type='submit' name='s-Submit' value='Yes' class='btn'>Yes</BUTTON>" SKIP
+"</FORM>" 
+"</div>" SKIP
+"   <div class='grid_2'></DIV>" SKIP
+"   <div class='grid_2'>" SKIP
+"<FORM action='ADDRcriteriaR.r' method='post'>" SKIP
+"<INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP
+"<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' /> " SKIP
+"<BUTTON type='submit' name='s-Submit' value='No' class='btn'>No</BUTTON>" SKIP
+"</div>" SKIP
+"   <div class='grid_3'> </DIV>" SKIP
+"</div>" SKIP
+
+
+ "<div class='row'> 
+    <div class='grid_1'></div>
+    <div class='grid_10'>  
+        <table class='print_label'>".
+
+    
+/*************************** Main Body ******************************/
+
+froot_loop:   
+    {ADDRsearchR.i}.
+
+   x = y * 6.  
+   y = y + 1.
+    
+    IF showmsg = YES THEN 
+        {&OUT}
+            " firstname = " people_mstr.people_firstname "<br>" skip
+            " lastname = " people_mstr.people_lastname "<br>" skip
+            " RP firstname = " morepeople.people_firstname "<br>" skip
+            " RP lastname = " morepeople.people_lastname "<br>" skip
+            " tk_id = " tk_id "<br>" 
+            "x = " x "<br>"
+            "y = " y "<br>"
+            "address id = " addr_mstr.addr_id "<br>"
+            "people id = " people_mstr.people_id "<br>"
+            "morepeople id = " morepeople.people_id "<br><br>" skip(2).
+                
+   {ADDRdisplayR.i}.
+            
+   IF y >= 3 THEN DO:
+       {&OUT}
+            "<tr><td>" labelline[1] "</td><td>" labelline[7] "</td><td>" labelline[13] "</td></tr>
+             <tr><td>" labelline[2] "</td><td>" labelline[8] "</td><td>" labelline[14] "</td></tr>
+			 <tr><td>" labelline[3] "</td><td>" labelline[9] "</td><td>" labelline[15] "</td></tr>
+			 <tr><td>" labelline[4] "</td><td>" labelline[10] "</td><td>" labelline[16] "</td></tr>
+             <tr><td>" labelline[5] "</td><td>" labelline[11] "</td><td>" labelline[17] "</td></tr>
+             <tr><td>" labelline[6] "</td><td>" labelline[12] "</td><td>" labelline[18] "</td></tr>
+             <tr><td>&nbsp;</td></tr>". 
+             
+       DO z = 1 TO 18: 
+        labelline[z] = "" .
+        
+    END. /** do x = 1 to 18 **/
+    
+    x = 0. 
+    y = 0.
+    
+    END. /** y = 3 **/      
+                  
+ labelcount = labelcount + 1.                                                         
+ IF numpgs > 0 AND
+    labelcount >= (30 * numpgs) THEN DO:
+    
+                                                    IF ITmessage = YES THEN DO:
+                                                        {&OUT}
+                                                        "<P> labelcount = " labelcount "<br>"
+                                                        "numpgs = " numpgs "<br></p>".
+                                                        
+                                                        END.                  
+    
+        LEAVE froot_loop.     
+    END.
+                                       
+END. /*** of for each patient_mstr ***/
+
+IF y <> 0 THEN DO:
+       {&OUT}
+            "<tr><td>" labelline[1] "</td><td>" labelline[7] "</td><td>" labelline[13] "</td></tr>
+             <tr><td>" labelline[2] "</td><td>" labelline[8] "</td><td>" labelline[14] "</td></tr>
+             <tr><td>" labelline[3] "</td><td>" labelline[9] "</td><td>" labelline[15] "</td></tr>
+             <tr><td>" labelline[4] "</td><td>" labelline[10] "</td><td>" labelline[16] "</td></tr>
+             <tr><td>" labelline[5] "</td><td>" labelline[11] "</td><td>" labelline[17] "</td></tr>
+             <tr><td>" labelline[6] "</td><td>" labelline[12] "</td><td>" labelline[18] "</td></tr>
+             <tr><td>&nbsp;</td></tr>". 
+END. 
+
+                                                    IF ITmessage = YES THEN DO:
+                                                       {&OUT}
+                                                       "<P> labelcount = " labelcount "<br>"
+                                                       "numpgs = " numpgs "<br></p>".
+                                                       END.                                
+{&OUT}
+
+       " </table>
+   </div> <!-- grid_10 -->
+   <div class='grid_1'></div>
+</div> <!-- row -->".
+</SCRIPT>
+</CENTER>
+</BODY>
+</HTML>

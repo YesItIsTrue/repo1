@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <TITLE>Module Maintenance</TITLE>
+    <META NAME="AUTHOR" CONTENT="Doug Luttrell">
+    <META name="VERSION" content="1.0"> 
+    <META name="COPYRIGHT" content="Solsource">  
+    <META name="CREATE_DATE" content="21/Oct/16">
+    <META NAME="LAST_UPDATED" CONTENT="21/Oct/16">   
+
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core-2.css'>
+
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Program Name: MOD-maint-U.html
+    Version: 1.0
+    
+    Description:
+    Program to maintain the new mod_ctrl file in the Modules database.
+    
+    ------------------------------------------------------------------
+    Revision History:
+    -----------------
+    1.0 - written by DOUG LUTTRELL on 21/Oct/16.  Original version.
+    
+  -------------------------------------------------------------------*/
+
+
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+
+</SCRIPT>
+
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+
+{../depot/src/WebSpeed/menuname.i}.
+
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+
+
+ASSIGN 
+    v-act   = get-value('h-act').
+
+IF v-act = "" THEN 
+    v-act = "INITIAL". 
+
+IF v-act = "VALIDATION" THEN DO: 
+    
+    {&OUT}  "<H3>You are here - " v-act " but nothing has been done about that yet.</H3>" SKIP.
+            
+END.  /** of v-act = "VALIDATION" **/
+
+
+CASE v-act: 
+    
+    WHEN "INITIAL" THEN DO: 
+        
+        {&OUT}
+			"<DIV class='row'>" SKIP
+			"<DIV class='grid_3'> </DIV>     <!-- spacer DIV -->" SKIP   
+			"<DIV class='grid_6'>" SKIP
+			
+            "<FORM>" SKIP
+            "<DIV class='table_col'>" SKIP
+            "   <TABLE>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan='2'>Search Criteria</TH>" SKIP
+            "       </TR>" SKIP
+            "       <TR>" SKIP
+            "           <TD>Module Name</TD>" SKIP
+            "           <TD><select name='h-mod_name'>" SKIP.
+            
+        FOR EACH mod_ctrl NO-LOCK: 
+            {&OUT}
+                "               <option value='" mod_ctrl.mod_name "'>" mod_ctrl.mod_name "</option>" SKIP.
+        END.  /** of 4ea. mod_ctrl **/        
+             
+        {&OUT}       
+            "</select></TD>" SKIP 
+            "       </TR>" SKIP
+            "       <TR>" SKIP
+            "           <TD>Enabled?</TD>" SKIP
+            "           <TD><input type='checkbox' name='h-mod_used' value=YES DISABLED></input></TD>" SKIP 
+            "       </TR>" SKIP
+            "       <TR>" SKIP
+            "           <TD>Module Version</TD>" SKIP
+            "           <TD><input type='text' name='h-mod_version' value='' DISABLED></input></TD>" SKIP
+            "       </TR>" SKIP            
+            "       <TR>" SKIP
+            "           <TD>Expiration Date</TD>" SKIP
+            "           <TD><input type='date' name='h-mod_date' value='' DISABLED></input></TD>" SKIP
+            "       </TR>" SKIP
+            "   </TABLE>" SKIP
+            "</DIV>     <!-- end of table_col -->" SKIP
+            
+            "<BR>" SKIP
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>" SKIP
+			"</DIV>         <!-- end of grid_6 -->" SKIP
+			"<DIV class='grid_3'> </DIV>        <!-- spacer DIV -->" SKIP  
+			"</DIV>     <!-- end of row -->" SKIP
+			
+			"<div class='row'>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='ADD' class='btn'>ADD New Module</BUTTON></div>" SKIP
+			"   <div class='grid_1'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='EDIT' class='btn'>EDIT Selected Module</BUTTON></div>" SKIP
+			"   <div class='grid_1'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='DELETE' class='btn'>DELETE Selected Module</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"</div>" SKIP
+			"<BR>" SKIP.
+
+
+        
+    END.  /** of v-act = "INITIAL" **/
+    
+    WHEN "SEARCH" THEN DO: 
+        
+        {&OUT}  "<H3>You are here - " v-act " but nothing has been done about that yet.</H3>" SKIP.
+        
+    END.  /** of v-act = "SEARCH" **/
+    
+    WHEN "ADD" THEN DO: 
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>     <!-- spacer DIV -->" SKIP   
+            "<DIV class='grid_6'>" SKIP
+            
+            "<FORM>" SKIP
+            "<DIV class='table_col'>" SKIP
+            "   <TABLE>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan='2'>ADD Module</TH>" SKIP
+            "       </TR>" SKIP
+            "       <TR>" SKIP
+            "           <TD>Module Name</TD>" SKIP
+            "           <TD class='REQ'><input type='text' name='h-mod_name' REQUIRED></input></TD>" SKIP 
+            "       </TR>" SKIP
+            "       <TR>" SKIP
+            "           <TD>Enabled?</TD>" SKIP
+            "           <TD><input type='checkbox' name='h-mod_used' value=YES></input></TD>" SKIP 
+            "       </TR>" SKIP
+            "       <TR>" SKIP
+            "           <TD>Module Version</TD>" SKIP
+            "           <TD><input type='text' name='h-mod_version' value=''></input></TD>" SKIP
+            "       </TR>" SKIP            
+            "       <TR>" SKIP
+            "           <TD>Expiration Date</TD>" SKIP
+            "           <TD><input type='date' name='h-mod_date' value=''></input></TD>" SKIP
+            "       </TR>" SKIP
+            "   </TABLE>" SKIP
+            "</DIV>     <!-- end of table_col -->" SKIP
+            
+            "<BR>" SKIP
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>        <!-- spacer DIV -->" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            
+			"<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Save Changes</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='cancel' class='btn'>Cancel</BUTTON></div>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"</div>" SKIP
+			"<BR>" SKIP.        
+        
+        
+        
+    END.  /** of v-act = "ADD" **/  
+    
+    WHEN "EDIT" THEN DO: 
+        
+        {&OUT}  "<H3>You are here - " v-act " but nothing has been done about that yet.</H3>" SKIP.        
+        
+    END.  /** of v-act = "EDIT" **/
+    
+    WHEN "DELETE" THEN DO: 
+        
+        {&OUT}  "<H3>You are here - " v-act " but nothing has been done about that yet.</H3>" SKIP.
+                
+    END.  /** of v-act = "DELETE" **/
+    
+    WHEN "REVIEW" THEN DO: 
+        
+        {&OUT}  "<H3>You are here - " v-act " but nothing has been done about that yet.</H3>" SKIP.
+        
+    END.  /** of v-act = "REVIEW" **/
+    
+    OTHERWISE DO: 
+        
+        {&OUT} "<center><h2> An error has occured in program: </h2><br><p>" THIS-PROCEDURE:FILE-NAME "</p></center> ".
+        
+    END.  /** of v-act = something else **/
+    
+END CASE.   /** of v-act **/
+
+    
+
+
+
+</SCRIPT>
+</BODY>
+</HTML>

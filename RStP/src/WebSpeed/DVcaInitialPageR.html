@@ -1,0 +1,221 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+ 
+    <TITLE>Catch All Table Maintenance</TITLE>   
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <META NAME="VERSION" CONTENT="3.22">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="23/Feb/16">
+    <META NAME="LAST_UPDATED" CONTENT="15/Apr/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+{../depot/src/WebSpeed/menuname.i}.
+
+/**************************  Variables  ********************************/ 
+DEFINE VARIABLE v-itmessages    AS LOGICAL INITIAL NO               NO-UNDO.  /*** debugging yes/no ****/
+DEFINE VARIABLE v-act           AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-treeflag      AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-TK_ID         LIKE TK_mstr.TK_ID                  NO-UNDO.
+DEFINE VARIABLE v-TK_test_seq   LIKE TK_mstr.TK_test_seq INITIAL 0  NO-UNDO.
+DEFINE VARIABLE v-test_type      LIKE TK_mstr.tk_test_type            NO-UNDO.
+DEFINE VARIABLE v-lab_sample_id LIKE TK_mstr.TK_lab_sample_ID       NO-UNDO.
+DEFINE VARIABLE v-lab_seq       AS INTEGER INITIAL 0                NO-UNDO.
+DEFINE VARIABLE v-firstname     LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE v-lastname      LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE vfrom-firstname LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE vfrom-lastname  LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE vto-firstname   LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE vto-lastname    LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-html-dob      AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-dob           LIKE people_mstr.people_DOB         NO-UNDO.
+DEFINE VARIABLE ip-checked-recid AS CHARACTER                       NO-UNDO.  /*** This is sometimes an integer and sometimes a comma delimited list of integers, thus a character ***/
+DEFINE VARIABLE c-deleted       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE c-created       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE c-updated       AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE x               AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE v-catch_ID      LIKE catch_all.catch_id         NO-UNDO.
+DEFINE VARIABLE v-error-number  LIKE catch_all.catch_orig_error NO-UNDO.
+DEFINE VARIABLE v-people_ID     LIKE people_mstr.people_id          NO-UNDO.
+DEFINE VARIABLE v-addr_ID       LIKE people_mstr.people_addr_id     NO-UNDO.
+/*** external people find/updated ***/
+DEFINE VARIABLE v-peop-find-error AS LOGICAL                        NO-UNDO.
+DEFINE VARIABLE v-peop-find-ran AS LOGICAL                          NO-UNDO. 
+DEFINE VARIABLE v-peop-created  AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE v-peop-updated  AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE v-peop-avail    AS LOGICAL                          NO-UNDO.
+DEFINE VARIABLE v-peop-success  AS LOGICAL                          NO-UNDO. 
+/*** external TK_mstr ***/                        
+DEFINE VARIABLE o-uctkm-id          LIKE TK_mstr.TK_id              NO-UNDO.
+DEFINE VARIABLE o-uctkm-create      AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-uctkm-update      AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-uctkm-avail       AS LOGICAL INITIAL YES          NO-UNDO.
+DEFINE VARIABLE o-uctkm-successful  AS LOGICAL INITIAL NO           NO-UNDO.                
+                    
+
+/*********  HTML Get-Values  ***********/
+ASSIGN 
+    v-act               = get-value("h-act")
+    v-TK_ID             = get-value("h-TK_ID")
+    v-TK_test_seq       = INTEGER(get-value("h-TK_test_seq"))
+    v-test_type          = get-value("h-test_type")
+    v-lab_sample_id     = get-value("h-lab-sample-id")     
+    v-lab_seq           = INTEGER(get-value("h-lab-seq"))
+    v-firstname         = get-value("h-firstname")
+    vfrom-firstname     = get-value("hfrom-firstname")
+    vto-firstname       = get-value("hto-firstname")
+    v-lastname          = get-value("h-lastname")
+    vfrom-lastname      = get-value("hfrom-lastname")
+    vto-lastname        = get-value("hto-lastname")
+    v-html-dob          = get-value("h-dob")
+    ip-checked-recid    = get-value ("h-checked")
+    v-catch_ID          = INTEGER(get-value ("h-catch_ID"))
+    v-error-number      = INTEGER(get-value ("h-error-number"))
+    whatshouldrun       = get-value('whattorun'). 
+    
+    IF v-html-dob <> "" THEN DO:
+/*        RUN VALUE(SEARCH("subr_CCYY_to_YY.p")) (v-html-dob, OUTPUT v-dob). /*for the server*/*/
+        RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (v-html-dob, OUTPUT v-dob).
+    END. /*** <> "" DOB **/
+
+/*********  Other Prologuedom  **********/
+IF  v-act = "" THEN 
+    v-act = "Initial".
+
+CASE v-act:
+    
+    WHEN "Initial" THEN DO:
+    
+    {&OUT}
+        "<DIV class='row'>"                                                             SKIP
+/*        "<DIV class='grid_3'> </DIV>    <!-- grid_3 spacer -->"                         SKIP*/
+        "<DIV class='grid_12'>"                                                          SKIP
+        "<FORM>"                                                                        SKIP
+        "<DIV class='table_2col'>"                                                       SKIP
+        "   <TABLE>"                                                                        SKIP
+        "       <TR>"                                                                           SKIP
+        "           <TH colspan=4>Search Criteria</TH>"                                             SKIP
+        "       </TR>"                                                                                  SKIP
+        "       <TR>"                                                                                       SKIP 
+        "           <TD>From First Name</TD>"                                                                   SKIP     
+        "           <TD><input type='text' name='hfrom-firstname' value='" vfrom-firstname "'/></TD>"           SKIP
+        "           <TD>To</TD>"                                                                                SKIP        
+        "           <TD><input type='text' name='hto-firstname' value='" vto-firstname "'/></TD>"               SKIP
+        "       </TR>"                                                                                          SKIP
+        "       <TR>"                                                                                           SKIP
+        "           <TD>From Last Name</TD>"                                                                    SKIP        
+        "           <TD><input type='text' name='hfrom-lastname' value='" vfrom-lastname "'/></TD>"             SKIP       
+        "           <TD>To</TD>"                                                                                SKIP     
+        "           <TD><input type='text' name='hto-lastname' value='" vto-lastname "'/></TD>"                 SKIP        
+        "       </TR>"                                                                                          SKIP
+        "       <TR>"                                                                                           SKIP 
+        "           <TD>Date of Birth</TD>"                                                                     SKIP        
+        "           <TD colspan='3'><input type='date' name='h-dob' value='" v-html-dob "'/></TD>"              SKIP
+        "       </TR>"                                                                                          SKIP
+        "       <TR>"                                                                                           SKIP 
+        "           <TD>Test Kit ID</TD>"                                                                       SKIP       
+        "           <TD><input type='text' name='h-TK_ID' value='" v-TK_ID "'/></TD>"                           SKIP
+        "           <TD>Test Kit Sequence</TD>"                                                                 SKIP       
+        "           <TD><input type='number' name='h-TK_seq' value='" v-TK_test_seq "'/></TD>"                  SKIP
+        "       </TR>"                                                                                          SKIP
+        "       <TR>"                                                                                           SKIP 
+        "           <TD>Test Kit Type</TD>"                                                                     SKIP  
+        "               <td colspan='3'><select name='h-test_type'>" SKIP.
+        
+        IF v-test_type <> "" THEN {&OUT} 
+            "                   <option value='" v-test_type "'>" v-test_type "</option>" SKIP
+            "                   <option value=''></option>" SKIP.
+            
+        ELSE {&OUT} "<option value=''></option>" SKIP.
+        
+        FOR EACH test_mstr NO-LOCK:           
+           {&OUT} "                       <option Value='" test_mstr.test_type "'>" test_mstr.test_type "</option>" SKIP.
+        END. /*** test_mstr 4ea ***/
+       
+    {&OUT}
+        "                   </td>" SKIP
+        "       </TR>"                                                                                          SKIP
+        "       <TR>"                                                                                           SKIP 
+        "           <TD>Lab Sample ID</TD>"                                                                     SKIP       
+        "           <TD><input type='text' name='h-lab-sample-id' value='" v-lab_sample_ID "'/></TD>"           SKIP
+        "           <TD>Lab Sequence</TD>"                                                                      SKIP       
+        "           <TD><input type='number' name='h-lab-seq' value='" v-lab_seq "'/></TD>"                     SKIP
+        "       </TR>"                                                                                          SKIP
+        "       <TR>"                                                                                           SKIP 
+        "           <TD>Error Number</TD>"                                                                      SKIP       
+        "           <TD colspan='3'><input type='number' name='h-error-number' value='" v-error-number "'/></TD>"           SKIP
+/*        "           <TD></TD>"                                                                                  SKIP*/
+/*        "           <TD><input/></TD>"                                                                          SKIP*/
+        "       </TR>"                                                                                          SKIP
+        "   </TABLE>"                                                                                           SKIP
+        "</DIV>       <!-- end of table_col -->"                                                                SKIP         
+        "<BR>"                                                                                                  SKIP
+        "<input type='hidden' name='whattorun' value='" whatshouldrun "'>"                                      SKIP
+        "</DIV>                                 <!-- end of grid_6 -->"                                         SKIP                                                    
+/*        "<DIV class='grid_3'> </DIV>            <!-- grid_3 spacer -->"                                             SKIP*/
+        "</DIV>                                 <!-- end of row -->"                                            SKIP
+        "<div class='row'>"                                                                                         SKIP
+        "   <div class='grid_2'> </DIV>"                                                                                SKIP
+        "   <div class='grid_1'> </DIV>"                                                                            SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='RunThe2iframes' class='btn'>Search</BUTTON></div>" SKIP
+/*        "   <div class='grid_1'> </DIV>"                                                                            SKIP*/
+/*        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='BlankDOB' class='btn'>Blank DOBs</BUTTON></div>" SKIP*/
+        "   <div class='grid_2'> </DIV>" SKIP
+/*        "   <div class='grid_1'> </DIV>"                                                                            SKIP*/
+        "   <div class='grid_2'><BUTTON type='reset' value='reset' class='btn'>Reset</BUTTON></div>"        SKIP 
+        "   <div class='grid_1'> </DIV>"                                                                            SKIP
+        "   <div class='grid_2'> </DIV>"                                                                            SKIP
+        "</div>" SKIP
+        "<BR>"  SKIP
+        "</FORM>". 
+        
+    END. /*** v-act = INITIAL ***/
+
+    WHEN "RunThe2iframes" THEN DO:
+
+        {&OUT}  
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "   <IFRAME src='DVcaReportActR.html"
+            "?hfrom-firstname=" vfrom-firstname
+            "&hto-firstname=" vto-firstname
+            "&hfrom-lastname=" vfrom-lastname
+            "&hto-lastname=" vto-lastname
+            "&h-dob=" v-html-dob
+            "&h-TK_ID=" v-TK_ID
+            "&h-TK_seq=" v-TK_test_seq
+            "&h-test_type=" v-test_type
+            "&h-lab-sample-id=" v-lab_sample_ID
+            "&h-lab-seq=" v-lab_seq
+            "&h-error-number=" v-error-number
+            "&whattorun=" whatshouldrun
+/*            "&h-act=" v-act*/
+            "' name='listpage' frameboarder=0 scolling='auto' style='height:45%;width:100%'></iframe>" SKIP
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "   <IFRAME src='DVcaEditActU.html?h-act=EmptyPage&whattorun=" whatshouldrun "' name='editpage' frameboarder=0 scolling='auto' style='height:40%;width:100%'></iframe>" SKIP
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP.
+        
+    END.
+
+END CASE.
+
+</SCRIPT>
+</BODY>
+</HTML>

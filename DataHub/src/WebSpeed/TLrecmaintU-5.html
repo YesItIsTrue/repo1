@@ -1,0 +1,1936 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+<TITLE>Recommendation Maintenance by Test by Item / Marker</TITLE>
+<META name="AUTHOR" content="Trae Luttrell">
+<META name="VERSION" content="2.11">
+<META name="COPYRIGHT" content="Solsource">
+<META name="CREATE_DATE" content="03/Nov/14">
+<META name="LAST_UPDATED" content="1/Sep/16">
+
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<script src='/depot/src/HTMLContent/buttons.js'></script>
+
+<script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+
+<script TYPE="text/javascript">       
+$(document).ready(function() {
+
+                // Get an array of all element heights
+
+                var elementHeights = $('.btn').map(function() {
+                    return $(this).height();
+                }).get();
+
+                // Math.max takes a variable number of arguments
+
+                var maxHeight = Math.max.apply(null, elementHeights);
+
+                // Set each height to the max height
+
+                $('.btn').height(maxHeight);
+            });
+</script>
+
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT language='SpeedScript'>
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+        
+  ****************************************************************************
+  Revision History:
+  -----------------
+  0 to 1.0 - still struggling to get the time to finish this code.  This is the fourth
+                approach to how to handle the flow since it's inception back in Nov 2014.
+                
+        Danielle has been using this code in its various iterations all along.  Latest
+        set of changes she wants incorporated are - 
+        x a) Wants a Sort Order for the recommendations
+        x b) Doesn't want the hexcolor stuff. (I think she's going to change her mind on this.)
+        x c) Wants to be able to edit the range after it has been created.
+        d) Wants a Dosage From and Dosage To set of fields instead of Dosage
+        x e) Wants UOM to be a drop-down driven from uom_mstr.
+        x f) Needs decimal quantities for Dosages.
+        g) Wants start & end effectivity dates for trr_det records.
+        h) Wants to delete a recommendation and then add it back.
+                         
+                
+  1.0 - written by DOUG LUTTRELL on ??/???/??.  Finally a releasable version.
+  
+  1.1 - Started by TRAE LUTTRELL on 11/May/15. 
+  
+   - alright I was beening too careful and finikey, so I just made a new copy, so that if I
+   really messed things up it wouldn't be the end of the world. 
+   
+  1.2 - written by DOUG LUTTRELL on 23/May/15.  Including the pathing workaround code that
+            Harold wrote.  Change the drive_letter variable when moving to the server.
+            Marked by 1dot2. 
+  
+  1.3 - written by JACOB LUTTRELL on 26/Sep/15. fixed propathing and the title issue. 
+        Marked by 1dot3. 
+
+  1.4 - written by DOUG LUTTRELL on 01/Oct/15.  OK, Mark & R.J. both made changes to this one
+		within a day of each other.  I am combining those changes into one current
+		revision.  Also something funky with the whattorun variable.  Funky like it's missing.
+
+  1.5 - written by TRAE LUTTRELL on 06/Oct/15. Combining buttons into the same row.
+
+  1.6 - written by Jacob Luttrell on 06/Nov/15. Corrected whattoruns, fixed mouse over issue on
+        an empty recomedations page and fixed dose uom display on edit screen. marked by 1dot6.
+  
+  2.0 - Written by Jacob Luttrell on 29/Jan/16. Made changes to code to work with changes made 
+        in the database. tld_det.tld_item_name has been replaced by marker_list.marker_item.
+        Added in UOMDropDown.i in place of TEMP-TABLE UOM_list. Added code to range fields to extend
+        decmal places to .0001 rather than .01. Added in progname updater as well. Fixed over lapping 
+        ranges and duplicate creation.
+        Marked by 2dot0.  
+        
+  2.1 - Written by Jacob Luttrell on 20/Aug/16. Added code to handle MPA ranges. Marked by 2dot1.  
+  
+  2.11 - Written by Jacob Luttrell on 1/Sep/16. Changed displayed field from marker_item to marker_display.
+            Marked by 211.
+            
+  ****************************************************************************
+  
+  -------------------------------------------------------------------*/
+ 
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/   
+
+DEFINE VARIABLE whattorun AS CHARACTER NO-UNDO.                                             /* 1dot4 */
+ 
+DEFINE VARIABLE depotcode       AS CHARACTER                        NO-UNDO.    
+DEFINE VARIABLE codetorun       AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+DEFINE VARIABLE drive_letter    AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+
+DEFINE VARIABLE testtype        LIKE test_mstr.test_type        NO-UNDO. 
+DEFINE VARIABLE itemid          LIKE tld_det.tld_item_ID        NO-UNDO. 
+/*DEFINE VARIABLE itemname        LIKE tld_det.tld_item_name      NO-UNDO.*/ /* removed in 2dot0 */
+DEFINE VARIABLE starteff        AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE endeff          AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE o-starteff      LIKE tld_det.tld_start_eff      NO-UNDO.
+DEFINE VARIABLE o-endeff        LIKE tld_det.tld_end_eff        NO-UNDO.
+DEFINE VARIABLE supplement_ID   LIKE trr_det.trr_suppl_id       NO-UNDO.
+DEFINE VARIABLE startrange      LIKE trr_det.trr_start_range FORMAT "->>>>9.9999" /* 2dot0 */ NO-UNDO.
+DEFINE VARIABLE endrange        LIKE trr_det.trr_end_range   FORMAT "->>>>9.9999" /* 2dot0 */ NO-UNDO.
+DEFINE VARIABLE charstart       LIKE trr_det.trr_charstart      NO-UNDO.          /* 2dot1 */  
+DEFINE VARIABLE charend         LIKE trr_det.trr_charend        NO-UNDO.          /* 2dot1 */        
+/*DEFINE VARIABLE startrange      AS DECIMAL FORMAT "->>>>9.9999" NO-UNDO.*/                    /* 2dot0 - testing fields */
+/*DEFINE VARIABLE endrange        AS DECIMAL DECIMALS 4 NO-UNDO.          */
+DEFINE VARIABLE sortorder       LIKE trr_det.trr_order          NO-UNDO.
+/*DEFINE VARIABLE dosage          LIKE trr_det.trr_dosage         NO-UNDO.*/ /* removed in 2dot0 */
+DEFINE VARIABLE from-dosage     LIKE trr_det.trr_dosage_from    NO-UNDO.     /* 2dot0 */
+DEFINE VARIABLE to-dosage       LIKE trr_det.trr_dosage_to      NO-UNDO.     /* 2dot0 */
+DEFINE VARIABLE doseuom         LIKE trr_det.trr_uom            NO-UNDO.
+DEFINE VARIABLE notes           LIKE trr_det.trr_notes          NO-UNDO.
+DEFINE VARIABLE hexcolor        LIKE trr_det.trr_hexcolor       NO-UNDO.
+/*DEFINE VARIABLE trr-start       AS CHARACTER                        NO-UNDO.    /* 2dot0 */*/
+/*DEFINE VARIABLE trr-end         AS CHARACTER                        NO-UNDO.    /* 2dot0 */*/
+/*DEFINE VARIABLE o-trr-start     LIKE trr_det.trr_start_range    NO-UNDO.    /* 2dot0 */*/
+/*DEFINE VARIABLE o-trr-end       LIKE trr_det.trr_end_range      NO-UNDO.    /* 2dot0 */*/
+
+DEFINE VARIABLE ignore4grouping AS LOG                          NO-UNDO.
+DEFINE VARIABLE whichrec        AS RECID                        NO-UNDO.    /* laziness kicked in - using a RECID */
+DEFINE VARIABLE v-submit        AS LOGICAL                      NO-UNDO.
+DEFINE VARIABLE isselected      AS CHARACTER                    NO-UNDO.
+DEFINE VARIABLE passok          AS LOGICAL                      NO-UNDO.
+DEFINE VARIABLE sowhat          AS LOGICAL                      NO-UNDO.
+DEFINE VARIABLE foundrecs       AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE act             AS CHARACTER                    NO-UNDO.
+DEFINE VARIABLE ITshowmsg       AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE x               AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE x-notes         AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE forgot2select   AS LOGICAL INITIAL NO           NO-UNDO.
+
+/* 2dot0 removed */
+/*DEFINE TEMP-TABLE UOM_list              */
+/*    FIELD UOM LIKE trr_det.trr_uom  */
+/*    INDEX UOM-idx AS PRIMARY UNIQUE UOM.*/
+/* 2dot0 */
+
+
+/*IF ITshowmsg = YES THEN                                                                 */
+/*    DISPLAY                                                                             */
+/*    "testtype = " get-value('h-testtype')                                               */
+/*    "itemid = " INTEGER(get-value('h-itemid'))                                          */
+/*    "itemname = " get-value('h-itemname')                                               */
+/*    "supplement_ID = " INTEGER(get-value('h-supplement_ID'))                            */
+/*    "startrange = " DECIMAL(get-value('h-startrange')) FORMAT "->,>>9.9999"             */
+/*    "endrange = " DECIMAL(get-value('h-endrange')) FORMAT "->,>>9.9999"                 */
+/*    "act = " get-value('h-act')                                                         */
+/*    "whichrec = " INTEGER(get-value('h-whichrec'))                                      */
+/*    "v-submit = " get-value('h-submit')                                                 */
+/*    "dosage = " DECIMAL(get-value('h-dosage'))                                          */
+/*    "doseuom = " get-value('h-doseuom')                                                 */
+/*    "notes = " get-value('h-notes')                                                     */
+/*    "sortorder = " INTEGER(get-value('h-sortorder')) WITH FRAME a 2 COL TITLE "Frame A".*/
+
+ASSIGN 
+    testtype        = get-value('h-testtype')
+    itemid          = INTEGER(get-value('h-itemid'))
+/*    itemname        = get-value('h-itemname')*/                   /* removed in 2dot0 */
+    supplement_ID   = INTEGER(get-value('h-supplement_ID'))
+    startrange      = DECIMAL(get-value('h-startrange'))
+    endrange        = DECIMAL(get-value('h-endrange'))
+    act             = get-value('h-act')
+    whichrec        = INTEGER(get-value('h-whichrec'))
+    v-submit        = IF get-value('h-submit') = "YES" THEN 
+                            YES
+                      ELSE 
+                            NO
+/*    dosage          = decimal(get-value('h-dosage'))*/            /* removed in 2dot0 */
+    from-dosage     = DECIMAL(get-value('h-from-dosage'))           /* 2dot0 */
+    to-dosage       = DECIMAL(get-value('h-to-dosage'))             /* 2dot0 */
+    doseuom         = get-value('h-doseuom')
+    notes           = get-value('h-notes')
+    hexcolor        = get-value('h-hexcolor')
+    sortorder       = integer(get-value('h-sortorder'))
+    whattorun	    = get-value('whattorun')   
+    starteff        = get-value('h-starteff')                       /* 2dot0 */
+    endeff          = get-value('h-endeff')                         /* 2dot0 */
+    charstart       = get-value('h-charstart')                      /* 2dot1 */
+    charend         = get-value('h-charstart')                      /* 2dot1 */
+/*    trr-start       = get-value('h-trr-start')*/
+/*    trr-end         = get-value('h-trr-end')  */
+    .
+
+FIND test_mstr WHERE test_mstr.test_type = testtype NO-LOCK NO-ERROR.
+
+/*{&out}                                                     */                     /* 2dot0 - testing */
+/*    "h-startrange = " get-value('h-startrange') "<BR>" SKIP*/
+/*    "h-endrange = " get-value('h-endrange') "<BR>" SKIP    */
+/*    "startrange = " startrange "<BR>" SKIP                 */
+/*    "endrange = " endrange "<BR>" SKIP.                    */
+    
+/*PAUSE.*/
+    
+IF ITshowmsg = YES THEN
+    DISPLAY
+        "After get-value assignment"
+        testtype
+        itemid
+        supplement_ID
+        startrange FORMAT "->,>>9.99<<"
+        endrange FORMAT "->,>>9.99<<"
+        act
+        whichrec
+        v-submit
+        doseuom
+        sortorder WITH FRAME b WIDTH 80 1 COL TITLE "Frame B".
+
+/************************  Fix Dates --- HTML vs. Progress *******************************/
+
+ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1). 
+          
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                                                           /* 1dot4 */
+    (starteff, OUTPUT o-starteff).
+
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                                                           /* 1dot4 */
+    (endeff, OUTPUT o-endeff).
+
+/************************************* End of Fix Dates **********************************/                               
+                               
+
+IF act = "" THEN 
+    act = "SELECT_TEST".    
+
+IF whichrec = 0 AND (act = "DELETE" OR act = "EDIT") THEN 
+    
+    ASSIGN  
+        act = "ITEM_SELECTED"
+        forgot2select = YES.
+
+/****************  Test Type Selection or Display  *******************/    
+IF act = "SELECT_TEST" THEN DO:                                                 /* STEP 1 */
+    
+                                                                                                        IF ITshowmsg = YES THEN 
+                                                                                                                    {&OUT}
+                                                                                                         "Just inside INITIAL" SKIP
+                                                                                                               "<OL>Variables" SKIP
+                                                                                                              "<LI>act = " act SKIP
+                                                                                                    "<LI>testtype = " testtype SKIP
+                                                                                                        "<LI>itemid = " itemid SKIP
+                                                                                                                       "</OL>" SKIP
+                                                                                                            "<hr widTD='90%'>" SKIP.     
+    
+    {&OUT}
+        "<FORM>" SKIP
+/*        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP*/
+        "<DIV class='row'>" SKIP
+        "<DIV class='grid_2'> </DIV>" SKIP
+        "<DIV class='grid_8'>" SKIP     
+        "<DIV class='table_col'>" SKIP                                          
+        "<TABLE>" SKIP
+        "   <THEAD>" SKIP
+        "       <TR>" SKIP
+        "           <TH colspan=2>Recommendations by Test</TH>" SKIP
+        "       </TR>" SKIP
+        "   </THEAD>" SKIP
+        "   <TR>" SKIP
+        "       <Td>Test Type</Td>" SKIP
+        "       <Td><select name='h-testtype' value='" testtype "' >" SKIP.
+        
+    FOR EACH tl_mstr WHERE tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND         
+            tld_det.tld_deleted = ? NO-LOCK 
+        BREAK BY tl_mstr.tl_testtype: 
+                
+        IF FIRST-OF (tl_mstr.tl_testtype) THEN
+            
+            {&OUT}
+                "           <option value='" tl_mstr.tl_testtype "' >" tl_mstr.tl_testtype "</option>" SKIP.
+                         
+    END.  /** of 4ea. tl_mstr, etc. **/           
+                
+    {&OUT}
+        "           </select></Td>" SKIP
+        "   </TR>" SKIP
+        "</TABLE>" SKIP
+        "</DIV>              <!-- end of table_col -->" SKIP
+        "</DIV>          <!-- end of grid_8 -->" SKIP
+        "<DIV class='grid_2'> </DIV>" SKIP  
+        "</DIV>     <!-- end of row -->" SKIP
+        "<br></br>" SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "   <div class='grid_2'>" SKIP
+        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />"
+        "       <button type='submit' name='h-act' value='TEST_SELECTED' class='btn'>Select This Test</BUTTON>" SKIP
+        "   </div>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "</DIV>     <!-- end of row -->" SKIP
+        "</FORM>" SKIP.
+  
+END.  /*** of if act = SELECT_TEST ***/
+
+ELSE IF act = "TEST_SELECTED" THEN DO:  /**************************************  Step 2  *****************************************/
+    
+    {&OUT}
+        "<FORM>" SKIP   
+/*        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP*/                                              /* 1dot6 */
+        "<DIV class='row'>" SKIP
+        "<DIV class='grid_2'> </DIV>" SKIP
+        "<DIV class='grid_8'>" SKIP
+        "<DIV class='table_col'>" SKIP                                          
+        "<TABLE>" SKIP
+        "   <THEAD>" SKIP
+        "       <TR>" SKIP
+        "           <TH colspan=2>Recommendations in the " testtype " Test by Item / Marker</TH>" SKIP
+        "       </TR>" SKIP
+        "   </THEAD>" SKIP
+        "   <TR>" SKIP
+        "       <TD>Item / Marker</TD>" SKIP
+        "       <TD><select name='h-itemid' value='" itemid "' >" SKIP.
+        
+    FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND 
+            tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND       
+            tld_det.tld_deleted = ? NO-LOCK,
+        EACH marker_list WHERE marker_list.marker_ID = tld_det.tld_item_ID NO-LOCK  
+        BREAK BY tl_mstr.tl_testtype BY marker_list.marker_display:                         /* 211 */                                                                   /* 2dot0 */
+/*        BY tld_det.tld_item_name:*/                                                                                                   /* removed in 2dot0 */
+                
+/*        IF FIRST-OF (tld_det.tld_item_name) THEN DO:*/
+
+          IF FIRST-OF (marker_list.marker_display) THEN DO:                                 /* 211 */                                                                             /* 2dot0 */
+                          
+            IF tld_det.tld_item_id = itemid THEN 
+               isselected  = "SELECTED".
+            ELSE 
+               isselected  = "".
+            
+            {&OUT}
+                "           <option value=" tld_det.tld_item_id " " isselected " >" marker_list.marker_display "</option>" SKIP.  /* 211 */          /* 2dot0 */
+                
+        END.  /*** of if first-of tld_item ***/
+                         
+    END.  /** of 4ea. tl_mstr, etc. **/           
+    
+    {&OUT}
+        "       </select></TD>" SKIP
+        "   </TR>" SKIP        
+        "</TABLE>" SKIP
+        "</DIV>              <!-- end of table_col -->" SKIP
+        "<input type='hidden' name='h-testtype' value='" testtype "'/>" SKIP
+        "</DIV>          <!-- end of grid_8 -->" SKIP
+        "<DIV class='grid_2'> </DIV>" SKIP 
+        "</div>" SKIP
+        "<br></br>" SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "   <div class='grid_2'>" SKIP
+        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+        "       <button type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>Select This Item</BUTTON>" SKIP
+        "   </div></FORM>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP      
+/*        "       <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP*/                                   /* 1dot6 */
+        "   <div class='grid_2'>" SKIP
+        "   <form>" SKIP
+        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                              /* 1dot6 */
+        "       <BUTTON type='submit' name='h-act' value='SELECT_TEST' class='btn'>Exit To Start</BUTTON>" SKIP
+        "   </FORM>" SKIP
+        "   </div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</DIV>     <!-- end of row -->" SKIP .
+/*                                                                                                                                           */
+/*    {&OUT}                                                                                                                                 */
+/*        "<BR>" SKIP                                                                                                                        */
+/*        "<form>" SKIP                                                                                                                      */
+/*        "<div class='row'>" SKIP                                                                                                           */
+/*        "   <div class='grid_5'> </DIV>" SKIP                                                                                              */
+/*        "   <div class='grid_2'> <center>" SKIP                                                                                            */
+/*        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                      /* 1dot3 */*/
+/*        "       <BUTTON type='submit' name='h-act' value='SELECT_TEST' class='btn'>Exit To Start</BUTTON>" SKIP                            */
+/*        "   </center></div>" SKIP                                                                                                          */
+/*        "   <div class='grid_5'> </DIV>" SKIP                                                                                              */
+/*        "</DIV>     <!-- end of row -->" SKIP                                                                                              */
+/*        "</FORM>" SKIP.                                                                                                                    */
+
+END.  /** of else if act = test_selected **/
+
+ELSE IF act = "ITEM_SELECTED" THEN DO:                                          /* Step 3 */
+
+                                                                                                    IF ITshowmsg = YES THEN {&OUT}
+                                                                                               "<br/>testtype= " testtype "<br/>" .
+
+    IF forgot2select = YES THEN 
+        {&OUT}
+            "<center><H2>Please Select a Recommendation</H2></center>".
+
+    FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND 
+            tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            tld_det.tld_item_ID = itemid AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND 
+            tld_det.tld_deleted = ? NO-LOCK,
+	    EACH marker_list WHERE marker_list.marker_ID = tld_det.tld_item_ID AND 
+	               marker_list.marker_deleted = ? NO-LOCK: 
+        
+        {&OUT}
+            "<FORM>" SKIP. 
+
+            /******** * * * JAVASCRIPT TIME * * * ***********/
+            </script>
+
+            <script TYPE='text/javascript'>
+
+            // made by Quinton Schaffer on May 14 2015
+            // lets you highlight and click on entire rows to trigger a selection box in it.
+
+            $(document).ready(function() {
+               //change .table to the table class being used.
+                $('.table_report tr').click(function(event) {
+                    if (event.target.type !== 'radio') {
+                        $(':radio', this).trigger('click');
+                    }
+                });
+            });
+
+            </script>
+
+            <SCRIPT language='SpeedScript'>
+            /******** * * * END OF JAVA * * * **************/
+
+            {&OUT}    
+/*            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP*/
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_3col' >" SKIP
+            "<table>" SKIP
+            "    <THEAD>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan=6>Recommendations by Test by Item / Marker</TH>" SKIP
+            "       </TR>" SKIP
+            "   </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <TD>Test Type</TD>" SKIP
+            "       " SKIP
+            "       " SKIP         
+            "       <TD><INPUT type='hidden' name='h-testtype' value='" tl_mstr.tl_testtype "' />" SKIP 
+                            tl_mstr.tl_testtype SKIP
+            "       </TD>" SKIP
+            "       <TD>Section</TD>" SKIP
+            "       <TD>" tl_mstr.tl_section_desc "</TD>" SKIP
+            "       <TD>Item / Marker</TD>" SKIP
+            "       <TD><INPUT type='hidden' name='h-itemid' value=" tld_det.tld_item_ID " />" marker_list.marker_display "</TD>" SKIP /* 211 */
+            "   </TR>" SKIP
+            "</TABLE>" SKIP
+            "</DIV>             <!-- end of table_3col -->" SKIP
+            "<DIV class='table_report clickable'>" SKIP                                   
+            "<TABLE>" SKIP
+            "   <THEAD>" SKIP
+            "       <TR>" SKIP
+            "          <TD rowspan='2'>Select</TD>" SKIP
+            "          <TD rowspan='2'>Sort Order</TD>" SKIP
+            "          <TD colspan='2'>Effective Dates</TD>" SKIP.                                                                          /* 2dot0 */
+            
+            IF test_mstr.test_family = "MPA" THEN                                                           /* 2dot1 */
+                {&OUT}                                                                                      /* 2dot1 */
+            "          <TD colspan='2' rowspan='2'>Value</TD>" SKIP.                                        /* 2dot1 */
+            ELSE                                                                                            /* 2dot1 */
+            {&OUT}                                                                                          /* 2dot1 */
+            "          <TD colspan='2'>Range</TD>" SKIP.                                                                                    /* 2dot0 */
+            
+            {&OUT}                                                                          
+            "          <TD rowspan='2'>Recommendation</TD>" SKIP                                                                           /* 2dot0 */                         
+            "          <TD colspan='2'>Dosage Qty</TD>" SKIP                                                                               /* 2dot0 */
+            "          <TD rowspan='2'>Dosage UOM</TD>" SKIP                                                                               /* 2dot0 */ 
+            "          <TD rowspan='2'>Notes</TD>" SKIP                                                                                    /* 2dot0 */ 
+            "      </TR>" SKIP
+            "      <tr>" SKIP
+            "          <TD>Start</TD>" SKIP                                                                                                /* 2dot0 */ 
+            "          <TD>End</TD>" SKIP.                                                                                                  /* 2dot0 */ 
+            IF test_mstr.test_family = "MPA" THEN                                                           /* 2dot1 */                                           
+                {&OUT} "" SKIP.                                                                             /* 2dot1 */
+            ELSE                                                                                            /* 2dot1 */
+            {&OUT}                                                                                          /* 2dot1 */
+            "          <TD>Start</TD>" SKIP                                                                                                /* 2dot0 */ 
+            "          <TD>End</TD>" SKIP.                                                                                                  /* 2dot0 */ 
+            
+            {&OUT}                                                                                                   
+            "          <td>From</td>" SKIP                                                                                                 /* 2dot0 */ 
+            "          <td>To</td>" SKIP                                                                                                   /* 2dot0 */     
+            "      </tr>" SKIP
+            "  </THEAD>" SKIP.
+            
+        FOR EACH trr_det WHERE trr_det.trr_testtype = tl_mstr.tl_testtype AND 
+                trr_det.trr_item_ID = tld_det.tld_item_ID AND 
+                trr_det.trr_deleted = ? NO-LOCK 
+            BREAK BY trr_det.trr_order BY trr_det.trr_start_eff BY trr_det.trr_end_eff BY trr_det.trr_start_range BY trr_det.trr_end_range: 
+                
+            IF trr_det.trr_suppl_ID = 0 THEN DO: 
+            
+                ASSIGN 
+                   foundrecs    = YES
+                   x-notes      = x-notes + 1.    
+        
+                {&OUT} 
+                    "   <TR>" SKIP
+                    "       <TD><center><input type='radio' name='h-whichrec' value=" RECID(trr_det) " /></center></TD>" SKIP                    
+                    "       <TD><center>" trr_det.trr_order "</center></TD>" SKIP
+                    "       <TD><center>" trr_det.trr_start_eff "</center></TD>" SKIP                                                       /* 2dot0 */  
+                    "       <TD><center>" trr_det.trr_end_eff "</center></TD>" SKIP.                                                         /* 2dot0 */
+                    
+                    
+                IF test_mstr.test_family = "MPA" THEN                                       /* 2dot1 */
+                    {&OUT}                                                                  /* 2dot1 */
+                    "       <TD colspan='2'><center>" trr_det.trr_charstart "</center></TD>" SKIP.      /* 2dot1 */
+                
+                ELSE                                                                        /* 2dot1 */
+                    {&OUT}                                                                 
+                    "       <TD><center>" trr_det.trr_start_range "</center></TD>" SKIP
+                    "       <TD>".
+                    
+                IF ITshowmsg = YES THEN     
+                    MESSAGE "Start" trr_det.trr_start_range SKIP 
+                        "End" trr_det.trr_end_range SKIP
+                            VIEW-AS ALERT-BOX INFORMATION BUTTONS OK.    
+                
+                IF test_mstr.test_family = "MPA" THEN                                       /* 2dot1 */   
+                    
+                    {&OUT} "".                                                              /* 2dot1 */
+                    
+                ELSE DO:                                                                    /* 2dot1 */
+	                
+	                IF trr_det.trr_end_range = 0 THEN
+	                    {&OUT} "<center><P style='font-size:2em;'> + </p></center>".
+	                    
+	                    ELSE 
+	                        {&OUT} "<center>" trr_det.trr_end_range "</center>".
+                
+                END.                                                                        /* 2dot1 */
+                {&OUT}
+                    "</TD>" SKIP      
+                    "       <TD>NOTES ONLY</TD>" SKIP           
+                    "       <TD colspan=4>" trr_det.trr_notes "</TD>" SKIP   
+                    "  </TR>" SKIP.
+            
+            END.  /** of if trr_suppl_id = 0 --- notes only **/
+            
+            ELSE DO: /*** trr_suppl_id <> 0 ***/ 
+                
+                FIND FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_ID AND 
+                    suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.              
+                
+                ASSIGN 
+                   foundrecs    = YES
+                   x            = x + 1.    
+        
+                {&OUT} 
+                    "   <TR>" SKIP
+                    "       <TD><center><input type='radio' name='h-whichrec' value=" RECID(trr_det) " /></center></TD>" SKIP
+                    "       <TD><center>" trr_det.trr_order "</center></TD>" SKIP  
+                    "       <TD><center>" trr_det.trr_start_eff "</center></TD>" SKIP                                                           /* 2dot0 */  
+                    "       <TD><center>" trr_det.trr_end_eff "</center></TD>" SKIP.                                                         /* 2dot0 */
+                    
+                    
+                IF test_mstr.test_family = "MPA" THEN                                   /* 2dot1 */
+                    {&OUT}                                                              /* 2dot1 */
+                    "       <TD colspan='2'><center>" trr_det.trr_charstart "</center></TD>" SKIP.  /* 2dot1 */
+                
+                ELSE 
+                    {&OUT}                                                                                 /* 2dot0 */                                                                                  
+                    "       <TD><center>" trr_det.trr_start_range FORMAT "->>>9.9999" "</center></TD>" SKIP                                     /* 2dot0 */
+                    "       <TD>".
+                    
+                 IF test_mstr.test_family = "MPA" THEN                                  /* 2dot1 */
+                    
+                    {&OUT} "".                                                          /* 2dot1 */
+                    
+                ELSE DO:                                                                /* 2dot1 */
+                    IF trr_det.trr_end_range = 0 THEN
+                        {&OUT} "<center><P style='font-size:1.5em;'> + </p></center>".
+                    
+                    ELSE 
+                        {&OUT} "<center>" trr_det.trr_end_range FORMAT "->>>9.9999" "</center>".                                                 /* 2dot0 */       
+                
+                END.                                                                    /* 2dot1 */
+                    {&OUT}
+                    "</TD>" SKIP
+                    "       <TD>" suppl_list.suppl_name "</TD>" SKIP                                                                             /* 2dot0 */                                            
+/*                    "       <TD>" suppl_list.suppl_name "</TD>" SKIP*/
+/*                    "       <TD><center>From: " trr_det.trr_dosage "</center></TD>" SKIP*/                                            /* removed in 2dot0 */                        
+                    "       <TD><center>" trr_det.trr_dosage_from "</center></td>" SKIP                                                          /* 2dot0 */
+                    "       <td><center>" trr_det.trr_dosage_to "</center></TD>" SKIP                                                            /* 2dot0 */
+                    "       <TD><center>" trr_det.trr_uom "</center></TD>" SKIP   
+                    "       <TD>" trr_det.trr_notes "</TD>" SKIP   
+                    "  </TR>" SKIP.
+                    
+            END.  /** of else do --- trr_suppl_id > 0 **/
+                  
+        END.  /*** of 4ea. trr_det, etc. ***/
+
+        IF foundrecs = NO THEN 
+            {&OUT}
+                "<tfoot>" SKIP                                                                                                          /* 1dot6 */
+                "<TR>" SKIP
+                "   <TD colspan=11>No Recommendations found for this Test and Item combination</TD>" SKIP
+                "</TR>" SKIP
+                "</tfoot>" SKIP.                                                                                                        /* 1dot6 */
+    
+        {&OUT}
+            "</TABLE>" SKIP
+            "</DIV>            <!-- of table_report -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'>" SKIP
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP            
+            "       <BUTTON type='submit' name='h-act' value='ADD' class='btn'>Add</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'>" SKIP
+            "       <BUTTON type='submit' name='h-act' value='EDIT' class='btn'>Edit</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'>" SKIP
+            "       <BUTTON type='submit' name='h-act' value='DELETE' class='btn'>Delete</BUTTON></div>" 
+            SKIP
+            "   <div class='grid_2'></DIV>" SKIP
+/*            "<div class='grid_1'><p style='font-size:.75em;'>" x + x-notes " Records</p></DIV>"*/
+            "</div>" SKIP
+            "<BR>" SKIP         
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP. 
+            
+        {&OUT}
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'> <center>" SKIP
+/*            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP*/
+            "       <BUTTON type='submit' name='h-act' value='SELECT_TEST' class='btn'>Exit To Start</BUTTON>" SKIP
+            "   </center></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP     
+            "</DIV>     <!-- end of row -->" SKIP
+            "</FORM>" SKIP.       
+
+    END.  /** of 4ea. tl_mstr, etc. **/
+
+END.  /** of if act = item_selected **/
+
+ELSE IF act = "ADD" THEN DO:   /*********************************************  Step 4  ******************************************/
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT} "Inside ADD"
+                                                                                        "<OL>" SKIP
+                                                                                      "   <LI>testtype    = " testtype "</LI>" SKIP
+                                                                                        "   <LI>itemid      = " itemid "</LI>" SKIP
+                                                                                        "</OL>" SKIP 
+                                                                                        "<HR width='80%'>" SKIP(1).
+/* 2dot0 removed */             
+/************************ UOM LIST MAKER ***********************/
+/*    FOR EACH trr_det NO-LOCK                  */
+/*        BREAK BY trr_det.trr_uom:                 */
+/*                                                  */
+/*        IF FIRST-OF (trr_det.trr_uom) THEN DO:    */
+/*                                                  */
+/*            CREATE uom_list.                      */
+/*                                                  */
+/*            ASSIGN uom_list.uom = trr_det.trr_uom.*/
+/*                                                  */
+/*        END. /*** of first-of trr_det ***/        */
+/*                                                  */
+/*    END. /*** end of 4ea trr_det ***/             */
+            
+/***************************************************************/
+/* 2dot0 */
+
+    FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND 
+            tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            tld_det.tld_item_ID = itemid AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND 
+            tld_det.tld_deleted = ? NO-LOCK,                                                                    
+		EACH marker_list WHERE marker_list.marker_ID = tld_det.tld_item_ID AND 
+		                   marker_list.marker_deleted = ? NO-LOCK:         
+                
+        {&OUT} 
+            "<FORM>" SKIP        
+/*            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP*/
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_3col'>" SKIP
+            "<table>" SKIP
+            "    <THEAD>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan=6>ADD - Recommendations by Test by Item / Marker</TH>" SKIP
+            "       </TR>" SKIP
+            "   </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <TD>Test Type</TD>" SKIP    
+            "       <TD><INPUT type='hidden' name='h-testtype' value='" tl_mstr.tl_testtype "' />" SKIP 
+                            tl_mstr.tl_testtype SKIP
+            "       </TD>" SKIP
+            "       <TD>Section</TD>" SKIP
+            "       <TD>" tl_mstr.tl_section_desc "</TD>" SKIP
+            "       <TD>Item / Marker</TD>" SKIP
+            "       <TD><INPUT type='hidden' name='h-itemid' value=" tld_det.tld_item_ID " />" marker_list.marker_display "</TD>" SKIP         /* 2dot0 */ /* 211 */
+            "   </TR>" SKIP
+            "</TABLE>" SKIP
+            "</DIV>             <!-- end of table_3col -->" SKIP           
+            "<DIV class='table_report fixed_table'>" SKIP                                  
+            "<TABLE>" SKIP
+            "   <THEAD>" SKIP
+/*            "       <TR>" SKIP                                                                                                                                 */
+/*            "          <TD>Select</TD>" SKIP                                                                                                                   */
+/*            "          <TD>Sort Order</TD>" SKIP                                                                                                               */
+/*            "          <TD width='125'>Range</TD>" SKIP                                                                                  /* 2dot0 */           */
+/*            "          <TD>Recommendation</TD>" SKIP                                                                                                           */
+/*            "          <TD width='125'>Dosage Qty</TD>" SKIP                                                                                       /* 2dot0 */ */
+/*            "          <TD>Dosage UOM</TD>" SKIP                                                                                                               */
+/*            "          <TD>Notes</TD>" SKIP                                                                                                                    */
+            "       <TR>" SKIP
+            "          <TD rowspan='2'>Select</TD>" SKIP
+            "          <TD rowspan='2'>Sort Order</TD>" SKIP
+            "          <TD colspan='2'>Effective Dates</TD>" SKIP.                                                                          /* 2dot0 */
+            
+            IF test_mstr.test_family = "MPA" THEN                                                           /* 2dot1 */
+                {&OUT}                                                                                      /* 2dot1 */
+            "          <TD colspan='2' rowspan='2'>Value</TD>" SKIP.                                        /* 2dot1 */
+            ELSE                                                                                            /* 2dot1 */
+            {&OUT}                                                                                          /* 2dot1 */
+            "          <TD colspan='2'>Range</TD>" SKIP.                                                                                    /* 2dot0 */
+            
+            {&OUT}                                                                          
+            "          <TD rowspan='2'>Recommendation</TD>" SKIP                                                                           /* 2dot0 */                         
+            "          <TD colspan='2'>Dosage Qty</TD>" SKIP                                                                               /* 2dot0 */
+            "          <TD rowspan='2'>Dosage UOM</TD>" SKIP                                                                               /* 2dot0 */ 
+            "          <TD rowspan='2'>Notes</TD>" SKIP                                                                                    /* 2dot0 */ 
+            "      </TR>" SKIP
+            "      <tr>" SKIP
+            "          <TD>Start</TD>" SKIP                                                                                                /* 2dot0 */ 
+            "          <TD>End</TD>" SKIP.                                                                                                  /* 2dot0 */ 
+            IF test_mstr.test_family = "MPA" THEN                                                           /* 2dot1 */                                           
+                {&OUT} "" SKIP.                                                                             /* 2dot1 */
+            ELSE                                                                                            /* 2dot1 */
+            {&OUT}                                                                                          /* 2dot1 */
+            "          <TD>Start</TD>" SKIP                                                                                                /* 2dot0 */ 
+            "          <TD>End</TD>" SKIP.                                                                                                  /* 2dot0 */ 
+            
+            {&OUT}                                                                                                
+            "          <td>From</td>" SKIP                                                                                                 /* 2dot0 */ 
+            "          <td>To</td>" SKIP                                                                                                   /* 2dot0 */     
+            "      </tr>" SKIP
+            "      </TR>" SKIP
+            "  </THEAD>" SKIP
+            "   <TR class='REQ'>" SKIP
+            "       <TD><center><input type='radio' name='h-whichrec' value=0 CHECKED /></TD></center>" SKIP
+            "       <TD><center><input type='number' style='width:75px;' name='h-sortorder' /></center></TD>" SKIP
+            "       <td><input type='date' name='h-starteff' value=" starteff " /></td>" SKIP                                                      /* 2dot0 */
+            "       <td><input type='date' name='h-endeff' value=" endeff " /></td>" SKIP.                                                          /* 2dot0 */
+/*            "       <TD align='right'>Start: <input type='number' style='width:75px;' name='h-startrange' min='.0001' step='.0001' /><BR>" SKIP    /* 2dot0 */*/
+/*            "End: <input type='number' style='width:75px;' name='h-endrange' step='.0001' /></TD>" SKIP                                            /* 2dot0 */*/
+
+            IF test_mstr.test_family = "MPA" THEN                                                                                                           /* 2dot1 */
+            {&OUT}                                                                                                                                                   /* 2dot1 */       
+            "       <TD colspan='2'><center><input type='text' name='h-charstart' value='" charstart "' maxlength='6' /></center></TD>" SKIP.    /* 2dot1 */
+            
+            ELSE 
+            {&OUT}
+            "       <TD align='right'><input type='number' style='width:75px;' name='h-startrange' min='.0001' step='.0001' /></td>" SKIP    /* 2dot0 */
+            "       <td><input type='number' style='width:75px;' name='h-endrange' step='.0001' /></TD>" SKIP.                                            /* 2dot0 */
+            
+            {&OUT}
+            "       <TD><center><select name='h-supplement_ID' >" SKIP
+            "           <option value=0>NOTES ONLY</option>" SKIP.
+                    
+        FOR EACH suppl_list WHERE 
+           suppl_list.suppl_deleted = ? NO-LOCK 
+               BREAK BY suppl_list.suppl_name:
+                    
+           {&OUT}
+               "           <option value=" suppl_list.suppl_id ">" suppl_list.suppl_name "</option>" SKIP.
+        
+        END.  /** of 4ea. suppl_list **/
+                                       
+        {&OUT}
+            "           </select></center></td>" SKIP   
+/*            "       <TD align='right'>From: <input type='number' style='width:75px;' size='4' name='h-from-dosage' step='.25' /><BR>"    /* 2dot0 */*/
+/*            "To: <input type='number' style='width:75px;' size='4' name='h-to-dosage' step='.25' /></TD>" SKIP                           /* 2dot0 */*/
+            "       <TD align='right'><input type='number' style='width:75px;' size='4' name='h-from-dosage' step='.25' /></td>"    /* 2dot0 */
+            "       <td><input type='number' style='width:75px;' size='4' name='h-to-dosage' step='.25' /></TD>" SKIP                           /* 2dot0 */            
+            "       <TD><center><select name='h-doseuom' >" SKIP.
+            
+            {UOMDropDown.i tld_det.tld_UOM DOSAGE}.                                                                                        /* 2dot0 */
+/* 2dot0 removed */                        
+/*        FOR EACH uom_list NO-LOCK:                                                     */
+/*                                                                                       */
+/*            {&OUT}                                                                     */
+/*            "           <option value=" uom_list.uom ">" uom_list.uom "</option>" SKIP.*/
+/*                                                                                       */
+/*                                                                                       */
+/*        END.  /** of 4ea. uom_list **/                                                 */
+/* 2dot0 */                                      
+        {&OUT}
+            "           </select></center></td>" SKIP       
+            "       <TD><input type='text' size='40' name='h-notes'/></TD>" SKIP    
+            "  </TR>" SKIP.
+
+        FOR EACH trr_det WHERE trr_det.trr_testtype = tl_mstr.tl_testtype AND 
+                trr_det.trr_item_ID = tld_det.tld_item_ID AND 
+                trr_det.trr_deleted = ? NO-LOCK
+            BREAK BY trr_det.trr_order BY trr_det.trr_start_range BY trr_det.trr_end_range: 
+                
+            IF trr_det.trr_suppl_ID > 0 THEN 
+                FIND FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_ID AND 
+                    suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.
+                
+                
+            {&OUT} 
+                "   <TR>" SKIP
+                "       <TD><center><input type='radio' name='h-whichrec' value=" RECID(trr_det) " DISABLED /></center></TD>" SKIP
+                "       <TD><center>" trr_det.trr_order "</center></TD>" SKIP
+                "       <TD>" trr_det.trr_start_eff "</td><td>" trr_det.trr_end_eff "</TD>" SKIP.                                                                          /* 2dot0 */                
+/*                "       <TD>Start: "trr_det.trr_start_range "<BR>End: " trr_det.trr_end_range "</TD>" SKIP                                                                          /* 2dot0 */*/
+                
+            IF test_mstr.test_family = "MPA" THEN                                                   /* 2dot1 */
+                
+            {&OUT}                                                                                  /* 2dot1 */
+                "       <TD colspan='2'>"trr_det.trr_charstart "</td>" SKIP.                        /* 2dot1 */                
+           
+           ELSE                                                                                     /* 2dot1 */
+            {&OUT}        
+                "       <TD>"trr_det.trr_start_range "</td><td>" trr_det.trr_end_range "</TD>" SKIP                                                                          /* 2dot0 */
+
+                . 
+                
+            IF trr_det.trr_suppl_ID = 0 THEN 
+                {&OUT}
+                    "<TD>NOTES ONLY</TD>" SKIP
+                    "<TD colspan=4>" trr_det.trr_notes "</TD>" SKIP.                                                                              /* 2dot0 */
+                             
+            ELSE 
+                {&OUT}
+                    "       <TD>" suppl_list.suppl_name "</TD>" SKIP        
+/*                    "       <TD><center>From: " trr_det.trr_dosage "</center></TD>" SKIP*/                                            /* removed in 2dot0 */
+/*                    "       <TD>From: " trr_det.trr_dosage_from "<BR>To: " trr_det.trr_dosage_to "</center></TD>" SKIP             /* 2dot0 */*/
+                    "       <TD><center>" trr_det.trr_dosage_from "</center></td>" SKIP                                                          /* 2dot0 */
+                    "       <td><center>" trr_det.trr_dosage_to "</center></TD>" SKIP                                                            /* 2dot0 */                    
+                    "       <td><center>" trr_det.trr_uom "</center></td>" SKIP 
+                    "       <td>" trr_det.trr_notes "</td>" SKIP     
+                    .
+                                      
+            {&OUT}    
+                "  </TR>" SKIP.
+                         
+            END.  /*** of 4ea. trr_det, etc. ***/
+    
+        {&OUT}
+            "</table>" SKIP
+            "</DIV>         <!-- end of table_report -->" SKIP
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'>" SKIP
+            "       <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+            "       <BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Save</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'>" SKIP
+            "       <BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'>" SKIP
+            "       <BUTTON type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>Cancel</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "</div>" SKIP
+            "<BR>" SKIP        
+            "</FORM>" SKIP.
+        {&OUT}
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'> <center>" SKIP
+/*            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />"*/
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                      /* 1dot6 */
+            "       <BUTTON type='submit' name='h-act' value='SELECT_TEST' class='btn'>Exit To Start</BUTTON>" SKIP
+            "   </center></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP     
+            "</DIV>     <!-- end of row -->" SKIP
+            "</FORM>" SKIP.
+            
+            
+    END.  /** of 4ea. tl_mstr, etc. **/
+
+END.  /** of if act = add **/   
+
+ELSE IF act = "EDIT" THEN DO:    /*******************************************  Step 5  ******************************************/
+
+
+    /****************** CSS for <input> widths *****************/
+
+    </script>
+    <style>
+    
+    input[type=number]{
+        width:100px;
+        }
+    
+    </style>
+    <script language='speedscript'>
+/* 2dot0 removed */
+    /************************ UOM LIST MAKER ***********************/
+/*    FOR EACH trr_det NO-LOCK                      */
+/*        BREAK BY trr_det.trr_uom:                     */
+/*                                                      */
+/*        IF FIRST-OF (trr_det.trr_uom) THEN DO:    */
+/*                                                      */
+/*            CREATE uom_list.                          */
+/*                                                      */
+/*            ASSIGN uom_list.uom = trr_det.trr_uom.*/
+/*                                                      */
+/*        END. /*** of first-of trr_det ***/            */
+/*                                                      */
+/*    END. /*** end of 4ea trr_det ***/                 */
+            
+    /***************************************************************/
+/* 2dot0 */
+    FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND 
+            tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            tld_det.tld_item_ID = itemid AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND 
+            tld_det.tld_deleted = ? NO-LOCK,
+         EACH marker_list WHERE marker_list.marker_ID = tld_det.tld_item_ID AND 
+                                    marker_list.marker_deleted = ? NO-LOCK: 
+
+        {&OUT}          
+            "<FORM>" SKIP         
+/*            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP*/
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_3col'>" SKIP
+            "<table>" SKIP
+            "   <THEAD>" SKIP
+            "       <TR>" SKIP
+            "           <TH colspan=6>EDIT - Recommendations by Test by Item / Marker</TH>" SKIP
+            "       </TR>" SKIP
+            "   </THEAD>" SKIP
+            "   <TR>" SKIP
+            "       <TD>Test Type</TD>" SKIP
+            "       " SKIP
+            "       " SKIP         
+            "       <TD><INPUT type='hidden' name='h-testtype' value='" tl_mstr.tl_testtype "' />" SKIP 
+                            tl_mstr.tl_testtype "</TD>" SKIP
+            "       <TD>Section</TD>" SKIP
+            "       <TD>" tl_mstr.tl_section_desc "</TD>" SKIP
+            "       <TD>Item / Marker</TD>" SKIP
+            "       <TD><INPUT type='hidden' name='h-itemid' value=" tld_det.tld_item_ID " />" marker_list.marker_display "</TD>" SKIP       /* 2dot0 */ /* 211 */
+            "   </TR>" SKIP
+            "</TABLE>" SKIP
+            "</DIV>             <!-- end of table_3col -->" SKIP
+                        
+            "<DIV class='table_report fixed_table'>" SKIP                                  
+            "<TABLE>" SKIP
+            "   <THEAD>" SKIP
+/*            "       <TR>" SKIP                                                                                                                          */
+/*            "          <TD>Select</TD>" SKIP                                                                                                            */
+/*            "           <TD>Sort Order</TD>" SKIP                                                                                                       */
+/*            "          <TD>Start</TD>" SKIP                                                                                                             */
+/*            "          <TD>End</TD>" SKIP                                                                                                               */
+/*            "          <TD>Recommendation</TD>" SKIP                                                                                                    */
+/*            "          <TD>From Dosage Qty</TD>" SKIP                                                                                       /* 2dot0 */ */
+/*            "          <TD>To Dosage Qty</TD>" SKIP                                                                                         /* 2dot0 */ */
+/*            "          <TD>Dosage UOM</TD>" SKIP                                                                                                        */
+/*            "          <TD>Notes</TD>" SKIP                                                                                                             */
+            "       <TR>" SKIP
+            "          <TD rowspan='2'>Select</TD>" SKIP
+            "          <TD rowspan='2'>Sort Order</TD>" SKIP
+            "          <TD colspan='2'>Effective Dates</TD>" SKIP.                                                                          /* 2dot0 */
+            
+            IF test_mstr.test_family = "MPA" THEN                                                           /* 2dot1 */
+                {&OUT}                                                                                      /* 2dot1 */
+            "          <TD colspan='2' rowspan='2'>Value</TD>" SKIP.                                        /* 2dot1 */
+            ELSE                                                                                            /* 2dot1 */
+            {&OUT}                                                                                          /* 2dot1 */
+            "          <TD colspan='2'>Range</TD>" SKIP.                                                                                    /* 2dot0 */
+            
+            {&OUT}
+            "          <TD rowspan='2'>Recommendation</TD>" SKIP                                                                           /* 2dot0 */                         
+            "          <TD colspan='2'>Dosage Qty</TD>" SKIP                                                                               /* 2dot0 */
+            "          <TD rowspan='2'>Dosage UOM</TD>" SKIP                                                                               /* 2dot0 */ 
+            "          <TD rowspan='2'>Notes</TD>" SKIP                                                                                    /* 2dot0 */ 
+            "      </TR>" SKIP
+            "      <tr>" SKIP
+            "          <TD>Start</TD>" SKIP                                                                                                /* 2dot0 */ 
+            "          <TD>End</TD>" SKIP.                                                                                                  /* 2dot0 */ 
+            IF test_mstr.test_family = "MPA" THEN                                                           /* 2dot1 */                                           
+                {&OUT} "" SKIP.                                                                             /* 2dot1 */
+            ELSE                                                                                            /* 2dot1 */
+            {&OUT}                                                                                          /* 2dot1 */
+            "          <TD>Start</TD>" SKIP                                                                                                /* 2dot0 */ 
+            "          <TD>End</TD>" SKIP.                                                                                                  /* 2dot0 */ 
+            
+            {&OUT}
+            "          <td>From</td>" SKIP                                                                                                 /* 2dot0 */ 
+            "          <td>To</td>" SKIP                                                                                                   /* 2dot0 */     
+            "      </tr>" SKIP
+            "      </TR>" SKIP
+            "  </THEAD>" SKIP.            
+
+        FOR EACH trr_det WHERE trr_det.trr_testtype = tl_mstr.tl_testtype AND 
+                trr_det.trr_item_ID = tld_det.tld_item_ID AND 
+                trr_det.trr_deleted = ? NO-LOCK
+            BREAK BY trr_det.trr_order BY trr_det.trr_testtype BY trr_det.trr_start_eff BY trr_det.trr_end_eff BY trr_det.trr_start_range BY trr_det.trr_end_range: /* 2dot0 */
+
+
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r"))                                                           /* 2dot0 */
+            (trr_det.trr_start_eff, OUTPUT starteff).
+        
+        
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r"))                                                           /* 2dot0 */
+            (trr_det.trr_end_eff, OUTPUT endeff).        
+                
+                                
+            IF RECID(trr_det) = whichrec THEN DO:   /** record to edit **/ 
+                
+                isselected = "CHECKED".
+                
+                IF trr_det.trr_suppl_ID = 0 THEN DO: 
+                     
+                    {&OUT} 
+                        "   <TR>" SKIP                        
+                        "       <TD><center><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " /></center></TD>" SKIP
+                        "       <TD><center><INPUT type='number' name='h-sortorder' maxlength='4' value='" trr_det.trr_order "' /></center></TD>" SKIP   
+			            "       <td><input type='date' name='h-starteff' value=" starteff " /></td>" SKIP                                                      /* 2dot0 */
+			            "       <td><input type='date' name='h-endeff' value=" endeff " /></td>" SKIP.                                                         /* 2dot0 */  
+			            
+			   IF test_mstr.test_family = "MPA" THEN                                                                                                                     /* 2dot1 */
+                
+                {&OUT}                                                                                                                                                   /* 2dot1 */       
+                        "       <TD colspan='2'><center><input type='text' name='h-charstart' value='" trr_det.trr_charstart "' maxlength='6' /></center></TD>" SKIP.    /* 2dot1 */
+                        
+                ELSE                                                                                                                                                     /* 2dot1 */   
+                    {&OUT}          			                                                                                                                   
+                        "       <TD><center><input type='number' name='h-startrange' value='" trr_det.trr_start_range "' step='.0001' maxlength='6' /></center></TD>" SKIP
+                        "       <TD><center><input type='number' name='h-endrange' value='" trr_det.trr_end_range "' step='.0001' class='40width' maxlength='6' /></center></TD>" SKIP.
+                        
+                 {&OUT}           
+                        "       <TD>NOTES ONLY</TD>" SKIP          
+                        "       <TD colspan=4  class='REQ'>" SKIP
+                        "           <textarea rows=2 cols=75 name='h-notes'>" trr_det.trr_notes "</textarea></TD>" SKIP
+                        "  </TR>" SKIP.  
+                                                
+                END.  /** of trr_suppl_id = 0 --- notes only **/
+                
+                ELSE DO: 
+                    
+                    FIND FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_id AND 
+                         suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.
+            
+                    {&OUT} 
+                        "   <TR class='REQ'>" SKIP
+                        "       <TD><center><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " /></center></TD>" SKIP
+                        "       <TD><center><INPUT type='number' name='h-sortorder' maxlength='4' value='" trr_det.trr_order "' /></center></TD>" SKIP
+                        "       <td><input type='date' name='h-starteff' value=" starteff " /></td>" SKIP                                                      /* 2dot0 */
+                        "       <td><input type='date' name='h-endeff' value=" endeff " /></td>" SKIP.                                                          /* 2dot0 */ 
+               
+               IF test_mstr.test_family = "MPA" THEN                                                                                                                     /* 2dot1 */
+                
+                    {&OUT}                                                                                                                                                   /* 2dot1 */       
+                        "       <TD colspan='2'><center><input type='text' name='h-charstart' value='" trr_det.trr_charstart "' maxlength='6' /></center></TD>" SKIP.        /* 2dot1 */
+                        
+                ELSE                                                                                                                                                     /* 2dot1 */   
+                    {&OUT}                                                                                  
+                        "       <TD><center><input type='number' name='h-startrange' value='" trr_det.trr_start_range "' step='.0001' maxlength='6' /></center></TD>" SKIP
+                        "       <TD><center><input type='number' name='h-endrange' value='" trr_det.trr_end_range "' step='.0001' maxlength='6' /></center></TD>" SKIP. 
+                        
+                    IF AVAILABLE (suppl_list) THEN  
+                        {&OUT}      
+                             "       <TD><input type='hidden' value='" trr_det.trr_suppl_id 
+                             "' name='h-supplement_ID' />" suppl_list.suppl_name 
+                             "</TD>" SKIP.
+                    ELSE  
+                        {&OUT}
+                             "       <TD><input type='hidden' value='" trr_det.trr_suppl_id "' name='h-supplement_ID' />" 
+                                        trr_det.trr_suppl_ID "</TD>" SKIP.
+                             
+                    {&OUT}    
+                        "       <TD><center><input type='number' name='h-from-dosage'  min='0' value='" trr_det.trr_dosage_from "' step='.25' maxlength='5' /></center></TD><TD><center>" SKIP                /* 2dot0 */
+                        "           <input type='number' name='h-to-dosage'  min='0' value='" trr_det.trr_dosage_to "' step='.25' maxlength='5' /></center></TD>" SKIP                        /* 2dot0 */
+                        "       <TD><center><select name='h-doseuom'>" SKIP.
+                        
+                        {UOMDropDown.i trr_det.trr_uom DOSAGE}.                                                                                                                /* 2dot0 */
+/* 2dot0 removed */                                             
+/*                        "           <option value=" doseuom ">" trr_det.trr_uom "</option>" SKIP.                                                               /* 1dot6 */*/
+/*                                                                                                                                                                           */
+/* /**/                   FOR EACH uom_list NO-LOCK:                                                                                                                         */
+/*                                                                                                                                                                           */
+/*                        {&OUT}                                                                                                                                             */
+/*                        "           <option value=" uom_list.uom ">" uom_list.uom "</option>" SKIP.                                                                        */
+/*                                                                                                                                                                           */
+/*                                                                                                                                                                           */
+/*                    END.  /** of 4ea. uom_list **/                                                                                                                         */
+/* 2dot0 */                                     
+                    {&OUT}
+                        "           </select></center></td>" SKIP       
+                        "       <TD><input type='text' size='50' maxlength='50' name='h-notes' value='" trr_det.trr_notes "'/></TD>" SKIP   
+                        "   </TR>" SKIP.                
+                
+                END.  /** of else do -- trr_suppl_id > 0 **/
+                
+            END.  /* if recid trr_det = whichrec */
+                
+            ELSE DO: /*********************************** other records *********************************************************/
+                
+                isselected = "".
+                
+                IF trr_det.trr_suppl_ID = 0 THEN DO: 
+            
+                    {&OUT} 
+                        "   <TR>" SKIP
+                        "       <TD><center><input type='radio' name='h-whichrec' value=" RECID(trr_det) " "
+                                    isselected " DISABLED /></center></TD>" SKIP
+                        "       <TD><center>" trr_det.trr_order "</center></TD>" SKIP
+                        "       <TD>" trr_det.trr_start_eff "</td><td>" trr_det.trr_end_eff "</TD>" SKIP.                                                                          /* 2dot0 */                                     
+                        
+                    IF test_mstr.test_family = "MPA" THEN                                                               /* 2dot1 */
+
+                        {&OUT}                                                                                          /* 2dot1 */
+                        "       <TD cplspan='2'><center>" trr_det.trr_charstart "</center></TD>" SKIP.                  /* 2dot1 */
+                    
+                    ELSE                                                                                                /* 2dot1 */
+                        {&OUT}
+                        "       <TD><center>" trr_det.trr_start_range "</center></TD>" SKIP
+                        "       <TD><center>" trr_det.trr_end_range "</center></TD>" SKIP.
+                        
+                    {&OUT}          
+                        "       <TD>NOTES ONLY</TD>" SKIP           
+                        "       <TD colspan=4>" trr_det.trr_notes "</TD>" SKIP   
+                        "  </TR>" SKIP.                     
+                
+                END.  /** of if trr_suppl_id = 0 --- notes only **/
+                
+                ELSE DO: 
+                
+                    FIND FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_id AND 
+                         suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.
+                
+                    {&OUT} 
+                        "   <TR>" SKIP
+                        "       <TD><center><input type='radio' name='h-whichrec' value=" 
+                                    RECID(trr_det) " " isselected " DISABLED /></center></TD>" SKIP
+                        "       <TD><center>" trr_det.trr_order "</center></TD>" SKIP
+                        "       <TD>" trr_det.trr_start_eff "</td><td>" trr_det.trr_end_eff "</TD>" SKIP.                                                                          /* 2dot0 */                                     
+                        
+                    IF test_mstr.test_family = "MPA" THEN                                                               /* 2dot1 */
+
+                        {&OUT}                                                                                          /* 2dot1 */
+                        "       <TD colspan='2'><center>" trr_det.trr_charstart "</center></TD>" SKIP.                  /* 2dot1 */
+                    
+                    ELSE                                                                                                /* 2dot1 */
+                        {&OUT}                                                                                                                 
+                        "       <TD><center>" trr_det.trr_start_range "</center></TD>" SKIP
+                        "       <TD><center>" trr_det.trr_end_range "</center></TD>" SKIP.      
+                        
+                    IF AVAILABLE (suppl_list) THEN 
+                        {&OUT}     
+                             "       <TD>" suppl_list.suppl_name "</TD>" SKIP.
+                    ELSE 
+                        {&OUT}
+                             "       <TD>" trr_det.trr_suppl_ID "</TD>" SKIP.
+                             
+                    {&OUT}     
+                        "       <TD><center>" trr_det.trr_dosage_from "</center></TD><TD><center>" trr_det.trr_dosage_to "</center></TD>" SKIP                 /* 2dot0 */
+                        "       <TD><center>" trr_det.trr_uom "</center></TD>" SKIP    
+                        "       <TD>" trr_det.trr_notes "</TD>" SKIP   
+                        "  </TR>" SKIP.
+                         
+               END.  /** of else do -- if trr_suppl_id > 0 **/
+                            
+            END.  /** of else do --- other records **************************************************************************/
+                        
+        END.  /*** of 4ea. trr_det, etc. ***/
+ 
+        {&OUT}
+            "</table>" SKIP
+            "</DIV>         <!-- end of table_report -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'>" SKIP
+/*            "       <INPUT type='hidden' name='h-whichrec' value=" whichrec "' />" SKIP                                             /* 2dot0 */*/
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />"
+            "       <BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Save Changes</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'>" SKIP
+            "       <BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'>" SKIP
+            "       <BUTTON type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>Cancel Changes</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "</div>" SKIP
+            "<BR>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "</FORM>" SKIP.
+        {&OUT}
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'> <center>" SKIP
+/*            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />"*/
+/*            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                              /* 1dot6 */*/
+            "       <BUTTON type='submit' name='h-act' value='SELECT_TEST' class='btn'>Exit To Start</BUTTON>" SKIP
+            "   </center></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP     
+            "</DIV>     <!-- end of row -->" SKIP
+            "</FORM>" SKIP.
+
+    END.  /** of 4ea. tl_mstr, etc. **/
+
+END.  /*** of if= edit **/                                                 
+
+ELSE IF act = "VALIDATION" THEN DO:    /**************************************** Step 4a or 5a ***********************************/
+
+    passok = YES.  
+                                                                                 IF ITshowmsg = YES THEN 
+                                                                                 {&OUT} "Inside VALIDATE, about to enter 4ea." SKIP
+                                                                                                                        "<OL>" SKIP
+                                                                                      "   <LI>testtype    = " testtype "</LI>" SKIP
+                                                                                        "   <LI>itemid      = " itemid "</LI>" SKIP
+                                                                               "   <LI>supplement_ID = " supplement_ID "</LI>" SKIP
+                                                                                        "    <li>whichrec = " whichrec "</li>" SKIP
+                                                                                    "   <LI>Start Range = " startrange "</LI>" SKIP
+                                                                                        "   <LI>End Range = " endrange "</LI>" SKIP
+                                                                                               "   <li>UOM = " doseuom "</li>" SKIP
+                                                                                                                       "</OL>" SKIP 
+                                                                                                         "<HR width='80%'>" SKIP(1).
+                
+    FOR EACH trr_det WHERE 
+        trr_det.trr_testtype = testtype AND 
+        trr_det.trr_item_ID = itemid AND 
+        trr_det.trr_suppl_ID = supplement_ID AND 
+        RECID(trr_det) <> whichrec AND
+        trr_det.trr_deleted = ? NO-LOCK: 
+                                                                                              
+        /* 2dot0 --> */
+        IF trr_det.trr_end_range = 0 THEN DO:                                       
+            IF (startrange < trr_det.trr_start_range AND 
+                endrange <= trr_det.trr_start_range) AND 
+               (startrange < endrange) THEN 
+               
+               sowhat = YES.
+               
+            ELSE
+             
+                passok = NO. 
+                
+        END. /* if trr_end_range = 0 */  
+        ELSE DO: 
+        /* <-- 2dot0 */    
+	        IF  (((startrange < trr_det.trr_start_range) AND (startrange < trr_det.trr_end_range)) OR 
+	            ((startrange > trr_det.trr_start_range) AND (startrange >= trr_det.trr_end_range)))                             /* 2dot0  - added the = */
+	            AND 
+	            (((endrange <= trr_det.trr_start_range) AND (endrange < trr_det.trr_end_range)) OR
+	            ((endrange > trr_det.trr_start_range) AND (endrange > trr_det.trr_end_range)))                                 /* 2dot0  - added the = */
+	            AND
+	            ((endrange = 0) OR ((startrange < endrange)                                                                     /* 2dot0 - changed () */
+	            AND NOT 
+	            ((startrange < trr_det.trr_start_range) AND (trr_det.trr_end_range < endrange)))) THEN 
+	            
+	            sowhat = YES.
+	                
+	        ELSE
+	         
+	            passok = NO.     
+        
+        END.   /* else do if trr_end_range */   
+                                                                                    IF ITshowmsg = YES THEN 
+                                                                                        {&OUT}
+                                                                                            "Inside VALIDATE, inside 4ea." SKIP
+                                                                                            "<H3>" trr_det.trr_start_range 
+                                                                                            " | " trr_det.trr_end_range 
+                                                                                            " | " passok
+                                                                                            " | " sowhat
+                                                                                            "</H3><HR width='80%'>" SKIP.  
+                                                                                            
+                                                                                    IF ITshowmsg = YES THEN
+                                                                                         {&OUT} 
+                                                                                            "<OL>" SKIP
+                                                                                      "   <LI>testtype    = " testtype "</LI>" SKIP
+                                                                       "   <LI>db-testtype    = " trr_det.trr_testtype "</LI>" SKIP
+                                                                                        "   <LI>itemid      = " itemid "</LI>" SKIP
+                                                                        "   <LI>db-itemid      = " trr_det.trr_item_id "</LI>" SKIP
+                                                                               "   <LI>supplement_ID = " supplement_ID "</LI>" SKIP
+                                                                     "   <LI>db-Supplement_ID = " trr_det.trr_suppl_ID "</LI>" SKIP
+                                                                                    "   <LI>startrange  = " startrange "</LI>" SKIP
+                                                                    "   <LI>db-Start Range = " trr_det.trr_start_range "</LI>" SKIP
+                                                                                         "   <LI>endrange = " endrange "</LI>" SKIP
+                                                                        "   <LI>db-End Range = " trr_det.trr_end_range "</LI>" SKIP
+                                                                                            "</OL>" SKIP
+                                                                                            "<HR width='80%'>" SKIP(1).
+
+    END.  /** of 4ea. trr_det **/        
+    
+                                                                                IF ITshowmsg = YES THEN 
+                                                                            {&OUT} "<H3>Post Supplement > 0 | " passok "</H3>" SKIP. 
+
+    IF passok = YES THEN DO:        /** actually create a record **/
+    
+        IF supplement_ID > 0 THEN DO: 
+            
+            FIND FIRST suppl_list WHERE suppl_list.suppl_id = supplement_id AND 
+               suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.
+            
+            IF NOT AVAILABLE (suppl_list) THEN DO:
+                
+                {&OUT} 
+                    "ERROR!  Supplement not found.  Contact Solsource.".
+                
+                {&OUT}
+                    "<BR>" SKIP
+                    "<form>" SKIP
+                    "<div class='row'>" SKIP
+                    "   <div class='grid_5'> </DIV>" SKIP
+                    "   <div class='grid_2'> <center>" SKIP
+                    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                              /* 1dot6 */         
+                    "       <BUTTON type='submit' name='h-act' value='SELECT_TEST' class='btn'>Return To Start</BUTTON>" SKIP
+                    "   </center></div>" SKIP
+                    "   <div class='grid_5'> </DIV>" SKIP     
+                    "</DIV>     <!-- end of row -->" SKIP
+                    "</FORM>" SKIP.
+                
+            END.  /** of if not avail suppl_list **/
+            
+            ELSE DO: /*** if available supplement_id ***/
+                
+                FIND trr_det WHERE RECID(trr_det) = whichrec EXCLUSIVE-LOCK NO-ERROR.
+                
+                IF NOT AVAILABLE (trr_det) THEN
+/* removed in 2dot0 */                
+                FIND trr_det WHERE trr_det.trr_testtype = testtype AND
+                   trr_det.trr_start_range = startrange AND
+                   trr_det.trr_end_range = endrange AND
+                   trr_det.trr_charstart = charstart AND                                            /* 2dot1 */
+                   trr_det.trr_charend = charend AND                                                /* 2dot1 */
+                   trr_det.trr_suppl_ID = suppl_list.suppl_id AND
+                   trr_det.trr_item_ID = itemid AND
+                   trr_det.trr_deleted = ?
+                       EXCLUSIVE-LOCK NO-ERROR.
+
+                IF NOT AVAILABLE (trr_det) THEN DO:
+                           
+                    CREATE trr_det.
+
+                    ASSIGN
+                        trr_det.trr_testtype       = testtype
+                        trr_det.trr_item_ID        = itemid
+                        trr_det.trr_suppl_id       = suppl_list.suppl_id
+                        trr_det.trr_start_range    = startrange
+                        trr_det.trr_end_range      = endrange
+                        trr_det.trr_charstart      = charstart                                      /* 2dot1 */
+                        trr_det.trr_charend        = charend                                        /* 2dot1 */
+                        trr_det.trr_uom            = suppl_list.suppl_def_uom
+                        trr_det.trr_notes          = suppl_list.suppl_def_notes.
+
+                END.  /** of if not avail trr_det **/
+/* end of removed section - excluding CREATE trr_det. */              
+                
+                ASSIGN 
+                /* 2dot0 --> */
+                    trr_det.trr_testtype    = IF testtype <> trr_det.trr_testtype AND testtype <> "" THEN testtype ELSE trr_det.trr_testtype 
+                    trr_det.trr_item_ID     = IF itemid <> trr_det.trr_item_ID AND itemid <> 0 THEN itemid ELSE trr_det.trr_item_ID
+                    trr_det.trr_suppl_id    = suppl_list.suppl_id
+                    trr_det.trr_start_range = startrange 
+                    trr_det.trr_end_range   = endrange   
+                    trr_det.trr_charstart   = charstart                                             /* 2dot1 */
+                    trr_det.trr_charend     = charend                                               /* 2dot1 */
+                    trr_det.trr_uom         = suppl_list.suppl_def_uom
+                    trr_det.trr_notes       = suppl_list.suppl_def_notes    
+                /* <-- 2dot0 */                
+                    trr_det.trr_dosage_from = IF from-dosage    = 0 THEN trr_det.trr_dosage_from    ELSE from-dosage                                 /* 2dot0 */
+                    trr_det.trr_dosage_to   = IF to-dosage      = 0 THEN trr_det.trr_dosage_to      ELSE to-dosage                                   /* 2dot0 */
+                    trr_det.trr_order       = sortorder
+                    trr_det.trr_uom         = IF doseuom        = "" THEN trr_det.trr_uom           ELSE doseuom
+                    trr_det.trr_notes       = IF notes          = "" THEN trr_det.trr_notes         ELSE notes
+                    act                     = "FINAL_UPDATE"
+                    whichrec                = RECID(trr_det)
+                    trr_det.trr_prog_name   = THIS-PROCEDURE:FILE-NAME.                                                                               /* 2dot0 */ 
+        
+            END.  /** of else do -- suppl_list avail **/
+        
+        END.  /** of if h-supplement_ID > 0 **/
+        
+        ELSE IF supplement_ID = 0 THEN DO: 
+                                 
+            FIND marker_list WHERE marker_list.marker_ID = itemid AND  
+                marker_list.marker_deleted = ? NO-LOCK NO-ERROR.
+
+            FIND trr_det WHERE RECID(trr_det) = whichrec EXCLUSIVE-LOCK NO-ERROR.                                                               /* 2dot0 */
+                
+                IF NOT AVAILABLE (trr_det) THEN                                                                                                     /* 2dot0 */
+                
+		            FIND trr_det WHERE trr_det.trr_testtype = testtype AND 
+		               trr_det.trr_item_ID = itemid AND 
+		               trr_det.trr_suppl_ID = supplement_id AND 
+		               trr_det.trr_start_range = startrange AND 
+		               trr_det.trr_end_range = endrange AND 
+		               trr_det.trr_charstart = charstart AND                                          /* 2dot1 */
+		               trr_det.trr_charend = charend                                                  /* 2dot1 */
+		                   EXCLUSIVE-LOCK NO-ERROR.
+            
+            IF NOT AVAILABLE (trr_det) THEN DO: 
+                       
+                CREATE trr_det.
+                ASSIGN 
+                    trr_det.trr_testtype       = testtype                
+/*                    trr_det.trr_start_range    = startrange*/
+/*                    trr_det.trr_end_range      = endrange  */
+                    trr_det.trr_suppl_id       = supplement_id 
+                    trr_det.trr_item_ID        = itemid.
+                
+            END.  /** of if not avail trr_det **/
+            
+            ASSIGN 
+                trr_det.trr_order          = sortorder
+                trr_det.trr_notes          = IF AVAILABLE (marker_list) THEN marker_list.marker_desc 
+                    ELSE IF notes          = ""    THEN trr_det.trr_notes ELSE notes
+                trr_det.trr_start_range = startrange                                                                                                /* 2dot0 */
+                trr_det.trr_end_range   = endrange                                                                                                  /* 2dot0 */
+                trr_det.trr_charstart   = charstart                                                     /* 2dot1 */
+                trr_det.trr_charend     = charend                                                       /* 2dot1 */
+                act                        = "FINAL_UPDATE" 
+                whichrec                   = RECID(trr_det)
+                trr_det.trr_prog_name      = THIS-PROCEDURE:FILE-NAME.                                                                               /* 2dot0 */ 
+            
+        END.  /** of else do --- h-supplement_ID = 0 (notes only) **/    
+            
+    END.  /** of if passok = yes --- create record **/ 
+    
+    ELSE DO: /** --- passok = no **/
+        
+        {&OUT} 
+            "<center><H3>Error: The new range " startrange " - " endrange " overlaps with the preexisting range.</H3></center>" SKIP.
+
+        {&OUT}
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<input type='hidden' name='h-testtype' value='" testtype "'>" SKIP
+            "<input type='hidden' name='h-itemid' value='" itemid "'>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <div class='grid_2'> <center>" SKIP
+            "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                      /* 1dot6 */            
+            "       <BUTTON type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>Return To Recommendations</BUTTON>" SKIP
+            "   </center></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP     
+            "</DIV>     <!-- end of row -->" SKIP
+            "</FORM>" SKIP.
+        
+    END.  /** of else do --- passok = no **/    
+                                                                                IF ITshowmsg = YES THEN 
+                                                                         {&OUT} "Inside VALIDATE, about to enter FINAL_UPDATE" SKIP
+                                                                                       "<OL>" SKIP
+                                                                                      "   <LI>testtype    = " testtype "</LI>" SKIP
+                                                                                        "   <LI>itemid      = " itemid "</LI>" SKIP
+                                                                                           "   <LI>act         = " act "</LI>" SKIP
+                                                                                       "</OL>" SKIP 
+                                                                                       "<HR width='80%'>" SKIP(1).       
+
+
+END. /** of if act = validation **/
+
+IF act = "FINAL_UPDATE" THEN DO:
+
+                                                                                IF ITshowmsg = YES THEN 
+                                                                             {&OUT} "Inside FINAL_UPDATE, about to enter 4ea." SKIP
+                                                                                        "<OL>" SKIP
+                                                                                      "   <LI>testtype    = " testtype "</LI>" SKIP
+                                                                                        "   <LI>itemid      = " itemid "</LI>" SKIP
+                                                                                 "   <LI>supplid     = " supplement_id "</LI>" SKIP
+                                                                                      "   <LI>whichrec    = " whichrec "</LI>" SKIP
+                                                                                           "   <LI>act         = " act "</LI>" SKIP
+/*                                                                                        "   <LI>Dosage      = " dosage "</LI>" SKIP*/
+                                                                                       "   <LI>Dosage UOM  = " doseuom "</LI>" SKIP
+                                                                                         "   <LI>Notes       = " notes "</LI>" SKIP
+                                                                                        "</OL>" SKIP 
+                                                                                        "<HR width='80%'>" SKIP(1).   
+
+    FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND 
+            tl_mstr.tl_deleted = ? NO-LOCK,
+        EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+            tld_det.tld_item_ID = itemid AND 
+            (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND 
+            (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND 
+            tld_det.tld_deleted = ? NO-LOCK, 
+        EACH trr_det WHERE trr_det.trr_testtype = tl_mstr.tl_testtype AND 
+            trr_det.trr_item_ID = tld_det.tld_item_ID AND 
+            trr_det.trr_suppl_ID = supplement_id AND 
+            RECID(trr_det) = whichrec AND
+            trr_det.trr_deleted = ?
+        BREAK BY trr_det.trr_start_range BY trr_det.trr_end_range: 
+   
+        ASSIGN 
+            trr_det.trr_start_eff       = o-starteff                                             /* 2dot0 */
+            trr_det.trr_end_eff         = o-endeff                                               /* 2dot0 */
+            trr_det.trr_dosage_from     = from-dosage                                            /* 2dot0 */
+            trr_det.trr_dosage_to       = to-dosage                                              /* 2dot0 */
+            trr_det.trr_uom             = doseuom
+            trr_det.trr_notes           = notes
+            trr_det.trr_prog_name       = THIS-PROCEDURE:FILE-NAME.                              /* 2dot0 */ 
+            
+    END.  /** of 4ea. tl_mstr, etc. **/
+    
+    {&OUT}
+        "<DIV class='row'>" SKIP
+        "   <DIV class='grid_3'></DIV>" SKIP
+        "   <DIV class='grid_6'>" SKIP
+        "       <CENTER>" SKIP
+        "       <H2>Record Updated</H2>" SKIP
+        "       </center>" SKIP
+        "   </div> <!-- end of grid_6 -->" SKIP       
+        "   <div class='grid_3'></div>" SKIP
+        "</div> <!-- end of row -->" SKIP
+        SKIP
+        "<div class='row'>" SKIP
+        "       <div class='grid_3'> </DIV>" SKIP                     
+        "               <div class='grid_2'>" SKIP
+        "       <FORM>" SKIP
+        "               <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+        "               <INPUT type='hidden' name='h-testtype' value='" testtype "' />" SKIP
+        "               <INPUT type='hidden' name='h-itemid' value=" itemid " />" SKIP
+        "                   <button type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>Return to Recommendations</BUTTON>" SKIP
+        "           </FORM>" SKIP
+        "               </div>" SKIP
+        "               <div class='grid_2'> </DIV>" SKIP
+        "               <div class='grid_2'>" SKIP
+        "       <Form>" SKIP
+        "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                                              /* 1dot6 */
+        "                   <button type='submit' name='h-act' value='SELECT_TEST' class='btn'>Return to Start</BUTTON>" SKIP
+        "       </FORM>" SKIP
+        "               </div>" SKIP      
+        "       <div class='grid_3'> </DIV>" SKIP 
+        "</DIV>     <!-- end of row -->" SKIP.
+    
+END.  /** of else if act = final_update **/
+
+ELSE IF act = "DELETE" THEN DO: /***********************************************   Step 7   **************************************/
+
+    IF v-submit = NO THEN DO: 
+         
+        FIND trr_det WHERE RECID(trr_det) = whichrec NO-LOCK NO-ERROR.
+        
+        IF NOT AVAILABLE (trr_det) THEN DO:
+            
+            {&OUT} 
+                "<BR><CENTER>" SKIP
+                "<H1>ERROR! Recommendation was not available to be deleted. Contact Solsource for assistance.</H1>" SKIP
+                "</CENTER>" SKIP.
+            
+            {&OUT}
+                "<BR>" SKIP
+                "<form>" SKIP
+                "<div class='row'>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+                "   <div class='grid_2'> <center>" SKIP
+                "       <BUTTON type='submit' name='h-act' value='SELECT_TEST' class='btn'>Return To Start</BUTTON>" SKIP
+                "   </center></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP     
+                "</DIV>     <!-- end of row -->" SKIP
+                "</FORM>" SKIP.
+            
+        END.  /** of if not avail trr_det **/
+        
+        ELSE DO: 
+            
+            FIND marker_list WHERE marker_list.marker_ID = trr_det.trr_item_ID
+                NO-LOCK NO-ERROR.
+                
+            IF trr_det.trr_suppl_ID > 0 THEN 
+                FIND suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_ID
+                    NO-LOCK NO-ERROR.
+                    
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP
+                "<CENTER><H2>You are about to delete this record - </H2>" SKIP
+                "<FORM>" SKIP
+/*                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP*/
+                "<DIV class='table_col'>" SKIP
+                "<TABLE class='wee_table'>" SKIP
+                "   <THEAD>" SKIP
+                "       <TH colspan=2>Record Summary</TH>" SKIP
+                "   </THEAD>" SKIP
+                "   <TR>" SKIP
+                "       <TD>Test Type</TD>" SKIP
+                "       <TD><input type='hidden' name='h-testtype' value='" trr_det.trr_testtype "' />" 
+                            trr_det.trr_testtype "</TD>" SKIP
+                "   </TR>" SKIP
+                "   <TR>" SKIP
+                "       <TD>Item / Marker</TD>" SKIP
+                "       <TD><input type='hidden' name='h-itemid' value='" trr_det.trr_item_ID "' />" 
+                            marker_list.marker_display "</TD>" SKIP  /* 211 */
+                "   </TR>" SKIP
+                "   <TR>" SKIP
+                "       <TD>Supplement Recommendation</TD>" SKIP.
+                
+            IF trr_det.trr_suppl_ID = 0 THEN 
+                {&OUT}
+                    "       <TD>NOTES ONLY</TD>" SKIP.
+                    
+            ELSE 
+                {&OUT}
+                    "       <TD>" suppl_list.suppl_name "</TD>" SKIP.
+                        
+            {&OUT}          
+                "   </TR>" SKIP
+                "   <TR>" SKIP.
+                
+                
+                
+            IF test_mstr.test_family = "MPA" THEN 
+            
+            {&OUT}
+                "       <td>Value</TD>" SKIP
+                "       <TD>" trr_det.trr_charstart "</TD>" SKIP.    
+            
+            ELSE 
+            {&OUT}
+                "       <TD>Start Range</TD>" SKIP    
+                "       <TD>" trr_det.trr_start_range "</TD>" SKIP.
+                
+             {&OUT}   
+                "   </TR>" SKIP
+                "   <TR>" SKIP.
+            
+            IF test_mstr.test_family = "MPA" THEN 
+            
+            {&OUT} "".    
+            
+            ELSE 
+            {&OUT}                   
+                "       <TD>End Range</TD>" skip
+                "       <TD>" trr_det.trr_end_range "</TD>" SKIP.
+                
+            {&OUT}    
+                "   </TR>" SKIP                  
+                "   <TR>" SKIP
+                "       <TD>From Dosage</TD>" SKIP
+                "       <TD>" trr_det.trr_dosage_from "</TD>" SKIP
+                "   </TR>" SKIP
+                "   <TR>" SKIP
+                "       <TD>To Dosage</TD>" SKIP
+                "       <TD>" trr_det.trr_dosage_to "</TD>" SKIP
+                "   </TR>" SKIP
+                "   <TR>" SKIP
+                "       <TD>UOM</TD>" SKIP
+                "       <TD>" trr_det.trr_uom "</TD>" SKIP
+                "   </TR>" SKIP
+                "   <TR>" SKIP
+                "       <TD>Notes</TD>" SKIP
+                "       <TD>" trr_det.trr_notes "</TD>" SKIP
+                "   </TR>" SKIP                                                              
+                "</TABLE>" SKIP
+                "</DIV>                 <!-- end of table_col -->" SKIP
+                "<H2>Are you sure?</H2>"
+                "<input type='hidden' name='h-submit' value='YES' />" SKIP
+                "<input type='hidden' name='h-whichrec' value=" RECID(trr_det) " />" SKIP
+                "</DIV>       <!-- end of grid_4 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP  
+                "<div class='row'>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />"
+                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='DELETE' class='btn'>Yes</button></div>" SKIP
+                "   <div class='grid_2'> </DIV>" SKIP
+                "   <div class='grid_2'><button type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>No</button>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "</div>         <!-- end of row for buttons -->" SKIP
+                "<BR>" SKIP
+                "</FORM>" SKIP
+                "</CENTER>" SKIP
+                "<BR>".
+            
+       END.  /** of else do -- if avail trr_det **/
+               
+    END.  /** of if v-submit = NO **/
+       
+    ELSE IF v-submit = YES THEN DO: 
+        
+        FIND trr_det WHERE RECID(trr_det) = whichrec EXCLUSIVE-LOCK NO-ERROR.
+        
+        IF NOT AVAILABLE (trr_det) THEN DO:
+            
+            {&OUT} 
+                "<CENTER>" SKIP
+                "<H1>ERROR!  Recommendation was no longer available to be deleted...  Contact Solsource for assistance.</H1>" SKIP
+                "</Center>" SKIP.
+            
+            {&OUT}
+                "<BR>" SKIP
+                "<form>" SKIP
+                "<div class='row'>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP
+                "   <div class='grid_2'> <center>" SKIP
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                              /* 1dot6 */                
+                "       <BUTTON type='submit' name='h-act' value='SELECT_TEST' class='btn'>Return To Start</BUTTON>" SKIP
+                "   </center></div>" SKIP
+                "   <div class='grid_5'> </DIV>" SKIP     
+                "</DIV>     <!-- end of row -->" SKIP
+                "</FORM>" SKIP.
+            
+        END.  /** of if not avail trr_det **/
+        
+        ELSE DO: 
+            
+            DELETE trr_det .
+                
+            {&OUT}
+                "<FORM>" SKIP
+                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP
+                "<INPUT type='hidden' name='h-testtype' value='" testtype "' />" SKIP
+                "<INPUT type='hidden' name='h-itemid' value=" itemid " />" SKIP              
+                "<CENTER>" SKIP
+                "<h2>Record Deleted.</H2>" SKIP  
+                "<div class='row'>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "   <div class='grid_2'>" SKIP
+        "       <button type='submit' name='h-act' value='ITEM_SELECTED' class='btn'>Return to Recommendations</BUTTON></div>" SKIP 
+                "   <div class='grid_2'> </DIV>" SKIP
+                "   <div class='grid_2'>" SKIP
+                "       <button type='submit' name='h-act' value='SELECT_TEST' class='btn'>Return to Start</BUTTON></div>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "</div>             <!-- of row -->" SKIP
+                "</CENTER>" SKIP
+                "</FORM>" SKIP
+                "<BR>" SKIP.
+
+        END.  /** of else do - if avail trr_det **/
+                
+    END.  /** of else if v-submit = yes **/    
+                
+END.  /*** of else if act = delete ***/
+    
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                   {&OUT}
+                                                                                       "<hr widTD='90%'>" SKIP
+                                                                                       "After Everything" SKIP
+                                                                                       "<OL>Variables" SKIP
+                                                                                       "<LI>act = " act SKIP
+                                                                                       "<LI>testtype = " testtype SKIP
+                                                                                       "<LI>itemid = " itemid SKIP
+                                                                                       "</OL>" SKIP.             
+                                                                                       
+    
+/*                                                                                                                                             */
+/*    IF act = "EDIT_REC" THEN DO:                                                                                                             */
+/*                                                                                                                                             */
+/*        FOR EACH tl_mstr WHERE tl_mstr.tl_testtype = testtype AND                                                                            */
+/*                tl_mstr.tl_deleted = ? NO-LOCK,                                                                                              */
+/*            EACH tld_det WHERE tld_det.tld_sect_id = tl_mstr.tl_sect_id AND                                                                  */
+/*                tld_det.tld_item_ID = itemid AND                                                                                             */
+/*                (tld_det.tld_start_eff <= TODAY OR tld_det.tld_start_eff = ?) AND                                                            */
+/*                (tld_det.tld_end_eff >= TODAY OR tld_det.tld_end_eff = ?) AND                                                                */
+/*                tld_det.tld_deleted = ? NO-LOCK:                                                                                             */
+/*                                                                                                                                             */
+/*            {&OUT}                                                                                                                           */
+/*                "<FORM>" SKIP                                                                                                                */
+/*                "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                           */
+/*                "<DIV class='row'>" SKIP                                                                                                     */
+/*                "<DIV class='grid_12'>" SKIP                                                                                                 */
+/*                "<DIV class='table_3col'>" SKIP                                                                                              */
+/*                "<table>" SKIP                                                                                                               */
+/*                "    <THEAD>" SKIP                                                                                                           */
+/*                "       <TR>" SKIP                                                                                                           */
+/*                "           <TH colspan=6>Recommendations by Test by Item / Marker</TH>" SKIP                                                */
+/*                "       </TR>" SKIP                                                                                                          */
+/*                "   </THEAD>" SKIP                                                                                                           */
+/*                "   <TR>" SKIP                                                                                                               */
+/*                "       <TD>Test Type</TD>" SKIP                                                                                             */
+/*                "       " SKIP                                                                                                               */
+/*                "       " SKIP                                                                                                               */
+/*                "       <TD><INPUT type='hidden' name='h-testtype' value='" tl_mstr.tl_testtype "' />"                                       */
+/*                                tl_mstr.tl_testtype "</TD>" SKIP                                                                             */
+/*                "       <TD>Section</TD>" SKIP                                                                                               */
+/*                "       <TD>" tl_mstr.tl_section_desc "</TD>" SKIP                                                                           */
+/*                "       <TD>Item / Marker</TD>" SKIP                                                                                         */
+/*                "       <TD><INPUT type='hidden' name='h-itemid' value=" tld_det.tld_item_ID " />" tld_det.tld_item_name "</TD>" SKIP        */
+/*                "   </TR>" SKIP                                                                                                              */
+/*                "</TABLE>" SKIP                                                                                                              */
+/*                "</DIV>             <!-- end of table_3col -->" SKIP                                                                         */
+/*                "<DIV class='table_report'>" SKIP                                                                                            */
+/*                "<TABLE>" SKIP                                                                                                               */
+/*                "   <THEAD>" SKIP                                                                                                            */
+/*                "       <TR>" SKIP                                                                                                           */
+/*                "          <TD>Select</TD>" SKIP                                                                                             */
+/*                "            <TD>Sort Order</TD>" SKIP                                                                                       */
+/*                "          <TD>Start</TD>" SKIP                                                                                              */
+/*                "          <TD>End</TD>" SKIP                                                                                                */
+/*                "          <TD>Recommendation</TD>" SKIP                                                                                     */
+/*                "          <TD>Dosage Qty</TD>" SKIP                                                                                         */
+/*                "          <TD>Dosage UOM</TD>" SKIP                                                                                         */
+/*                "          <TD>Notes</TD>" SKIP                                                                                              */
+/*                "      </TR>" SKIP                                                                                                           */
+/*                "  </THEAD>" SKIP.                                                                                                           */
+/*                                                                                                                                             */
+/*            FOR EACH trr_det WHERE trr_det.trr_testtype = tl_mstr.tl_testtype AND                                                            */
+/*                    trr_det.trr_item_ID = tld_det.tld_item_ID AND                                                                            */
+/*                    trr_det.trr_deleted = ? NO-LOCK                                                                                          */
+/*                BREAK BY trr_det.trr_start_range BY trr_det.trr_end_range:                                                                   */
+/*                                                                                                                                             */
+/*                IF trr_det.trr_suppl_ID > 0 THEN                                                                                             */
+/*                    FIND FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_ID AND                                               */
+/*                        suppl_list.suppl_deleted = ? NO-LOCK NO-ERROR.                                                                       */
+/*                                                                                                                                             */
+/*                IF RECID(trr_det) = whichrec THEN DO:   /** record to edit **/                                                               */
+/*                                                                                                                                             */
+/*                    isselected = "CHECKED".                                                                                                  */
+/*                                                                                                                                             */
+/*                    IF trr_det.trr_suppl_ID = 0 THEN DO:                                                                                     */
+/*                                                                                                                                             */
+/*                        {&OUT}                                                                                                               */
+/*                            "   <TR>" SKIP                                                                                                   */
+/*                            "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " /></TD>" SKIP          */
+/*                            "       <TD>" trr_det.trr_order "</TD>" SKIP                                                                     */
+/*                            "       <TD>" trr_det.trr_start_range "</TD>" SKIP                                                               */
+/*                            "       <TD>" trr_det.trr_end_range "</TD>" SKIP                                                                 */
+/*                            "       <TD><input type='hidden' name='h-supplement_id' value=0 />NOTES ONLY</TD>" SKIP                          */
+/*                            "       <TD colspan=3 ><textarea rows=2 cols=100 name='h-notes'>" trr_det.trr_notes "</textarea></TD>"           */
+/*                                        SKIP                                                                                                 */
+/*                            "  </TR>" SKIP.                                                                                                  */
+/*                                                                                                                                             */
+/*                    END.  /** of trr_suppl_id = 0 --- notes only **/                                                                         */
+/*                                                                                                                                             */
+/*                    ELSE DO:                                                                                                                 */
+/*                                                                                                                                             */
+/*                        {&OUT}                                                                                                               */
+/*                            "   <TR class='REQ'>" SKIP                                                                                       */
+/*                            "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " /></TD>" SKIP          */
+/*                            "       <TD>" trr_det.trr_order "</TD>" SKIP                                                                     */
+/*                            "       <TD>" trr_det.trr_start_range "</TD>" SKIP                                                               */
+/*                            "       <TD>" trr_det.trr_end_range "</TD>" SKIP                                                                 */
+/*                            "       <TD><input type='hidden' name='h-supplement_id' value='" trr_det.trr_suppl_ID "'/>"                      */
+/*                                        suppl_list.suppl_name "</TD>" SKIP                                                                   */
+/*                            "       <TD><input type='hidden' name='h-dosage' value='" trr_det.trr_dosage "'/>"                               */
+/*                                        trr_det.trr_dosage "</TD>" SKIP                                                                      */
+/*                            "       <TD><input type='hidden' name='h-doseuom' value='" trr_det.trr_uom "'/>"                                 */
+/*                                        trr_det.trr_uom "</TD>" SKIP                                                                         */
+/*                            "       <TD><input type='hidden' name='h-notes' value='" trr_det.trr_notes "'/>"                                 */
+/*                                        trr_det.trr_notes "</TD>" SKIP                                                                       */
+/*                            "  </TR>" SKIP.                                                                                                  */
+/*                                                                                                                                             */
+/*                    END.  /** of else do -- trr_suppl_id > 0 **/                                                                             */
+/*                                                                                                                                             */
+/*                END.  /* if recid trr_det = whichrec */                                                                                      */
+/*                                                                                                                                             */
+/*                ELSE DO:                                /** other records **/                                                                */
+/*                                                                                                                                             */
+/*                    isselected = "".                                                                                                         */
+/*                                                                                                                                             */
+/*                    IF trr_det.trr_suppl_ID = 0 THEN DO:                                                                                     */
+/*                                                                                                                                             */
+/*                        {&OUT}                                                                                                               */
+/*                            "   <TR>" SKIP                                                                                                   */
+/*                            "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " DISABLED /></TD>" SKIP */
+/*                            "       <TD>" trr_det.trr_order "</TD>" SKIP                                                                     */
+/*                            "       <TD>" trr_det.trr_start_range "</TD>" SKIP                                                               */
+/*                            "       <TD>" trr_det.trr_end_range "</TD>" SKIP                                                                 */
+/*                            "       <TD>NOTES ONLY</TD>" SKIP   /* instead of suppl_list.suppl_name */                                       */
+/*                            "       <TD colspan=3>" trr_det.trr_notes "</TD>" SKIP                                                           */
+/*                            "  </TR>" SKIP.                                                                                                  */
+/*                                                                                                                                             */
+/*                    END.  /** of if trr_suppl_id = 0 --- notes only **/                                                                      */
+/*                                                                                                                                             */
+/*                    ELSE DO:                                                                                                                 */
+/*                                                                                                                                             */
+/*                        {&OUT}                                                                                                               */
+/*                            "   <TR>" SKIP                                                                                                   */
+/*                            "       <TD><input type='radio' name='h-whichrec' value=" RECID(trr_det) " " isselected " DISABLED /></TD>" SKIP */
+/*                            "       <TD>" trr_det.trr_order "</TD>" SKIP                                                                     */
+/*                            "       <TD>" trr_det.trr_start_range "</TD>" SKIP                                                               */
+/*                            "       <TD>" trr_det.trr_end_range "</TD>" SKIP                                                                 */
+/*                            "       <TD>" suppl_list.suppl_name "</TD>" SKIP                                                                 */
+/*                            "       <TD>" trr_det.trr_dosage "</TD>" SKIP                                                                    */
+/*                            "       <TD>" trr_det.trr_uom "</TD>" SKIP                                                                       */
+/*                            "       <TD>" trr_det.trr_notes "</TD>" SKIP                                                                     */
+/*                            "  </TR>" SKIP.                                                                                                  */
+/*                                                                                                                                             */
+/*                   END.  /** of else do -- if trr_suppl_id > 0 **/                                                                           */
+/*                                                                                                                                             */
+/*                END.  /** of else do --- other records **/                                                                                   */
+/*                                                                                                                                             */
+/*            END.  /*** of 4ea. trr_det, etc. ***/                                                                                            */
+/*                                                                                                                                             */
+/*            {&OUT}                                                                                                                           */
+/*                "</TABLE>" SKIP                                                                                                              */
+/*                "</DIV>             <!-- end of table_report -->" SKIP                                                                       */
+/*                "<BR>" SKIP                                                                                                                  */
+/*                "<div class='row'>" SKIP                                                                                                     */
+/*                "   <div class='grid_3'> </DIV>" SKIP                                                                                        */
+/*                "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='FINAL_UPDATE' class='btn'>Save Changes</BUTTON></div>" SKIP*/
+/*                "   <div class='grid_2'> </DIV>" SKIP                                                                                        */
+/*                "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP                                  */
+/*                "   <div class='grid_3'> </DIV>" SKIP                                                                                        */
+/*                "</div>" SKIP                                                                                                                */
+/*                "<BR>" SKIP                                                                                                                  */
+/*                "</DIV>         <!-- end of grid_12 -->" SKIP                                                                                */
+/*                "</DIV>     <!-- end of row -->" SKIP                                                                                        */
+/*                "</FORM>" SKIP.                                                                                                              */
+/*                                                                                                                                             */
+/*        END.  /** of 4ea. tl_mstr, etc. **/                                                                                                  */
+/*                                                                                                                                             */
+/*    END.  /** of else -- act = edit_rec **/                                                                                                  */
+
+ 
+                                                                                                                                                                 
+</SCRIPT>
+</BODY>
+</HTML>

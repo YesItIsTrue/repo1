@@ -1,0 +1,423 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<TITLE>Requierement and Class Updater</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="17/Mar/2017">
+    <META NAME='LAST_UPDATED' CONTENT="17/Mar/2017">    
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> 
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+<style>
+/***** ****** W3CSS THEME FOR #66A97C ***** *****/
+.w3-theme-l5 {color:#000 !important; background-color:#f6faf7 !important}
+.w3-theme-l4 {color:#000 !important; background-color:#e0eee5 !important}
+.w3-theme-l3 {color:#000 !important; background-color:#c2dccb !important}
+.w3-theme-l2 {color:#000 !important; background-color:#a3cbb0 !important}
+.w3-theme-l1 {color:#000 !important; background-color:#84ba96 !important}
+.w3-theme-d1 {color:#fff !important; background-color:#589c6e !important}
+.w3-theme-d2 {color:#fff !important; background-color:#4e8a62 !important}
+.w3-theme-d3 {color:#fff !important; background-color:#447956 !important}
+.w3-theme-d4 {color:#fff !important; background-color:#3a684a !important}
+.w3-theme-d5 {color:#fff !important; background-color:#31563d !important}
+
+.w3-theme-light {color:#000 !important; background-color:#f6faf7 !important}
+.w3-theme-dark {color:#fff !important; background-color:#31563d !important}
+.w3-theme-action {color:#fff !important; background-color:#31563d !important}
+
+.w3-theme {color:#fff !important; background-color:#66a97c !important}
+.w3-text-theme {color:#66a97c !important}
+.w3-border-theme {border-color:#66a97c !important}
+
+.w3-hover-theme:hover {color:#fff !important; background-color:#66a97c !important}
+.w3-hover-text-theme {color:#66a97c !important}
+.w3-hover-border-theme:hover {border-color:#66a97c !important}
+
+.w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
+.w3-theme-background {color::#000 !important; background-color:#fff !important}
+.w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
+.w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+.w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+</style>
+
+</HEAD>
+
+<BODY class='w3-theme-background'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+DEFINE VARIABLE v-new           AS LOGICAL              NO-UNDO.
+DEFINE VARIABLE whichrec        AS INTEGER              NO-UNDO.
+DEFINE VARIABLE o-successful    AS LOGICAL              NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act             = get-value("h-act")
+    whichrec        = INTEGER(get-value("h-whichrec"))
+    v-new           = IF get-value("h-new") = "YES" THEN YES ELSE IF get-value("h-new") = "NO" THEN NO ELSE ?
+    /* additional variables here */
+    .
+
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+
+/* ************************ Validation Acts ************************ */
+IF act = "VALIDATION" THEN DO: 
+    
+    RUN VALUE(SEARCH(/* SUB_find.r */))(
+        /* input parameters */
+        /* output parameters */
+        ).
+    
+        IF v-new = YES THEN DO: 
+            
+            IF /* ID */ = 0 THEN
+                ASSIGN    
+                    act = "UPDATE".
+            
+            ELSE DO:
+                
+                ASSIGN v-new = NO.
+                
+               {&OUT}
+		            "<form>" SKIP
+		            "<INPUT type='hidden' name='h-new' value='" v-new "' />" SKIP
+		            "<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP 
+                    "<INPUT type='hidden' name='" /* h-carried-variable */ "' value='" /* v-carried-variable */ "' />" SKIP
+                    "<INPUT type='hidden' name='" /* h-updatable-variable */ "' value='" /* v-updateable-variable */ "' />" SKIP		                   
+		            "<DIV class='row'>" SKIP
+		            "<DIV class='grid_3'> </DIV>" SKIP
+		            "<DIV class='grid_6'>" SKIP   
+		            "<center><h2>The record you are trying to create already exists. Would you like to Update it?</h2></center>" SKIP
+		            "</DIV>         <!-- end of grid_6 -->" SKIP
+		            "<DIV class='grid_3'> </DIV>" SKIP  
+		            "</DIV>     <!-- end of row -->" SKIP
+		            "<BR>" SKIP
+		            "<div class='row'>" SKIP
+		            "   <div class='grid_3'> </DIV>" SKIP
+		            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Yes</BUTTON></div>" SKIP
+		            "   <div class='grid_2'> </DIV>" SKIP
+		            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>No</BUTTON></div>" SKIP        
+		            "   <div class='grid_3'> </DIV>" SKIP
+		            "</div>" SKIP.
+                
+            
+            END. /* else ID <> 0 */
+        END. /* v-new = yes */    
+        ELSE IF v-new = NO THEN DO:  
+            
+            IF /* ID */ = 0 THEN DO:
+                
+                ASSIGN v-new = YES.
+                
+                {&OUT}
+                    "<form>" SKIP
+                    "<INPUT type='hidden' name='h-new' value='" v-new "' />" SKIP
+                    "<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+                    "<INPUT type='hidden' name='" /* h-carried-variable */ "' value='" /* v-carried-variable */ "' />" SKIP
+                    "<INPUT type='hidden' name='" /* h-updatable-variable */ "' value='" /* v-updateable-variable */ "' />" SKIP        
+                    "<DIV class='row'>" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "<DIV class='grid_6'>" SKIP   
+                    "<center><h2>The record you are trying to update does not exist. Would you like to create it?</h2></center>" SKIP
+                    "</DIV>         <!-- end of grid_6 -->" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP  
+                    "</DIV>     <!-- end of row -->" SKIP
+                    "<BR>" SKIP
+                    "<div class='row'>" SKIP
+                    "   <div class='grid_3'> </DIV>" SKIP
+                    "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Yes</BUTTON></div>" SKIP
+                    "   <div class='grid_2'> </DIV>" SKIP
+                    "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>No</BUTTON></div>" SKIP        
+                    "   <div class='grid_3'> </DIV>" SKIP
+                    "</div>" SKIP
+                    "</form>" SKIP.
+            END. /* if /* ID */ = 0 */       
+            
+            ELSE         
+                ASSIGN    
+                    act = "UPDATE".
+        
+        END. /* v-new = no */
+        ELSE DO:
+            {&OUT} 
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>An error has occured in the validation process. v-new = " v-new ". Please contact Solsource.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP.
+
+        END. /* else do v-new = ? */
+        
+END. /* validation */    
+        
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+             "<div class=' w3-content w3-responsive'>" SKIP
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>Completed Requirement Report</h1>" SKIP
+            "   </header>" SKIP
+            
+            "<div class='w3-card-4 w3-content w3-white w3-container' style='max-width:1400px;'>" SKIP  
+            "<form>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <DIV class='w3-col s12'>" SKIP
+            "       <label class='w3-text-theme'><b>Class ID</b></label>" SKIP
+            "       <INPUT class='ss-scanfield w3-input w3-border w3-round' type='number' name='h-class_id' value='" v-class_id "' required  />" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Report' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px; box-shadow:none'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='Submit' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+/*            "<br>" SKIP*/
+            "</form>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+    
+    /* the .i file below is a holding pin for the javascript only.  You will need to go to the file and copy 
+    and paste the javascript from there and into your code here. */ 
+        
+    {../depot/src/WebSpeed/Java_ClickableRow.i}.       
+        
+        {&OUT}
+            "<form>" SKIP        
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='" /* # of columns */ "'>" /* Table Header */ "</TH>" SKIP    
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD>" /* Column Header */ "</TD>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1)
+            "        <tbody class='clickable'>" SKIP.
+            
+        FOR EACH /* table_mstr */ WHERE /* table_field */ BEGINS /* v-field */ AND
+                                        /* table_deleted */ = ?
+                                          NO-LOCK BY /* index field */:
+            {&OUT}
+            "           <tr>" SKIP
+            "               <TD><center><input type='radio' name='h-whichrec' value='" /* Record_ID */ "' /></center></TD>" SKIP
+            "               <td>" /* Display Field */ "</td>" SKIP
+            "           </tr>" SKIP.
+
+        END. /* 4ea. */
+        
+        {&OUT}
+            "        </tbody>" SKIP          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='" /* # of columns */ "'>END OF REPORT</TD>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP 
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<div class='row'>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='VALIDATE_DELETE' class='btn'>Delete</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='NEW' class='btn'>New</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='MAINTENANCE' class='btn'>Select</BUTTON></div>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+    WHEN "NEW" THEN DO:
+        
+        ASSIGN v-new = YES.
+         
+        {../depot/src/WebSpeed/MaintRecordDispTemp.i "VALIDATION" "NOTHING" "REQ"}.
+            
+    END. /* new */
+    WHEN "MAINTENANCE" THEN DO:
+    
+        ASSIGN v-new = NO.
+        
+        FIND FIRST /* table_mstr */ WHERE /* table_field */ = /* v-field */ AND
+                                      /* table_deleted */ = ?
+                                        NO-LOCK BY /* index field */:
+
+        IF AVAILABLE (/* table_mstr */) THEN
+        DO:
+
+            ASSIGN
+               /* v-carried-variable */ = /* table_mstr.table_field */
+               /* v-updatable-field */  = /* table_mstr.table_field2 */
+                .
+                
+            {../depot/src/WebSpeed/MaintRecordDispTemp.i "VALIDATION" "REQUIRED" "REQ"}.
+        
+        END. /* if avial table_mstr */
+        ELSE
+
+            {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<center><h2>Could not find record " /* v-carried-variable */ ".</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.              
+        
+    END. /* maintenance */
+    WHEN "UPDATE" THEN DO:
+      
+      RUN VALUE(SEARCH(/* SUB_ucU.r*/))(
+          /* input parameters */
+          /* output parameters */
+          /* OUTPUT o-successful */
+          ).
+
+        IF o-successful = YES THEN
+
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center>" SKIP
+                    "<h2>Record updated.</h2>" SKIP
+                    "</center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</div>" SKIP.
+        
+            {../depot/src/WebSpeed/MaintRecordDispTemp.i "INITIAL" "NOTHING" "DISABLED"}.
+         
+        ELSE
+        
+            {&OUT}
+                "<DIV class='row'>" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "<DIV class='grid_6'>" SKIP 
+	                "<center><h2>Could not update/create record " /* v-carried-variable */ ". Contact Solsource.</h2></center>" SKIP
+	            "</DIV>         <!-- end of grid_6 -->" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "</DIV>     <!-- end of row -->" SKIP
+	            "<BR>" SKIP 
+	            "<form>" SKIP
+	            "<div class='row'>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+	            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "</DIV>     <!-- end of row -->" SKIP
+	            "</form>" SKIP.     
+        
+    END. /* update */
+    WHEN "DELETE" THEN DO: 
+    
+        FIND /* table_mstr */ WHERE /* table_ID */ = /* v-ID */ AND
+                                    /* table_delete */ = ? EXCLUSIVE-LOCK NO-ERROR.
+
+        IF AVAILABLE (/* table_mstr */) THEN
+        DO: 
+            
+            /* delete record here either with the delete command or by flaging the table's delete field. */
+            
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>Record " /* v-id */ " has been deleted.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP.
+            
+            {../depot/src/WebSpeed/MaintRecordDispTemp.i "INITIAL" "NOTHING" "DISABLED"}.
+        
+        END. /* if avail table_mstr */
+        ELSE
+         
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>Could not find record " /* v-carried-variable */ " to delete. Please contact Solsource.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP.                                  
+        
+    END. /* delete */                
+    OTHERWISE DO: 
+    
+     {&OUT}
+            "<div class='w3-container'>" SKIP
+            "<form>" SKIP
+            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-red'>" SKIP
+            "       <h1>Error</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>Could not find act '" act "'.</p>" SKIP
+            "    </div>" SKIP
+
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

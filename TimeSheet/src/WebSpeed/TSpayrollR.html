@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Payroll Report</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="13/Jan/16">
+    <META NAME="MODIFIED_DATE" CONTENT="13/Jan/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           TSpayrollR.html
+    Description:    Payroll Report
+    Created:        Jacob Luttrell
+    Version History:
+        1.0 - Created by Jacob Luttrell on 13/Jan/16.
+        Need to come back and touch this up to work with logins see 
+        commented out variables and TSentryU. 
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE fromdate      LIKE Hours_Mstr.Hours_date    NO-UNDO.
+DEFINE VARIABLE todate        LIKE Hours_Mstr.Hours_date    NO-UNDO.
+DEFINE VARIABLE empid         LIKE Emp_Mstr.Emp_ID          NO-UNDO.
+DEFINE VARIABLE empidlist     AS   CHARACTER                NO-UNDO.
+DEFINE VARIABLE disp-from     AS   CHARACTER                NO-UNDO.
+DEFINE VARIABLE disp-to       AS   CHARACTER                NO-UNDO.
+DEFINE VARIABLE empname       AS   CHARACTER                NO-UNDO.
+DEFINE VARIABLE hours-worked  AS   DECIMAL format ">>9.9"   NO-UNDO.
+DEFINE VARIABLE payment       AS   DECIMAL format ">>9.9"   NO-UNDO.
+DEFINE VARIABLE act           AS   CHARACTER                NO-UNDO.
+DEFINE VARIABLE itmessage     AS   LOGICAL INITIAL NO       NO-UNDO.
+
+ASSIGN 
+    empid           = INTEGER(html-encode(get-value("h-empid")))
+    empname         = html-encode(get-value("h-empname"))
+    disp-from       = html-encode(get-value("html5-from"))
+    disp-to         = html-encode(get-value("html5-to"))
+    empidlist       = html-encode(get-value("h-empidlist"))
+    act             = html-encode(get-value("h-act")).   
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    disp-from,                                                               
+    OUTPUT fromdate                                                             
+    ).                                                                          
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                   
+    disp-to,                                                                 
+    OUTPUT todate                                                               
+    ).                                          
+
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL".    
+
+/* *********************************** Body ************************************* */
+CASE act:
+    
+        WHEN "INITIAL" THEN DO: 
+      {&OUT}
+        "<form>" SKIP 
+        "<div class='row'>" skip
+        "   <div class='grid_3'></div>" skip
+        "       <div class='grid_6'>" skip             
+        "               <div class='table_2col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='4'>Search Criteria</th>" skip
+        "                       </tr>" skip      
+        "                       <tr>" skip
+        "                           <td>From Date</td>" skip
+        "                           <td><input type='date' name='html5-from' value='" disp-from "' required></td>" skip
+        "                           <td>TO</td>" skip
+        "                           <td><input type='date' name='html5-to' value='" disp-to "' required></td>" skip
+        "                       </tr>" skip      
+        "                       <tr>" skip
+        "                           <td>Select Employee(s)</td>" skip
+        "                           <td colspan='3'><select name='h-empidlist' multiple>" skip. 
+
+        FOR EACH Emp_Mstr WHERE Emp_Mstr.Emp_deleted = ?
+                                   NO-LOCK,
+            EACH people_mstr WHERE people_mstr.people_id = Emp_Mstr.Emp_ID AND 
+                                   people_mstr.people_deleted = ?
+                                   NO-LOCK
+                                   BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname: 
+                ASSIGN 
+                    empname   = people_mstr.people_lastname + ", " + people_mstr.people_firstname
+                    empid     = people_mstr.people_id.
+        
+            {&OUT}                                                                                
+        "                               <option value='" empid "'>" empname "</option>" SKIP.
+        
+        END.  /* 4ea. client_mstr */     
+        {&OUT} 
+        "                       </tr>" skip               
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_3'></div>" skip
+        "</div>" skip  
+        "<BR>" SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</div>" SKIP.
+
+             
+    END. /* INITIAL */ 
+    WHEN "SEARCH" THEN DO:
+        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP
+            "<DIV class='grid_8'>" SKIP
+            "<DIV class='table_report_FromTo'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='5'>Payroll Report</TH>" SKIP    /* thead, tr, th makes the silver bar */
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD>From</TD>" SKIP
+            "                <TD colspan='4'>" fromdate "</TD>" SKIP          /* thead, tr, td makes the blue bar */
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "               <td>To</td>" SKIP
+            "               <td colspan='4'>" todate "</td>" SKIP
+            "           </tr>" SKIP
+            "            <TR>" SKIP
+            "               <td>Employee Name</td>" SKIP
+            "               <td>Base Pay Rate</td>" SKIP
+            "               <td>Loaded Pay Rate</td>" SKIP
+            "               <td>Hours Worked</td>" SKIP
+            "               <td>Payment Owed</td>" SKIP
+            "           </tr>" SKIP
+            "        </THEAD>" SKIP(1)
+            "        <tbody>" SKIP.
+         
+        FOR EACH Emp_Mstr WHERE LOOKUP(STRING(Emp_Mstr.Emp_ID),empidlist) > 0 AND
+                                Emp_Mstr.Emp_deleted = ? NO-LOCK,
+            EACH people_mstr WHERE people_mstr.people_id = Emp_Mstr.Emp_ID AND 
+                                   people_mstr.people_deleted = ? NO-LOCK,
+            EACH Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = Emp_Mstr.Emp_ID AND 
+                                  ((Hours_Mstr.Hours_date >= fromdate) OR
+                                   (fromdate = ?)) AND
+                                  ((Hours_Mstr.Hours_date <= todate) OR 
+                                   (todate = ?)) AND
+                                  Hours_Mstr.Hours_deleted = ? NO-LOCK
+                BREAK BY Emp_Mstr.Emp_ID: 
+     
+            ASSIGN 
+                    empname     = people_mstr.people_lastname + ", " + people_mstr.people_firstname
+                    hours-worked = hours-worked + Hours_Mstr.Hours_amount.
+            
+            IF LAST-OF (Emp_Mstr.Emp_ID) THEN DO: 
+                    
+                    ASSIGN 
+                     payment     = hours-worked * Emp_Mstr.Emp_loaded_pay.                      /* this equasion needs to be fixed to include the loaded pay */
+                     
+            {&OUT}
+            "           <tr>" SKIP
+            "               <TD><a href='../../TimeSheet/rcode/TSempmaintU.r" 
+                                    "?h-pp-passBack-int1=" Emp_Mstr.Emp_ID
+                                    "&h-pp-passBack-int2=" people_mstr.people_addr_id
+                                    "&h-act=MAINTENANCE"
+                                    "&whattorun=8.20"
+            "                       '>" empname "</a></td>" SKIP
+            "               <td>" Emp_Mstr.Emp_base_pay FORMAT "$->>>,>>>,>>9.99" "</td>" SKIP
+            "               <td>" Emp_Mstr.Emp_loaded_pay FORMAT "$->>>,>>>,>>9.99" "</td>" SKIP
+            "               <td>" hours-worked format ">>9.9" "</td>" SKIP
+            "               <td>" payment FORMAT "$->>>,>>>,>>9.99" "</td>" SKIP.
+            END.
+        
+        END. /* 4ea. emp_mstr, people_mstr, hours_mstr */
+        
+        
+        
+        
+        {&OUT}
+            "       </tbody>" SKIP
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='5'>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP
+            "</DIV>         <!-- end of grid_8 -->" SKIP
+            "<DIV class='grid_2'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+
+END CASE.            
+                                  
+         
+</SCRIPT>
+</BODY>
+</HTML>

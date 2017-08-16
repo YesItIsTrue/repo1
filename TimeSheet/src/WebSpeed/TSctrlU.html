@@ -1,0 +1,302 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Time Sheet Control Maintenance</TITLE>
+    <META name="AUTHOR" content="Jacob Luttrell">
+    <META name="VERSION" content="1.1">
+    <META name="COPYRIGHT" content="Solsource">
+    <META name="CREATE_DATE" content="18/Jan/16">
+    <META name="MODIFIED_DATE" content="06/Jul/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT language="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{../depot/src/WebSpeed/menuname.i}.
+  /*------------------------------------------------------------------
+    File:           TSctrlU.html
+    Description:    Maintenance screen for TSC_ctrl table in the TimeSheet database
+    Created:        Jacob Luttrell 
+    Version History:
+        1.0 - Created by Jacob Luttrell on 18/Jan/16. 
+        1.1 - Written by Jacob Luttrell on 06/Jul/16 Added Rounding Point and Value fields.
+                Marked by 1dot1.
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE baserate LIKE TSC_ctrl.TSC_base_rate FORMAT "$->>>,>>>,>>9.99"   NO-UNDO.
+DEFINE VARIABLE profit   LIKE TSC_ctrl.TSC_def_profit_margin FORMAT "->>>,>>>,>>9.99" NO-UNDO.
+DEFINE VARIABLE zone     LIKE TSC_ctrl.TSC_zone_modifier FORMAT "$->>>,>>>,>>9.99" NO-UNDO.
+DEFINE VARIABLE rpoint   LIKE TSC_ctrl.TSC_rounding_point NO-UNDO.                                                  /* 1dot1 */
+DEFINE VARIABLE rvalue   LIKE TSC_ctrl.TSC_rounding_value NO-UNDO.                                                  /* 1dot1 */
+DEFINE VARIABLE opoint   LIKE TSC_ctrl.TSC_overtime_point NO-UNDO.
+DEFINE VARIABLE orate    LIKE TSC_ctrl.TSC_overtime_rate  NO-UNDO.
+DEFINE VARIABLE pay      LIKE TSC_ctrl.TSC_pay_period NO-UNDO.
+DEFINE VARIABLE salary   LIKE TSC_ctrl.TSC_salary NO-UNDO.
+DEFINE VARIABLE act      AS   CHARACTER NO-UNDO.
+
+DEFINE VARIABLE p1 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+DEFINE VARIABLE p2 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+DEFINE VARIABLE p3 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+DEFINE VARIABLE p4 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+
+DEFINE VARIABLE v1 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+DEFINE VARIABLE v2 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+DEFINE VARIABLE v3 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+
+DEFINE VARIABLE o1 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+DEFINE VARIABLE o2 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+DEFINE VARIABLE o3 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+
+DEFINE VARIABLE r1 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+DEFINE VARIABLE r2 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+DEFINE VARIABLE r3 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+
+DEFINE VARIABLE pp1 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+DEFINE VARIABLE pp2 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+DEFINE VARIABLE pp3 AS CHARACTER INITIAL "" NO-UNDO.                                                                 /* 1dot1 */
+
+ASSIGN 
+    baserate = DECIMAL(get-value("h-baserate"))
+    profit   = DECIMAL(get-value("h-profit"))
+    zone     = DECIMAL(get-value("h-zone"))
+    rpoint   = get-value("h-rpoint")                                                                                 /* 1dot1 */
+    rvalue   = DECIMAL(get-value("h-rvalue"))                                                                       /* 1dot1 */
+    opoint   = get-value("h-opoint")
+    orate    = DECIMAL(get-value("h-orate"))
+    pay      = get-value("h-pay")
+    salary   = INTEGER(get-value("h-salary"))
+    act      = get-value("h-act").
+    
+IF act = "" THEN 
+    act = "INITIAL".
+    
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO: 
+        
+        FIND FIRST TSC_ctrl NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE TSC_ctrl THEN 
+            ASSIGN 
+                baserate = TSC_ctrl.TSC_base_rate
+                profit = TSC_ctrl.TSC_def_profit_margin
+                zone = TSC_ctrl.TSC_zone_modifier
+                rpoint = TSC_ctrl.TSC_rounding_point                                                                 /* 1dot1 */       
+                rvalue = TSC_ctrl.TSC_rounding_value                                                                /* 1dot1 */
+                opoint = TSC_ctrl.TSC_overtime_point
+                orate = TSC_ctrl.TSC_overtime_rate
+                pay = TSC_ctrl.TSC_pay_period
+                salary = TSC_ctrl.TSC_salary.
+                
+        IF rpoint = "PER_ENTRY" THEN                                                                                 /* 1dot1 */       
+            ASSIGN p1 = "CHECKED".                                                                                  /* 1dot1 */        
+        ELSE IF rpoint = "DAILY" THEN                                                                                /* 1dot1 */        
+            ASSIGN p2 = "CHECKED".                                                                                  /* 1dot1 */                
+        ELSE IF rpoint = "WEEKLY" THEN                                                                               /* 1dot1 */        
+            ASSIGN p3 = "CHECKED".                                                                                  /* 1dot1 */        
+        ELSE IF rpoint = "PER_PERIOD" THEN                                                                           /* 1dot1 */        
+            ASSIGN p4 = "CHECKED".                                                                                  /* 1dot1 */ 
+                   
+        IF rvalue = 0 THEN                                                                                          /* 1dot1 */        
+            ASSIGN v1 = "CHECKED".                                                                                  /* 1dot1 */            
+        ELSE IF rvalue = .25 THEN                                                                                   /* 1dot1 */        
+            ASSIGN v2 = "CHECKED".                                                                                  /* 1dot1 */           
+        ELSE IF rvalue = .5 THEN                                                                                    /* 1dot1 */        
+            ASSIGN v3 = "CHECKED".                                                                                  /* 1dot1 */
+            
+        IF opoint = "DAILY" THEN                                                                                    /* 1dot1 */        
+            ASSIGN o1 = "CHECKED".                                                                                  /* 1dot1 */            
+        ELSE IF opoint = "WEEKLY" THEN                                                                              /* 1dot1 */        
+            ASSIGN o2 = "CHECKED".                                                                                  /* 1dot1 */           
+        ELSE IF opoint = "PER_PERIOD" THEN                                                                          /* 1dot1 */        
+            ASSIGN o3 = "CHECKED".                                                                                  /* 1dot1 */
+
+        IF orate = 1 THEN                                                                                          /* 1dot1 */        
+            ASSIGN r1 = "CHECKED".                                                                                  /* 1dot1 */            
+        ELSE IF orate = 1.5 THEN                                                                                   /* 1dot1 */        
+            ASSIGN r2 = "CHECKED".                                                                                  /* 1dot1 */           
+        ELSE IF orate = 2 THEN                                                                                    /* 1dot1 */        
+            ASSIGN r3 = "CHECKED".                                                                                  /* 1dot1 */
+
+        IF pay = "WEEKLY" THEN                                                                                          /* 1dot1 */        
+            ASSIGN pp1 = "CHECKED".                                                                                  /* 1dot1 */            
+        ELSE IF pay = "BIWEEKLY" THEN                                                                                   /* 1dot1 */        
+            ASSIGN pp2 = "CHECKED".                                                                                  /* 1dot1 */           
+        ELSE IF pay = "BIMONTHLY" THEN                                                                                    /* 1dot1 */        
+            ASSIGN pp3 = "CHECKED".                                                                                  /* 1dot1 */
+            
+      {&OUT}
+        "<form>" SKIP 
+        "<div class='row'>" skip
+        "   <div class='grid_4'></div>" skip
+        "       <div class='grid_4'>" skip             
+        "               <div class='table_col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='2'>Time Sheet Control Maintenance</th>" skip
+        "                       </tr>" skip                                                                         /* 1dot1 */
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Base Rate</td>" skip
+        "                           <td>$<input type='decimal' name='h-baserate' value='" baserate "'></td>" skip
+        "                       </tr>" skip                                                                         /* 1dot1 */
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Profit Margin</td>" skip
+        "                           <td><input type='decimal' name='h-profit' value='" profit "'>%</td>" skip
+        "                       </tr>" skip                                                                         /* 1dot1 */
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Zone Modifier</td>" skip
+        "                           <td>$<input type='decimal' name='h-zone' value='" zone "'></td>" skip
+        "                       </tr>" skip                                                                         /* 1dot1 */
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Rounding Point</td>" skip              
+        "                           <td><input type='radio' name='h-rpoint' value='PER_ENTRY' " p1 ">Per Entry</input><BR>" skip   /* 1dot1 */
+        "                           <input type='radio' name='h-rpoint' value='DAILY' " p2 ">Daily</input><BR>" skip               /* 1dot1 */
+        "                           <input type='radio' name='h-rpoint' value='WEEKLY' " p3 ">Weekly</input><BR>" skip             /* 1dot1 */
+        "                           <input type='radio' name='h-rpoint' value='PER_PERIOD' " p4 ">Per Period</input></td>" skip    /* 1dot1 */       
+        "                       </tr>" skip                                                                         /* 1dot1 */
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Rounding Value</td>" skip                                                   /* 1dot1 */                    
+        "                           <td><input type='radio' name='h-rvalue' value='0' " v1 ">None</input><BR>" skip        /* 1dot1 */
+        "                           <input type='radio' name='h-rvalue' value='.25' " v2 ">15 Minutes</input><BR>" skip     /* 1dot1 */
+        "                           <input type='radio' name='h-rvalue' value='.5' " v3 ">30 Minutes</input></td>" skip    /* 1dot1 */                        
+        "                       </tr>" skip 
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Overtime Point</td>" skip                                                   /* 1dot1 */                    
+        "                           <td><input type='radio' name='h-opoint' value='DAILY' " o1 ">Daily</input><BR>" skip               /* 1dot1 */
+        "                           <input type='radio' name='h-opoint' value='WEEKLY' " o2 ">Weekly</input><BR>" skip             /* 1dot1 */
+        "                           <input type='radio' name='h-opoint' value='PER_PERIOD' " o3 ">Per Period</input></td>" skip    /* 1dot1 */             
+        "                       </tr>" skip 
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Overtime Rate</td>" skip                                                   /* 1dot1 */                    
+        "                           <td><input type='radio' name='h-orate' value='1' " r1 ">No Increase</input><BR>" skip        /* 1dot1 */
+        "                           <input type='radio' name='h-orate' value='1.5' " r2 ">1.5x</input><BR>" skip     /* 1dot1 */
+        "                           <input type='radio' name='h-orate' value='2' " r3 ">2x</input></td>" skip    /* 1dot1 */                        
+        "                       </tr>" skip  
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Pay Period</td>" skip                                                   /* 1dot1 */                    
+        "                           <td><input type='radio' name='h-pay' value='WEEKLY' " pp1 ">Weekly</input><BR>" skip        /* 1dot1 */
+        "                           <input type='radio' name='h-pay' value='BIWEEKLY' " pp2 ">Biweekly</input><BR>" skip     /* 1dot1 */
+        "                           <input type='radio' name='h-pay' value='BIMONTHLY' " pp3 ">Bimonthly</input></td>" skip    /* 1dot1 */                        
+        "                       </tr>" skip   
+        "                       <tr>" skip                                                                        
+        "                           <td>Full Time for Salary</td>" skip
+        "                           <td><input type='number' name='h-salary' value='" salary "'> Hours/Week</td>" skip
+        "                       </tr>" skip                    
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_4'></div>" skip
+        "</div>" skip  
+        "<BR>" SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn'>Update Controls</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</div>" SKIP.
+        
+    END. /* initial */
+    WHEN "UPDATE" THEN DO: 
+        
+        FIND FIRST TSC_ctrl EXCLUSIVE-LOCK NO-ERROR.
+        
+        IF NOT AVAILABLE (TSC_ctrl) THEN 
+        
+        CREATE TSC_ctrl.
+        
+        ASSIGN 
+            TSC_ctrl.TSC_base_rate = baserate
+            TSC_ctrl.TSC_def_profit_margin = profit
+            TSC_ctrl.TSC_zone_modifier = zone 
+            TSC_ctrl.TSC_rounding_point = rpoint                                                                    /* 1dot1 */
+            TSC_ctrl.TSC_rounding_value = rvalue                                                                    /* 1dot1 */
+            TSC_ctrl.TSC_overtime_point = opoint
+            TSC_ctrl.TSC_overtime_rate = orate
+            TSC_ctrl.TSC_pay_period = pay
+            TSC_ctrl.TSC_salary = salary.
+        
+       {&OUT}
+        "<form>" SKIP 
+        "<div class='row'>" skip
+        "   <div class='grid_4'></div>" skip
+        "       <div class='grid_4'>" skip             
+        "               <div class='table_col'>" skip
+        "                   <table>" skip
+        "                       <tr>" skip
+        "                           <th colspan='2'>Time Sheet Control Maintenance</th>" skip
+        "                       </tr>" skip      
+        "                       <tr>" skip
+        "                           <td>Base Rate</td>" skip
+        "                           <td>" TSC_ctrl.TSC_base_rate FORMAT "$->>>,>>>,>>9.99" "</td>" skip
+        "                       </tr>" skip                                                                         /* 1dot1 */
+        "                       <tr>" skip                                                                          /* 1dot1 */        
+        "                           <td>Profit  Margin</td>" skip
+        "                           <td>" TSC_ctrl.TSC_def_profit_margin FORMAT "->>>,>>>,>>9.99" "%</td>" skip
+        "                       </tr>" skip                                                                         /* 1dot1 */
+        "                       <tr>" skip                                                                          /* 1dot1 */        
+        "                           <td>Zone Modifier</td>" skip
+        "                           <td>" TSC_ctrl.TSC_zone_modifier FORMAT "$->>>,>>>,>>9.99" "</td>" skip
+        "                       </tr>" skip                                                                         /* 1dot1 */
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Rounding Point</td>" skip                                                   /* 1dot1 */
+        "                           <td>" TSC_ctrl.TSC_rounding_point "</td>" skip                                  /* 1dot1 */        
+        "                       </tr>" skip                                                                         /* 1dot1 */
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Rounding Value</td>" SKIP.                                                  /* 1dot1 */                    
+ 
+        IF TSC_ctrl.TSC_rounding_value = 0 THEN                                                                     /* 1dot1 */    
+            {&OUT}                                                                                                  /* 1dot1 */
+        "                           <td>None</td>" SKIP.                                                            /* 1dot1 */    
+        
+        ELSE IF TSC_ctrl.TSC_rounding_value = .25 THEN                                                                                                        /* 1dot1 */
+            {&OUT}                                                                                                  /* 1dot1 */
+        "                           <td>15 Minutes</td>" SKIP.                         /* 1dot1 */              
+         ELSE IF TSC_ctrl.TSC_rounding_value = .5 THEN                                                                                                        /* 1dot1 */
+            {&OUT}                                                                                                  /* 1dot1 */
+        "                           <td>30 Minutes</td>" SKIP.                         /* 1dot1 */       
+                 
+        {&OUT}                                                                                                      /* 1dot1 */
+        "                       </tr>" skip      
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Overtime Point</td>" skip                                                   /* 1dot1 */
+        "                           <td>" TSC_ctrl.TSC_overtime_point "</td>" skip                                  /* 1dot1 */        
+        "                       </tr>" skip                                                                         /* 1dot1 */
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Overtime Rate</td>" skip                                                   /* 1dot1 */
+        "                           <td>" TSC_ctrl.TSC_overtime_rate "</td>" skip                                  /* 1dot1 */        
+        "                       </tr>" skip                                                                         /* 1dot1 */
+        "                       <tr>" skip                                                                          /* 1dot1 */
+        "                           <td>Pay Period</td>" skip                                                   /* 1dot1 */
+        "                           <td>" TSC_ctrl.TSC_pay_period "</td>" skip                                  /* 1dot1 */        
+        "                       </tr>" skip
+        "                       <tr>" skip                                                                        
+        "                           <td>Full Time for Salary</td>" skip
+        "                           <td>" TSC_ctrl.TSC_salary " Hours/Week</td>" skip
+        "                       </tr>" skip                                                                                 /* 1dot1 */
+        "                   </table>" skip
+        "               </div>" skip                 
+        "       </div>" skip
+        "   </div class='grid_4'></div>" skip
+        "</div>" skip  
+        "<BR>" SKIP
+        "<div class='row'>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Change Controls</BUTTON></div>" SKIP
+        "   <div class='grid_5'> </DIV>" SKIP
+        "</div>" SKIP. 
+            
+    END. /* update */    
+END CASE.  
+</SCRIPT>
+</BODY>
+</HTML>

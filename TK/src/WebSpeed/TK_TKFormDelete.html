@@ -1,0 +1,208 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+<TITLE>WebSpeed Script</TITLE>
+
+<META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="1.5">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="05/Nov/15">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+ * File:TK_TKFormDelete.html
+ * Description:  
+ * Created:Mark Jacobs (a long time ago)
+ *-------------------------------------------------------------------
+ * Revision History:    
+ * ---------------------
+ * 1.2 - written by DOUG LUTTRELL on 01/Jun/15.  Added code to support the 
+ *       pathing workaround.  Marked by 1dot2. 
+ * 1.4 - Edited run statements To RUN VALUE(SEARCH("*.r")) 9/30/15. Marked with 1dot4.
+ * 1.5-  Written by MARK JACOBS on 05/Nov/15. Removed all the old formatting and replace them with the grid class and button class.   
+ *           Removed hyperlinks and replace them with buttons. Marked by 1dot5.
+ * 1.6 - written by Jacob Luttrell on 12/Feb/16. Adjusted testtype to test_type to match database
+ *          marked by 1dot6
+ *-------------------------------------------------------------------- */
+
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript">
+
+{../depot/src/WebSpeed/menuname.i}.
+
+DEFINE VARIABLE codetorun       AS CHARACTER                        NO-UNDO.    /* 1dot2 */  
+DEFINE VARIABLE depotcode       AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+DEFINE VARIABLE drive_letter    AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+         
+ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1).                /* 1dot2 */
+
+    DEFINE VARIABLE typ        LIKE TK_mstr.TK_test_type  NO-UNDO.              /* 1dot6 */
+    DEFINE VARIABLE domint     LIKE TK_mstr.TK_domestic NO-UNDO.
+    DEFINE VARIABLE prof       LIKE TK_mstr.TK_prof NO-UNDO.
+    DEFINE VARIABLE qty          AS INTEGER NO-UNDO. 
+    DEFINE VARIABLE act          AS INTEGER NO-UNDO. /* user feedback */
+    DEFINE VARIABLE TKnum      LIKE Tk_ID NO-UNDO. /* typ & seq */
+    DEFINE VARIABLE seq        LIKE TK_mstr.TK_ID NO-UNDO.       /*????*/  
+    DEFINE VARIABLE cout         AS INTEGER NO-UNDO.
+    DEFINE VARIABLE ddate        AS DATE FORMAT "99/99/9999" NO-UNDO.
+    DEFINE VARIABLE who          AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE kit        LIKE TK_mstr.TK_ID NO-UNDO.
+    DEFINE VARIABLE tk-status  LIKE TK_mstr.TK_status NO-UNDO. 
+    DEFINE VARIABLE o-act        AS INTEGER NO-UNDO.
+    /*------------------------------------------------------------*/
+    DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.    /*---< ITfeedback (YES or NO)  */
+    /* -----------------------------------------------------------*/
+    DEFINE VARIABLE whattorun AS CHARACTER NO-UNDO.
+    
+    DEFINE VARIABLE test-seq LIKE TK_mstr.TK_test_seq NO-UNDO.
+    
+        ASSIGN
+             kit       =   get-value ("testkit")
+             whattorun =   get-value ("whattorun")
+             test-seq  =   INTEGER (get-value("h-test-seq")). 
+</SCRIPT>
+
+ <!--         
+    <H1 style="text-align: center">
+        <BR>TestKit Tracker <SPAN style="COLOR: #0000FF;">Test Kit Deleted Result Page </SPAN><BR>
+    </H1>
+    <HR style="width: 70%">
+ -->    
+<!-- ---------------------------------- End of Header --------------------------------------------------------->  
+<br></br>
+   
+<SCRIPT LANGUAGE="SpeedScript">
+
+                   IF ITfeedback = YES THEN     
+                     {&OUT} "<p>whattorun-- " whattorun "<p>" SKIP.
+                     
+                  
+        FIND FIRST TK_mstr WHERE tk_id = kit NO-LOCK.   
+        
+            IF AVAILABLE (TK_mstr) THEN
+                ASSIGN
+					seq       = TK_mstr.TK_ID        
+					typ       = TK_mstr.TK_test_type                           /* 1dot6 */         
+					domint    = TK_mstr.TK_domestic     
+					prof      = TK_mstr.TK_prof                                  
+					TKnum     = TK_mstr.Tk_ID           
+					ddate     = TK_mstr.TK_create_date   
+					who       = TK_mstr.TK_created_by
+					tk-status = TK_mstr.TK_status. 
+					
+/*		  {../datahub/src/webspeed/pathfix.i "ext-TestKit-delete.r"}. /* 1dot2 */                       			*/
+                        
+/*          RUN "../depot/rcode/ext-TestKit-delete.r"*/               /* 1dot2 */
+/*            RUN VALUE(depotcode)                                      /* 1dot2 */*/
+            RUN VALUE(SEARCH("ext-TestKit-delete.r"))   /* 1dot4 */
+                           (TKnum,
+                            OUTPUT act).           
+              
+                  IF act = 1 THEN DO:
+                      
+{&OUT}
+"<br>" skip
+"<DIV class='row'>" SKIP                        /* 1dot5*/
+"<DIV class='grid_1'> </DIV>" SKIP
+"<DIV class='grid_10'>" SKIP.   
+                   
+ </SCRIPT>
+ <!-- 
+ <div>
+    <center>
+	 <H2><SPAN style="COLOR: #E60000;">You have successfully deleted this Record</SPAN></H2>              
+                
+     <h3>If you need to Restore this Record click the Restore Button before closing this Window</h3>         
+    </center>
+  </div> 
+  --> 
+  <div class ="table_report" > 
+           <table> 
+                <thead>
+                      <tr>
+                        <th colspan=7>Record Deleted</th>
+                      </tr>     
+                      <tr>
+                        <td nowrap>Testkit ID</td>
+                        <td>Testkit Type</td>
+                        <td>Testkit Sequence</td>
+                        <td>Domestic</td>
+                        <td>Professional</td>
+                        <td>Date Created</td>
+                        <td nowrap>Created By</td>
+                    </tr>
+                 </thead>
+                    <tr> 
+                        <td> `kit` </td>
+                        <td> `typ` </td>
+                        <td> `test-seq` </td>
+                        <td> `domint` </td>                                                                  
+                        <td> `prof`  </td>                     
+                        <td> `ddate`  </td>                                                        
+                        <td> `who`  </td>                                             
+
+           </table>
+<SCRIPT LANGUAGE="SpeedScript">           
+{&OUT}                                                          /* 1dot5 */
+"</DIV>         <!-- end of grid_10 -->" SKIP
+"<DIV class='grid_1'> </DIV>" SKIP  
+"</DIV>     <!-- end of row -->" SKIP.         
+</SCRIPT>           
+           </div>         
+                  <center>
+                   <h3>If you need to Restore this Record click the Restore Button before closing this Window</h3>
+                   </center>
+                     <FORM ACTION="TK_TestkitRestore.r" method="post"> 
+                      
+                             <input type="hidden" name="whattorun" value="`whattorun`"> 
+                       
+					     <!-- <td><input type="hidden" name="t-seq" value="`seq`"> </td></td>
+					         <td><input type="hidden" name="t-typ" value="`typ`"> </td></td>
+					         <td><input type="hidden" name="t-domint" value="`domint`"> </td></td>
+					     -->
+					         <td><input type="hidden" name="h-test-seq" value="`test-seq`"></td>
+					         <td><input type="hidden" name="t-TKnum" value="`TKnum`"> </td></td> 
+					         <td><input type="hidden" name="t-sold" value="`tk-status`"> </td></td>
+					         
+					         <!-- 
+					         <td><input type="hidden" name="t-ddate" value="`ddate`"> </td></td>
+					         <td><input type="hidden" name="t-who" value="`who`"> </td></td>
+					         
+					         <td><input type="hidden" name="t-prof" value="`prof`"> </td></td> 
+					         -->
+<SCRIPT LANGUAGE="SpeedScript">	
+{&OUT}                                          /* 1dot5 */
+"<br>" skip
+"<div class='row'>" SKIP
+"   <div class='grid_3'> </DIV>" SKIP
+"   <div class='grid_2'><BUTTON type='submit' name='UnDo' value='Restore this Record' class='btn'>Restore this Record</BUTTON></div>" SKIP
+"</FORM>" skip
+"   <div class='grid_2'> </DIV>" SKIP
+
+"   <div class='grid_2'>" skip
+"<FORM ACTION='TK_TKKitdeleteEdit.r method='post' ''>" skip 
+"   <button type='submit' name='whattorun' value='1.2' class='btn'>NEW Testkit DELETE</BUTTON></div>" SKIP
+"</FORM>" skip
+"</div>" SKIP
+"<BR>" SKIP.				         
+					          
+ 
+
+                END. /* if act = 1 then do: */   
+ </SCRIPT>
+                      
+</BODY>
+</HTML>         
+ 

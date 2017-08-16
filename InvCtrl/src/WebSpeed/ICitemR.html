@@ -1,0 +1,224 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<TITLE>Item Report</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'> 
+    <META NAME='CREATE_DATE' CONTENT="11/Sept/2016">
+    <META NAME='LAST_UPDATED' CONTENT="18/Oct/2016">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------ 
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-item LIKE item_mstr.item_nbr NO-UNDO.
+DEFINE VARIABLE v-code LIKE item_mstr.item_code NO-UNDO.
+DEFINE VARIABLE v-status LIKE item_mstr.item_status NO-UNDO.
+DEFINE VARIABLE v-loc-type LIKE item_mstr.item_req_loc_type NO-UNDO.
+DEFINE VARIABLE v-group LIKE item_mstr.item_group NO-UNDO.
+DEFINE VARIABLE v-abc-class LIKE item_mstr.item_abc_class NO-UNDO.
+DEFINE VARIABLE v-prod-line LIKE item_mstr.item_prod_line NO-UNDO.
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act         = html-encode(get-value("h-act"))
+    v-item      = html-encode(get-value("h-item"))
+    v-code      = html-encode(get-value("h-code"))
+    v-status    = html-encode(get-value("h-status"))
+    v-loc-type  = html-encode(get-value("h-loc-type"))
+    v-group     = html-encode(get-value("h-group"))
+    v-abc-class = html-encode(get-value("h-abc-class"))
+    v-prod-line = html-encode(get-value("h-prod-line")).
+   
+IF act= "" THEN 
+    act = "INITIAL".
+
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP
+            "<DIV class='grid_10'>" SKIP   
+            "<div class='table_2col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=4>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Item Number</td>" skip
+            "           <td colspan=3 ><input type='text' name='h-item' value='" v-item "' /></td>" skip          
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Code</td>" skip
+            "           <td><input type='text' name='h-code' value='" v-code "' /></td>" skip
+            "           <td>Status</td>" skip
+            "           <td><input type='text' name='h-status' value='" v-status "' /></td>" skip            
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Required Location Type</td>" skip
+            "           <td><input type='text' name='h-loc-type' value='" v-loc-type "' /></td>" skip
+            "           <td>Group</td>" skip
+            "           <td><input type='text' name='h-group' value='" v-group "' /></td>" skip            
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>ABC Class</td>" skip
+            "           <td><input type='text' name='h-abc-class' value='" v-abc-class "' /></td>" skip
+            "           <td>Production Line</td>" skip
+            "           <td><input type='text' name='h-prod-line' value='" v-prod-line "' /></td>" skip            
+            "       </tr>" SKIP(1)
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_1'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP                                         
+            "<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Search' class='btn'>Search</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+			"   <div class='grid_1'> </DIV>" SKIP
+			"   <div class='grid_1'></div>" SKIP           
+			"   <div class='grid_1'> </DIV>" SKIP
+			"</div>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        {&OUT}
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='11'>Item Master Report</TH>" SKIP    
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "               <td>Item Number</td>" SKIP
+            "               <td>Code</td>" SKIP
+            "               <td>Status</td>" SKIP
+            "               <td>Required Location Type</td>" SKIP
+            "               <td>Cycle Interval</td>" SKIP
+            "               <td>Group</td>" SKIP
+            "               <td>ABC Class</td>" SKIP
+            "               <td>First Description</td>" SKIP
+            "               <td>Minimum Quantity</td>" SKIP
+            "               <td>Maximum Quantity</td>" SKIP
+            "               <td>Order Mult</td>" SKIP
+/*            "               <td>Second Description</td>" SKIP*/
+/*            "               <td>Production Line</td>" SKIP   */
+/*            "               <td>Cycle Date</td>" SKIP        */
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1).
+            
+        FOR EACH item_mstr WHERE 
+            (item_mstr.item_nbr BEGINS v-item OR v-item = "") AND
+            (item_mstr.item_code BEGINS v-code OR v-code = "") AND
+            (item_mstr.item_status BEGINS v-status OR v-status = "") AND
+            (item_mstr.item_req_loc_type BEGINS v-loc-type OR v-loc-type = "") AND
+            (item_mstr.item_group BEGINS v-group OR v-group = "") AND
+            (item_mstr.item_abc_class BEGINS v-abc-class OR v-abc-class = "") AND
+            (item_mstr.item_prod_line BEGINS v-prod-line OR v-prod-line = "") AND
+            item_mstr.item_deleted = ?
+                NO-LOCK BY item_mstr.item_nbr 
+                BY item_mstr.item_code 
+                BY item_mstr.item_status 
+                BY item_mstr.item_req_loc_type 
+                BY item_mstr.item_group
+                BY item_mstr.item_abc_class 
+                BY item_mstr.item_prod_line:
+            
+            {&OUT}
+                "           <tr>" SKIP
+                "               <td><a href=~"../../InvCtrl/rcode/ICitem_maintU.r?whattorun=".
+                
+            {menu-hyperlinkR.i ICitem_maintU.r}.
+                
+            {&OUT} "&h-item_nbr=" item_mstr.item_nbr "&h-act=Edit ~">" item_mstr.item_nbr "</a></td>" SKIP
+                "               <td>" item_mstr.item_code "</td>" SKIP
+                "               <td>" item_mstr.item_status "</td>" SKIP
+                "               <td>" item_mstr.item_req_loc_type "</td>" SKIP
+                "               <td>" item_mstr.item_cycle_interval "</td>" SKIP
+                "               <td>" item_mstr.item_group "</td>" SKIP
+                "               <td>" item_mstr.item_abc_class "</td>" SKIP
+                "               <td>" item_mstr.item_desc1 "</td>" SKIP
+/*                "               <td>" item_mstr.item_desc2 "</td>" SKIP*/
+                "               <td>" item_mstr.item_min_qoh "</td>" SKIP
+/*                "               <td>" item_mstr.item_prod_line "</td>" SKIP*/
+                "               <td>" item_mstr.item_max_qoh "</td>" SKIP
+/*                "               <td>" item_mstr.item_cycle_date "</td>" SKIP*/
+                "               <td>" item_mstr.item_order_mult "</td>" SKIP
+                "           </tr>" SKIP.
+
+        END. /* 4ea. */
+        
+        {&OUT}          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='11'>END OF REPORT</TD>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<h2>Could not find act " act ".</h2>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>
