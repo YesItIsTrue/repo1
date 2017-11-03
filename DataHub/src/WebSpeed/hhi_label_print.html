@@ -217,7 +217,7 @@ FOR EACH patient_mstr       WHERE patient_mstr.patient_verified = LOGICAL("yes")
     
     END.  /*** do put statement ***/   
 
-  RUN "../depot/rcode/upcreate-TK-mstr.r"
+  RUN VALUE(SEARCH("upcreate-TK-mstr.r"))                                                   /* CODEHAUL */
     ( TK_mstr.TK_ID,              
       TK_mstr.TK_test_type,         
       ?,            

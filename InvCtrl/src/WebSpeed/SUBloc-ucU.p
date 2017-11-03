@@ -42,7 +42,7 @@ IF AVAILABLE (loc_mstr) THEN DO:
         loc_mstr.loc_def_status = i-loc-def-status
         loc_mstr.loc_type = i-loc-type
         loc_mstr.loc_prog_name = SOURCE-PROCEDURE:FILE-NAME
-        loc_mstr.loc_modified_by = USERID("InvCtrl")
+        loc_mstr.loc_modified_by = USERID("Modules")
         loc_mstr.loc_modified_date = TODAY.
 
 END. /*** of update path ***/
@@ -60,10 +60,10 @@ ELSE DO:
         loc_mstr.loc_desc = i-loc-desc
         loc_mstr.loc_def_status = i-loc-def-status
         loc_mstr.loc_type = i-loc-type
-        loc_mstr.loc_created_by = USERID("InvCtrl")
+        loc_mstr.loc_created_by = USERID("Modules")
         loc_mstr.loc_create_date = TODAY
         loc_mstr.loc_prog_name = SOURCE-PROCEDURE:FILE-NAME
-        loc_mstr.loc_modified_by = USERID("InvCtrl")
+        loc_mstr.loc_modified_by = USERID("Modules")
         loc_mstr.loc_modified_date = TODAY.
 
 END. /*** of creation path ***/

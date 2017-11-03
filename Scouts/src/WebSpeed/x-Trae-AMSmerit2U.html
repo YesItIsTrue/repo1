@@ -1,0 +1,1155 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <TITLE>Merit Badge Workshop 2</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="01/Sep/2017">
+    <META NAME='LAST_UPDATED' CONTENT="01/Sep/2017">   
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> 
+    
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+<style>
+/***** ****** W3CSS THEME FOR #66A97C ***** *****/
+.w3-theme-l5 {color:#000 !important; background-color:#f6faf7 !important}
+.w3-theme-l4 {color:#000 !important; background-color:#e0eee5 !important}
+.w3-theme-l3 {color:#000 !important; background-color:#c2dccb !important}
+.w3-theme-l2 {color:#000 !important; background-color:#a3cbb0 !important}
+.w3-theme-l1 {color:#000 !important; background-color:#84ba96 !important}
+.w3-theme-d1 {color:#fff !important; background-color:#589c6e !important}
+.w3-theme-d2 {color:#fff !important; background-color:#4e8a62 !important}
+.w3-theme-d3 {color:#fff !important; background-color:#447956 !important}
+.w3-theme-d4 {color:#fff !important; background-color:#3a684a !important}
+.w3-theme-d5 {color:#fff !important; background-color:#31563d !important}
+
+.w3-theme-light {color:#000 !important; background-color:#f6faf7 !important}
+.w3-theme-dark {color:#fff !important; background-color:#31563d !important}
+.w3-theme-action {color:#fff !important; background-color:#31563d !important}
+
+.w3-theme {color:#fff !important; background-color:#66a97c !important}
+.w3-text-theme {color:#66a97c !important}
+.w3-border-theme {border-color:#66a97c !important}
+
+.w3-hover-theme:hover {color:#fff !important; background-color:#66a97c !important}
+.w3-hover-text-theme {color:#66a97c !important}
+.w3-hover-border-theme:hover {border-color:#66a97c !important}
+
+.w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
+.w3-theme-background {color::#000 !important; background-color:#fff !important}
+.w3-theme-accent {color:#000 !important; background-color:#874D74 !important}
+.w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+.w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+
+</style>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+
+<script>
+
+$(document).ready(function(){
+    $("input:checkbox").click(function() {
+    var numOfThings = $("input:checkbox:checked").length;
+if (numOfThings == 2) {
+$("input:submit").attr("disabled", false); } else { $("input:submit").attr("disabled", true); }
+    });
+   
+});
+
+$(document).ready(function() {
+    $("input:checkbox").click(function() {
+        var numOfThings = $("input:checkbox:checked").length;
+        if (numOfThings == 2) {
+            $("button:submit").attr("disabled", false);
+            $("button:submit").removeClass("w3-grey");
+            $("button:submit").addClass("w3-theme-l2");
+            $("button:submit").css("box-shadow", "");
+        } else {
+            $("button:submit").attr("disabled", true);
+            $("button:submit").removeClass("w3-theme-l2");
+            $("button:submit").addClass("w3-grey");
+            $("button:submit").css("box-shadow", "none");
+        }
+    });
+
+});
+
+</script>
+
+<!-- <link rel="stylesheet" href="https://www.w3schools.com/lib/w3-theme-black.css"> -->
+
+</HEAD>
+
+<BODY class='w3-light-grey'>
+
+<SCRIPT LANGUAGE="SpeedScript">
+
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+        
+  -----------------------------------------------------------------
+    Revision History:
+    -----------------
+    1.0 - written by TRAE LUTTRELL on 01/Sept/2017. Copied the AMSmeritU.html 
+        that was used for the first Merit Badge Workshop 1.
+       P.S. I also just found out that while this was supposed to have to eight
+        meritbadges, it might only have 5 or 6...
+           
+                    
+  -------------------------------------------------------------------*/
+
+DEFINE VARIABLE x           AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE y           AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE act         AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE ITmessages   AS LOGICAL INITIAL NO       NO-UNDO.
+DEFINE VARIABLE error-message   AS CHARACTER            NO-UNDO.
+
+DEFINE VARIABLE v-lastname      LIKE people_mstr.people_lastname     NO-UNDO. 
+DEFINE VARIABLE v-firstname     LIKE people_mstr.people_firstname    NO-UNDO.
+DEFINE VARIABLE v-DOB           LIKE people_mstr.people_DOB     NO-UNDO.
+DEFINE VARIABLE v-html-DOB      AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-unit          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-people_id     AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-member        LIKE speop_shadow.speop_lds NO-UNDO.                                        /* 1dot1 */
+DEFINE VARIABLE v-troop         LIKE speop_shadow.speop_troop NO-UNDO.                                      /* 1dot1 */
+DEFINE VARIABLE v-stake         LIKE speop_shadow.speop_stake NO-UNDO.                                      /* 1dot1 */
+
+DEFINE VARIABLE v-addr_ID       LIKE people_mstr.people_addr_id NO-UNDO.    /** old address ID - need to remove - 1dot1 */
+DEFINE VARIABLE v-error         AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+DEFINE VARIABLE v-ran           AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+
+DEFINE VARIABLE v-created       AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+DEFINE VARIABLE v-updated       AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+DEFINE VARIABLE v-avail         AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+DEFINE VARIABLE v-success       AS LOGICAL NO-UNDO.                                                         /* 1dot1 */
+
+/*/* Meritbadge #1 */ DEFINE VARIABLE seat-Aviation                   AS INTEGER NO-UNDO.*/
+/*/* Meritbadge #2 */ DEFINE VARIABLE seat-CitizenshipInTheCommunity  AS INTEGER NO-UNDO.*/
+/*/* Meritbadge #3 */ DEFINE VARIABLE seat-CitizenshipInTheNation     AS INTEGER NO-UNDO.*/
+/*/* Meritbadge #4 */ DEFINE VARIABLE seat-Engineering                AS INTEGER NO-UNDO.*/
+/*/* Meritbadge #5 */ DEFINE VARIABLE seat-Moviemaking                AS INTEGER NO-UNDO.*/
+/*/* Meritbadge #6 */ DEFINE VARIABLE seat-Dentistry                  AS INTEGER NO-UNDO.*/
+/*/* Meritbadge #7 */ DEFINE VARIABLE seat-Golf                       AS INTEGER NO-UNDO.*/
+
+/* Meritbadge #1 */ DEFINE VARIABLE v-Aviation                      LIKE MB_mstr.MB_name  NO-UNDO.
+/* Meritbadge #2 */ DEFINE VARIABLE v-CitizenshipInTheCommunity     LIKE MB_mstr.MB_name  NO-UNDO.
+/* Meritbadge #3 */ DEFINE VARIABLE v-CitizenshipInTheNation        LIKE MB_mstr.MB_name  NO-UNDO.
+/* Meritbadge #4 */ DEFINE VARIABLE v-Engineering                   LIKE MB_mstr.MB_name  NO-UNDO.
+/* Meritbadge #5 */ DEFINE VARIABLE v-Moviemaking                   LIKE MB_mstr.MB_name  NO-UNDO.
+/* Meritbadge #6 */ DEFINE VARIABLE v-Dentistry                     LIKE MB_mstr.MB_name  NO-UNDO.
+/* Meritbadge #7 */ DEFINE VARIABLE v-Golf                          LIKE MB_mstr.MB_name  NO-UNDO.
+/* Meritbadge #8 */ DEFINE VARIABLE v-Art                           LIKE MB_mstr.MB_name  NO-UNDO.
+DEFINE VARIABLE c-MeritBadges       AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-badgechoice1      AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-badgechoice1_id   LIKE MB_mstr.MB_BSA_ID NO-UNDO.
+DEFINE VARIABLE v-badgechoice2      AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-badgechoice2_id   LIKE MB_mstr.MB_BSA_ID NO-UNDO.
+
+DEFINE VARIABLE v-foundone              AS LOGICAL NO-UNDO.                                                 /* 1dot1 */
+
+ASSIGN 
+    act                     = html-encode(get-value("h-act"))
+    v-lastname              = html-encode(get-value("h-lastname"))
+    v-firstname             = html-encode(get-value("h-firstname"))
+    v-html-DOB              = html-encode(get-value("h-DOB"))
+    v-people_id             = INTEGER(html-encode(get-value("h-people_ID")))
+    v-unit                  = html-encode(get-value("h-unit"))
+    v-stake                 = html-encode(get-value("h-stake"))
+    v-troop                 = INTEGER(html-encode(get-value("h-troop")))
+    
+    
+    v-CitizenshipInTheCommunity = html-encode(get-value("h-CitizenshipInTheCommunity"))
+    v-CitizenshipInTheNation    = html-encode(get-value("h-CitizenshipInTheNation"))
+    v-Art                       = html-encode(get-value("h-Art"))
+    v-Aviation                  = html-encode(get-value("h-Aviation"))
+    v-Dentistry                 = html-encode(get-value("h-Dentistry"))
+    v-Golf                      = html-encode(get-value("h-Golf"))
+                                           /* 1dot1 */
+    .
+
+IF v-stake = "" THEN 
+    v-stake = "Augusta".
+
+IF act= "" THEN 
+    act = "YouthInfo".
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-DOB, OUTPUT v-DOB).
+
+IF act = "Verification" THEN DO:
+    
+    DO:
+
+        ASSIGN c-MeritBadges = 0.
+    
+        IF v-Aviation <> "" THEN DO:  
+            ASSIGN c-MeritBadges = c-MeritBadges + 1.
+            IF v-badgechoice1 = "" THEN 
+                ASSIGN v-badgechoice1 = v-Aviation.
+            ELSE ASSIGN v-badgechoice2 = v-Aviation.
+        END. /*** Aviation ***/
+            
+        IF v-CitizenshipInTheCommunity <> "" THEN DO:  
+            ASSIGN c-MeritBadges = c-MeritBadges + 1.
+            IF v-badgechoice1 = "" THEN ASSIGN v-badgechoice1 = v-CitizenshipInTheCommunity.
+            ELSE ASSIGN v-badgechoice2 = v-CitizenshipInTheCommunity.
+        END. /*** CitizenshipInTheCommunity ***/
+        
+        IF v-CitizenshipInTheNation <> "" THEN DO:  
+            ASSIGN c-MeritBadges = c-MeritBadges + 1.
+            IF v-badgechoice1 = "" THEN ASSIGN v-badgechoice1 = v-CitizenshipInTheNation.
+            ELSE ASSIGN v-badgechoice2 = v-CitizenshipInTheNation.
+        END. /*** Communication ***/
+        
+        IF v-Dentistry <> "" THEN DO:  
+            ASSIGN c-MeritBadges = c-MeritBadges + 1.
+            IF v-badgechoice1 = "" THEN ASSIGN v-badgechoice1 = v-Dentistry.
+            ELSE ASSIGN v-badgechoice2 = v-Dentistry.
+        END. /*** Dentistry ***/
+        
+        IF v-Golf <> "" THEN DO:  
+            ASSIGN c-MeritBadges = c-MeritBadges + 1.
+            IF v-badgechoice1 = "" THEN ASSIGN v-badgechoice1 = v-Golf.
+            ELSE ASSIGN v-badgechoice2 = v-Golf.
+        END. /*** Golf ***/
+
+        IF c-MeritBadges = 2 THEN ASSIGN act= "Success".
+    
+        ELSE ASSIGN act = "WrongNumber".
+    
+    END. /***** meritbadge counter ****/
+    
+    DO: 
+    
+        /*************  Beginning 1dot1 --- had to join two tables together to do what it did before.   ****************/
+        
+        v-foundone = NO. 
+        
+        FOR FIRST speop_shadow, 
+            FIRST people_mstr WHERE people_mstr.people_lastname = v-lastname AND 
+                people_mstr.people_firstname = v-firstname AND 
+                people_mstr.people_DOB = v-dob NO-LOCK:                                                                  
+                    
+              /************  commented out in 1dot1 *********************
+        FIND people_shadow WHERE 
+            people_shadow.people_lastname = v-lastname AND 
+            people_shadow.people_firstname = v-firstname AND 
+            people_shadow.people_DOB = v-dob
+            EXCLUSIVE-LOCK NO-ERROR.
+                
+        IF AVAILABLE (people_shadow) THEN DO:
+         
+         *******************  end of 1dot1 comment *******************/
+                
+                
+                /*******************************  BEGIN 1dot1 code  ***********************/
+                
+            ASSIGN 
+                v-people_id                 = people_mstr.people_id                                                 /* 1dot1 */
+                speop_shadow.speop_ward     = IF v-unit <> "" THEN v-unit ELSE speop_shadow.speop_ward              /* 1dot1 */ 
+                speop_shadow.speop_troop    = IF v-troop <> 0 THEN v-troop ELSE speop_shadow.speop_troop           /* 1dot1 */
+                speop_shadow.speop_stake    = IF v-stake <> "" THEN v-stake ELSE speop_shadow.speop_stake           /* 1dot1 */
+                v-foundone                  = YES.                                                                  /* 1dot1 */ 
+            
+        END. /*** available people_shadow ***/      /**** of for first speop_shadow, etc. *****/
+        
+        IF v-foundone = NO THEN DO:
+         
+         
+            RUN VALUE(SEARCH("SUBpeop-datefindR.r")) ("",                       /* Prefix */
+                                                      v-firstname,              /* Firstname */
+                                                      "",                       /* Middle Name */
+                                                      v-lastname,               /* Lastname */
+                                                      "",                       /* Suffix */
+                                                      v-dob,                    /* DOB */
+                                                      OUTPUT v-people_ID,       /* People ID */
+                                                      OUTPUT v-addr_ID,         /* old address ID --- need to remove */
+                                                      OUTPUT v-error,           /* returned error */
+                                                      OUTPUT v-ran).            /* did it run? */
+                                                      
+            IF v-ran = YES AND v-error = NO AND v-people_ID = 0 THEN DO: 
+                
+                RUN VALUE(SEARCH("SUBpeop-ucU.r")) (v-people_ID,            /* People ID */ 
+                                                    v-firstname,            /* Firstname */
+                                                    "",                     /* Middle Name */
+                                                    v-lastname,             /* Lastname */
+                                                    "",                     /* Prefix */
+                                                    "",                     /* Suffix */
+                                                    "",                     /* Company */
+                                                    "",                     /* Gender */
+                                                    "",                     /* Home Phone */
+                                                    "",                     /* Work Phone */
+                                                    "",                     /* Cell Phone */
+                                                    "",                     /* Fax Phone */
+                                                    "",                     /* Email */
+                                                    "",                     /* Email 2 */
+                                                    "",                     /* Address ID ---- will need to be replaced -- pal_list */
+                                                    "",                     /* Contact ID ---- will need to be replaced -- plink_mstr */
+                                                    v-DOB,                  /* DOB */
+                                                    "",                     /* Address ID 2 -- will need to be replaced -- pal_list */
+                                                    "",                     /* Preferred Name */
+                                                    "",                     /* Title */
+                                                    OUTPUT v-people_ID,     /* People_ID */
+                                                    OUTPUT v-created,       /* people_mstr created */
+                                                    OUTPUT v-updated,       /* people_mstr updated */
+                                                    OUTPUT v-avail,         /* people_mstr available */
+                                                    OUTPUT v-success).      /* update successful? */
+                                                    
+                IF v-success = YES THEN DO:
+                    
+                    v-success = NO. 
+                    
+                    FIND speop_shadow WHERE speop_shadow.speop_ID = v-people_ID 
+                        EXCLUSIVE-LOCK NO-ERROR.
+                        
+                    IF NOT AVAILABLE (speop_shadow) THEN DO:
+                        
+                        CREATE speop_shadow.
+                        ASSIGN 
+                            speop_shadow.speop_ID           = v-people_ID
+                            speop_shadow.speop_create_date  = TODAY 
+                            speop_shadow.speop_created_by   = USERID("CUSTOM")
+                            speop_shadow.speop_prog_name    = THIS-PROCEDURE:FILE-NAME.
+                            
+                    END.  /** of if not avail speop_shadow **/
+                    
+                    ASSIGN 
+                        speop_shadow.speop_ward     = v-unit
+                        speop_shadow.speop_stake    = v-stake
+                        speop_shadow.speop_LDS      = v-member
+                        speop_shadow.speop_troop    = v-troop.
+                        
+                END. /*** of if v-success = yes ---- create a people_mstr ***/
+ 
+                ELSE DO: 
+                    
+                    {&OUT} "<H1>ERROR! Unable to update people_mstr!  Contact <a href='mailto:solsource.techsupport@mysolsource.com'>Solsource Techsupport</a> immediately!</H1>".
+        
+                END.  /** of else do --- unable to update people_mstr **/
+        
+            END.  /*** of people_mstr successfully found ***/
+            
+            ELSE DO:
+                {&OUT} "<H1>ERROR! Random error condition occurred!  Contact <a href='mailto:solsource.techsupport@mysolsource.com'>Solsource Techsupport</a> immediately!</H1>".
+            END.  /** of else do --- random error condition **/
+        
+        END.  /*** of if v-foundone = no ***/
+        
+        ELSE DO:                                                                                                    /* 1dot1 */
+            
+            v-foundone = NO.                                                                                        /* 1dot1 */
+            
+            IF v-success = YES THEN DO:
+                    
+                v-success = NO. 
+                
+                FIND speop_shadow WHERE speop_shadow.speop_ID = v-people_ID 
+                    EXCLUSIVE-LOCK NO-ERROR.
+                    
+                IF NOT AVAILABLE (speop_shadow) THEN DO:
+                    
+                    CREATE speop_shadow.
+                    ASSIGN 
+                        speop_shadow.speop_ID           = v-people_ID
+                        speop_shadow.speop_create_date  = TODAY 
+                        speop_shadow.speop_created_by   = USERID("CUSTOM")
+                        speop_shadow.speop_prog_name    = THIS-PROCEDURE:FILE-NAME.
+                        
+                END.  /** of if not avail speop_shadow **/
+                
+                ASSIGN 
+                    speop_shadow.speop_ward     = v-unit
+                    speop_shadow.speop_stake    = v-stake
+                    speop_shadow.speop_LDS      = v-member
+                    speop_shadow.speop_troop    = v-troop.
+                    
+            END. /*** of if v-success = yes ---- create a people_mstr ***/
+    
+            ELSE DO: 
+                
+                {&OUT} "<H1>ERROR! Unable to update people_mstr!  Contact <a href='mailto:solsource.techsupport@mysolsource.com'>Solsource Techsupport</a> immediately!</H1>".
+    
+            END.  /** of else do --- unable to update people_mstr **/
+                
+        END.  /*** of else do --- v-foundone = yes  ***/                                                            /* 1dot1 */
+        
+        
+                /**************************  END of 1dot1 code section ****************************/
+        
+    END. /****  people verification  ***/
+
+    DO:
+
+        IF ITmessages = YES THEN 
+            {&OUT} "<H3>Inside the MB verification and Scheduling section</H3>" SKIP
+                "<UL>" SKIP
+                "   <LI>people_id = " v-people_id "</LI>" SKIP
+                "   <LI>v-badgechoice1_ID = " v-badgechoice1_id "     v-badgechoice1 = " v-badgechoice1 "</LI>" SKIP 
+                "   <LI>v-badgechoice2_ID = " v-badgechoice2_id "     v-badgechoice2 = " v-badgechoice2 "</LI>" SKIP 
+                "</UL>" SKIP.
+    
+        FIND MB_mstr WHERE 
+            MB_mstr.MB_name = v-badgechoice1
+            NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (MB_mstr) THEN ASSIGN v-badgechoice1_id = MB_mstr.MB_BSA_ID.
+        
+        ELSE DO:
+        
+            ASSIGN act = "CriticalError"
+                error-message = error-message + "mb1 sucks, ".
+            
+        END. /*** of "holy crap what are we going to do" ***/
+        
+        FIND MB_mstr WHERE 
+            MB_mstr.MB_name = v-badgechoice2
+            NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (MB_mstr) THEN ASSIGN v-badgechoice2_id = MB_mstr.MB_BSA_ID.
+        
+        ELSE DO:
+        
+            ASSIGN act = "CriticalError"
+            error-message = error-message + "mb2 sucks, ".
+            
+        END. /*** of "holy crap what are we going to do, again!?!??!" ***/
+        
+        IF ITmessages = YES THEN 
+            {&OUT} "<H3>Just after the MB verification section</H3>" SKIP
+                    "<UL>" SKIP
+                    "   <LI>people_id = " v-people_id "</LI>" SKIP
+                    "   <LI>v-badgechoice1_ID = " v-badgechoice1_id "     v-badgechoice1 = " v-badgechoice1 "</LI>" SKIP 
+                    "   <LI>v-badgechoice2_ID = " v-badgechoice2_id "     v-badgechoice2 = " v-badgechoice2 "</LI>" SKIP 
+                    "</UL>" SKIP.
+        
+        IF v-badgechoice1_id <> 0 AND v-badgechoice2_ID <> 0 AND v-people_id <> 0 THEN DO:
+        
+            IF ITmessages = YES THEN 
+                {&OUT} "<H3>I got to this awesome spot</H3>" SKIP
+                    "<UL>" SKIP
+                    "   <LI>people_id = " v-people_id "</LI>" SKIP
+                    "   <LI>v-badgechoice1_ID = " v-badgechoice1_id "     v-badgechoice1 = " v-badgechoice1 "</LI>" SKIP 
+                    "   <LI>v-badgechoice2_ID = " v-badgechoice2_id "     v-badgechoice2 = " v-badgechoice2 "</LI>" SKIP 
+                    "</UL>" SKIP.
+        
+            FIND FIRST sched_mstr WHERE 
+                sched_mstr.sched_BSA_ID = v-badgechoice1_id AND 
+                sched_mstr.sched_start_date = (03/18/17) AND 
+                sched_mstr.sched_total_seats > sched_mstr.sched_used_seats 
+                    EXCLUSIVE-LOCK NO-ERROR.
+                
+            IF AVAILABLE (sched_mstr) THEN DO:
+
+                FIND regis_mstr WHERE regis_mstr.regis_people_id = v-people_id AND 
+                    regis_mstr.regis_class_ID = sched_mstr.sched_class_ID 
+                        NO-LOCK NO-ERROR.
+                        
+                IF NOT AVAILABLE (regis_mstr) THEN DO: 
+                
+                    CREATE regis_mstr.
+                    
+                    ASSIGN 
+                        regis_mstr.regis_people_id = v-people_id 
+                        regis_mstr.regis_class_ID = sched_mstr.sched_class_ID
+                        sched_mstr.sched_used_seats = sched_mstr.sched_used_seats + 1
+                        act = "success".
+                
+                END.  /** of if not avail regis_mstr --- MB1 **/
+                
+            END. /*** sched_mstr avail ***/
+            
+            ELSE DO:
+            
+                ASSIGN act = "CriticalError"
+                error-message = error-message + "MB1 is full, ".
+                
+            END. /*** full class ***/    
+            
+            FIND FIRST sched_mstr WHERE 
+                sched_mstr.sched_BSA_ID = v-badgechoice2_id AND 
+                sched_mstr.sched_start_date = (03/18/17) AND                                                                /* 1.0, this needs to change to honor the event_mstr */
+                sched_mstr.sched_total_seats > sched_mstr.sched_used_seats                              
+                EXCLUSIVE-LOCK NO-ERROR.
+                
+            IF AVAILABLE (sched_mstr) THEN DO:
+
+                FIND regis_mstr WHERE regis_mstr.regis_people_id = v-people_id AND 
+                    regis_mstr.regis_class_ID = sched_mstr.sched_class_ID 
+                        NO-LOCK NO-ERROR.
+                        
+                IF NOT AVAILABLE (regis_mstr) THEN DO:
+
+                    CREATE regis_mstr.
+                    
+                    ASSIGN 
+                        regis_mstr.regis_people_id = v-people_id 
+                        regis_mstr.regis_class_ID = sched_mstr.sched_class_ID
+                        sched_mstr.sched_used_seats = sched_mstr.sched_used_seats + 1
+                        act = "success".    
+               
+                END.  /** of if not avail regis_mstr --- MB2 **/
+                    
+            END. /*** sched_mstr avail ***/
+            
+            ELSE DO:
+            
+                ASSIGN act = "CriticalError"
+                error-message = error-message + "MB2 is full, ".
+                
+            END. /*** full class ***/
+            
+        END. /*** sched verification ***/
+        
+    END. /*** MB ID finder ***/
+
+    IF act = "verification" THEN DO:
+    
+        ASSIGN act = "CriticalError"
+            error-message = error-message + "... and you got dropped!". 
+        
+    END. /****  it is STILL verification :(  ****/
+
+END.
+
+/**************************************  MAIN PROGRAM  ********************************************/
+
+CASE act:
+
+    WHEN "Login" THEN DO:
+        
+    END. /*** Login ***/
+
+    WHEN "EventList" THEN DO:
+    
+        {&OUT}
+            "<header class='w3-container w3-theme-dark'>" SKIP
+            "   <h1>Augusta Maine Stake YM Activities</h1>" SKIP
+            "</header>" SKIP
+            "<br>" SKIP
+            "<br> " SKIP
+            "<div class='w3-card-4 w3-content w3-white' style='max-width:1100px;'>" SKIP
+            "   <header class='w3-container w3-theme-dark'>" SKIP
+            "       <h1>Upcoming Events</h1>" SKIP
+            "   </header>" SKIP
+            "   <ul class='w3-ul'>" SKIP
+            "       <a href='./AMSmeritU.r?h-act=YouthInfo' style='text-decoration:none;' >" SKIP
+            "           <li class='w3-padding-16 w3-white w3-hover-theme' style='border-bottom: 1px solid #ddd !important;'>" SKIP
+            "               <span class='w3-closebtn w3-padding w3-margin-right w3-medium w3-xlarge'><i class='fa fa-angle-double-right \'></i></span>" SKIP
+            "               <span class='w3-xlarge'>Merit Badge Workshop 1</span>" SKIP
+            "           </li>" SKIP  
+            "       </a>" SKIP
+            "       <li class='w3-padding-16 w3-white w3-hover-grey'>" SKIP
+            "           <span class='w3-xlarge'>Man College!!!</span>" SKIP
+            "       </li>" SKIP
+            "       <li class='w3-padding-16 w3-white w3-hover-grey'>" SKIP
+            "           <span class='w3-xlarge'>Scout Camp</span>" SKIP
+            "       </li>" SKIP
+            "       <li class='w3-padding-16 w3-white w3-hover-grey'>" SKIP
+            "           <span class='w3-xlarge'>High Adventure</span>" SKIP
+            "       </li>" SKIP
+            "       <li class='w3-padding-16 w3-white w3-hover-grey'>" SKIP
+            "           <span class='w3-xlarge'>Merit Badge Workshop 2</span>" SKIP
+            "       </li>" SKIP
+            "       <li class='w3-padding-16 w3-white w3-hover-grey'>" SKIP
+            "           <span class='w3-xlarge'>Stake Camporee</span>" SKIP
+            "       </li>" SKIP
+            "   </div> <!-- container -->" SKIP
+            "</div> <!-- w3-card-4 -->" SKIP
+            
+            "<br>" SKIP
+/*            "<form method='POST'>" SKIP                                                                                                                                                  */
+/*            "<div class='w3-row-padding w3-margin'>" SKIP                                                                                                                  */
+/*            "   <div class='w3-center w3-col s12'>" SKIP                                                                                                                   */
+/*            "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP*/
+/*            "   </div>" SKIP                                                                                                                                               */
+/*            "</div>" SKIP                                                                                                                                                  */
+/*            "</form>" SKIP                                                                                                                                                 */
+            
+            "<!-- footer-->"
+            "    <div class='w3-container w3-center'>"
+            "        <h5>Got a question or want to make a comment?"
+            "            <a href=~"mailto:doug.luttrell@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment~" target='_top'>Doug</a>,"
+            "            <a href=~"mailto:drmerryman@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment~" target='_top'>Dave</a>,"
+            "            <a href=~"mailto:scott.e.pratt@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment~" target='_top'>Scott</a>, or"
+            "            <a href=~"mailto:rpcamire@maine.rr.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment~" target='_top'>Roland</a> would love to hear from you."
+            "        </h5>"
+            "    </div>"
+            .
+    
+    END.
+
+    WHEN "YouthInfo" THEN DO: 
+        
+        {&OUT}
+            "<div class='w3-responsive w3-content' style='max-width:1400px'>" SKIP
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>Registration Page</h1>" SKIP
+            "   </header>" SKIP
+            
+            "   <div class='w3-card-4 w3-white'>" SKIP  
+            "   <form method='POST'>" SKIP
+            "       <div class='w3-row-padding'>" SKIP
+            "           <DIV class='w3-col l6'>" SKIP
+            "               <label class='w3-text-theme w3-col l6'><b>First Name</b></label>" SKIP
+            "               <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='h-firstname' value='" v-firstname "' required/>" SKIP
+            "           </DIV>" SKIP
+            "           <DIV class='w3-col l6'>" SKIP
+            "               <label class='w3-text-theme w3-col l6'><b>Last Name</b></label>" SKIP
+            "               <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='h-lastname' value='" v-lastname "' required/>" SKIP
+            "           </DIV>" SKIP
+            "       </div>" SKIP
+            "<div class='w3-row-padding'>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <label class='w3-text-theme'><b>Date of Birth</b></label>" SKIP
+            "       <INPUT class='w3-select w3-border w3-round' type='date' name='h-DOB' value='" v-DOB "' required/>" SKIP
+            "   </div>" SKIP
+            "   <DIV class='w3-col l6'>" SKIP
+            "       <DIV class='w3-text-theme'><b>Unit</b></DIV>" SKIP
+            "       <select name='h-unit' class='w3-border w3-round w3-select w3-margin-bottom' >" SKIP            
+            "           <option value='DidntChoose'>Choose</option>" SKIP
+            "           <option value='Auburn'>Auburn</option>" SKIP
+            "           <option value='Cornish'>Cornish</option>" SKIP
+            "           <option value='Damariscotta'>Damariscotta</option>" SKIP
+            "           <option value='Farmingdale'>Farmingdale</option>" SKIP
+            "           <option value='Oxford'>Oxford</option>" SKIP
+            "           <option value='Portland'>Portland</option>" SKIP
+            "           <option value='Saco'>Saco</option>" SKIP
+            "           <option value='Topsham'>Topsham</option>" SKIP
+            "           <option value='Windham'>Windham</option>" SKIP
+            "           <option value='Winthrop'>Winthrop</option>" SKIP
+            "           <option value='Yarmouth'>Yarmouth</option>" SKIP
+            "       </select>" SKIP
+            "   </DIV>" SKIP
+            "</div>" SKIP
+            
+            "<div class='w3-row-padding'>" SKIP
+            "   <DIV class='w3-col'>" SKIP
+            "       <label class='w3-text-theme w3-col l6'><b>Troop</b></label>" SKIP
+            "       <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='h-troop' value='" v-troop "' />" SKIP
+            "   </DIV>" SKIP
+/*            "   <DIV class='w3-col l6'>" SKIP                                                                                                    */
+/*            "       <label class='w3-text-theme w3-col l6'><b>Last Name</b></label>" SKIP                                                        */
+/*            "       <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='h-lastname' value='" v-lastname "' required/>" SKIP*/
+/*            "   </DIV>" SKIP                                                                                                                     */
+            "</div>" SKIP
+            
+            "<br>" SKIP
+            "</div>" SKIP.
+            
+    /*********************************  MERIT BADGE FIRST PERIOD  ***************************************************/
+        {&OUT} 
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>Select Your First Period Merit Badge</h1>" SKIP
+            "   </header>" SKIP
+            "   <div class='w3-row w3-light-grey'>" SKIP.
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-Aviation' value='Aviation'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Aviation</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Aviation.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>For most of history, people have dreamed of flying, imagining how it would feel to soar through the sky like an eagle or 
+                                        hover in midair like a hummingbird, to float on unseen currents, free of Earth's constant tug, able to travel great distances and to rise 
+                                        above any obstacle. Today, through aviation, we can not only join the birds but also fly farther, faster, and higher than they ever could.</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s12' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-CitizenshipInTheNation' value='Communication'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Citizenship in the Nation</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Citizenship_in_the_Nation.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>As Scouts fulfill the requirements for this merit badge, they will learn how to become active citizens are aware of 
+                                        and grateful for their liberties and rights, to participate in their governments and protect their freedom, helping to defend their 
+                                        country and standing up for individual rights on behalf of all its citizens.</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s2 m1 w3-padding-bottom '><img src='/depot/src/HTMLContent/images/Scouting/50px-EagleMedal.jpg' class='w3-right' style='width:100%' /></div>"
+            "                           <div class='w3-col s10 m11' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1 w3-cell-middle'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-CitizenshipInTheCommunity' value='Citizenship in the World'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Citizenship in the Community</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Citizenship_in_the_Community.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>A nation is a patchwork of communities that differ from each other and may be governed differently. But regardless of how 
+                                        local communities differ, they all have one point in common: In the United States, local government means self-government. Good citizens help 
+                                        to make decisions about their community through their elected local officials.</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s2 m1 w3-padding-bottom '><img src='/depot/src/HTMLContent/images/Scouting/50px-EagleMedal.jpg' class='w3-right' style='width:100%' /></div>"
+            "                           <div class='w3-col s8 m10' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.
+            
+        {&OUT}
+            "   </div><!--- row div --->" SKIP  
+            "   <div class='w3-row'> <!--------------------------------  Row #2  ------------------------------------------------->" SKIP.
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-Engineering' value='Engineering'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Engineering</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Engineering.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>Engineers use both science and technology to turn ideas into reality, devising all sorts of things, ranging from a 
+                                        tiny, low-cost battery for your cell phone to a gigantic dam across the mighty Yangtze River in China</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s12' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.            
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-Moviemaking' value='Moviemaking'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Moviemaking</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Moviemaking.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>Moviemaking includes the fundamentals of producing motion pictures, including the use of effective light, accurate 
+                                        focus, careful composition (or arrangement), and appropriate camera movement to tell stories. In earning the badge, Scouts will also 
+                                        learn to develop a story and describe other processes necessary for making a quality motion picture.</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s12' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-Golf' value='Golf'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Golf</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Golf.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>Golf is unique because the players police themselves. Other sports depend upon referees or umpires to apply 
+                                        penalties when there are infractions of the rules. In golf, every player is expected to act honorably, and the welfare and 
+                                        integrity of the game rely on every player's honesty. This is why golf often is referred to as a ~"gentleman's game~".</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s12' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.     
+            
+        {&OUT}
+            "   </div><!--- row div --->" SKIP  
+            "   <div class='w3-row'> <!--------------------------------  Row #2  ------------------------------------------------->" SKIP.      
+            
+        
+            
+        /*********************************  MERIT BADGE SECOND PERIOD  ***************************************************/
+        {&OUT} 
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>Select Your Second Period Merit Badge</h1>" SKIP
+            "   </header>" SKIP
+            "   <div class='w3-row w3-light-grey'>" SKIP.
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-Aviation' value='Aviation'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Aviation</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Aviation.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>For most of history, people have dreamed of flying, imagining how it would feel to soar through the sky like an eagle or 
+                                        hover in midair like a hummingbird, to float on unseen currents, free of Earth's constant tug, able to travel great distances and to rise 
+                                        above any obstacle. Today, through aviation, we can not only join the birds but also fly farther, faster, and higher than they ever could.</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s12' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-CitizenshipInTheNation' value='Communication'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Citizenship in the Nation</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Citizenship_in_the_Nation.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>As Scouts fulfill the requirements for this merit badge, they will learn how to become active citizens are aware of 
+                                        and grateful for their liberties and rights, to participate in their governments and protect their freedom, helping to defend their 
+                                        country and standing up for individual rights on behalf of all its citizens.</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s2 m1 w3-padding-bottom '><img src='/depot/src/HTMLContent/images/Scouting/50px-EagleMedal.jpg' class='w3-right' style='width:100%' /></div>"
+            "                           <div class='w3-col s10 m11' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1 w3-cell-middle'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-CitizenshipInTheCommunity' value='Citizenship in the World'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Citizenship in the Community</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Citizenship_in_the_Community.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>A nation is a patchwork of communities that differ from each other and may be governed differently. But regardless of how 
+                                        local communities differ, they all have one point in common: In the United States, local government means self-government. Good citizens help 
+                                        to make decisions about their community through their elected local officials.</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s2 m1 w3-padding-bottom '><img src='/depot/src/HTMLContent/images/Scouting/50px-EagleMedal.jpg' class='w3-right' style='width:100%' /></div>"
+            "                           <div class='w3-col s8 m10' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.
+            
+        {&OUT}
+            "   </div><!--- row div --->" SKIP  
+            "   <div class='w3-row'> <!--------------------------------  Row #2  ------------------------------------------------->" SKIP.
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-Engineering' value='Engineering'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Engineering</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Engineering.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>Engineers use both science and technology to turn ideas into reality, devising all sorts of things, ranging from a 
+                                        tiny, low-cost battery for your cell phone to a gigantic dam across the mighty Yangtze River in China</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s12' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.            
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-Moviemaking' value='Moviemaking'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Moviemaking</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Moviemaking.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>Moviemaking includes the fundamentals of producing motion pictures, including the use of effective light, accurate 
+                                        focus, careful composition (or arrangement), and appropriate camera movement to tell stories. In earning the badge, Scouts will also 
+                                        learn to develop a story and describe other processes necessary for making a quality motion picture.</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s12' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-Dentistry' value='Dentistry'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Dentistry</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Dentistry.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>Teeth do a lot more than just peek out from under that winning smile. They have all sorts of duties, and having 
+                                        healthy teeth will help a person to eat, speak, and look great.</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s12' style='color:grey; text-align:right'> Open Seats: "  " </div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP.      
+            
+        {&OUT}
+            "   </div><!--- row div --->" SKIP  
+            "   <div class='w3-row'> <!--------------------------------  Row #2  ------------------------------------------------->" SKIP.      
+            
+        {&OUT}
+            "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+            "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
+            "               <div id='card-head'>" SKIP
+            "                   <div class='w3-col s1 m1'>" SKIP
+            "                       <input type='checkbox' class='w3-check' name='h-Golf' value='Golf'></input>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s8 m8'>" SKIP
+            "                       <p class='w3-large'><b>Golf</b></p>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-col s3 m3'>" SKIP 
+            "                       <img src='/depot/src/HTMLContent/images/Scouting/Golf.jpg' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
+            "                   </div>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                       <span class='w3-small'>Golf is unique because the players police themselves. Other sports depend upon referees or umpires to apply 
+                                        penalties when there are infractions of the rules. In golf, every player is expected to act honorably, and the welfare and 
+                                        integrity of the game rely on every player's honesty. This is why golf often is referred to as a ~"gentleman's game~".</span>" SKIP
+            "                   </div>" SKIP
+            "                   <br>" SKIP
+            "                   <div class='w3-row'>" SKIP
+            "                           <div class='w3-col s12' style='color:grey; text-align:right'> Open Seats: "  "</div>" SKIP
+            "                   </div>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP
+            "   </div><!--- row div --->" SKIP.
+                
+        {&OUT}
+            "<br>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Verification' class='w3-btn-block w3-grey w3-round-large' style='max-width:400px; box-shadow:none' disabled><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='Reset' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Reset</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /*** of new user ***/
+    
+/*    WHEN "MeritBadge" THEN DO:                                                                                                                                                   */
+/*                                                                                                                                                                                 */
+/*        "<div class='w3-content' style='max-width:1400px;'>" SKIP                                                                                                                */
+/*            "<form method='POST'>" SKIP                                                                                                                                                        */
+/*                                                                                                                                                                                 */
+/*                    "<input type='hidden' name='h-firstname' value='" v-firstname "' />" SKIP                                                                                    */
+/*            "<input type='hidden' name='h-lastname' value='" v-lastname "' />" SKIP                                                                                              */
+/*            "<input type='hidden' name='h-DOB' value='" v-DOB "' />" SKIP                                                                                                        */
+/*            "<input type='hidden' name='h-unit' value='" v-unit "' />" SKIP                                                                                                      */
+/*                                                                                                                                                                                 */
+/*        {&OUT}                                                                                                                                                                   */
+/*                                                                                                                                                                                 */
+/*            "<br>" SKIP                                                                                                                                                          */
+/*            "<div class='w3-row-padding w3-margin'>" SKIP                                                                                                                        */
+/*            "   <div class='w3-center w3-col s12 m6'>" SKIP                                                                                                                      */
+/*            "       <button type='submit' name='h-act' value='Verification' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP*/
+/*            "   </div>" SKIP                                                                                                                                                     */
+/*            "   <div class='w3-center w3-col s12 m6'>" SKIP                                                                                                                      */
+/*            "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-theme-l2 w3-round-large' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP      */
+/*            "   </div>" SKIP                                                                                                                                                     */
+/*            "</div>" SKIP                                                                                                                                                        */
+/*            "</form>" SKIP.                                                                                                                                                      */
+/*                                                                                                                                                                                 */
+/*    END.                                                                                                                                                                         */
+
+    WHEN "Success" THEN DO:
+        
+        {&OUT}
+            "<div class='w3-container'>" SKIP
+            "<form method='POST'>" SKIP
+            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-theme'>" SKIP
+            "       <h1>Congratulations</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>You have successfully signed " v-firstname " " v-lastname " up for the " v-badgechoice1 " and " v-badgechoice2 " merit badges.</p>" SKIP
+            "    </div>" SKIP
+    
+            "    <button type='submit' name='h-act' value='YouthInfo' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-blue'>Submit Another</BUTTON>" SKIP
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-green'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+        
+    END. /*** Success ***/
+
+    WHEN "WrongNumber" THEN DO:
+        
+         {&OUT}
+            "<div class='w3-container'>" SKIP
+            "<form method='POST'>" SKIP
+            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-red'>" SKIP
+            "       <h1>Error</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>You have selected " c-MeritBadges " merit badges, please select 2. Feel free to click the back button and try again.</p>" SKIP
+            "    </div>" SKIP
+
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+            
+        
+    END. /*** wrong number ***/ 
+    
+    WHEN "CriticalError" THEN DO:
+        
+         {&OUT}
+            "<div class='w3-container'>" SKIP
+            "<form method='POST'>" SKIP
+            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-red'>" SKIP
+            "       <h1>Error</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>You have encountered a critical error. Feel free to click the back button, refresh your browser and try again.</p>" SKIP.
+            
+IF ITmessages = YES THEN {&OUT} "   <br><P> " error-message " </P>" SKIP.
+
+        {&OUT}
+            "    </div>" SKIP
+
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+            
+        
+    END. /*** wrong number ***/ 
+
+    OTHERWISE DO:
+        
+        {&OUT}
+            "<div class='w3-container'>" SKIP
+            "<form method='POST'>" SKIP
+            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-red'>" SKIP
+            "       <h1>Error</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>Could not find act '" act "'.</p>" SKIP
+            "    </div>" SKIP
+
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+            
+    END. /*** otherwise ***/
+    
+END CASE.
+
+</SCRIPT>
+</BODY>
+</HTML>

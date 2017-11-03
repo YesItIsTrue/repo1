@@ -292,14 +292,14 @@ CREATE WIDGET-POOL.
                 
         IF AVAILABLE (TK_mstr) THEN DO:
             ASSIGN  TK_mstr.TK_lab_paid         = TODAY
-                    TK_mstr.TK_modified_by      = USERID ("HHI")
+                    TK_mstr.TK_modified_by      = USERID("Modules")
                     TK_mstr.TK_modified_date    = TODAY
                     TK_mstr.TK_prog_name        = THIS-PROCEDURE:FILE-NAME.  /* 1dot2 */             
         END.    /**  IF AVAILABLE (TK_mstr)  **/
         
 /*  CREATE a hist FOR the vendor-paid DATE.......... USING TODAY's date  */ 
 
-        RUN "./depot/rcode/create-trh-hist.r "
+        RUN VALUE(SEARCH("create-trh-hist.r"))
                (0,                              /**  i-ctrh-id   **/
                 TK_mstr.TK_test_type,
                 "VEND_PAID",

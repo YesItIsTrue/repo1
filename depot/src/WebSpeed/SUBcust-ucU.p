@@ -71,7 +71,7 @@ DO TRANSACTION:
                 o-uccust-update              = YES
                 o-uccust-successful          = YES
                 cust_mstr.cust_modified_date = TODAY
-                cust_mstr.cust_modified_by   = USERID ("General")                       /* 1.01 */
+                cust_mstr.cust_modified_by   = USERID("Core")                       /* 1.01 */
                 o-uccust-id                  = cust_mstr.cust_id                
                 .
                                                 
@@ -86,9 +86,9 @@ DO TRANSACTION:
                 o-uccust-create                 = YES
                 o-uccust-successful             = YES
                 cust_mstr.cust_create_date      = TODAY
-                cust_mstr.cust_created_by       = USERID ("General")                    /* 1.01 */
+                cust_mstr.cust_created_by       = USERID("Core")                    /* 1.01 */
                 cust_mstr.cust_modified_date    = TODAY
-                cust_mstr.cust_modified_by      = USERID ("General")                    /* 1.01 */
+                cust_mstr.cust_modified_by      = USERID("Core")                    /* 1.01 */
                 /*cust_mstr.cust_card_expmonth    = i-uccust-card_expmonth
                 cust_mstr.cust_card_expyear     = i-uccust-card_expyear*/
                 o-uccust-id                     = cust_mstr.cust_id 

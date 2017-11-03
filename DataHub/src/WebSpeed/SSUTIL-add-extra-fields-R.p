@@ -1,6 +1,6 @@
 /***********************************************************************
  *
- *  SSUTIL-add-extra-fields-R.p - DOUG LUTTRELL - Version 1.1
+ *  SSUTIL-add-extra-fields-R.p - DOUG LUTTRELL - Version 1.11
  *
  *  ------------------------------------------------------------------
  *
@@ -20,6 +20,10 @@
  *          pick different output files.  Putting in a few brains to help
  *          with that, though not enough to keep you entirely out of 
  *          trouble.  Also added in the codepage stuff.  Not marked.
+ *  1.11 - written by DOUG LUTTRELL on 26/Sep/17.  Made a minor change
+ *          to the default output location.  It now defaults to the 
+ *          C:\progress\wrk\DFs directory.  Also changed the size of the
+ *          _prog_name field.  Marked by 111.
  *
  ************************************************************************/
  
@@ -47,7 +51,7 @@ update skip(1)
         title "Database Field Addition".
             
 if whattable = "" then 
-    outfile = "c:\progress\wrk\" +
+    outfile = "c:\progress\wrk\DFs\" +                          /* 111 */
                 substring(DBNAME,r-index(DBNAME,"\") + 1) + 
                 "-add-fields.df".
 else do:
@@ -58,7 +62,7 @@ else do:
         next main-loop.
     end.  /** of not can-find whattable **/
             
-    outfile = "C:\progress\wrk\" + whattable + "-add-fields.df".
+    outfile = "C:\progress\wrk\DFs\" + whattable + "-add-fields.df".  /* 111 */
     
 end.  /** of else do --- whattable was entered **/
                 
@@ -101,11 +105,11 @@ FOR EACH _file WHERE _file-number >= 1 AND _file-number < 32000 and
         
     PUT STREAM outward UNFORMATTED  
         "ADD FIELD ~"" tablpref "prog_name~" OF ~"" _file-name "~" AS character" SKIP 
-        "FORMAT ~"x(30)~"" SKIP 
+        "FORMAT ~"x(64)~"" SKIP                 /* 111 */
         "INITIAL ~"~"" SKIP 
         "LABEL ~"Program Name~"" SKIP 
         "POSITION " posivar SKIP 
-        "MAX-WIDTH 30" SKIP 
+        "MAX-WIDTH 128" SKIP                    /* 111 */
         "COLUMN-LABEL ~"Prog Name~"" SKIP 
         "ORDER " highfield SKIP(2).
     

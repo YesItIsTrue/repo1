@@ -127,7 +127,7 @@ function patientPopup(url) {
 	
 	DEFINE VARIABLE patage AS INTEGER NO-UNDO. /* patient_age */ 
 	
-	DEFINE VARIABLE patcon LIKE patient_condition NO-UNDO.
+	DEFINE VARIABLE patcon LIKE condition_mstr.condition_name NO-UNDO.
 	DEFINE VARIABLE patcp LIKE patient_RP_ID NO-UNDO.  /* The needs to be made into a people record */
 	DEFINE VARIABLE patnotes LIKE patient_notes NO-UNDO.
 	
@@ -192,7 +192,7 @@ function patientPopup(url) {
     DEFINE VARIABLE RP-email2 LIKE people_email NO-UNDO.
     DEFINE VARIABLE RP-add-id LIKE people_addr_id NO-UNDO.
     
-    DEFINE VARIABLE RP-comp LIKE patient_condition NO-UNDO.
+    DEFINE VARIABLE RP-comp LIKE condition_mstr.condition_name NO-UNDO.
     DEFINE VARIABLE RP-gen LIKE people_gender NO-UNDO.
     DEFINE VARIABLE RP-peop-contact LIKE people_contact NO-UNDO.
     DEFINE VARIABLE RP-patdob LIKE people_DOB NO-UNDO.
@@ -828,7 +828,6 @@ function patientPopup(url) {
                                  IF  AVAILABLE (patient_mstr)THEN DO:
                                      ASSIGN
                                      patid    = patient_mstr.patient_id
-                                     patcon   = patient_mstr.patient_condition
                                      patnotes = patient_mstr.patient_notes
                                      patdoc   = patient_mstr.patient_doctor_ID.
                                  END.  /* if available (patient_mstr)then  */

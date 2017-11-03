@@ -8,13 +8,21 @@
     <META NAME="CREATE_DATE" CONTENT="04/Jan/16">
     <META NAME="MODIFIED_DATE" CONTENT="04/Jan/16">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
-<SCRIPT LANGUAGE="SpeedScript">
-/* Create an unnamed pool to store all the widgets created by this procedure.
-   This is a good default which assures that this procedure's triggers and
-   internal procedures will execute in this procedure's storage, and that
-   proper cleanup will occur on deletion of the procedure. */
-CREATE WIDGET-POOL.
-</SCRIPT>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
 </HEAD>
 <BODY class='inside'>
 <script type="text/javascript">
@@ -39,7 +47,7 @@ txt.value.length) + " characters remaining. (" + maxLen + " Max.)";
 }
 </script>
 <SCRIPT language="SpeedScript">
-{../depot/src/WebSpeed/menuname.i}.
+{TSvert-menu.i}.
   /*------------------------------------------------------------------
     File:           TSentryU.html
     Description:    Employee time sheet entry form 
@@ -101,11 +109,10 @@ DEFINE VARIABLE pass-old-time AS   CHARACTER                      NO-UNDO.
 DEFINE VARIABLE time-desc     AS   CHARACTER                      NO-UNDO.  
 DEFINE VARIABLE time-desclist AS   CHARACTER INITIAL "CLOCKED_IN,CLOCKED_OUT,BREAK_OUT,BREAK_IN" NO-UNDO.
 DEFINE VARIABLE x             AS   INTEGER                        NO-UNDO.																																			             
-                                                                           IF itmessage = YES THEN
-                                                                               {&OUT} "cookie id = " get-value("c-usr") "<BR>" SKIP.                          
-ASSIGN 
+                                                                                                     
+ASSIGN
+    /* TODO: Implement groups to take care of v-admin */ 
     v-admin         = IF get-value("h-admin") = "yes" THEN YES ELSE NO
-    empid           = IF v-admin = YES THEN INTEGER(get-value("h-empid")) ELSE INTEGER(get-value("c-usr")) 
     disp-date       = get-value("html5-date")
     amount          = DECIMAL(get-value("h-amount"))
     clientid        = INTEGER(get-value("h-clientid"))
@@ -123,6 +130,14 @@ ASSIGN
     time-desc       = get-value("h-time-desc")
     pass-old-time   = get-value("h-old-time")
     .
+    
+IF get-value("h-empid") <> "" THEN
+    empid = INTEGER(html-encode(get-value("h-empid"))).
+ELSE
+    RUN VALUE(SEARCH("session-get-user-id.r")) (
+        get-cookie("c-session-token"),
+        OUTPUT empid
+    ).
 
 FIND Emp_Mstr WHERE Emp_Mstr.Emp_ID = empid AND 
                     Emp_Mstr.Emp_deleted = ?
@@ -137,8 +152,6 @@ IF AVAILABLE Emp_Mstr THEN DO:
         ASSIGN
             projname = Emp_Mstr.Emp_def_proj.
 END.                                    
-																		    IF itmessage = YES THEN
-																		        {&OUT} "cookie id = " get-value("c-usr") "<BR>" SKIP.
 
 FOR FIRST people_mstr WHERE people_mstr.people_id = empid AND 
                             people_mstr.people_deleted = ?

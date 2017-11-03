@@ -57,6 +57,10 @@
         Date: 2/Jan/17.
             Modified code to use the new input HL7 folder name: \OpenEdge\WRK\Files-Input\.
         Identified by /* 3dot0 */    
+                                                                  
+    Version 3.1 - written by HAROLD LUTTRELL, JR. on 03/Oct/17.  Changed to use
+                    single rcode PROPATH settings in accordance with Release 12
+                    (CMC structure).  Marked by 3dot1.                                                                  
                                                                                 
   ----------------------------------------------------------------------*/
      
@@ -242,14 +246,17 @@ DEFINE VARIABLE o-fstate-error     AS LOGICAL                                   
        
 /* ***************************  Main Block  *************************** */
 
-IF  USERID("RS") = "Harold.Luttrell"  THEN                                      /* 3dot0 */
+IF  USERID("CORE") = "Harold.Luttrell"  THEN                                      /* 3dot0 */   /* 3dot1 */
     INPUT FROM "D:\OpenEdge\WRK\Input-Files\JUNE-MAG-CUST-RCD-Extracted-TEST.txt".   /* 3dot0 */
 /*      INPUT FROM "D:\OpenEdge\WRK\Input-Files\June-3-rcds.txt".*/
-ELSE                                                                            /* 3dot0 */
-IF drive_letter = "P" THEN                                                      
-    INPUT FROM "P:\OpenEdge\WRK\Input-Files\MAG-CUST-RCD-Extracted.txt".        /* 3dot0 */
 ELSE 
-    INPUT FROM "C:\OpenEdge\WRK\Input-Files\MAG-CUST-RCD-Extracted.txt".        /* 3dot0 */
+
+    INPUT FROM VALUE(SEARCH("Input-Files\MAG-CUST-RCD-Extracted.txt")).                          /* 3dot1 */
+                                                                           /* 3dot0 */
+/*IF drive_letter = "P" THEN                                                                 */
+/*    INPUT FROM "P:\OpenEdge\WRK\Input-Files\MAG-CUST-RCD-Extracted.txt".        /* 3dot0 */*/
+/*ELSE                                                                                       */
+/*    INPUT FROM "C:\OpenEdge\WRK\Input-Files\MAG-CUST-RCD-Extracted.txt".        /* 3dot0 */*/
      
 REPEAT:
    

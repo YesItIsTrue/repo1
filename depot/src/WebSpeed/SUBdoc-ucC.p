@@ -56,7 +56,7 @@ DO TRANSACTION:
                 o-ucdoctor-update                 = YES
                 o-ucdoctor-successful             = YES
                 doctor_mstr.doctor_modified_date  = TODAY
-                doctor_mstr.doctor_modified_by    = USERID ("HHI")
+                doctor_mstr.doctor_modified_by    = USERID("Modules")
                 o-ucdoctor-id                     = doctor_mstr.doctor_id                
                 .
                                                 
@@ -72,9 +72,9 @@ DO TRANSACTION:
                 o-ucdoctor-create                = YES
                 o-ucdoctor-successful            = YES
                 doctor_mstr.doctor_create_date   = TODAY
-                doctor_mstr.doctor_created_by    = USERID ("HHI")
+                doctor_mstr.doctor_created_by    = USERID("Modules")
                 doctor_mstr.doctor_modified_date = TODAY
-                doctor_mstr.doctor_modified_by   = USERID ("HHI")
+                doctor_mstr.doctor_modified_by   = USERID("Modules")
                 o-ucdoctor-id                    = doctor_mstr.doctor_id 
                 .
                 

@@ -1,0 +1,83 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+    <HEAD>
+        <META NAME="AUTHOR" CONTENT="Andrew Garver"/>
+        <TITLE>Event Functions</TITLE>
+        <META NAME='VERSION' CONTENT='1.0'/>
+        <META NAME='COPYRIGHT' CONTENT='Solsource'/>
+        <META NAME='CREATE_DATE' CONTENT="31/Aug/2017"/>
+        <META NAME='LAST_UPDATED' CONTENT="31/Aug/2017"/>   
+        <meta name="viewport" content="width=device-width, initial-scale=1">   
+        <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
+        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+        <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css"/>
+        <style>
+            .w3-select {
+              margin: 5px 0px 10px 0px;
+              padding-left: 10px;
+            }
+            .container {
+                margin-left: 20%;
+                margin-right: 20%
+            }
+            @media (max-width: 1100px) {
+                .container {
+                    margin-left: 10%;
+                    margin-right: 10%
+                }
+            }
+            @media (max-width: 800px) {
+                .container {
+                    margin-left: 5%;
+                    margin-right: 5%
+                }
+            }
+            .standard-height {
+                min-height: 200px;
+            }
+            .w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
+            .w3-theme-background {color::#000 !important; background-color:#fff !important}
+            .w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
+            .w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+            .w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+        </style>
+    </HEAD>
+    <BODY class='w3-white'>
+        <header class='w3-container w3-dark-grey'>
+            <center><h1>Event Menu</h1></center>
+        </header>
+        <br><br>
+        <div class="container">
+        <!--WSS
+        DEFINE VARIABLE v-menu_num AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE v-correct-exprog AS CHARACTER NO-UNDO.
+        
+        ASSIGN 
+            v-menu_num = html-encode(get-value("menuNum")).
+            
+        FOR EACH menu_mstr WHERE menu_mstr.menu_num = v-menu_num AND menu_mstr.menu_hidden = FALSE AND menu_mstr.menu_deleted = ? NO-LOCK:
+            ASSIGN
+                v-correct-exprog = REPLACE(menu_mstr.menu_exprog, ".html", ".r").
+        -->
+            <div class='w3-padding w3-col s12 m6'>
+                <a href='`v-correct-exprog`' style="text-decoration: none">
+                   <div class='w3-container w3-card-4 w3-xlarge w3-round-xlarge w3-light-blue w3-hover-theme standard-height'>
+                     <center>
+                      <br/>
+                      <!-- <i class="fa fa-list fa-3x" aria-hidden="true"></i>  It would be really cool to have a field added to menu_mstr for menu_img-->
+                      <h1>`menu_mstr.menu_title`</h1>
+                      <br/>
+                     </center>
+                  </div>
+                </a>
+            </div>
+        <!--WSS 
+        END. -->
+        </div>
+        <br>
+    </BODY>
+</HTML>

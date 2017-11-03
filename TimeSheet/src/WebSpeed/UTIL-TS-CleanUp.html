@@ -1,12 +1,12 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <HTML>
 <HEAD>
-<META NAME="AUTHOR" CONTENT="Your Name">
+<META NAME="AUTHOR" CONTENT="R.J. LUTTRELL">
 <TITLE>WebSpeed Script</TITLE>
 <META NAME='VERSION' CONTENT='1.0'>
     <META NAME='COPYRIGHT' CONTENT='Solsource'>
-    <META NAME='CREATE_DATE' CONTENT="DATE">
-    <META NAME='LAST_UPDATED' CONTENT="DATE">    
+    <META NAME='CREATE_DATE' CONTENT="07/Dec/16">
+    <META NAME='LAST_UPDATED' CONTENT="14/Aug/17">    
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
 <SCRIPT LANGUAGE="SpeedScript">
 /* Create an unnamed pool to store all the widgets created by this procedure.
@@ -34,9 +34,18 @@ CREATE WIDGET-POOL.
     File:           
     Description:
     Created:
+        
+  -----------------------------------------------------------------
+  Revision History:
+  -----------------
+  1.0 - written by R.J. LUTTRELL on 07/Dec/16.  Original version.
+  1.1 - written by DOUG LUTTRELL on 14/Aug/17.  Changed code to work
+            with new CMC structure (Version 12).  Not checked for logic.
+            Removed database specific prefixes.  Not marked.
+            
   -------------------------------------------------------------------*/
 
-{../depot/src/WebSpeed/menuname.i}.
+{TSvert-menu.i}.
 
 /* ************************* Definitions *************************** */
 DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
@@ -89,27 +98,27 @@ CASE act:
    
     WHEN "DELETE" THEN DO: 
     
-       FOR EACH Timesheet.Emph_hist EXCLUSIVE-LOCK:
+       FOR EACH Emph_hist EXCLUSIVE-LOCK:
            
            DELETE Emph_hist.
            
        END.
-       FOR EACH timesheet.Hours_Mstr EXCLUSIVE-LOCK:
+       FOR EACH Hours_Mstr EXCLUSIVE-LOCK:
            
            DELETE Hours_Mstr.    
 
         END.
-       FOR EACH timesheet.Client_Mstr EXCLUSIVE-LOCK:
+       FOR EACH Client_Mstr EXCLUSIVE-LOCK:
            
            DELETE Client_Mstr. 
        
        END.
-       FOR EACH timesheet.Emph_hist EXCLUSIVE-LOCK: 
+       FOR EACH Emph_hist EXCLUSIVE-LOCK: 
            
            DELETE Emph_hist. 
            
        END.
-       FOR EACH timesheet.Proj_Mstr EXCLUSIVE-LOCK: 
+       FOR EACH Proj_Mstr EXCLUSIVE-LOCK: 
            
            DELETE Proj_Mstr. 
            

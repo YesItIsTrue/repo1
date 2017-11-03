@@ -54,6 +54,7 @@ CREATE WIDGET-POOL.
  *          Marked by 1dot7.
  *  1.8 - written by Jacob Luttrell on 24/Feb/16. changed TLitemmaintU-form.i to be in
  *          line with the new database fields in v11.1. Marked by 1dot8. 
+ *  1.9 - Andrew Garver 8/28/17, Adding delete functionality for Test Detail Maintenance / Add Marker
 
  ***********************************************************************************/
 
@@ -82,6 +83,7 @@ DEFINE VARIABLE act        AS CHARACTER                     NO-UNDO.
 DEFINE VARIABLE ITshowmsg  AS LOG INITIAL NO                NO-UNDO.
  
 DEFINE VARIABLE thismarker AS CHARACTER                     NO-UNDO. 
+DEFINE VARIABLE deleteMarker     AS LOGICAL NO-UNDO.                        /* 1dot9 */
 
   
                                                                     IF ITshowmsg = YES THEN 
@@ -109,7 +111,8 @@ DEFINE VARIABLE thismarker AS CHARACTER                     NO-UNDO.
                     INTEGER(get-value('h-itemid'))                              /* 1dot2 */
     bartype     = get-value('h-bartype')                                       /* 1dot5 */
     disp-start  = get-value('html5-start')                                              /* 1dot6 */
-    disp-end    = get-value('html5-end').                                               /* 1dot6 */
+    disp-end    = get-value('html5-end')                                               /* 1dot6 */
+    deleteMarker = IF get-value('whattorun') = "4.10" THEN YES ELSE NO.                        /* 1dot9 */
     
     RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                            /* 1dot6 */
             disp-start,                                                                 /* 1dot6 */
@@ -175,7 +178,8 @@ ELSE IF act = "CREATE" THEN
 ELSE IF act = "UPDATE" THEN
     act = "UPDATE".
 
-
+ELSE IF act = "DELETE" THEN 
+    act = "DELETE".
       
 ELSE IF itemid = 0 THEN     /** was else if markitem = "" then **/ 
     ASSIGN 
@@ -318,6 +322,54 @@ CASE act:
          
     END.  /** of act = "FIND ITEM" **/
     
+    WHEN "DELETE" THEN DO:
+                                                                                IF ITshowmsg = YES THEN 
+                                                                                    {&OUT}
+                                                                                        "<OL>DELETE itme" SKIP
+                                                                                        "    <LI>ACT = " act "</LI>" SKIP
+                                                                                        "    <LI>testtype = " testtype "</LI>" SKIP
+                                                                                        "    <LI>sectid = " sectid "</LI>" SKIP
+                                                                                        "    <LI>sectdesc = " sectdesc "</LI>" SKIP
+                                                                                        "    <LI>itemid = " itemid "</LI>" SKIP
+                                                                                        "    <LI>markitem = " markitem "</LI>" SKIP
+                                                                                      "    <LI>sortorder = " sortorder "</LI>" SKIP
+                                                                                        "</OL>" SKIP
+                                                                                        "<hr width=90%>" SKIP.
+                                                                                        
+        IF itemid = 0 THEN DO:
+            {&OUT} "<p>ERROR - No Item / Marker Selected. Could not delete.</p>" SKIP.
+            {TLitemmaintU-form.i "FIND ITEM" "DISABLED" "DISABLED" "NOTHING" "DISABLED" "DISABLED" "NOTHING" "Maintenance"}.
+        END.
+        ELSE DO:    
+            FIND tld_det WHERE tld_det.tld_sect_id = sectid AND  
+            tld_det.tld_item_id = itemid AND 
+            tld_det.tld_deleted = ? 
+                EXCLUSIVE-LOCK NO-ERROR.
+            
+	        IF AVAILABLE tld_det THEN DO:
+	            DISPLAY tld_det.
+	            ASSIGN 
+	                tld_det.tld_deleted         = TODAY
+	                tld_det.tld_modified_date   = TODAY 
+	                tld_det.tld_modified_by     = USERID("Modules")
+	                tld_det.tld_prog_name       = THIS-PROCEDURE:FILE-NAME.
+	                
+	                 ASSIGN 
+                        testtype    = ""
+                        sectdesc    = ""
+                        markitem    = ""
+                        itemid      = 0
+                        sectid      = 0.
+	                
+	            {TLitemmaintU-form.i "FIND TEST" "Required" "DISABLED" "DISABLED" "DISABLED" "DISABLED" "NOTHING" "Maintenance"}.                         
+	        END.
+	        ELSE DO:
+	           {&OUT} "<p>Item / Marker " tl_mstr.tl_section_desc " could not be deleted.</p>" SKIP. 
+	           {TLitemmaintU-form.i "FIND ITEM" "DISABLED" "DISABLED" "NOTHING" "DISABLED" "DISABLED" "NOTHING" "Maintenance"}.
+	       END.       
+        END.
+    END.
+    
     WHEN "UPDATE" THEN DO:
          
                                                                                 IF ITshowmsg = YES THEN 
@@ -349,7 +401,7 @@ CASE act:
 /*                tld_det.tld_item_name       = markitem*/                                      /* removed in 1dot8 */
                 tld_det.tld_bar_type        = bartype
                 tld_det.tld_modified_date   = TODAY 
-                tld_det.tld_modified_by     = USERID("HHI")
+                tld_det.tld_modified_by     = USERID("Modules")
                 tld_det.tld_prog_name       = THIS-PROCEDURE:FILE-NAME.                         /* 1dot8 */
           
         FIND marker_list WHERE marker_list.marker_ID = itemid AND                               /* 1dot8 */
@@ -642,9 +694,9 @@ CASE act:
                 tld_det.tld_end_eff         = endeff
                 tld_det.tld_order           = sortorder
                 tld_det.tld_bar_type        = bartype
-                tld_det.tld_created_by      = USERID("HHI")
+                tld_det.tld_created_by      = USERID("Modules")
                 tld_det.tld_create_date     = TODAY 
-                tld_det.tld_modified_by     = USERID("HHI")
+                tld_det.tld_modified_by     = USERID("Modules")
                 tld_det.tld_modified_date   = TODAY
                 tld_det.tld_prog_name       = THIS-PROCEDURE:FILE-NAME.                         /* 1dot8 */
              

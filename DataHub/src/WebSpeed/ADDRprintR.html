@@ -46,6 +46,7 @@ CREATE WIDGET-POOL.
                 Marked by /* 1dot2 */               
         1.3 - Written by Jacob Luttrell on 18/Mar/16. Added SUBtrh procedures
                 to update the trh_hist. Marked by 1dot3.        
+        1.4 - Andrew Garver 8-30-17, Changing printing client to Bartender
   -------------------------------------------------------------------*/
   
 /*****************************************************************************
@@ -113,8 +114,11 @@ DEFINE VARIABLE o-ctrh-id       LIKE trh_hist.trh_id        NO-UNDO. /* 1dot3 */
 DEFINE VARIABLE o-ctrh-error    AS LOGICAL INITIAL YES      NO-UNDO. /* 1dot3 */
 
 DEFINE BUFFER morepeople        FOR people_mstr.
-DEFINE STREAM outstream. 
-DEFINE STREAM labelprints.
+/*DEFINE STREAM outstream.  */
+/*DEFINE STREAM labelprints.*/
+
+DEFINE STREAM addrStream.
+OUTPUT STREAM addrStream TO "C:\apps\Address\address-data.txt".
 
 DEFINE VARIABLE out-id          AS CHARACTER NO-UNDO.
 DEFINE VARIABLE out-create      AS LOGICAL NO-UNDO.
@@ -160,10 +164,12 @@ ASSIGN
         "numpgs = " numpgs "<br>".
     
 /*************************** Main Body ******************************/
-OUTPUT STREAM outstream TO PRINTER PAGE-SIZE VALUE (72).  
-PUT STREAM outstream
-    SKIP(3).
-OUTPUT STREAM labelprints TO VALUE (outfile).
+/*OUTPUT STREAM outstream TO PRINTER PAGE-SIZE VALUE (72).*/
+/*PUT STREAM outstream*/
+/*    SKIP(3).*/
+/*OUTPUT STREAM labelprints TO VALUE (outfile).*/
+
+EXPORT STREAM addrStream DELIMITER "," "name" "addr1" "addr2" "addr3" "cityStateZip" "country".
 
 froot_loop:                                                                
     {ADDRsearchR.i}.
@@ -179,16 +185,21 @@ froot_loop:
             " tk_id = " tk_id "<br>" skip(1). 
               
     {ADDRdisplayR.i}. 
-      
+    
     IF y = 3 THEN DO: /*** you may have to adjust the AT points ***/
-    PUT STREAM outstream         
-        labelline[1] AT 1 labelline[7] AT 29 labelline[13] AT 57
-        labelline[2] AT 1 labelline[8] AT 29 labelline[14] AT 57
-        labelline[3] AT 1 labelline[9] AT 29 labelline[15] AT 57
-        labelline[4] AT 1 labelline[10] AT 29 labelline[16] AT 57
-        labelline[5] AT 1 labelline[11] AT 29 labelline[17] AT 57
-        labelline[6] AT 1 labelline[12] AT 29 labelline[18] AT 57
-        SKIP(1).
+    
+    EXPORT STREAM addrStream DELIMITER "," labelline[1] labelline[2] labelline[3] labelline[4] labelline[5] labelline[6].
+    EXPORT STREAM addrStream DELIMITER "," labelline[7] labelline[8] labelline[9] labelline[10] labelline[11] labelline[12].
+    EXPORT STREAM addrStream DELIMITER "," labelline[13] labelline[14] labelline[15] labelline[16] labelline[17] labelline[18].
+    
+/*    PUT STREAM outstream                                         */
+/*        labelline[1] AT 1 labelline[7] AT 29 labelline[13] AT 57 */
+/*        labelline[2] AT 1 labelline[8] AT 29 labelline[14] AT 57 */
+/*        labelline[3] AT 1 labelline[9] AT 29 labelline[15] AT 57 */
+/*        labelline[4] AT 1 labelline[10] AT 29 labelline[16] AT 57*/
+/*        labelline[5] AT 1 labelline[11] AT 29 labelline[17] AT 57*/
+/*        labelline[6] AT 1 labelline[12] AT 29 labelline[18] AT 57*/
+/*        SKIP(1).                                                 */
     
     DO z = 1 TO 18:
         labelline[z] = "" .
@@ -277,8 +288,8 @@ froot_loop:
 	  IF pagecount = 0 AND 
 	     (pagebreak < numpgs OR numpgs = 0)  THEN
 	      DO:
-	          PAGE STREAM outstream.
-	          PUT STREAM outstream " " SKIP(2).
+/*	          PAGE STREAM outstream.           */
+/*	          PUT STREAM outstream " " SKIP(2).*/
 	          pagebreak = pagebreak + 1.
 	      END. 
 	  
@@ -296,41 +307,48 @@ froot_loop:
 	            "Status = " TK_mstr.TK_status "<br>" SKIP(1).
 	  END. /*** showmsg2 ***/
 	     
-	  DISPLAY STREAM labelprints
-	    TK_mstr.TK_ID
-	    TK_mstr.TK_test_seq
-	    TK_mstr.TK_lbl_print
-	    patient_mstr.patient_ID    
-	    people_mstr.people_firstname
-	    people_mstr.people_lastname
-	    patient_mstr.patient_RP_ID
-	    morepeople.people_firstname
-	    morepeople.people_lastname   
-	    SKIP(1)
-	        WITH FRAME emailout DOWN.
-	        DOWN WITH FRAME emailout.
+/*	  DISPLAY STREAM labelprints     */
+/*	    TK_mstr.TK_ID                */
+/*	    TK_mstr.TK_test_seq          */
+/*	    TK_mstr.TK_lbl_print         */
+/*	    patient_mstr.patient_ID      */
+/*	    people_mstr.people_firstname */
+/*	    people_mstr.people_lastname  */
+/*	    patient_mstr.patient_RP_ID   */
+/*	    morepeople.people_firstname  */
+/*	    morepeople.people_lastname   */
+/*	    SKIP(1)                      */
+/*	        WITH FRAME emailout DOWN.*/
+/*	        DOWN WITH FRAME emailout.*/
 	        
 END. /** for each - froot_loop **/
     
 IF y <> 0 THEN DO:
     
-    PUT STREAM outstream         
-        labelline[1] AT 1 labelline[7] AT 29 labelline[13] AT 57
-        labelline[2] AT 1 labelline[8] AT 29 labelline[14] AT 57
-        labelline[3] AT 1 labelline[9] AT 29 labelline[15] AT 57
-        labelline[4] AT 1 labelline[10] AT 29 labelline[16] AT 57
-        labelline[5] AT 1 labelline[11] AT 29 labelline[17] AT 57
-        labelline[6] AT 1 labelline[12] AT 29 labelline[18] AT 57
-        SKIP(1).
+    EXPORT STREAM addrStream DELIMITER "," labelline[1] labelline[2] labelline[3] labelline[4] labelline[5] labelline[6].
+    EXPORT STREAM addrStream DELIMITER "," labelline[7] labelline[8] labelline[9] labelline[10] labelline[11] labelline[12].
+    EXPORT STREAM addrStream DELIMITER "," labelline[13] labelline[14] labelline[15] labelline[16] labelline[17] labelline[18].
+    
+/*    PUT STREAM outstream                                         */
+/*        labelline[1] AT 1 labelline[7] AT 29 labelline[13] AT 57 */
+/*        labelline[2] AT 1 labelline[8] AT 29 labelline[14] AT 57 */
+/*        labelline[3] AT 1 labelline[9] AT 29 labelline[15] AT 57 */
+/*        labelline[4] AT 1 labelline[10] AT 29 labelline[16] AT 57*/
+/*        labelline[5] AT 1 labelline[11] AT 29 labelline[17] AT 57*/
+/*        labelline[6] AT 1 labelline[12] AT 29 labelline[18] AT 57*/
+/*        SKIP(1).                                                 */
              
 END. /** y <> 0 **/  
     
-OUTPUT STREAM outstream CLOSE. 
-OUTPUT STREAM labelprints CLOSE.
+/*OUTPUT STREAM outstream CLOSE.  */
+/*OUTPUT STREAM labelprints CLOSE.*/
+OUTPUT STREAM addrStream CLOSE.
  
 
-OS-COMMAND SILENT "C:\apps\biomed\batch-files\errormail" VALUE (emailaddr)
-    VALUE (messagetxt) VALUE (subjtxt) "-a" VALUE (outfile).
+/*OS-COMMAND SILENT "C:\apps\biomed\batch-files\errormail" VALUE (emailaddr)*/
+/*    VALUE (messagetxt) VALUE (subjtxt) "-a" VALUE (outfile).              */
+
+OS-COMMAND VALUE("C:\apps\Address\print-addresses.bat").
     
 {&OUT}
     "<FORM method='post' action='ADDRcriteriaR.r' >

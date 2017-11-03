@@ -68,7 +68,7 @@ DO TRANSACTION:
                 o-ucemp-update              = YES
                 o-ucemp-successful          = YES
                 Emp_Mstr.Emp_modified_date  = TODAY
-                Emp_Mstr.Emp_modified_by    = USERID ("General") 
+                Emp_Mstr.Emp_modified_by    = USERID("Modules") 
 /*                Emp_Mstr.Emp_prog_name      = i-ucemp-progname*/
                 o-ucemp-id                  = Emp_Mstr.Emp_ID                
                 .
@@ -85,9 +85,9 @@ DO TRANSACTION:
                 o-ucemp-create             = YES
                 o-ucemp-successful         = YES
                 Emp_Mstr.Emp_create_date   = TODAY
-                Emp_Mstr.Emp_created_by    = USERID ("General")                    
+                Emp_Mstr.Emp_created_by    = USERID("Modules")                    
                 Emp_Mstr.Emp_modified_date = TODAY
-                Emp_Mstr.Emp_modified_by   = USERID ("General") 
+                Emp_Mstr.Emp_modified_by   = USERID("Modules") 
 /*                Emp_Mstr.Emp_prog_name     = i-ucemp-progname*/
                 o-ucemp-id                 = Emp_Mstr.Emp_ID 
                 .

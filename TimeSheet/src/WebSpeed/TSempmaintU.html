@@ -8,19 +8,23 @@
     <META NAME="CREATE_DATE" CONTENT="23/Dec/15">
     <META NAME="MODIFIED_DATE" CONTENT="11/Jul/16">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
-<SCRIPT LANGUAGE="SpeedScript">
-/* Create an unnamed pool to store all the widgets created by this procedure.
-   This is a good default which assures that this procedure's triggers and
-   internal procedures will execute in this procedure's storage, and that
-   proper cleanup will occur on deletion of the procedure. */
-CREATE WIDGET-POOL.
-</SCRIPT>
- 
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	 <!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
 </HEAD>
 <BODY class='inside'>
 
 <SCRIPT language="SpeedScript">
-{../depot/src/WebSpeed/menuname.i}.
+{TSvert-menu.i}.
   /*------------------------------------------------------------------
     File:           TSempmaintU.html
     Description:    Employee Maintenance Screen
@@ -323,7 +327,7 @@ CASE act:
                 
            {&OUT}     
            "                        <tr>" SKIP
-           "                        <TD><a href='../../TimeSheet/rcode/TSempmaintU.r" 
+           "                        <TD><a href='TSempmaintU.r"                         /* CODEHAUL */ 
 		                                    "?h-pp-passBack-peopid=" Emp_Mstr.Emp_ID
 		                                    "&h-pp-passBack-addrid=" addrid
 		                                    "&h-act=MAINTENANCE"
@@ -609,7 +613,7 @@ CASE act:
 			
 			"                       <tr>" skip
 			"                           <td>Address</td>" skip
-			"                           <td colspan='3'><a href='../../DataHub/rcode/ADDRpickP.r" 
+			"                           <td colspan='3'><a href='ADDRpickP.r"            /* CODEHAUL */ 
 										     "?h-prevproc=TSempmaintU.r"                  /* Calling Procedure */
 										     "&h-act=MAINTENANCE"                         /* Calling Procedure's Act */                              
 										     "&h-pp-passBack-peopid=" empid               /* Calling Procedure's people id to pass back. */          
@@ -1080,7 +1084,7 @@ CASE act:
                          addrline = "Click here to add an address.".  
                                
                      {&OUT}             
-            "                           <td colspan='3'><a href='../../DataHub/rcode/ADDRpickP.r" 
+            "                           <td colspan='3'><a href='ADDRpickP.r"               /* CODEHAUL */ 
                                              "?h-prevproc=TSempmaintU.r"                  /* Calling Procedure */
                                              "&h-act=MAINTENANCE"                         /* Calling Procedure's Act */                              
                                              "&h-pp-passBack-peopid=" empid               /* Calling Procedure's people id to pass back. */          

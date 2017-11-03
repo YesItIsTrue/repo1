@@ -10,13 +10,18 @@
     <META NAME='LAST_UPDATED' CONTENT='10/Feb/16'>    
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
 
-<SCRIPT LANGUAGE="SpeedScript">
-/* Create an unnamed pool to store all the widgets created by this procedure.
-   This is a good default which assures that this procedure's triggers and
-   internal procedures will execute in this procedure's storage, and that
-   proper cleanup will occur on deletion of the procedure. */
-CREATE WIDGET-POOL.
-</SCRIPT>
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
 </HEAD>
 
 <BODY class='inside'>
@@ -48,7 +53,7 @@ CREATE WIDGET-POOL.
    *  1.1 - Written by Jacob Luttrell on 10Feb16 for v11.1 release.  Added 
    *        Prefname.  Marked by 1dot1
    **********************************************************************/
-{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+{TSvert-menu.i}.   /*** menu name assignment ***/
    
 DEFINE VARIABLE v-people_ID         AS INTEGER  NO-UNDO.
 DEFINE VARIABLE v-firstname         LIKE people_mstr.people_firstname NO-UNDO. 
@@ -212,7 +217,7 @@ CASE act:
                   
           {&OUT}
             "  <tr>" SKIP
-            "       <td><a href='../../" pp-project "/rcode/" pp-out
+            "       <td><a href='" pp-out           /* CODEHAUL */
                             "?h-act=" pp-act 
                             "&whattorun=" whatshouldrun 
                             "&h-PEOP-passBack-integer1=" pp-passBack-int1                                                                

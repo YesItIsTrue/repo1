@@ -35,21 +35,21 @@ IF drive_letter = "C" THEN DO:
     programs on their PC's then if an e-mail is generated it will go to 
     them. */
         
-    IF  USERID("General")   = "Doug Luttrell"   OR 
-        USERID("HHI")       = "Doug Luttrell"   OR 
-        USERID("RS")        = "Doug Luttrell"   THEN 
+    IF  USERID("Core")   = "Doug Luttrell"   OR 
+        USERID("Modules")       = "Doug Luttrell"   OR 
+        USERID("Custom")        = "Doug Luttrell"   THEN 
             ASSIGN 
                 emailaddr = "-r doug.luttrell@mysolsource.com".
             
-    ELSE IF USERID("General")   = "Harold"  OR  
-            USERID("HHI")       = "Harold"  OR  
-            USERID("RS")        = "Harold"  THEN 
+    ELSE IF USERID("Core")   = "Harold"  OR  
+            USERID("Modules")       = "Harold"  OR  
+            USERID("Custom")        = "Harold"  THEN 
                 ASSIGN 
                     emailaddr = "-r harold.luttrell@mysolsource.com".
             
-    ELSE IF USERID("General")   = "Trae"  OR  
-            USERID("HHI")       = "Trae"  OR
-            USERID("RS")        = "Trae" THEN 
+    ELSE IF USERID("Core")   = "Trae"  OR  
+            USERID("Modules")       = "Trae"  OR
+            USERID("Custom")        = "Trae" THEN 
                 ASSIGN 
                     emailaddr = "-r trae.luttrell@mysolsource.com".
             

@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <META NAME="author" CONTENT="Andrew Garver"/>
+    <TITLE>Class Rosters</TITLE>
+    <META NAME="version" CONTENT="1.0"/>
+    <META NAME="copyright" CONTENT="Solsource"/>
+    <META NAME="create_date" CONTENT="8/Sept/2017"/>
+    <META NAME="last_updated" CONTENT="8/Sept/2017"/>   
+    <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.8.0/JsBarcode.all.min.js"></script>
+    
+    <style>
+        @media print{
+            .pagebreak {page-break-after: always;}
+        }
+        @media (min-width: 600px) {
+            .mobile-right-align {text-align: right;}   
+        }
+        .w3-col {padding: 3px};
+        .w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
+        .w3-theme-background {color::#000 !important; background-color:#fff !important}
+        .w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
+        .w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+        .w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+    </style>
+    
+    <script>
+        $(document).ready(function() {
+            $(".barcode").each(function() {
+                $(this).JsBarcode($(this).siblings("input").val(), {
+                    format: "CODE39"
+                });
+            });
+        });
+    </script>
+</head>
+<body class="w3-margin">
+
+<script language="SpeedScript">
+    DEFINE VARIABLE v-event-id LIKE event_mstr.event_ID NO-UNDO.
+    DEFINE VARIABLE v-date AS DATE NO-UNDO.
+    DEFINE VARIABLE v-student-id LIKE people_mstr.people_id NO-UNDO.
+    
+    PROCEDURE PrintHTMLBody:
+        FIND event_mstr WHERE event_mstr.event_ID = v-event-id AND event_deleted = ? NO-ERROR.
+        {&OUT}
+        "    <div class='w3-row'>" SKIP
+        "        <div class='w3-col s8'>" SKIP.
+        
+        IF AVAILABLE (event_mstr) THEN 
+        {&OUT}
+        "            <h1 id='class-name'>" event_mstr.event_name "</h1>" SKIP.
+        
+        {&OUT}
+        "            <h3 id='student-name'>" people_mstr.people_firstname + " " + people_mstr.people_lastname "'s Schedule</h3>" SKIP
+        "            <h3 id='date'>" STRING(v-date) "</h3>" SKIP
+        "        </div>" SKIP
+        "        <div class='w3-col s4 w3-margin-top'>" SKIP
+        "            <div class='mobile-right-align'>" SKIP
+        "                <input type='hidden' class='barcodeValue' value='" people_mstr.people_id "'/>" SKIP
+        "                <svg class='barcode'></svg>" SKIP
+        "            </div>" SKIP
+        "        </div>" SKIP
+        "    </div>" SKIP
+        "    <br/>" SKIP
+        "    <div class='w3-row'>" SKIP
+        "        <div class='w3-col s3'><strong>Period</strong></div>" SKIP
+        "        <div class='w3-col s3'><strong>Class</strong></div>" SKIP
+        "        <div class='w3-col s6'><strong>Time</strong></div>" SKIP
+        "    </div>" SKIP
+        "    <hr/>" SKIP.
+        
+        FOR EACH regis_mstr WHERE regis_mstr.regis_people_id = people_mstr.people_id AND regis_mstr.regis_deleted = ?,
+            EACH sched_mstr WHERE sched_mstr.sched_class_ID = regis_mstr.regis_class_ID AND sched_mstr.sched_start_date = v-date NO-LOCK
+            BREAK BY sched_mstr.sched_period BY sched_mstr.sched_start_time:
+            FIND MB_mstr WHERE MB_mstr.MB_BSA_ID = sched_mstr.sched_BSA_ID AND MB_mstr.MB_deleted = ? NO-ERROR.
+                {&OUT}
+                "<div class='w3-row'>" SKIP
+                "   <div class='w3-col s3'>" sched_mstr.sched_period "</div>" SKIP.
+            IF AVAILABLE (MB_mstr) THEN
+                    {&OUT}
+                    "<div class='w3-col s3'>" MB_mstr.MB_name "</div>" SKIP.
+                {&OUT}
+                "   <div class='w3-col s6'>" sched_mstr.sched_start_time " - " sched_mstr.sched_end_time "</div>" SKIP
+                "</div>" SKIP.
+        END.
+        {&OUT} "<br/><br/><div class='pagebreak'></div>" SKIP.
+    END PROCEDURE.
+       
+    ASSIGN 
+        v-event-id = INTEGER(get-value("h-event-id"))
+        v-date = DATE(INTEGER(ENTRY(2, get-value("h-date"), "-")), INTEGER(ENTRY(3, get-value("h-date"), "-")), INTEGER(ENTRY(1, get-value("h-date"), "-")))
+        v-student-id = INTEGER(get-value("h-student-id")).
+
+    IF v-student-id = 0 THEN DO:
+        FOR EACH sched_mstr WHERE sched_mstr.sched_event_ID = v-event-id AND sched_mstr.sched_start_date = v-date AND sched_mstr.sched_deleted = ?,    /* In the selected event, */
+            EACH regis_mstr WHERE regis_mstr.regis_class_ID = sched_mstr.sched_class_ID AND regis_mstr.regis_deleted = ?,   /* For all the classes in the event, */
+            EACH people_mstr WHERE people_mstr.people_id = regis_mstr.regis_people_id NO-LOCK                                /* Get each student that registered */
+            BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname BY people_mstr.people_DOB BY people_mstr.people_id:
+            
+            IF FIRST-OF (people_mstr.people_id) THEN DO:
+                RUN PrintHTMLBody.
+            END.
+        END.
+    END.
+    ELSE DO:
+        FIND people_mstr WHERE people_mstr.people_id = v-student-id AND people_mstr.people_deleted = ? NO-ERROR.
+        IF AVAILABLE (people_mstr) THEN
+            RUN PrintHTMLBody.
+    END.
+ </script>
+</body>
+</html>

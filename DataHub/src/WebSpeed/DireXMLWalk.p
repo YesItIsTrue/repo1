@@ -4,7 +4,7 @@
     File        : DireAttachedWalk.p
     Purpose     : To walk through each file in the entire Attached Files directory and pull the information out of 
                 each of the source files and check to see if it is in the right spot, in regards to what is in the 
-                PROGRESS Databases, General and 
+                PROGRESS Databases, General and HHI.
 
     Description : The joint dirwalk and attchwalk programs.
 
@@ -13,57 +13,123 @@
     Updated     : Fri Sep 11 15:42:00 EDT 2015
     Version     : 1.0
     Notes       :
+           
+    Revision History:
+    -----------------
+    1.1 - written by Harold Luttrell, Sr. on 13/Sept/17. 
+          Added code to get the disk drive letter,
+          store off the original propath variables, 
+          based on the drive letter add the paths projects for the 
+          DataHub, depot and HL7 in front of the original propath.
+          At the end of the program, reset the propath back to the original.
+          Marked by /* 1dot1 */.
+    1.2 - written by Harold Luttrell, Sr. on 14/Sept/17.
+          Moved the Inbound_EDI_Files folder from the 
+          C:\APPS\HL7\src\Inbound_EDI_Files\     folder to the
+          C:\APPS\HL7\Inbound_EDI_Files\ folder for ease of placement of 
+          the input data files.
+          Marked by /* 1dot2 */
+        
   ----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
 
 ROUTINE-LEVEL ON ERROR UNDO, THROW.
 
+DEFINE VARIABLE ITmessages AS LOGICAL INITIAL YES    NO-UNDO.
+
+DEFINE VARIABLE drive_letter AS CHARACTER FORMAT "x(01)" NO-UNDO.       /* 1dot1 */                
+
+DEFINE VARIABLE hold-propath AS CHARACTER NO-UNDO.                      /* 1dot1 */                           
+DEFINE VARIABLE propath-len AS INTEGER NO-UNDO.                         /* 1dot1 */
+ASSIGN  drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1)        /* 1dot1 */
+        propath-len  = LENGTH(PROPATH)                                  /* 1dot1 */
+        hold-propath = PROPATH.                                         /* 1dot1 */                                                 
+
+IF drive_letter = "P" THEN DO:                                          /* 1dot1 */
+    PROPATH =   "P:\OpenEdge\WRK\DataHub\rcode\," +                     /* 1dot1 */                             
+                "P:\OpenEdge\WRK\DataHub\src\WebSpeed\," +              /* 1dot1 */ 
+                "P:\OpenEdge\WRK\depot\rcode\," +                       /* 1dot1 */                           
+                "P:\OpenEdge\WRK\depot\src\WebSpeed\," +                /* 1dot1 */                       
+                "P:\OpenEdge\WRK\HL7\rcode\," +                         /* 1dot1 */
+                "P:\OpenEdge\WRK\HL7\src\WebSpeed\," +                  /* 1dot1 */
+                "P:\OpenEdge\WRK\LABS\rcode\," +                        /* 1dot1 */
+                "P:\OpenEdge\WRK\LABS\src\WebSpeed\," +                 /* 1dot1 */  
+                "P:\OpenEdge\WRK\TK\rcode\," +                          /* 1dot1 */
+                "P:\OpenEdge\WRK\TK\src\WebSpeed\," +                   /* 1dot1 */                                     
+                SUBSTRING(PROPATH, 3, propath-len).                     /* 1dot1 */                                                    
+END.                                                                    /* 1dot1 */
+ 
+ELSE IF drive_letter = "C" THEN DO:                                     /* 1dot1 */                                            
+    PROPATH =   "C:\OpenEdge\workspace\DataHub\rcode\," +               /* 1dot1 */                      
+                "C:\OpenEdge\workspace\DataHub\src\WebSpeed\," +        /* 1dot1 */                            
+                "C:\OpenEdge\workspace\depot\rcode\," +                 /* 1dot1 */                     
+                "C:\OpenEdge\workspace\depot\src\WebSpeed\," +          /* 1dot1 */                 
+                "C:\OpenEdge\workspace\HL7\rcode\," +                   /* 1dot1 */
+                "C:\OpenEdge\workspace\HL7\src\WebSpeed\," +            /* 1dot1 */
+                "C:\OpenEdge\workspace\LABS\rcode\," +                  /* 1dot1 */
+                "C:\OpenEdge\workspace\LABS\src\WebSpeed\," +           /* 1dot1 */  
+                "C:\OpenEdge\workspace\TK\rcode\," +                    /* 1dot1 */
+                "C:\OpenEdge\workspace\TK\src\WebSpeed\," +             /* 1dot1 */                            
+                SUBSTRING(PROPATH, 3, propath-len).                     /* 1dot1 */                                                        
+END.                                                                    /* 1dot1 */
+
 DEFINE STREAM filelist.
 
-DEFINE VARIABLE MyDirName AS CHARACTER INITIAL "C:\apps\HL7\src\Inbound_EDI_Files\" FORMAT "x(60)" NO-UNDO. /** name of the Directory you'd like to Walk **/
-/*DEFINE VARIABLE MyDirName       AS CHARACTER INITIAL "C:\apps\HL7\src\Inbound_EDI_Files\" FORMAT "x(60)" NO-UNDO. /** name of the Directory you'd like to Walk **/*/
-DEFINE VARIABLE ITmessage       AS LOGICAL INITIAL NO NO-UNDO.
-DEFINE VARIABLE showcounters    AS LOGICAL INITIAL NO NO-UNDO.
+OUTPUT STREAM filelist TO "C:\apps\HL7\ErrorLog\DireXMLWalk_log.txt" APPEND.
 
-DEFINE TEMP-TABLE NameTable   /* freshtest */ 
+IF  ITmessages THEN DO:                                                 /* 1dot1 */ 
+    PUT UNFORMATTED " " SKIP.                                           /* 1dot1 */   
+    PUT UNFORMATTED  "PROPATH =" PROPATH  SKIP. /* displays the PROPATH values in the batch C:\Progress\WRK\HL7_log.txt file. */ /* 1dot1 */
+    PUT UNFORMATTED " " SKIP.                                           /* 1dot1 */
+END.                                                                    /* 1dot1 */
+
+PAUSE 0 BEFORE-HIDE.
+
+DEFINE VARIABLE MyDirName AS CHARACTER INITIAL "C:\apps\HL7\Inbound_EDI_Files\" FORMAT "x(60)" NO-UNDO. /** name of the Directory to Walk **/ /* 1dot2 */
+
+DEFINE TEMP-TABLE NameTable 
     FIELD filecount AS INTEGER 
-    FIELD afile     AS CHARACTER FORMAT "x(20)"
-    FIELD fullfile  AS CHARACTER FORMAT "x(40)"
+    FIELD afile     AS CHARACTER FORMAT "x(60)"
+    FIELD fullfile  AS CHARACTER FORMAT "x(255)"
     FIELD fileattr  AS CHARACTER
         INDEX NT-main-idx AS PRIMARY UNIQUE filecount 
         INDEX NT-word-idx AS WORD-INDEX fullfile. 
 
-DEFINE VARIABLE typecode AS INTEGER NO-UNDO.
+DEFINE VARIABLE PDF-file-id  AS INTEGER   NO-UNDO.
+DEFINE VARIABLE EDI-file-id  AS INTEGER   NO-UNDO.
+DEFINE VARIABLE XML-file-id      AS INTEGER   NO-UNDO.
 
-DEFINE VARIABLE PDF-fileid  AS INTEGER   NO-UNDO.
-DEFINE VARIABLE EDI-fileid  AS INTEGER   NO-UNDO.
-DEFINE VARIABLE fileid      AS INTEGER   NO-UNDO.
-DEFINE VARIABLE INfile      AS CHARACTER NO-UNDO.
-DEFINE VARIABLE HL7file     AS CHARACTER NO-UNDO.
-DEFINE VARIABLE SSfile      AS CHARACTER NO-UNDO.
-DEFINE VARIABLE ERRfile     AS CHARACTER NO-UNDO.
+DEFINE VARIABLE loner-file-dir AS CHARACTER INITIAL "C:\apps\HL7\Processed\Loner\" NO-UNDO.
+DEFINE VARIABLE successful-EDI-dir  AS CHARACTER INITIAL "C:\apps\HL7\Processed\EDI\Successful\" NO-UNDO.
+DEFINE VARIABLE successful-XML-dir   AS CHARACTER INITIAL "C:\apps\HL7\Processed\XML\Successful\" NO-UNDO.
+DEFINE VARIABLE successful-PDF-dir AS CHARACTER INITIAL "C:\apps\HL7\Processed\PDF\Successful\" NO-UNDO.
+DEFINE VARIABLE failed-EDI-dir AS CHARACTER INITIAL "C:\apps\HL7\Processed\EDI\Error\" NO-UNDO.
+DEFINE VARIABLE failed-XML-dir AS CHARACTER INITIAL "C:\apps\HL7\Processed\XML\Error\" NO-UNDO.
+DEFINE VARIABLE failed-PDF-dir AS CHARACTER INITIAL "C:\apps\HL7\Processed\PDF\Error\" NO-UNDO.
+DEFINE VARIABLE source-file-dir AS CHARACTER INITIAL "C:\apps\HL7\Inbound_EDI_Files\" NO-UNDO.                  /* 1dot2 */
+DEFINE VARIABLE HL7-dir AS CHARACTER INITIAL "C:\apps\HL7\src\HL7_XML_Files\" NO-UNDO.
 
-DEFINE VARIABLE INpath  AS CHARACTER NO-UNDO.
-DEFINE VARIABLE HL7path AS CHARACTER NO-UNDO.
-DEFINE VARIABLE SSpath  AS CHARACTER NO-UNDO.
-DEFINE VARIABLE XML-ERRpath AS CHARACTER NO-UNDO.
-
-DEFINE VARIABLE coredir     AS CHARACTER INITIAL "C:\apps\HL7\src\" NO-UNDO.
-DEFINE VARIABLE NewEDIfull  AS CHARACTER INITIAL "C:\apps\HL7\src\Processed_EDI_Files\successful\" NO-UNDO.
-DEFINE VARIABLE NewSSfull   AS CHARACTER INITIAL "C:\apps\HL7\src\Processed_SS_Files\successful\" NO-UNDO.
+DEFINE VARIABLE full-original-EDI-filepath AS CHARACTER NO-UNDO.
+DEFINE VARIABLE full-original-PDF-filepath AS CHARACTER NO-UNDO.
+DEFINE VARIABLE full-successful-EDI-filepath AS CHARACTER NO-UNDO.
+DEFINE VARIABLE full-successful-PDF-filepath AS CHARACTER NO-UNDO.
+DEFINE VARIABLE full-successful-XML-filepath AS CHARACTER NO-UNDO.
+DEFINE VARIABLE full-error-EDI-filepath AS CHARACTER NO-UNDO.
+DEFINE VARIABLE full-error-PDF-filepath AS CHARACTER NO-UNDO.
+DEFINE VARIABLE full-error-XML-filepath AS CHARACTER NO-UNDO.
+DEFINE VARIABLE full-HL7-filepath AS CHARACTER NO-UNDO.
+DEFINE VARIABLE full-loner-filepath AS CHARACTER NO-UNDO.
 
 DEFINE VARIABLE reccount    AS INTEGER INITIAL 1 NO-UNDO.
 DEFINE VARIABLE iteration   AS INTEGER NO-UNDO.
 DEFINE VARIABLE c-nametable AS INTEGER NO-UNDO. /* nametable counter */
 DEFINE VARIABLE invalidFiles AS INTEGER INITIAL 0 NO-UNDO.
 DEFINE VARIABLE updatemode  AS LOGICAL LABEL "Run Program in Update Mode?" INITIAL YES NO-UNDO.
+
 DEFINE VARIABLE runthis     AS CHARACTER NO-UNDO.
-DEFINE VARIABLE old-EDI     AS CHARACTER NO-UNDO.
-DEFINE VARIABLE new-EDI     AS CHARACTER NO-UNDO.
-DEFINE VARIABLE err-EDI     AS CHARACTER NO-UNDO.
-DEFINE VARIABLE old-SS      AS CHARACTER NO-UNDO.
-DEFINE VARIABLE new-SS      AS CHARACTER NO-UNDO.
+DEFINE VARIABLE stripped-filename       AS CHARACTER NO-UNDO.
+DEFINE VARIABLE timestamped-filename    AS CHARACTER NO-UNDO.
 
 DEFINE VARIABLE o-file_id   AS INTEGER NO-UNDO.
 DEFINE VARIABLE o-fail      AS LOGICAL NO-UNDO.
@@ -73,11 +139,10 @@ DEFINE VARIABLE o-update    AS LOGICAL NO-UNDO.
 DEFINE VARIABLE comm-line1  AS CHARACTER NO-UNDO.
 DEFINE VARIABLE comm-line2  AS CHARACTER NO-UNDO.
 
-DEFINE VARIABLE logfile     AS CHARACTER NO-UNDO.
-DEFINE VARIABLE timeInMilliseconds AS CHARACTER INITIAL "" NO-UNDO.
 DEFINE VARIABLE thisday     AS CHARACTER FORMAT "x(7)" NO-UNDO.
 DEFINE VARIABLE thisyear    AS CHARACTER NO-UNDO.
 DEFINE VARIABLE months      AS CHARACTER INITIAL "JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC" NO-UNDO.
+DEFINE VARIABLE systime     AS CHARACTER INITIAL "" NO-UNDO.
 
 ASSIGN   
     thisyear = STRING(YEAR(TODAY), "9999")
@@ -85,7 +150,6 @@ ASSIGN
     thisday  = STRING(DAY(TODAY), "99") + ENTRY(MONTH(TODAY),months) + thisyear + "-" + STRING(TIME, "HH:MM:SS")
     .
 
-/* ***************************  Main Block  *************************** */
 PROCEDURE namewalk:
             
     DEFINE INPUT PARAMETER dirname AS CHARACTER FORMAT "x(50)" NO-UNDO.
@@ -114,36 +178,26 @@ PROCEDURE namewalk:
     INPUT CLOSE.  
                                                                                       
 END. /* of namewalk */
-                                                                  
-/*UPDATE SKIP (8) MyDirName COLON 15 SKIP (8) WITH FRAME maine TITLE "Insert Directory Name (Full Path)" WIDTH 80 SIDE-LABELS .*/
-                                                                                               
-RUN namewalk(MyDirName, OUTPUT iteration).   /** name of the directory that you are searching ***/ 
-                                                                    IF ITmessage = YES THEN 
-                                                                    DO:
-                                                                        MESSAGE
-                                                                            "afile = " afile SKIP(1) 
-                                                                            "iteration = " iteration SKIP(1)
-                                                                            "logfile = " logfile 
-                                                                            VIEW-AS ALERT-BOX INFORMATION BUTTONS OK
-                                                                            TITLE "End of namewalk.".
-                                                                    END.                                                                    
-OUTPUT STREAM filelist TO "C:\apps\HL7\src\Error_log\DireXMLWalk_log.txt" APPEND.
 
-PAUSE 0 BEFORE-HIDE.
+/* ***************************  Main Block  *************************** */
+
+RUN namewalk(MyDirName, OUTPUT iteration).   /** name of the directory that you are searching ***/ 
 
 EXPORT STREAM filelist DELIMITER ";"
     "******************* DireXMLWalk Log File Initialated *******************".
+    
+IF  ITmessages THEN                                                                 /* 1dot1 */
+    EXPORT STREAM filelist DELIMITER ";"                                            /* 1dot1 */
+        "iteration=" iteration "   reccount=" reccount "   filecount=" filecount.   /* 1dot1 */
 
 EXPORT STREAM filelist DELIMITER ";"
     thisday.
-    
+  
 EXPORT STREAM filelist DELIMITER ";"
     "File_Count" "File_Name" "Full_Path" "File_Attr" "Errors".
-
-/*UPDATE SKIP (8) updatemode SKIP (8) WITH SIDE-LABELS FRAME firstmenu WIDTH 80 TITLE "Program Mode:".*/
   
 FOR EACH nametable EXCLUSIVE-LOCK:     /*** cleanup records ***/
-
+    
     IF afile = "" AND fullfile = "" AND fileattr = "" OR afile = "DONT_TOUCH" THEN
 
         DELETE nametable.
@@ -155,271 +209,220 @@ FOR EACH nametable EXCLUSIVE-LOCK:     /*** cleanup records ***/
         IF fileattr = "F" THEN DO:
 
             IF (R-INDEX(afile,".") > 0 AND SUBSTRING(afile, (R-INDEX(afile,".") + 1)) = "txt") THEN DO:
-                                                                    IF ITmessage = YES THEN
-                                                                    DO:
-                                                                        MESSAGE
-                                                                            "afile = " afile SKIP(1)
-                                                                            "fullfile = " fullfile SKIP(1)
-                                                                            "SSfile = " SSfile
-                                                                            VIEW-AS ALERT-BOX INFORMATION BUTTONS OK
-                                                                            TITLE "Before XMLgen.p".
-                                                                    END.             
-                RUN VALUE(SEARCH("XMLgen.r")) (
-                    afile,
-                    OUTPUT INfile,
-                    OUTPUT HL7file,
-                    OUTPUT SSfile,
-                    OUTPUT ERRfile,
-                    OUTPUT o-fail
-                    ).
                 
-                IF o-fail = YES THEN 
-                    EXPORT STREAM filelist DELIMITER ";"
-                       filecount afile fullfile "--" "Error 1: XMLgen Failed.".
+                IF  ITmessages THEN     EXPORT STREAM filelist "1-going    to getStringTimeMilliseconds.r".       /* 1dot1 */
                 
-
-                                                                    IF ITmessage = YES THEN
-                                                                    DO:
-                                                                        MESSAGE
-                                                                            "afile = " afile SKIP(1)
-                                                                            "fullfile = " fullfile SKIP(1)
-                                                                            "SSfile = " SSfile
-                                                                            VIEW-AS ALERT-BOX INFORMATION BUTTONS OK
-                                                                            TITLE "After XMLgen.p. Before ASSIGN statement".
-                                                                    END.
                 RUN VALUE(SEARCH("getStringTimeMilliseconds.r")) (
-                    OUTPUT timeInMilliseconds
-                    ).                                                                    
-                                                                    
-                ASSIGN
-                    INpath  = "Inbound_EDI_Files\" + INfile
-                    HL7path = "HL7_XML_Files\" + HL7file
-                    SSpath  = NewSSfull + SSfile
-                    XML-ERRpath = "Processed_SS_Files\failed\" + ERRfile
-                    runthis = "C:\apps\HL7\src\Pipeline_batch.bat " + INpath + " " + HL7path + " " + SSpath + " " + XML-ERRpath
-                    old-EDI = coredir + INpath
-                    old-SS  = coredir + SSpath
-                    new-EDI = NewEDIfull + timeInMilliseconds + "_" + INfile
-                    new-SS  = NewSSfull + SSfile
-                    err-EDI = coredir + "Processed_EDI_Files\failed\" + INfile
-                    .  
-                                                                    IF ITmessage = YES THEN
-                                                                    DO:
-                                                                        MESSAGE
-                                                                            "INpath = " INpath SKIP(1)
-                                                                            "HL7path = " HL7path SKIP(1)
-                                                                            "XML-ERRpath = " XML-ERRpath SKIP(1)
-                                                                            "SSfile = " SSfile SKIP(1)
-                                                                            "SSpath = " SSpath
-                                                                            VIEW-AS ALERT-BOX INFORMATION BUTTONS OK
-                                                                            TITLE "After ASSIGN statement. Before XML Conversion".
-                                                                    END.
-            /* *** XML Conversion *** */
-                IF o-fail = NO AND updatemode = YES THEN
-                DO:
+                    OUTPUT systime
+                    ).
+                    
+                IF  ITmessages THEN     EXPORT STREAM filelist "1-return from getStringTimeMilliseconds.r".       /* 1dot1 */
                 
-                /* *** UTM_pipeline.jar *** */    
-                    OS-COMMAND SILENT VALUE(runthis).
-                                                                    IF ITmessage = YES THEN
-                                                                    DO:
-                                                                        MESSAGE
-                                                                            "SSfile = " SSfile
-                                                                             SEARCH("eXorcisM_Load.r")
-                                                                            VIEW-AS ALERT-BOX INFORMATION BUTTONS OK
-                                                                            TITLE "After UTM_pipeline.jar. Before eXorcisM_Load".
-                                                                    END.
-                /* *** eXorcisM_Load.p *** */
-                    RUN VALUE(SEARCH("eXorcisM_Load.r")) (
-                        NewSSFull,
-                        SSfile,
-                        OUTPUT fileid,
-                        OUTPUT o-fail
-                        ).
-                     
-                    IF o-fail = YES THEN DO:
-                        EXPORT STREAM filelist DELIMITER ";"
-                            filecount SSfile NewSSFull "--" "Error 2: eXorcisM_Load Failed.".
-                        ASSIGN invalidFiles = invalidFiles + 1.
-                        IF SEARCH(err-EDI) = ? THEN
-                            OS-RENAME VALUE(old-EDI) VALUE(err-EDI). 
-                                                                    IF ITmessage = YES THEN
-                                                                    DO:
-                                                                        MESSAGE
-                                                                            "SSfile = " SSfile SKIP(1)
-                                                                            "fileid = " fileid SKIP(1)
-                                                                            "o-fail = " o-fail
-                                                                            VIEW-AS ALERT-BOX INFORMATION BUTTONS OK
-                                                                            TITLE "After eXorcisM_Load.p. Before OS-RENAME.".
-                                                                    END.
-                    END.
-                END.  /* *** XML Conversion *** */
+                ASSIGN
+                    stripped-filename    = SUBSTRING(afile,1,INDEX(afile,".txt") - 1)
+                    timestamped-filename = stripped-filename + "-" + systime
+                    full-HL7-filepath = HL7-dir + timestamped-filename + ".xml"
+                    full-original-EDI-filepath      = source-file-dir + afile
+                    full-original-PDF-filepath      = source-file-dir + stripped-filename + ".pdf"
+                    full-successful-EDI-filepath    = successful-EDI-dir + timestamped-filename + ".txt"
+                    full-successful-PDF-filepath    = successful-PDF-dir + timestamped-filename + ".pdf"
+                    full-successful-XML-filepath    = successful-XML-dir + timestamped-filename + ".xml"
+                    full-error-EDI-filepath         = failed-EDI-dir + timestamped-filename + ".txt"
+                    full-error-PDF-filepath         = failed-PDF-dir + timestamped-filename + ".pdf"
+                    full-error-XML-filepath         = failed-XML-dir + timestamped-filename + ".xml"
+                    runthis                     = "C:\apps\HL7\src\Pipeline_batch.bat " + full-original-EDI-filepath  + " " + full-HL7-filepath + " " + full-successful-XML-filepath + " " + full-error-XML-filepath
+                    .
+
+                IF SEARCH(full-original-PDF-filepath) = ? THEN DO:
+                    IF SEARCH(loner-file-dir + stripped-filename + ".txt") = ? THEN
+                        OS-RENAME VALUE(full-original-EDI-filepath) VALUE(loner-file-dir + timestamped-filename + ".txt").
+                END.
+                ELSE DO:
+    
+                /* *** XML Conversion *** */
+                    IF updatemode = YES THEN
+                    DO:
+                    
+                    /* *** UTM_pipeline.jar *** */    
+                        OS-COMMAND SILENT VALUE(runthis).
+    
+                    /* *** eXorcisM_Load.p *** */
+                        IF  ITmessages THEN     EXPORT STREAM filelist "2-going  to eXorcisM_Load.r".               /* 1dot1 */
+                        
+                        RUN VALUE(SEARCH("eXorcisM_Load.r")) (
+                            successful-XML-dir,
+                            timestamped-filename + ".xml",
+                            OUTPUT XML-file-id,
+                            OUTPUT o-fail
+                            ).
+                            
+                        IF  ITmessages THEN     EXPORT STREAM filelist "2-return from eXorcisM_Load.r".             /* 1dot1 */
+                        
+                        IF o-fail = YES THEN DO:
+                            EXPORT STREAM filelist DELIMITER ";"
+                                filecount full-successful-EDI-filepath "--" "Error 2: eXorcisM_Load Failed.".
+                            ASSIGN invalidFiles = invalidFiles + 1.
+                            IF SEARCH(full-error-EDI-filepath) = ? THEN
+                                OS-RENAME VALUE(full-original-EDI-filepath) VALUE(full-error-EDI-filepath).
+                            IF SEARCH(full-error-PDF-filepath) = ? THEN     
+                                OS-RENAME VALUE(full-original-PDF-filepath) VALUE(full-error-PDF-filepath). 
+                        END.
+                    END.  /* *** XML Conversion *** */
+                
+                /* *** OS-RENAME *** */
+                    IF o-fail = NO AND updatemode = YES THEN DO:
+                        IF SEARCH(full-successful-EDI-filepath) = ? THEN
+                            OS-RENAME VALUE(full-original-EDI-filepath) VALUE(full-successful-EDI-filepath).
+                        ELSE DO:
+                            EXPORT STREAM filelist DELIMITER ";"
+                                filecount full-successful-EDI-filepath "--" "Error 3: EDI file already exists in completed folder.".                       
+                            o-fail = YES.
+                        END. 
+                        IF SEARCH(full-successful-PDF-filepath) = ? THEN     
+                            OS-RENAME VALUE(full-original-PDF-filepath) VALUE(full-successful-PDF-filepath).
+                        ELSE 
+                        DO:
+                            EXPORT STREAM filelist DELIMITER ";"
+                                filecount full-successful-PDF-filepath "--" "Error 8: PDF file already exists in completed folder.".
+                            o-fail = YES.    
+                        END.
+                    END. /*** of OS-RENAME ***/
+                
+                /* *** File attachment *** */
+                    IF o-fail = NO AND updatemode = YES THEN 
+                    DO:                         
+
+                        IF  ITmessages THEN     EXPORT STREAM filelist "3-EDI  to SUBatt-ucU.r".                /* 1dot1 */
+                                              
+                        /* Save EDI File */
+                        RUN VALUE(SEARCH("SUBatt-ucU.r")) (
+                            NEXT-VALUE(seq-attfile),
+                            "fs_mstr",
+                            "fs_file_ID",
+                            XML-file-id,
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            successful-EDI-dir,
+                            timestamped-filename + ".txt",
+                            "",
+                            "",
+                            "",
+        
+                            OUTPUT EDI-file-id,
+                            OUTPUT o-create,
+                            OUTPUT o-update,
+                            OUTPUT o-success
+                            ).
+
+                        IF  ITmessages THEN     EXPORT STREAM filelist "3-EDI from SUBatt-ucU.r".               /* 1dot1 */
+                                                    
+                        IF o-success = NO THEN 
+                            EXPORT STREAM filelist DELIMITER ";"
+                                filecount full-successful-EDI-filepath "--" "Error 5: EDI File Attachment Failed.".                          
+    
+                        IF  ITmessages THEN     EXPORT STREAM filelist "4-PDF  to SUBatt-ucU.r".                /* 1dot1 */
+                                
+                        /* Save PDF File */                                          
+                        RUN VALUE(SEARCH("SUBatt-ucU.r")) (
+                            NEXT-VALUE(seq-attfile),
+                            "fs_mstr",
+                            "fs_file_ID",
+                            XML-file-id,
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            successful-PDF-dir,
+                            timestamped-filename + ".pdf",
+                            "",
+                            "",
+                            "",
+        
+                            OUTPUT PDF-file-id,
+                            OUTPUT o-create,
+                            OUTPUT o-update,
+                            OUTPUT o-success
+                            ).
+
+                        IF  ITmessages THEN     EXPORT STREAM filelist "4-PDF from SUBatt-ucU.r".               /* 1dot1 */
+                                                    
+                        IF o-success = NO THEN 
+                            EXPORT STREAM filelist DELIMITER ";"
+                                filecount full-successful-PDF-filepath "--" "Error 6: PDF File Attachment Failed.".
             
-            /* *** OS-RENAME *** */
-                IF o-fail = NO AND updatemode = YES THEN DO:
-                    IF SEARCH(new-EDI) = ? THEN
-                                          
-                        OS-RENAME VALUE(old-EDI) VALUE(new-EDI).
-                    
-                    ELSE DO:
-                        
-                        EXPORT STREAM filelist DELIMITER ";"
-                            filecount INfile NewEDIfull "--" "Error 3: EDI file already exists in completed folder.".                       
-                        
-                        o-fail = YES.
-                    END. 
-                    IF SEARCH(new-SS) = ? THEN     
-                        
-                        OS-RENAME VALUE(old-SS) VALUE(new-SS).
-                    
-                    ELSE DO:
-                        
-                        EXPORT STREAM filelist DELIMITER ";"
-                            filecount SSfile NewSSfull "--" "Error 4: SS file already exists in completed folder.".
-                        
-                        o-fail = YES.    
-                    END.
-                                                                    IF ITmessage = YES THEN
-                                                                    DO:
-                                                                        MESSAGE
-                                                                            "old-EDI = " old-EDI SKIP(1)
-                                                                            "new-EDI = " new-EDI SKIP(1)
-                                                                            "old-SS = " old-SS SKIP(1)
-                                                                            "fileid = " fileid SKIP(1)
-                                                                            "new-SS = " new-SS
-                                                                            VIEW-AS ALERT-BOX INFORMATION BUTTONS OK
-                                                                            TITLE "After OS-RENAME. Before EDI-fileid ASSIGN.".
-                                                                    END.
-                                                                        
-                    /** OS-RENAME PDF file **/
-                   
-                END. /*** of OS-RENAME ***/
-            /* *** File attachment *** */
-                IF o-fail = NO AND updatemode = YES THEN 
-                DO:
-                          
-                    ASSIGN
-                        EDI-fileid = NEXT-VALUE(seq-attfile)
-                        PDF-fileid = NEXT-VALUE(seq-attfile).
-                                                                    IF ITmessage = YES THEN
-                                                                    DO:
-                                                                        MESSAGE                                                                          
-                                                                            "fileid = " fileid SKIP(1)
-                                                                            "EDI-fileid = " EDI-fileid SKIP(1)
-                                                                            SEARCH("SUBatt-ucU.r")
-                                                                            VIEW-AS ALERT-BOX INFORMATION BUTTONS OK
-                                                                            TITLE "After EDI-fileid ASSIGN. Before File attachment.".
-                                                                    END.                              
-                    
-                    /** run SUBatt-ucU for the PDF file as well **/
-                    
-                    RUN VALUE(SEARCH("SUBatt-ucU.r")) (
-                        EDI-fileid,
-                        "fs_mstr",
-                        "fs_file_ID",
-                        EDI-fileid,
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        NewEDIfull,
-                        INfile,
-                        "",
-                        "",
-                        "",
+                        IF  ITmessages THEN     EXPORT STREAM filelist "5-XML  to SUBatt-ucU.r".                /* 1dot1 */
+                                                   
+                        /* Save XML File */                                                                                                     
+                        RUN VALUE(SEARCH("SUBatt-ucU.r")) (
+                            XML-file-id,
+                            "fs_mstr",
+                            "fs_file_ID",
+                            XML-file-id,
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            successful-XML-dir,
+                            timestamped-filename + ".xml",
+                            "",
+                            "",
+                            "",
+        
+                            OUTPUT XML-file-id,
+                            OUTPUT o-create,
+                            OUTPUT o-update,
+                            OUTPUT o-success
+                            ).
+ 
+                        IF  ITmessages THEN     EXPORT STREAM filelist "5-XML from SUBatt-ucU.r".               /* 1dot1 */
+                               
+                        IF o-success = NO THEN 
+                            EXPORT STREAM filelist DELIMITER ";"
+                                filecount full-successful-XML-filepath "--" "Error 7: SS File Attachment Failed.".
+        
+                            ASSIGN
+                                c-nametable = c-nametable + 1.
     
-                        OUTPUT EDI-fileid,
-                        OUTPUT o-create,
-                        OUTPUT o-update,
-                        OUTPUT o-success
-                        ).
-                        
-                    IF o-success = NO THEN 
-                        EXPORT STREAM filelist DELIMITER ";"
-                            filecount INfile NewEDIfull "--" "Error 5: EDI File Attachment Failed.".                          
-                                                                    IF ITmessage = YES THEN
-                                                                    DO:
-                                                                        MESSAGE
-                                                                            "EDI-fileid = " EDI-fileid SKIP(1)
-                                                                            "o-create = " o-create SKIP(1)
-                                                                            "o-update = " o-update SKIP(1)
-                                                                            "o-success = " o-success SKIP(1)
-                                                                            VIEW-AS ALERT-BOX INFORMATION BUTTONS OK
-                                                                            TITLE "After EDI file assignment. Before SS file assignment".
-                                                                    END.                                                                                                       
-                    RUN VALUE(SEARCH("SUBatt-ucU.r")) (
-                        fileid,
-                        "fs_mstr",
-                        "fs_file_ID",
-                        fileid,
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        NewSSfull,
-                        SSfile,
-                        "",
-                        "",
-                        "",
-    
-                        OUTPUT fileid,
-                        OUTPUT o-create,
-                        OUTPUT o-update,
-                        OUTPUT o-success
-                        ).
-    
-                    IF o-success = NO THEN 
-                        EXPORT STREAM filelist DELIMITER ";"
-                            filecount SSfile NewSSfull "--" "Error 6: SS File Attachment Failed.".
-    
-                        ASSIGN
-                            c-nametable = c-nametable + 1.
-                                                                    IF ITmessage = YES THEN
-                                                                    DO:
-                                                                        MESSAGE
-                                                                            "fileid = " fileid SKIP(1)
-                                                                            "o-create = " o-create SKIP(1)
-                                                                            "o-update = " o-update SKIP(1)
-                                                                            "o-success = " o-success SKIP(1)
-                                                                            "c-nametable = " c-nametable SKIP(1)
-                                                                            VIEW-AS ALERT-BOX INFORMATION BUTTONS OK
-                                                                            TITLE "After SS file Assignment. End of 4ea.".
-                                                                    END.
-                END. /* File attachment */
-
+                    END. /* File attachment */
+                    
+                END. /* The file is not a loner */
+                
             END. /*** the file is a txt ***/
-
+ 
         END. /*** of fileattr = F ***/
 
     END. /*** Else, because there is a file here ***/
 
 END.  /** of 4ea. nametable --- cleanup **/
 
+EXPORT STREAM filelist DELIMITER ";" "Processed: " c-nametable " valid files and " invalidFiles "invalid files.".   /* 1dot1 */
+
 EXPORT STREAM filelist DELIMITER ";"
     "******************* END OF LOG *******************".
 
 OUTPUT STREAM filelist CLOSE. /* file list */
 
-MESSAGE "Processed" c-nametable "valid files and" invalidFiles "invalid files." VIEW-AS ALERT-BOX BUTTONS OK.
-                                                                    IF ITmessage = YES THEN 
-                                                                    DO:
-                                                                
-                                                                        FOR EACH NameTable NO-LOCK:
-                                                                    
-                                                                            DISPLAY NameTable
-                                                                                WITH WIDTH 132 TITLE "Final Output".
-                                                                    
-                                                                        END.  /** of 4ea. NameTable --- Display **/
-                                                                    
-                                                                    END.
+PUT UNFORMATTED " " SKIP.                                           /* 1dot1 */ 
+PUT UNFORMATTED  "Processed   " c-nametable " :valid files and " invalidFiles " :invalid files.".      /* 1dot1 */
+PUT UNFORMATTED " " SKIP.                                           /* 1dot1 */ 
+
+ASSIGN PROPATH = hold-propath.                                                                  /* 1dot1 */
 
 /********************************   END OF LINE   *******************************/

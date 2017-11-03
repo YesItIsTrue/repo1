@@ -1,0 +1,227 @@
+<!DOCTYPE HTML PUBLIC -//IETF//DTD HTML//EN>
+<html>
+<head>
+    <meta NAME=AUTHOR CONTENT=Doug Luttrell>  
+    <TITLE>AMS Youth Homepage</TITLE>
+    <meta NAME=VERSION CONTENT=1.0> 
+    <meta charset=UTF-8>
+    <meta name=viewport content=width=device-width, initial-scale=1>
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/>
+    <link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i}.
+    END PROCEDURE.
+    -->
+    <style>
+        .radio {
+            cursor: pointer;
+        }
+    
+		.choice-a {
+		  width: 49.8%;
+		  float: left;
+		}
+		
+		.buffer {
+		  width: .4%;
+		  float: left;
+		}
+		
+		.choice-b {
+          width: 49.8%;
+          float: left;
+        }
+        
+        .box-selected {
+            background: #66a97c;
+            color: white;
+        }
+    </style>
+    <script>
+        $(document).ready(function() {
+            $(".radio").click(function() {
+                $(this).find("input")[0].click();
+                $(this).closest(".meal-card").first().children(".box-selected").each(function(index) {
+                    $($(this).closest(".meal-card").first().children(".box-selected")[index]).removeClass("box-selected");
+                });
+                if ($(this).find("input").first().is(':checked')) {
+                    $(this).addClass("box-selected");
+                }
+            });
+            
+            $("#menu-preference-form").submit(function(e) {
+                if ($("input:checked").length !== 3) {
+                    return false;
+                }
+            });
+        });
+    </script>
+</head>
+<body class='w3-light-grey'>
+    <!--WSS
+        DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE v-people-id LIKE people_mstr.people_id NO-UNDO.
+        DEFINE VARIABLE v-event-id LIKE event_mstr.event_id NO-UNDO.
+        DEFINE VARIABLE v-dinner-choice AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE v-breakfast-choice AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE v-lunch-choice AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE v-success AS LOGICAL.
+        
+        ASSIGN
+            v-act = html-encode(get-value("h-act"))
+            v-people-id = INTEGER(html-encode(get-cookie("c-user-id")))
+            v-event-id = INTEGER(html-encode(get-value("h-event_ID")))
+            v-dinner-choice = html-encode(get-value("h-dinner"))
+            v-breakfast-choice = html-encode(get-value("h-breakfast"))
+            v-lunch-choice = html-encode(get-value("h-lunch")).
+            
+        {registration.i}.
+    -->
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/CMS-Scout_green.css">
+    <div class="w3-row-padding">
+    
+    <!--WSS
+        IF v-act = "Signup" THEN DO:
+            
+            RUN VALUE(SEARCH("SUBdca-ucU.r")) (
+	            v-event-id,
+	            "Camporee Dinner Choice",
+	            v-people-id,
+	            "char",
+	            v-dinner-choice,
+	            OUTPUT v-success
+	        ).
+	        
+	        RUN VALUE(SEARCH("SUBdca-ucU.r")) (
+	            v-event-id,
+	            "Camporee Breakfast Choice",
+	            v-people-id,
+	            "char",
+	            v-breakfast-choice,
+	            OUTPUT v-success
+	        ).
+	        
+	        RUN VALUE(SEARCH("SUBdca-ucU.r")) (
+	            v-event-id,
+	            "Camporee Lunch Choice",
+	            v-people-id,
+	            "char",
+	            v-lunch-choice,
+	            OUTPUT v-success
+	        ).
+	            
+	            DISPLAY v-event-id.
+	            DISPLAY v-people-id.
+	        FOR FIRST sched_mstr WHERE sched_mstr.sched_event_ID = v-event-id AND sched_mstr.sched_deleted = ? NO-LOCK:
+	            FIND regis_mstr WHERE regis_mstr.regis_people_id = v-people-id AND regis_mstr.regis_class_ID = sched_mstr.sched_class_id AND regis_mstr.regis_deleted = ? NO-ERROR.
+	            IF NOT AVAILABLE (regis_mstr) THEN DO:
+	                CREATE regis_mstr.
+	                ASSIGN
+	                    regis_mstr.regis_people_id = v-people-id
+	                    regis_mstr.regis_class_ID = sched_mstr.sched_class_id
+	                    regis_mstr.regis_create_date = TODAY 
+	                    regis_mstr.regis_created_by = USER("Modules")
+	                    regis_mstr.regis_modified_date = TODAY 
+	                    regis_mstr.regis_modified_by = USER("Modules")
+	                    regis_mstr.regis_prog_name = THIS-PROCEDURE:FILE-NAME.
+	            END.
+	        END.
+    -->
+        <script>window.location = "regis-homepage.html";</script>
+    <!--WSS
+        END. /* IF v-act = "Signup" */
+        ELSE DO:
+    -->
+        <center><h1 style="width:80%">We're going to be cooking up a storm this camporee!<br/>Please select the dishes below that you would like to prepare.</h1></center>
+        <br/>
+    
+        <form id="menu-preference-form">
+            <input type="hidden" name="h-event_ID" value="`v-event-id`"/>
+            <div class="w3-row">
+	            <div class="w3-col m1">&nbsp;</div>
+				<div class="meal-card w3-margin-bottom radio-group w3-col m10">
+				  <center><div class="w3-theme-dark w3-xlarge">Dinner</div></center>
+				  <div class="radio w3-card-4 choice-a">
+				      <input type="radio" name="h-dinner" val="dinner-a" hidden/>
+				      <div class="w3-ul w3-border w3-center">
+				        <h2>
+	   			             <b>Chicken Casserole<br/>Foil Dinner</b>
+				        </h2>
+				      </div>
+				  </div>
+				  <div class="buffer">&nbsp;</div>
+				  <div class="radio w3-card-4 choice-b">
+				      <input type="radio" name="h-dinner" val="dinner-b" hidden/>
+		              <div class="w3-ul w3-border w3-center">
+                        <h2>
+                             <b>Sausage with Potatoes<br/>and Green Beans</b>
+                        </h2>
+                      </div>
+		          </div>
+				</div>
+				<div class="w3-col m1">&nbsp;</div>
+			</div>
+			
+			<div class="w3-row">
+                <div class="w3-col m1">&nbsp;</div>
+                <div class="meal-card w3-margin-bottom radio-group w3-col m10">
+                  <center><div class="w3-theme-dark w3-xlarge">Breakfast</div></center>
+                  <div class="radio w3-card-4 choice-a">
+                      <input type="radio" name="h-breakfast" val="breakfast-a" hidden/>
+                      <div class="w3-ul w3-border w3-center">
+                        <h2>
+                             <b>Breakfast<br/>Burritos</b>
+                        </h2>
+                      </div>
+                  </div>
+                  <div class="buffer">&nbsp;</div>
+                  <div class="radio w3-card-4 choice-b">
+                      <input type="radio" name="h-breakfast" val="breakfast-b" hidden/>
+                      <div class="w3-ul w3-border w3-center">
+                        <h2>
+                             <b>Pancakes, Toast,<br/>and Bacon</b>
+                        </h2>
+                      </div>
+                  </div>
+                </div>
+                <div class="w3-col m1">&nbsp;</div>
+            </div>
+            
+            <div class="w3-row">
+                <div class="w3-col m1">&nbsp;</div>
+                <div class="meal-card w3-margin-bottom radio-group w3-col m10">
+                  <center><div class="w3-theme-dark w3-xlarge">Lunch</div></center>
+                  <div class="radio w3-card-4 choice-a">
+                      <input type="radio" name="h-lunch" val="lunch-a" hidden/>
+                      <div class="w3-ul w3-border w3-center">
+                        <h2>
+                             <b>Italian Subs<br/>with Chips</b>
+                        </h2>
+                      </div>
+                  </div>
+                  <div class="buffer">&nbsp;</div>
+                  <div class="radio w3-card-4 choice-b">
+                      <input type="radio" name="h-lunch" val="lunch-b" hidden/>
+                      <div class="w3-ul w3-border w3-center">
+                        <h2>
+                             <b>Grilled Cheese<br/>and Tomato Bisque Soup</b>
+                        </h2>
+                      </div>
+                  </div>
+                </div>
+                <div class="w3-col m1">&nbsp;</div>
+            </div>
+            
+            <center>
+                <br/>
+                <button type='submit' name='h-act' value='Signup' class='w3-btn-block w3-round' style='max-width:800px; height: 100px; color:white; background:#09873F;'><h1><b>Continue</b></h1></button>
+            </center>
+		</form>
+	<!--WSS
+	END.
+	-->
+	</div>
+</body>
+</html>

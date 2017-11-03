@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+    <title>MB Req Maintenance</title>
+    <meta NAME='VERSION' CONTENT='1.0'/>
+    <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+    <meta NAME='CREATE_DATE' CONTENT="09/Sep/2017"/>
+    <meta NAME='LAST_UPDATED' CONTENT="09/Sep/2017"/>   
+    
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    
+    <style>
+        .delete-req {
+            margin-top: 3px;
+        }
+    </style>
+    
+    <script>
+        $(document).ready(function() {
+            $(".delete-req").click(function() {
+                var that = $(this);
+                var keys = $(this).val().split(",");
+                if (keys.length == 3) {
+                    $.post("AJAX-delete-mb-req.r",
+                    {
+                        reqNum: keys[0],
+                        mbID: keys[1],
+                        mbYear: keys[2]
+                    },
+                    function(data, success) {
+                        if (success && data.success) {
+                            that.closest(".w3-row").remove();
+                        }
+                    }
+                    );
+                }
+            });
+        });
+    </script>
+    
+</head>
+
+<body class='w3-white'>
+<!--WSS 
+    DEFINE VARIABLE v-mb-id LIKE mb_mstr.mb_BSA_ID NO-UNDO.
+    DEFINE VARIABLE v-mb-name AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE v-req-num LIKE MBR_reqs.MBR_Req_Nbr NO-UNDO.
+    DEFINE VARIABLE v-req-desc LIKE MBR_reqs.MBR_Req_Desc NO-UNDO.
+    DEFINE VARIABLE v-or-grp LIKE MBR_reqs.MBR_ORgroup NO-UNDO.
+    DEFINE VARIABLE v-or-qty LIKE MBR_reqs.MBR_ORqty NO-UNDO.
+    DEFINE VARIABLE v-mb-year LIKE MBR_reqs.MBR_year NO-UNDO.
+
+    ASSIGN 
+        v-mb-id = INTEGER(get-value("mbID"))
+        v-req-num = html-encode(get-value("reqNum"))
+        v-req-desc = html-encode(get-value("reqDesc"))
+        v-or-grp = INTEGER(get-value("orGroup"))
+        v-or-qty = INTEGER(get-value("orQty"))
+        v-mb-year = INTEGER(get-value("mbYear")).
+        
+    /* Perfom any updates that need to happen before moving on*/
+    IF v-req-num <> "" AND v-mb-id <> 0 AND v-mb-year <> 0 THEN DO:
+        FIND MBR_reqs WHERE MBR_reqs.MBR_Req_Nbr = v-req-num AND MBR_reqs.MBR_BSA_ID = v-mb-id AND
+        MBR_reqs.MBR_year = v-mb-year AND MBR_reqs.MBR_deleted = ? NO-ERROR.
+        IF AVAILABLE (MBR_reqs) THEN
+            ASSIGN
+                MBR_reqs.MBR_Req_Desc = v-req-desc
+                MBR_reqs.MBR_ORgroup = v-or-grp
+                MBR_reqs.MBR_ORqty = v-or-qty
+                MBR_reqs.MBR_year = v-mb-year
+                MBR_reqs.MBR_modified_by = USERID("Modules")
+                MBR_reqs.MBR_modified_date = TODAY
+                MBR_reqs.MBR_prog_name = THIS-PROCEDURE:FILE-NAME.
+        ELSE DO:
+            CREATE MBR_reqs.
+            ASSIGN
+                MBR_reqs.MBR_Req_Nbr = v-req-num
+                MBR_reqs.MBR_Req_Desc = v-req-desc
+                MBR_reqs.MBR_ORgroup = v-or-grp
+                MBR_reqs.MBR_ORqty = v-or-qty
+                MBR_reqs.MBR_BSA_ID = v-mb-id
+                MBR_reqs.MBR_year = v-mb-year
+                MBR_reqs.MBR_created_by = USERID("Modules")
+                MBR_reqs.MBR_create_date = TODAY
+                MBR_reqs.MBR_prog_name = THIS-PROCEDURE:FILE-NAME.
+        END.
+    END.
+    
+    FOR FIRST MB_mstr WHERE MB_BSA_ID = v-mb-id AND MB_deleted = ? NO-LOCK:
+        ASSIGN v-mb-name = MB_mstr.MB_name.
+    END. 
+-->
+    <header class='w3-container w3-dark-grey'>
+        <h1>Merit Badge Requirement Editing Page</h1> 
+    </header> 
+    <br><br> 
+        
+        
+        <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+	        <form>
+	            <input type="hidden" name="mbID" value="`v-mb-id`"/>
+	            <h3>`v-mb-name` Merit Badge Requirements</h3>
+	            <div class="w3-row w3-center">
+	                <div class="w3-col m1"><strong>Req #</strong></div>
+	                <div class="w3-col m7"><strong>Requirement Description</strong></div>
+	                <div class="w3-col m1"><strong>ORGrp</strong></div>
+	                <div class="w3-col m1"><strong>ORQty</strong></div>
+	                <div class="w3-col m1"><strong>Year</strong></div>
+	            </div>
+	            <!--WSS
+	            FOR EACH MBR_reqs WHERE MBR_reqs.MBR_BSA_ID = v-mb-id AND MBR_reqs.MBR_deleted = ?
+	            NO-LOCK BY MBR_reqs.MBR_Req_Nbr:
+	                {&OUT}
+	                "<div class='w3-row'>" SKIP
+	                "   <div class='w3-col m1'>" SKIP
+	                "       <input type='text' class='w3-input w3-border w3-round-large' value=~"" MBR_reqs.MBR_Req_Nbr "~" disabled/>" SKIP
+	                "   </div>" SKIP
+	                "   <div class='w3-col m7'>" SKIP
+	                "       <input type='text' class='w3-input w3-border w3-round-large' value=~"" MBR_reqs.MBR_Req_Desc "~" disabled/>" SKIP
+	                "   </div>" SKIP
+	                "   <div class='w3-col m1'>" SKIP
+	                "       <input type='number' class='w3-input w3-border w3-round-large' value=~"" MBR_reqs.MBR_ORgroup "~" disabled/>" SKIP
+	                "   </div>" SKIP
+	                "   <div class='w3-col m1'>" SKIP
+	                "       <input type='number' class='w3-input w3-border w3-round-large' value=~"" MBR_reqs.MBR_ORqty "~" disabled/>" SKIP
+	                "   </div>" SKIP
+	                "   <div class='w3-col m1'>" SKIP
+	                "       <input type='number' class='w3-input w3-border w3-round-large' value=~"" MBR_reqs.MBR_year "~" disabled/>" SKIP
+	                "   </div>" SKIP
+	                "   <div class='w3-col m1'>" SKIP
+	                "       <button type='button' value=~"" MBR_reqs.MBR_Req_Nbr "," MBR_reqs.MBR_BSA_ID "," MBR_reqs.MBR_year "~" class='delete-req w3-button w3-round-large w3-hover-red'><i class='fa fa-trash' aria-hidden='true'></i></button>" SKIP
+	                "   </div>" SKIP
+	                "</div>" SKIP.
+	            END.
+	            -->
+	            <br/>
+	            <p>To add a requirement, simply type the correct information below. To edit an existing requirement, 
+	            enter the desired updates into the fields below, being sure to include the correct requirement number and year of 
+	            the requirement you want to update.</p> 
+	            <div class="w3-row w3-center">
+	                <div class="w3-col m1"><strong>Req #</strong></div>
+	                <div class="w3-col m7"><strong>Requirement Description</strong></div>
+	                <div class="w3-col m1"><strong>ORGrp</strong></div>
+	                <div class="w3-col m1"><strong>ORQty</strong></div>
+	                <div class="w3-col m1"><strong>Year</strong></div>
+	            </div>
+	            <div class='w3-row'> 
+	               <div class='w3-col m1'> 
+	                   <input type='text' name='reqNum' class='w3-input w3-border w3-round-large' required/> 
+	               </div> 
+	               <div class='w3-col m7'> 
+	                   <textarea rows="1" type='text' name='reqDesc' class='w3-input w3-border w3-round-large'></textarea> 
+	               </div> 
+	               <div class='w3-col m1'> 
+	                   <input type='number' name='orGroup' class='w3-input w3-border w3-round-large'/> 
+	               </div> 
+	               <div class='w3-col m1'> 
+	                   <input type='number' name='orQty' class='w3-input w3-border w3-round-large'/> 
+	               </div> 
+	               <div class='w3-col m1'> 
+	                   <input type='number' name='mbYear' class='w3-input w3-border w3-round-large' required/> 
+	               </div> 
+	            </div>
+	            <br/>
+	            <div class="w3-row">
+	                <center><button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Add/Edit Requirement</b></BUTTON></center>
+	            </div>
+            </form>
+            <form action="MB-maint-U.html" style="position: relative; bottom: 7px;">
+		        <center><button type='submit' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Back</b></BUTTON></center>
+		    </form> 
+        </div>
+        <br/>
+</body>
+</html>

@@ -39,7 +39,7 @@ IF AVAILABLE (warehouse_mstr) THEN DO:
         warehouse_mstr.warehouse_desc = i-warehouse-desc
         warehouse_mstr.warehouse_def_loc = i-warehouse-def-loc
         warehouse_mstr.warehouse_prog_name = SOURCE-PROCEDURE:FILE-NAME
-        warehouse_mstr.warehouse_modified_by = USERID("InvCtrl")
+        warehouse_mstr.warehouse_modified_by = USERID("Modules")
         warehouse_mstr.warehouse_modified_date = TODAY.
 
 END. /*** of update path ***/
@@ -55,10 +55,10 @@ ELSE DO:
         warehouse_mstr.warehouse_name = i-warehouse-name
         warehouse_mstr.warehouse_desc = i-warehouse-desc
         warehouse_mstr.warehouse_def_loc = i-warehouse-def-loc
-        warehouse_mstr.warehouse_created_by = USERID("InvCtrl")
+        warehouse_mstr.warehouse_created_by = USERID("Modules")
         warehouse_mstr.warehouse_create_date = TODAY
         warehouse_mstr.warehouse_prog_name = SOURCE-PROCEDURE:FILE-NAME
-        warehouse_mstr.warehouse_modified_by = USERID("InvCtrl")
+        warehouse_mstr.warehouse_modified_by = USERID("Modules")
         warehouse_mstr.warehouse_modified_date = TODAY.
 
 END. /*** of creation path ***/

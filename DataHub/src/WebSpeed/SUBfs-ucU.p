@@ -62,7 +62,7 @@ DO TRANSACTION:
                 fs_mstr.fs_processed        = "NEW"
                 o-ucfs-create               = YES
                 fs_mstr.fs_create_date      = TODAY
-                fs_mstr.fs_created_by       = USERID ("General")
+                fs_mstr.fs_created_by       = USERID("Core")
                 .
                 
         END.
@@ -72,7 +72,7 @@ DO TRANSACTION:
             o-ucfs-parent-lvl           = fs_mstr.fs_parent_level
             o-ucfs-child-lvl            = fs_mstr.fs_child_level
             fs_mstr.fs_modified_date    = TODAY
-            fs_mstr.fs_modified_by      = USERID ("General")
+            fs_mstr.fs_modified_by      = USERID("Core")
             fs_mstr.fs_prog_name        = SOURCE-PROCEDURE:FILE-NAME
             .
             

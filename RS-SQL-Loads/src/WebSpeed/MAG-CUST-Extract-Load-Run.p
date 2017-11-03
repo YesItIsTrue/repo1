@@ -30,7 +30,11 @@
         Date: 3/Jan/17.
         Modified code to use the new input HL7 folder name: \OpenEdge\WRK\Files-Input\.
         Identified by /* 2dot0 */  
-           
+    
+    Version 2.1 - written by HAROLD LUTTRELL, JR. on 03/Oct/17.  Changed to use
+                    proper database names in accordance with Release 12
+                    (CMC structure).  Marked by 2dot1.  
+                               
   ----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
@@ -58,14 +62,16 @@ ASSIGN char-dte = STRING(YEAR(t-dte), "9999") + "/" + STRING(MONTH(t-dte), "99")
 PUT UNFORMATTED "Starting MAG CUST Run." SKIP.
 
 ASSIGN cmdname = "P:/OpenEdge/Batch-Runs/magentoconnection.exe".
-ASSIGN cmdparam = " " + char-dte + " P:/OpenEdge/WRK/Files-Input/MAG-CUST-RCD-Extracted.txt".                       /* 2dot0 */
+/*ASSIGN cmdparam = " " + char-dte + " P:/OpenEdge/WRK/Files-Input/MAG-CUST-RCD-Extracted.txt".                       /* 2dot0 */*/
+ASSIGN cmdparam = " " + char-dte + " Input-Files/MAG-CUST-RCD-Extracted.txt".                   /* 2dot1 */
+
 
 IF drive_letter = "C" THEN DO:
     ASSIGN cmdname = "C:/OpenEdge/Batch-Runs/magentoconnection.exe".
     ASSIGN cmdparam = " " + char-dte + " C:/OpenEdge/WRK/Files-Input/MAG-CUST-RCD-Extracted.txt".                   /* 2dot0 */      
 END.  /* IF drive_letter = "C" THEN DO: */  
 
-IF  USERID("RS")        = "Harold.Luttrell"  THEN DO:                                                               /* 2dot0 */
+IF  USERID("CORE")        = "Harold.Luttrell"  THEN DO:                                /* 2dot1 */                  /* 2dot0 */
     ASSIGN cmdname = "C:/OpenEdge/Batch-Runs/magentoconnection.exe".                                                /* 2dot0 */
     ASSIGN cmdparam = " " + char-dte + " Q:/OpenEdge/WRK/Files-Input/MAG-CUST-RCD-Extracted.txt".                   /* 2dot0 */ 
 END.  /* IF drive_letter = "q" THEN DO: */                                                                          /* 2dot0 */

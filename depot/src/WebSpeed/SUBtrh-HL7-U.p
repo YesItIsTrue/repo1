@@ -51,9 +51,9 @@ DO TRANSACTION:
             trh_hist.trh_qty            = i-ctrh-qty                /* 1 */  
             trh_hist.trh_serial         = i-ctrh-serial             /* tk_id */      
             trh_hist.trh_create_date    = i-ctrh-date               /* 1st date if not blank else 2nd date. */
-            trh_hist.trh_created_by     = USERID ("General")
+            trh_hist.trh_created_by     = USERID("MODULES")
             trh_hist.trh_modified_date  = i-mtrh-date
-            trh_hist.trh_modified_by    = USERID ("General")
+            trh_hist.trh_modified_by    = USERID("MODULES")
             trh_hist.trh_sequence       = i-ctrh-sequence           /* Tk-ID-sequence-number */
             trh_hist.trh_date           = i-ctrh-trh-date
             trh_hist.trh_people_id      = i-trh_people_id           /* Tk-ID-people-ID */

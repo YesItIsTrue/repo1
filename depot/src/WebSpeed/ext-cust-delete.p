@@ -32,7 +32,7 @@ DEFINE OUTPUT PARAMETER cust86     AS LOGICAL INITIAL NO       NO-UNDO.
                                     ASSIGN
                                        cust_deleted        = TODAY  /* (This sets the flag to delete in cust_mstr) */
                                        cust_modified_date  = TODAY
-                                       cust_modified_by    = USERID ("General") 
+                                       cust_modified_by    = USERID("Core") 
                                        cust86              = YES.                  
 
                                       

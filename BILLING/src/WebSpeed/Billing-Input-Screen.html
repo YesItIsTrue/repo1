@@ -1,4 +1,4 @@
-  
+   
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <HTML>       
 <HEAD> 
@@ -6,10 +6,10 @@
     <TITLE>Billing Input Screen</TITLE>
     
     <META NAME="AUTHOR" CONTENT="Harold Luttrell, Sr.">
-    <META NAME="VERSION" CONTENT="1.4">
+    <META NAME="VERSION" CONTENT="1.5">
     <META NAME="COPYRIGHT" CONTENT="Solsource">
     <META NAME="CREATE_DATE" CONTENT="3/Apr/14">
-    <META NAME="LAST_UPDATED" CONTENT="25/Oct/14">
+    <META NAME="LAST_UPDATED" CONTENT="22/Aug/17">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
       
 <SCRIPT LANGUAGE="SpeedScript">
@@ -43,7 +43,13 @@
           1.4 - Oct 25, 2014 - removed all '../..' from the html code and 
                                     changed '.html' to '.r' and
                                     added the META & css.
-                       
+                
+          1.5 - written by DOUG LUTTRELL on 22/Aug/17.  Change RUN commands to
+                use VALUE(SEARCH()) functionality to fix pathing issues.  Also,
+                this program conditionally calls a program I haven't seen.  It 
+                is named "trh-hist-Report.r", but I don't have a copy of that. 
+                Also changed FORM from GET to POST.  Marked by 1dot5.
+                
   ----------------------------------------------------------------------*/ 
    
 CREATE WIDGET-POOL.
@@ -92,20 +98,26 @@ ASSIGN
 IF  s-Submit = "Select" THEN DO:
    
     IF  h-lab-ID = "DDI" THEN DO:  
-        RUN  "../BILLING/rcode/Billing-IP-DDI-Screen.r?whattorun". 
+/*        RUN  "../BILLING/rcode/Billing-IP-DDI-Screen.r?whattorun".                                          /* 1dot5 */*/
+        RUN VALUE(SEARCH("Billing-IP-DDI-Screen.r?whattorun")).                                             /* 1dot5 */
     END.   
     ELSE 
     IF  h-lab-ID = "GENOVA" THEN 
-        RUN  "../BILLING/rcode/Billing-IP-GENOVA-Screen.r?whattorun".
+/*        RUN  "../BILLING/rcode/Billing-IP-GENOVA-Screen.r?whattorun".                                       /* 1dot5 */*/
+        RUN VALUE(SEARCH("Billing-IP-GENOVA-Screen.r?whattorun")).                                          /* 1dot5 */
     ELSE
     IF  h-lab-ID = "NS" THEN 
-        RUN  "../BILLING/rcode/Billing-IP-NS-Screen.r?whattorun".
+/*        RUN  "../BILLING/rcode/Billing-IP-NS-Screen.r?whattorun".                                           /* 1dot5 */*/
+        RUN VALUE(SEARCH("Billing-IP-NS-Screen.r?whattorun")).                                              /* 1dot5 */
     ELSE
     IF  h-lab-ID = "SABRE" THEN 
-        RUN  "../BILLING/rcode/Billing-IP-SABRE-Screen.r?whattorun".
+/*        RUN  "../BILLING/rcode/Billing-IP-SABRE-Screen.r?whattorun".                                        /* 1dot5 */*/
+        RUN VALUE(SEARCH("Billing-IP-SABRE-Screen.r?whattorun")).                                           /* 1dot5 */
     ELSE
-    RUN  "../DataHub/rcode/trn-hist-Report.r".
+/*    RUN  "../DataHub/rcode/trn-hist-Report.r".                                                              /* 1dot5 */*/
+/*        RUN VALUE(SEARCH("trh-hist-Report.r")).                                                             /* 1dot5 --- not sure what this program is */*/
 /*        RUN  "../BILLING/rcode/Billing-IP-UNKNOWN-Lab-Screen.r?whattorun&h-lab-id".  */     
+        RUN VALUE(SEARCH("Billing-IP-UNKNOWN-Lab-Screen.r?whattorun&h-lab-id")).            /* changed my mind to run this commented out code because at least I have it --- 1dot5 */
 
 END.   
  
@@ -117,10 +129,11 @@ ELSE DO:
 {../depot/src/WebSpeed/menuname.i}.                     /*** menu name assignment ***/  
 
     ASSIGN whattorun  = get-value("whattorun").         /* to get the menu title */
-                              
+                                                 
 </SCRIPT> 
 <center>     
-    <form  method="get">
+    
+    <form  method="POST">                                                                           <!-- 1dot5 -->
         <table > 
             <center>
                 <tr>

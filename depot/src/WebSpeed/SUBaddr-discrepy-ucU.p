@@ -7,6 +7,13 @@
     Author(s)   : Harold D. Luttrell
     Created     : Feb 14, 2017
                 :
+    Updated:        Sept. 7, 2017
+    Version:        1.1
+    Author:         Harold Luttrell, Sr,
+    Description:    Added ‘../HL7/src/WebSpeed/’ to the front of 
+                    the ‘XML_TT_Address_Data.i’ statement.
+                    Identified by: /* 1dot1 */
+    
   ----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
@@ -15,7 +22,7 @@ ROUTINE-LEVEL ON ERROR UNDO, THROW.
 
 /* ********************  Preprocessor Definitions  ******************** */
 
-{XML_TT_Address_Data.i}.      /*  XML Extraction Address Data to Load into Progress. */
+{../HL7/src/WebSpeed/XML_TT_Address_Data.i}.      /*  XML Extraction Address Data to Load into Progress. */     /* 1dot1 */
 /*{XML_TT_PeopID_only.i}.       /* XML Extraction People ID to be used in the XML-SUB- programs.p. */*/
  
 DEFINE INPUT PARAMETER i-TT-Address-Seq-Nbr         AS INTEGER                         NO-UNDO.
@@ -57,7 +64,7 @@ DEFINE OUTPUT PARAMETER o-addrdiscrepy-error        AS LOGICAL INITIAL NO       
                     D_addr_stateprov      = TRIM(XML_TT_Address_Data.TT-state_iso)
                     D_addr_zip            = TRIM(XML_TT_Address_Data.TT-addr_zip)
                     D_addr_country        = TRIM(XML_TT_Address_Data.TT-country_iso)
-                    D_addr_created_by     = USERID ("General")
+                    D_addr_created_by     = USERID("Core")
                     D_addr_create_date    = TODAY
                     D_addr_prog_name      = SOURCE-PROCEDURE:FILE-NAME
                     D_addr_Occured_Date   = TODAY  

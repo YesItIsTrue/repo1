@@ -1,0 +1,43 @@
+<!doctype html public "-//ietf//dtd html//en">
+<html>
+    <head>
+        <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+        <title>Signup</title>
+        <meta NAME='VERSION' CONTENT='1.0'/>
+        <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+        <meta NAME='CREATE_DATE' CONTENT="31/Aug/2017"/>
+        <meta NAME='LAST_UPDATED' CONTENT="31/Aug/2017"/>   
+        <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+        <!--WSS
+        PROCEDURE Output-Header:
+            {cookie-check-permissions.i "AMS-landing-R.r"}.
+        END PROCEDURE.
+        -->
+    </head>
+    <body>
+        <!--WSS
+        DEFINE VARIABLE v-people-id LIKE people_mstr.people_id NO-UNDO.
+        DEFINE VARIABLE v-event-id LIKE event_mstr.event_ID NO-UNDO.
+
+        ASSIGN
+            v-people-id = INTEGER(get-cookie("c-user-id"))
+            v-event-id = INTEGER(html-encode(get-value("h-event_ID"))).
+            
+        FOR FIRST sched_mstr WHERE sched_mstr.sched_event_ID = v-event-id AND sched_mstr.sched_deleted = ? NO-LOCK:
+            FIND regis_mstr WHERE regis_mstr.regis_people_id = v-people-id AND regis_mstr.regis_class_ID = sched_mstr.sched_class_id AND regis_mstr.regis_deleted = ? NO-ERROR.
+            IF NOT AVAILABLE (regis_mstr) THEN DO:
+	            CREATE regis_mstr.
+	            ASSIGN
+	                regis_mstr.regis_people_id = v-people-id
+	                regis_mstr.regis_class_ID = sched_mstr.sched_class_id
+	                regis_mstr.regis_create_date = TODAY 
+	                regis_mstr.regis_created_by = USER("Modules")
+	                regis_mstr.regis_modified_date = TODAY 
+	                regis_mstr.regis_modified_by = USER("Modules")
+	                regis_mstr.regis_prog_name = THIS-PROCEDURE:FILE-NAME.
+            END.
+        END.
+        -->
+        <script>window.location = "regis-homepage.html";</script>
+    </body>
+</html>

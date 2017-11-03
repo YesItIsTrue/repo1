@@ -89,10 +89,10 @@ DO TRANSACTION:
             TK_mstr.TK_notes            = i-uctkm-notes
 /*            TK_mstr.TK_create_date      = i-create-date*/
             TK_mstr.TK_create_date      = TODAY
-            TK_mstr.TK_created_by       = USERID ("HHI")
+            TK_mstr.TK_created_by       = USERID("Modules")
 /*            TK_mstr.TK_modified_date    = i-mod-date*/
             TK_mstr.TK_modified_date    = TODAY
-            TK_mstr.TK_modified_by      = USERID ("HHI")
+            TK_mstr.TK_modified_by      = USERID("Modules")
             TK_mstr.TK_cust_paid        = i-uctkm-cust_paid
             TK_mstr.TK_lbl_print        = i-uctkm-lbl_print
             TK_mstr.TK_lab_paid         = i-uctkm-lab_paid
@@ -117,7 +117,7 @@ DO TRANSACTION:
                 o-uctkm-successful          = YES
 /*                TK_mstr.TK_modified_date    = i-mod-date*/
                 TK_mstr.TK_modified_date    = TODAY
-                TK_mstr.TK_modified_by      = USERID ("HHI")
+                TK_mstr.TK_modified_by      = USERID("Custom")
                 o-uctkm-id                  = TK_mstr.TK_id
                 TK_mstr.TK_test_type        = IF i-uctkm-testtype       <> "" THEN i-uctkm-testtype         ELSE TK_mstr.TK_test_type              /* 2dot0 */
                 TK_mstr.TK_prof             = IF i-uctkm-prof           <> ?  THEN i-uctkm-prof             ELSE TK_mstr.TK_prof   

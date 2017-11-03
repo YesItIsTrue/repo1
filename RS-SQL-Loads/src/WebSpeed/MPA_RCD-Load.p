@@ -1,4 +1,3 @@
-
 /*------------------------------------------------------------------------
     File        : MPA_RCD-Load.p
     Purpose     : Load the MPA_RCD from SQL. 
@@ -31,6 +30,11 @@
         Added code to export any Error-Messages if encountered, from the system
             using the no-error option. .
         Identified by /* 1dot3 */
+            
+    1.4 - written by HAROLD LUTTRELL JR. on 03/Oct/17.  Changed to use
+            single rcode PROPATH settings pursuant to the rules of
+            Release 12 (CMC structure).  Need to include the RUN VALUE(SEARCH
+            style commands and eliminate the C: vs. P: business.  Marked by 1dot4.             
             
   ----------------------------------------------------------------------*/
 
@@ -88,7 +92,7 @@ DEFINE VARIABLE messagetxt      AS CHARACTER INITIAL "-m Error Report attached f
 DEFINE VARIABLE subjtxt         AS CHARACTER INITIAL "-s Error Report from "                            NO-UNDO.
 DEFINE VARIABLE cmdparams       AS CHARACTER INITIAL "-a"                                               NO-UNDO.
 
-DEFINE VARIABLE it-message AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE ITmessages AS LOGICAL INITIAL NO NO-UNDO.
 
 messagetxt = messagetxt + THIS-PROCEDURE:FILE-NAME.
 subjtxt = subjtxt + THIS-PROCEDURE:FILE-NAME.
@@ -113,10 +117,12 @@ EXPORT STREAM outward DELIMITER ";"
  
 /* ***************************  Main Block  *************************** */
 
-IF drive_letter = "P" THEN                                                      
-    INPUT FROM "P:\OpenEdge\WRK\RS-SQL-Loads\Input-Files\MPA_RCD_NONULLS.txt".     /*  new o/p file from Dwights cleanup program:   */
-ELSE 
-    INPUT FROM "C:\OpenEdge\Workspace\RS-SQL-Loads\Input-Files\MPA_RCD_NONULLS.txt".  
+INPUT FROM VALUE(SEARCH("Input-Files\MPA_RCD_NONULLS.txt")).               /* 1dot4 */
+
+/*IF drive_letter = "P" THEN                                                                                                            */
+/*    INPUT FROM "P:\OpenEdge\WRK\RS-SQL-Loads\Input-Files\MPA_RCD_NONULLS.txt".     /*  new o/p file from Dwights cleanup program:   */*/
+/*ELSE                                                                                                                                  */
+/*    INPUT FROM "C:\OpenEdge\Workspace\RS-SQL-Loads\Input-Files\MPA_RCD_NONULLS.txt".                                                  */
     
     REPEAT:
 
@@ -143,10 +149,12 @@ FOR EACH tt WHERE tt.MPA_Test_Kit_Nbr <> "" NO-LOCK:
             ASSIGN 
                 ip_text = tt.MPA_DateCollected.
                 
-            IF drive_letter = "P" THEN 
-                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */
-            ELSE 
-                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text). 
+            RUN VALUE(SEARCH("subr_JERK_DATE_AROUND.r")) (ip_text, OUTPUT op_text).     /* 1dot4 */                
+                
+/*            IF drive_letter = "P" THEN                                                                                         */
+/*                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */*/
+/*            ELSE                                                                                                               */
+/*                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text).              */
                 
             ASSIGN 
                 tt.MPA_DateCollected = op_text.        
@@ -167,10 +175,12 @@ FOR EACH tt WHERE tt.MPA_Test_Kit_Nbr <> "" NO-LOCK:
             ASSIGN 
                 ip_text = tt.MPA_DateCompleted. 
                 
-            IF drive_letter = "P" THEN 
-                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */
-            ELSE     
-                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text). 
+            RUN VALUE(SEARCH("subr_JERK_DATE_AROUND.r")) (ip_text, OUTPUT op_text).     /* 1dot4 */       
+                            
+/*            IF drive_letter = "P" THEN                                                                                         */
+/*                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */*/
+/*            ELSE                                                                                                               */
+/*                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text).              */
                 
             ASSIGN 
                 tt.MPA_DateCompleted = op_text. 
@@ -192,10 +202,12 @@ FOR EACH tt WHERE tt.MPA_Test_Kit_Nbr <> "" NO-LOCK:
             ASSIGN 
                 ip_text = tt.MPA_DateReceived.
             
-            IF drive_letter = "P" THEN 
-                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */
-            ELSE 
-                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text). 
+            RUN VALUE(SEARCH("subr_JERK_DATE_AROUND.r")) (ip_text, OUTPUT op_text).     /* 1dot4 */
+                        
+/*            IF drive_letter = "P" THEN                                                                                         */
+/*                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */*/
+/*            ELSE                                                                                                               */
+/*                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text).              */
             
             ASSIGN   
                 tt.MPA_DateReceived = op_text. 
@@ -217,10 +229,12 @@ FOR EACH tt WHERE tt.MPA_Test_Kit_Nbr <> "" NO-LOCK:
             ASSIGN 
                 ip_text = tt.MPA_Date_Analysis_Sent.
             
-            IF drive_letter = "P" THEN 
-                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */
-            ELSE 
-                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text).
+            RUN VALUE(SEARCH("subr_JERK_DATE_AROUND.r")) (ip_text, OUTPUT op_text).     /* 1dot4 */
+                        
+/*            IF drive_letter = "P" THEN                                                                                         */
+/*                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */*/
+/*            ELSE                                                                                                               */
+/*                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text).              */
                  
             ASSIGN 
                 tt.MPA_Date_Analysis_Sent = op_text. 
@@ -242,10 +256,12 @@ FOR EACH tt WHERE tt.MPA_Test_Kit_Nbr <> "" NO-LOCK:
             ASSIGN 
                 ip_text = tt.MPA_Date_Results_Sent.
             
-            IF drive_letter = "P" THEN 
-                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */
-            ELSE     
-                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text). 
+            RUN VALUE(SEARCH("subr_JERK_DATE_AROUND.r")) (ip_text, OUTPUT op_text).     /* 1dot4 */
+            
+/*            IF drive_letter = "P" THEN                                                                                         */
+/*                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */*/
+/*            ELSE                                                                                                               */
+/*                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text).              */
                 
             ASSIGN 
                 tt.MPA_Date_Results_Sent = op_text.
@@ -285,10 +301,12 @@ FOR EACH tt WHERE tt.MPA_Test_Kit_Nbr <> "" NO-LOCK:
             ASSIGN 
                 ip_text = tt.MPA_ReEngineered_Date.
                 
-            IF drive_letter = "P" THEN 
-                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */
-            ELSE     
-                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text). 
+            RUN VALUE(SEARCH("subr_JERK_DATE_AROUND.r")) (ip_text, OUTPUT op_text).     /* 1dot4 */
+                            
+/*            IF drive_letter = "P" THEN                                                                                         */
+/*                RUN "P:\OpenEdge\WRK\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.r" (ip_text, OUTPUT op_text).         /* 1dot2 */*/
+/*            ELSE                                                                                                               */
+/*                RUN "C:\OpenEdge\Workspace\RS-SQL-Loads\rcode\subr_JERK_DATE_AROUND.R" (ip_text, OUTPUT op_text).              */
                 
             ASSIGN 
                 tt.MPA_ReEngineered_Date = op_text.
@@ -349,7 +367,7 @@ FOR EACH tt WHERE tt.MPA_Test_Kit_Nbr <> "" NO-LOCK:
             END.  /** IF AVAILABLE (MPA_RCD) **/                                                    /* 1dot1 */
             
             oops:
-            DO TRANSACTION: 
+            DO ON QUIT UNDO, LEAVE:             /* 1dot4 - was a transaction within this transaction */
                 
             CREATE MPA_RCD.  
                                      
@@ -414,7 +432,7 @@ FOR EACH tt WHERE tt.MPA_Test_Kit_Nbr <> "" NO-LOCK:
                 
             RELEASE MPA_RCD.
             
-            END.  /* TRANSACTION */
+            END.  /* oops */
             
             ip-found = 0.
             IP-Kount2 = (IP-Kount2 + 1).

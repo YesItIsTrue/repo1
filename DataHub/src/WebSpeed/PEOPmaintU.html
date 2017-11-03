@@ -3,16 +3,16 @@
 <HEAD>
 <TITLE>People Maintenance</TITLE>
 <META NAME='AUTHOR' CONTENT='Trae Luttrell'>
-<META NAME='VERSION' CONTENT='0.1'>
+<META NAME='VERSION' CONTENT='1.1'>
 <META NAME='COPYRIGHT' CONTENT='Solsource'>
 <META NAME='CREATE_DATE' CONTENT='25/Jan/16'>
-<META NAME='LAST_UPDATED' CONTENT='25/Jan/16'>    
+<META NAME='LAST_UPDATED' CONTENT='30/Sep/17'>    
 <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
 <script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
 <script src='/depot/src/HTMLContent/buttons.js'></script>
     
 <SCRIPT LANGUAGE="SpeedScript">
-/* Create an unnamed pool to store all the widgets created by this procedure.
+/* Create an unnamed pool to store all the widgets created by this procedure. 
    This is a good default which assures that this procedure's triggers and
    internal procedures will execute in this procedure's storage, and that
    proper cleanup will occur on deletion of the procedure. */
@@ -34,6 +34,18 @@ CREATE WIDGET-POOL.
     Description: This is the generic people maintenance. It edits the 
         people master
     Created:
+        
+  -------------------------------------------------------------------
+  
+  Revision History:
+  -----------------
+  0.1  -  written by TRAE LUTTRELL on 25/Jan/16.  Original version.
+  1.1  -  written by DOUG LUTTRELL on 30/Sep/17.  Modified to support
+            the new CMC structure (Release 12).  Really can't have 
+            Patient Condition at all.  It is a totally different 
+            structure now.  Also, tied this to the single rcode
+            directory in the PROPATH.  Marked by 1dot1.      
+        
   -------------------------------------------------------------------*/
 
 {../depot/src/WebSpeed/menuname.i}.
@@ -109,7 +121,8 @@ DEFINE VARIABLE v2-addr_mstr-country LIKE addr_mstr.addr_country     NO-UNDO.
 
 DEFINE VARIABLE v-patient-disabled  AS CHARACTER INITIAL "disabled" NO-UNDO.
 DEFINE VARIABLE v-patient-exists    AS LOGICAL NO-UNDO.
-DEFINE VARIABLE v-patient-condition LIKE patient_mstr.patient_condition NO-UNDO. 
+/*DEFINE VARIABLE v-patient-condition LIKE patient_mstr.patient_condition NO-UNDO.            /* 1dot1 */*/
+/*DEFINE VARIABLE v-patient-condition LIKE pcl_det.pcl_cond_id NO-UNDO.                           /* 1dot1 */*/
 DEFINE VARIABLE v-patient-notes     LIKE patient_mstr.patient_notes     NO-UNDO.
 DEFINE VARIABLE v-patient-RP        LIKE patient_mstr.patient_RP_ID     NO-UNDO.
     DEFINE VARIABLE v-patient-RP-name AS CHARACTER NO-UNDO.
@@ -212,7 +225,7 @@ ASSIGN
     v2-addr_mstr-country = get-value("h2-addr_mstr-country")
 
     v-patient-exists    = IF (get-value("h-patient-exists")) = "YES" THEN YES ELSE NO
-    v-patient-condition = get-value("h-patient-condition")
+/*    v-patient-condition = INTEGER(get-value("h-patient-condition"))                             /* 1dot1 */*/
     v-patient-notes     = get-value("h-patient-notes")
     v-patient-RP        = INTEGER(get-value("h-patient-RP"))
     v-patient-DOC       = INTEGER(get-value("h-patient-DOC"))
@@ -389,7 +402,7 @@ CASE v-act:
     
         {&OUT}
             "       <tr>" SKIP
-            "           <td><a href=~"../../DataHub/rcode/PEOPmaintU.r?h-people_id=" people_mstr.people_id
+            "           <td><a href=~"PEOPmaintU.r?h-people_id=" people_mstr.people_id              /* 1dot1 */
             "&h-act=Edit&whattorun=" whatshouldrun "~">" people_mstr.people_id "</a></td>" SKIP
             "           <td>" people_mstr.people_lastname "</td>" SKIP
             "           <td>" people_mstr.people_firstname "</td>" SKIP
@@ -503,12 +516,13 @@ CASE v-act:
             ASSIGN
                 v-patient-exists    = YES
                 v-patient-disabled  = ""
-                v-patient-condition = patient_mstr.patient_condition
                 v-patient-notes     = patient_mstr.patient_notes
                 v-patient-verified  = patient_mstr.patient_verified
                 v-patient-CUST      = patient_mstr.patient_cust_ID
                 v-patient-DOC       = patient_mstr.patient_doctor_ID
                 v-patient-RP        = patient_mstr.patient_RP_ID. 
+            
+
             
             IF i-peoppicker-type = "CUST" AND i-peoppicker-id <> 0 THEN DO:
             
@@ -833,7 +847,7 @@ CASE v-act:
         "               </tr>" SKIP
         "               <tr>" SKIP
 /*****/ "                   <td>Responsible Party</td>" SKIP /**********************************************************************************************/
-        "                   <td><a href=~"../../DataHub/rcode/PEOPpickP.r"
+        "                   <td><a href=~"PEOPpickP.r"                                      /* 1dot1 */
         "?h-prevproc=PEOPmaintU.r"                  /* Calling Procedure */
         "&h-pp-act=EDIT"                            /* Calling Procedure's Act */
         "&h-pp-whattorun=" whatshouldrun            /* Calling Procedure's Whattorun */
@@ -851,7 +865,7 @@ CASE v-act:
         "               </tr>" SKIP
         "               <tr>" SKIP
 /*****/ "                   <td>Doctor</td>" SKIP /*********************************************************************************************************/
-        "                   <td><a href=~"../../DataHub/rcode/PEOPpickP.r"
+        "                   <td><a href=~"PEOPpickP.r"                                          /* 1dot1 */
         "?h-prevproc=PEOPmaintU.r"                  /* Calling Procedure */
         "&h-pp-act=EDIT"                            /* Calling Procedure's Act */
         "&h-pp-whattorun=" whatshouldrun            /* Calling Procedure's Whattorun */
@@ -869,7 +883,7 @@ CASE v-act:
         "               </tr>" SKIP
         "               <tr>" SKIP
 /*****/ "                   <td>Customer</td>" SKIP /******************************************************************************************************/
-        "                   <td><a href=~"../../DataHub/rcode/PEOPpickP.r"
+        "                   <td><a href=~"PEOPpickP.r"                              /* 1dot1 */
         "?h-prevproc=PEOPmaintU.r"                  /* Calling Procedure */
         "&h-pp-act=EDIT"                            /* Calling Procedure's Act */
         "&h-pp-whattorun=" whatshouldrun            /* Calling Procedure's Whattorun */
@@ -906,7 +920,7 @@ CASE v-act:
     {&OUT}
         "   <DIV class='grid_3'>" SKIP
         "       <div class='table_col'>" SKIP
-        "           <a class='no-underline' href=~"../../DataHub/rcode/ADDRpickP.r" 
+        "           <a class='no-underline' href=~"ADDRpickP.r"                                 /* 1dot1 */ 
         "?h-prevproc=PEOPmaintU.r"                              /* Calling Procedure */
         "&h-act=EDIT"                                           /* Calling Procedure's Act */
         "&whattorun=" whatshouldrun                             /* Calling Procedure's Whattorun */
@@ -970,7 +984,7 @@ CASE v-act:
     {&OUT}
         "   <div class='grid_3'>" SKIP
         "       <div class='table_col'>" SKIP
-        "           <a class='no-underline' href=~"../../DataHub/rcode/ADDRpickP.r" 
+        "           <a class='no-underline' href=~"ADDRpickP.r"                                     /* 1dot1 */ 
         "?h-prevproc=PEOPmaintU.r"                              /* Calling Procedure */
         "&h-act=EDIT"                                           /* Calling Procedure's Act */
         "&whattorun=" whatshouldrun                             /* Calling Procedure's Whattorun */
@@ -1311,7 +1325,7 @@ CASE v-act:
                 v-DOB,
                 v2-addr_mstr-ID,
                 v-prefname,
-                "",
+                v-title,
                 OUTPUT v-people_ID,
                 OUTPUT o-ucpeople-create,
                 OUTPUT o-ucpeople-update,
@@ -1344,7 +1358,7 @@ CASE v-act:
                     NO-LOCK NO-ERROR.
         
                 IF AVAILABLE (patient_mstr) AND
-                    v-patient-condition = patient_mstr.patient_condition  AND  
+/*                    v-patient-condition = patient_mstr.patient_condition  AND               /* 1dot1 */*/
                     v-patient-notes     = patient_mstr.patient_notes      AND  
                     v-patient-verified  = patient_mstr.patient_verified   AND 
                     v-patient-CUST      = patient_mstr.patient_cust_ID    AND 
@@ -1357,7 +1371,7 @@ CASE v-act:
                     {&OUT} "<!-- Pre-Patient-RUN -->".
                     RUN VALUE(SEARCH("SUBpat-ucU.r"))
                         (v-people_ID,
-                        v-patient-condition,
+/*                        v-patient-condition,                            /* 1dot1 */*/
                         v-patient-notes,
                         v-patient-RP,
                         v-patient-DOC,

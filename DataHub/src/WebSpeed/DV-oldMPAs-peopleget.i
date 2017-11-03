@@ -134,7 +134,6 @@ ELSE DO:
                 
                 RUN VALUE (SEARCH ("SUBpat-ucU.r"))
                     (o-fpe-peopleID,
-                     "",                    /* condition */
                      "",                    /* notes */
                      0,                     /* RP_ID */
                      0,                     /* doctor_ID */

@@ -5,10 +5,11 @@
 <TITLE>Testkit Delete</TITLE>
 
 <META NAME="AUTHOR" CONTENT="Mark Jacobs">
-    <META NAME="VERSION" CONTENT="1.11">
+    <META NAME="VERSION" CONTENT="1.2">
     <META NAME="COPYRIGHT" CONTENT="Solsource">
     <META NAME="CREATE_DATE" CONTENT="08/May/14">
-    <META NAME="LAST_UPDATED" CONTENT="13/Feb/16">
+    <META NAME="MODIFIED_BY" CONTENT="DOUG LUTTRELL">
+    <META NAME="LAST_UPDATED" CONTENT="03/Oct/17">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
     
 
@@ -26,6 +27,10 @@
 *           Removed hyperlinks and replace them with buttons. Marked by 1dot1.
 *  1.11 - Written by Jacob Luttrell on 13/Feb/16. changed TK_testtype to TK_test_type. Unmarked.   
 *   {../depot/src/WebSpeed/menuname.i}.
+*  1.2  - written by DOUG LUTTRELL on 03/Oct/17.  Changed to use single
+*           rcode PROPATH in conjunction with Release 12 (CMC structure).
+*           Marked by 1dot2.
+*
 *----------------------------------------------------------------------*/  
  
  {../depot/src/WebSpeed/menuname.i}.
@@ -241,7 +246,11 @@
                          
                          {&OUT} "</THEAD>                                                        
                                   <TR> 
-	                              <td>" "<a href=~"../../DataHub/rcode/TRH-history-R.r?whattorun=1.21&h-low-serial=" TK_id "&h-high-serial=" TK_id "&h-act=1&submit=Search~" >"  TK_ID "</a>"
+	                              <td>" 
+	                                   "<a href=~"TRH-history-R.r?whattorun=1.21&h-low-serial=" TK_id              /* 1dot2 */
+	                                       "&h-high-serial=" TK_id 
+	                                       "&h-act=1&submit=Search~" >"  TK_ID 
+	                                   "</a>"      
 	                             "<td>" typ "</td> 
 	                              <td>" test-seq "</td>
 	                              <td>" prof "</td>

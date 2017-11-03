@@ -10,6 +10,14 @@
     Author(s)   : Jacob Luttrell
     Created     : Thu Oct 20 10:35:39 MDT 2016
     Notes       :
+    
+    Revision History:
+    -----------------
+    1.1 - written by Harold Luttrell, Sr. on 15/Sept/17.
+          Changed "C:\apps\HL7\Error_log\WhatTheHeck.txt" to 
+          "C:\apps\HL7\ErrorLog\WhatTheHeck.txt" to match the 
+          HL7 Phase 1 (Converter) process.
+          Marked by /* 1dot1 */  
   ----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
@@ -269,7 +277,9 @@ RUN parseXML(cnt,hRoot).
 DELETE OBJECT hRoot.
 DELETE OBJECT hDoc.
 
-OUTPUT TO "C:\apps\HL7\src\Error_log\WhatTheHeck.txt".
+IF  ITmessages = YES THEN                                                                   /* 1dot1 */                         
+    OUTPUT TO "C:\apps\HL7\ErrorLog\WhatTheHeck.txt".                                       /* 1dot1 */
+
 IF ITmessages = YES THEN 
     FOR EACH fs_mstr NO-LOCK,
         EACH atn_det WHERE atn_det.atn_file_ID = fs_mstr.fs_file_ID AND 
@@ -280,6 +290,7 @@ IF ITmessages = YES THEN
     
     END.    /** of 4ea. fs_mstr, etc. **/
 
-OUTPUT CLOSE.
+IF  ITmessages = YES THEN                                                                   /* 1dot1 */ 
+    OUTPUT CLOSE.                                                                           /* 1dot1 */
 
 /** EOF **/

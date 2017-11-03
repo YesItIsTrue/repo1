@@ -260,11 +260,11 @@ IF v-act = 2 THEN DO:
     
     DEFINE STREAM barcode.
       
-    OUTPUT STREAM barcode TO C:\temp\test_barcode.txt.
+    OUTPUT STREAM barcode TO "C:\temp\test_barcode.txt".
 
     DO v-amount = 1 TO v-qty: 
          
-        RUN "../depot/rcode/upcreate-TK-mstr.r"
+        RUN VALUE(SEARCH("upcreate-TK-mstr.r"))    /* CODEHAUL */
             (v-testID,
              v-testtype, 
              v-prof, 

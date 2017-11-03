@@ -1,0 +1,226 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+    <title>DC Maint</title>
+    <meta NAME='VERSION' CONTENT='1.0'/>
+    <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+    <meta NAME='CREATE_DATE' CONTENT="09/Sep/2017"/>
+    <meta NAME='LAST_UPDATED' CONTENT="09/Sep/2017"/>   
+    
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    
+    <style>
+        .delete-quest {
+            margin-top: 3px;
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+        
+        .edit-quest {
+            margin-left: 5px;
+            margin-top: 3px;
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+    </style>
+    
+    <script>
+        $(document).ready(function() {
+            $(".delete-quest").click(function() {
+                var that = $(this);
+                var keys = $(this).val().split(",");
+                if (keys.length == 2) {
+                    $.post("AJAX-delete-question.r",
+                    {
+                        eventID: keys[0],
+                        question: keys[1]
+                    },
+                    function(data, success) {
+                        if (success && data.success) {
+                            that.closest(".w3-row").remove();
+                        }
+                    }
+                    );
+                }
+            });
+            
+            $(".edit-quest").click(function() {
+                $(this).closest(".w3-row").find("input").each(function(index) {
+                    switch(index) {
+                        case 0:
+                            $("[name='h-category']").val($(this).val());
+                            break;
+                        case 1:
+                            $("[name='h-cat-sort']").val($(this).val());
+                            break;
+                        case 2:
+                            $("[name='h-question']").val($(this).val());
+                            break;
+                        case 3:
+                            $("[name='h-quest-sort']").val($(this).val());
+                            break;
+                        case 4:
+                            $("[name='h-answer-type']").val($(this).val());
+                            break;
+                    }
+                });
+            });
+        });
+    </script>
+    
+</head>
+
+<body class='w3-white'>
+<!--WSS 
+    DEFINE VARIABLE v-event-id LIKE dcq_mstr.dcq_event_ID NO-UNDO.
+    DEFINE VARIABLE v-category LIKE dcq_mstr.dcq_category NO-UNDO.
+    DEFINE VARIABLE v-cat-sort LIKE dcq_mstr.dcq_category_sort NO-UNDO.
+    DEFINE VARIABLE v-question LIKE dcq_mstr.dcq_question NO-UNDO.
+    DEFINE VARIABLE v-quest-sort LIKE dcq_mstr.dcq_question_sort NO-UNDO.
+    DEFINE VARIABLE v-answer-type LIKE dcq_mstr.dcq_answer_type NO-UNDO.
+
+    ASSIGN 
+        v-event-id = INTEGER(html-encode(get-value("eventID")))
+        v-category = html-encode(get-value("h-category"))
+        v-cat-sort = INTEGER(html-encode(get-value("h-cat-sort")))
+        v-question = html-encode(get-value("h-question"))
+        v-quest-sort = INTEGER(html-encode(get-value("h-quest-sort")))
+        v-answer-type = html-encode(get-value("h-answer-type")).
+        
+    FIND event_mstr WHERE event_mstr.event_ID = v-event-id AND event_mstr.event_deleted = ? NO-ERROR.
+        
+    /* Perfom any updates that need to happen before moving on*/
+    IF v-event-id <> 0 AND v-question <> "" THEN DO:
+        FIND dcq_mstr WHERE dcq_mstr.dcq_event_ID = v-event-id AND dcq_mstr.dcq_question = v-question AND
+        dcq_mstr.dcq_deleted = ? NO-ERROR.
+        IF AVAILABLE (dcq_mstr) THEN
+            ASSIGN
+                dcq_mstr.dcq_category = v-category
+                dcq_mstr.dcq_category_sort = v-cat-sort
+                dcq_mstr.dcq_question = v-question
+                dcq_mstr.dcq_question_sort = v-quest-sort
+                dcq_mstr.dcq_answer_type = v-answer-type
+                dcq_mstr.dcq_modified_by = USERID("Modules")
+                dcq_mstr.dcq_modified_date = TODAY
+                dcq_mstr.dcq_prog_name = THIS-PROCEDURE:FILE-NAME.
+        ELSE DO:
+            CREATE dcq_mstr.
+            ASSIGN
+                dcq_mstr.dcq_event_ID = v-event-id
+                dcq_mstr.dcq_category = v-category
+                dcq_mstr.dcq_category_sort = v-cat-sort
+                dcq_mstr.dcq_question = v-question
+                dcq_mstr.dcq_question_sort = v-quest-sort
+                dcq_mstr.dcq_answer_type = v-answer-type
+                dcq_mstr.dcq_modified_by = USERID("Modules")
+                dcq_mstr.dcq_modified_date = TODAY
+                dcq_mstr.dcq_created_by = USERID("Modules")
+                dcq_mstr.dcq_create_date = TODAY
+                dcq_mstr.dcq_prog_name = THIS-PROCEDURE:FILE-NAME.
+        END.
+    END.
+-->
+    <header class='w3-container w3-dark-grey'>
+        <h1>General Questions Maintenance Page</h1> 
+    </header> 
+    <br><br> 
+        
+        
+        <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+            <form method="post">
+                <input type="hidden" name="eventID" value="`v-event-id`"/>
+                <!--WSS IF AVAILABLE (event_mstr) THEN DO: -->
+                <h3>Questions for `event_mstr.event_name`</h3>
+                <!--WSS END.
+                 ELSE DO: -->
+                <h3>Questions for unnamed event `v-event-id`</h3>
+                <!--WSS END. 
+                FIND dcq_mstr WHERE dcq_mstr.dcq_event_ID = v-event-id AND dcq_mstr.dcq_deleted = ? NO-ERROR.
+                IF AVAILABLE (dcq_mstr) THEN DO:
+                -->
+                <div class="w3-row w3-center">
+                    <div class="w3-col m2"><strong>Category</strong></div>
+                    <div class="w3-col m1"><strong>Category Sort</strong></div>
+                    <div class="w3-col m5"><strong>Question</strong></div>
+                    <div class="w3-col m1"><strong>Question Sort</strong></div>
+                    <div class="w3-col m2"><strong>Answer Type</strong></div>
+                </div>
+                <!--WSS
+                END.
+                
+                FOR EACH dcq_mstr WHERE dcq_mstr.dcq_event_ID = v-event-id
+                NO-LOCK BREAK BY dcq_mstr.dcq_category_sort BY dcq_mstr.dcq_question_sort:
+                    {&OUT}
+	                    "<div class='w3-row'>" SKIP
+	                    "   <div class='w3-col m2'>" SKIP
+	                    "       <input type='text' class='w3-input w3-border w3-round-large' value=~"" dcq_mstr.dcq_category "~" disabled/>" SKIP
+	                    "   </div>" SKIP
+	                    "   <div class='w3-col m1'>" SKIP
+                        "       <input type='number' class='w3-input w3-border w3-round-large' value=~"" dcq_mstr.dcq_category_sort "~" disabled/>" SKIP
+                        "   </div>" SKIP
+	                    "   <div class='w3-col m5'>" SKIP
+	                    "       <input type='text' class='w3-input w3-border w3-round-large' value=~"" dcq_mstr.dcq_question "~" disabled/>" SKIP
+	                    "   </div>" SKIP
+	                    "   <div class='w3-col m1'>" SKIP
+	                    "       <input type='number' class='w3-input w3-border w3-round-large' value=~"" dcq_mstr.dcq_question_sort "~" disabled/>" SKIP
+	                    "   </div>" SKIP
+	                    "   <div class='w3-col m2'>" SKIP
+                        "       <input type='text' class='w3-input w3-border w3-round-large' value=~"" dcq_mstr.dcq_answer_type "~" disabled/>" SKIP
+                        "   </div>" SKIP
+                        "   <div class='w3-col m1'>" SKIP
+                        "       <button type='button' class='edit-quest w3-button w3-round-large'><i class='fa fa-pencil' aria-hidden='true'></i></button>" SKIP
+                        "       <button type='button' value=~"" dcq_mstr.dcq_event_ID "," dcq_mstr.dcq_question "~" class='delete-quest w3-button w3-round-large w3-hover-red'><i class='fa fa-trash' aria-hidden='true'></i></button>" SKIP
+                        "   </div>" SKIP
+	                    "</div>" SKIP.
+                END.
+                -->
+                <br/>
+                <div class="w3-row w3-center">
+                    <div class="w3-col m2"><strong>Category</strong></div>
+                    <div class="w3-col m1"><strong>Category Sort</strong></div>
+                    <div class="w3-col m5"><strong>Question</strong></div>
+                    <div class="w3-col m1"><strong>Question Sort</strong></div>
+                    <div class="w3-col m2"><strong>Answer Type</strong></div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col m2'> 
+                       <input type='text' name='h-category' class='w3-input w3-border w3-round-large'/> 
+                   </div> 
+                   <div class='w3-col m1'> 
+                       <input type='number' name='h-cat-sort' class='w3-input w3-border w3-round-large'/> 
+                   </div> 
+                   <div class='w3-col m5'> 
+                       <textarea rows="1" type='text' name='h-question' class='w3-input w3-border w3-round-large' required></textarea> 
+                   </div> 
+                   <div class='w3-col m1'> 
+                       <input type='number' name='h-quest-sort' class='w3-input w3-border w3-round-large'/> 
+                   </div> 
+                   <div class='w3-col m2'> 
+                       <select name='h-answer-type' class='w3-border w3-round-large w3-select' required>
+                            <option value="character">Character</option>
+                            <option value="date">Date</option>
+                            <option value="decimal">Decimal</option>
+                            <option value="logical">Logical</option>
+                    </select> 
+                   </div> 
+                </div>
+                <br/>
+                <div class="w3-row">
+                    <center><button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Add/Edit Question</b></BUTTON></center>
+                    <center><a href="menupager.html?c-usr=&whattorun=15&h-menuheadername=Scouts"><button type='button' class='w3-btn-block w3-grey w3-round' style='max-width:400px; margin-top: 2px'><b>Back</b></button></a></center>
+                </div>
+            </form>
+            <!-- <form action="MB-maint-U.html" style="position: relative; bottom: 7px;">
+                <center><button type='submit' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Back</b></BUTTON></center>
+            </form>
+             -->
+        </div>
+        <br/>
+</body>
+</html>

@@ -258,8 +258,8 @@ IF v-act = 1 THEN DO:
             {&OUT}
 	        "       <tr>" SKIP
 	        "           <td></td>"
-	        "           <td><a href=~"../../DataHub/rcode/PATmainviewR.r?"                                                 /* 1dot3 */
-	                            "&h-act=SELECTED&h-peopleid=" people_mstr.people_ID "&whattorun=3.11~">"                   /* 1dot4 */
+	        "           <td><a href=~"PATmainviewR.r?"                                                 /* 1dot3 */ /* CODEHAUL */
+	                            "h-act=SELECTED&h-peopleid=" people_mstr.people_ID "&whattorun=3.11~">"                   /* 1dot4 */
 	                             people_mstr.people_lastname ",&nbsp;" people_mstr.people_firstname  "</a></td>"  SKIP 
 	                            
 	        "           <td>" people_mstr.people_DOB            "</td>"     SKIP 
@@ -301,7 +301,7 @@ IF v-act = 1 THEN DO:
 
             IF AVAILABLE people_mstr4 THEN 
 	            {&OUT}
-	                "<a href='../../DataHub/rcode/PEOPmaintU.r?"                                      /* 1dot4 */
+	                "<a href='PEOPmaintU.r?"                                      /* 1dot4 */ /* CODEHAUL */
 					"h-people_id=" patient_mstr.patient_cust_ID                                       /* 1dot4 */
 					"&h-act=EDIT"                                                                     /* 1dot4 */
 					"&whattorun=35.99'>"                                                              /* 1dot4 */   	           

@@ -518,7 +518,7 @@ ELSE IF v-mainact = "VALIDATE" THEN DO:
 	                "   <h3 align='center'>" 
                     /** is this pathing OK? NO it is not. **/
                     /** actually the pathing for the local machine seems OK, but the target code is busted. **/                                                            
-                    "       <a href=~"../../DataHub/rcode/TRH-history-R.r?whattorun=1.41&h-low-serial=" TK_mstr.TK_id 
+                    "       <a href=~"TRH-history-R.r?whattorun=1.41&h-low-serial=" TK_mstr.TK_ID                   /* CODEHAUL */ 
                     "&h-high-serial=" TK_mstr.TK_id 
                     "&h-act=1&submit=Search~" >" TK_mstr.TK_ID "</a>" SKIP	                
 	                " Testkit " TK_mstr.TK_ID " / " TK_mstr.TK_test_seq " has already been SOLD and has a status of " SKIP
@@ -600,7 +600,7 @@ IF v-mainact = "FINAL_UPDATE" THEN DO:
 			    TK_mstr.TK_status        = "SOLD"
 			    TK_mstr.TK_cust_paid     = v-cust_paid
 			    TK_mstr.TK_modified_date = TODAY
-			    TK_mstr.TK_modified_by   = USERID ("HHI")
+			    TK_mstr.TK_modified_by   = USERID("Modules")
 			    TK_mstr.TK_prog_name     = this-procedure:FILE-NAME.         /* 1dot42 */
 		             
 		                                                                     IF ITfeedback = YES THEN

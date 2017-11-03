@@ -56,9 +56,9 @@ DO TRANSACTION:
             addr_mstr.addr_country          = i-ucaddr-country
             o-ucaddr-successful             = YES
             addr_mstr.addr_create_date      = TODAY
-            addr_mstr.addr_created_by       = USERID ("General")
+            addr_mstr.addr_created_by       = USERID("Core")
             addr_mstr.addr_modified_date    = TODAY
-            addr_mstr.addr_modified_by      = USERID ("General")
+            addr_mstr.addr_modified_by      = USERID("Core")
             addr_mstr.addr_type             = i-ucaddr-type
             o-ucaddr-id                     = addr_mstr.addr_id
             addr_mstr.addr_prog_name        = SOURCE-PROCEDURE:FILE-NAME                                    /* 2dot1 */
@@ -80,7 +80,7 @@ DO TRANSACTION:
                 o-ucaddr-update                 = YES
                 o-ucaddr-successful             = YES
                 addr_mstr.addr_modified_date    = TODAY
-                addr_mstr.addr_modified_by      = USERID ("General")
+                addr_mstr.addr_modified_by      = USERID("Core")
                 o-ucaddr-id                     = addr_mstr.addr_id
                 addr_mstr.addr_addr1            = IF i-ucaddr-addr1     <> "" THEN i-ucaddr-addr1       ELSE addr_mstr.addr_addr1
                 addr_mstr.addr_addr2            = IF i-ucaddr-addr2     <> "" THEN i-ucaddr-addr2       ELSE addr_mstr.addr_addr2   

@@ -114,6 +114,7 @@ CASE act:
                     "<DIV class='grid_1'> </DIV>            <!-- grid_1 spacer -->" SKIP
                     "<DIV class='grid_10'>" SKIP
 		            "<FORM method='get'>" SKIP 
+		            "<input type='hidden' name='whattorun' value='3.11'/>" SKIP
 		            "<input type='hidden' name='h-patid' value=" patient_mstr.patient_ID " />" SKIP
 		            "<DIV class='table_col'>" SKIP
 		            "   <TABLE>" SKIP
@@ -248,14 +249,14 @@ CASE act:
 	           ASSIGN 
 	               pcl_det.pcl_patient_id  = patid 
 	               pcl_det.pcl_cond_id     = INTEGER(entry(x,condlist))
-	               pcl_det.pcl_created_by  = USERID("HHI")
+	               pcl_det.pcl_created_by  = USERID("Modules")
 	               pcl_det.pcl_create_date = TODAY.
 	               
 	       END.  /** of if not avail pcl_det ---- create **/
 	       
 	       ASSIGN                                                               /** modify existing pcl_det records - including prev. deleted **/
 	           pcl_det.pcl_deleted         = ?
-	           pcl_det.pcl_modified_by     = USERID("HHI")
+	           pcl_det.pcl_modified_by     = USERID("Modules")
 	           pcl_det.pcl_modified_date   = TODAY
 	           pcl_det.pcl_prog_name       = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1).      
 	       
@@ -266,7 +267,7 @@ CASE act:
 	           
 	           
 	       ASSIGN 
-	           pcl_det.pcl_modified_by     = USERID("HHI")
+	           pcl_det.pcl_modified_by     = USERID("Modules")
 	           pcl_det.pcl_modified_date   = TODAY 
 	           pcl_det.pcl_deleted         = TODAY
 	           pcl_det.pcl_prog_name       = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1).
@@ -280,7 +281,7 @@ CASE act:
 	       "<FORM method='get'>" SKIP
 	       "<CENTER>" SKIP
 	       "<H3>Update Successful</H3>" SKIP
-	       "<a href=~"../../DataHub/rcode/PATmainviewR.r?h-act=SELECTED&h-peopleid=" patid 
+	       "<a href=~"PATmainviewR.r?h-act=SELECTED&whattorun=3.11&h-peopleid=" patid 
 	       "~"> <DIV class='button'>Return to Patient Viewer</DIV></a>" SKIP
 	       "</FORM>" SKIP
 	       "   </DIV>" SKIP

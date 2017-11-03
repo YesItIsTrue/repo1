@@ -66,7 +66,7 @@ DO TRANSACTION:
                 o-ucproj-update                  = YES
                 o-ucproj-successful              = YES
                 Proj_Mstr.Proj_modified_date     = TODAY
-                Proj_Mstr.Proj_modified_by       = USERID ("General")                    
+                Proj_Mstr.Proj_modified_by       = USERID("Modules")                    
                 o-ucproj-clientid                = Proj_Mstr.Proj_client_ID
                 o-ucproj-name                    = Proj_Mstr.Proj_name 
 /*                Proj_Mstr.Proj_prog_name         = i-ucproj-progname*/
@@ -85,9 +85,9 @@ DO TRANSACTION:
                 o-ucproj-create              = YES
                 o-ucproj-successful          = YES
                 Proj_Mstr.Proj_create_date   = TODAY
-                Proj_Mstr.Proj_created_by    = USERID ("General")                    
+                Proj_Mstr.Proj_created_by    = USERID("Modules")                    
                 Proj_Mstr.Proj_modified_date = TODAY
-                Proj_Mstr.Proj_modified_by   = USERID ("General")                 
+                Proj_Mstr.Proj_modified_by   = USERID("Modules")                 
                 o-ucproj-clientid            = Proj_Mstr.Proj_client_ID
                 o-ucproj-name                = Proj_Mstr.Proj_name 
 /*                Proj_Mstr.Proj_prog_name     = i-ucproj-progname*/

@@ -31,5 +31,5 @@ DEFINE OUTPUT PARAMETER addr86     AS LOGICAL INITIAL NO       NO-UNDO.
                                 ASSIGN
                                 addr_deleted       = TODAY
                                 addr_modified_date = TODAY
-                                addr_modified_by   = USERID ("General")
+                                addr_modified_by   = USERID("Core")
                                 addr86              = YES. 

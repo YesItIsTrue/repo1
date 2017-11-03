@@ -37,7 +37,7 @@ IF AVAILABLE (site_mstr) THEN DO:
         site_mstr.site_desc = i-site-desc
         site_mstr.site_def_ware = i-def-ware
         site_mstr.site_prog_name = SOURCE-PROCEDURE:FILE-NAME
-        site_mstr.site_modified_by = USERID("InvCtrl")
+        site_mstr.site_modified_by = USERID("Modules")
         site_mstr.site_modified_date = TODAY.
 
 END. /*** of update path ***/
@@ -53,10 +53,10 @@ ELSE DO:
         site_mstr.site_addr_id = i-addr-id
         site_mstr.site_desc = i-site-desc
         site_mstr.site_def_ware = i-def-ware
-        site_mstr.site_created_by = USERID("InvCtrl")
+        site_mstr.site_created_by = USERID("Modules")
         site_mstr.site_create_date = TODAY
         site_mstr.site_prog_name = SOURCE-PROCEDURE:FILE-NAME
-        site_mstr.site_modified_by = USERID("InvCtrl")
+        site_mstr.site_modified_by = USERID("Modules")
         site_mstr.site_modified_date = TODAY.
 
 END. /*** of creation path ***/

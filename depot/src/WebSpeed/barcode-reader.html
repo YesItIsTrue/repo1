@@ -100,7 +100,7 @@ canvas.drawing, canvas.drawingBuffer {
         cameraHeight = screen.height * .5;
         cameraWidth = selectedInput.outerWidth();
         
-        scrollTo(selectedInput);
+        //scrollTo(selectedInput);
         
         Quagga.init({
 	        inputStream: {
@@ -108,8 +108,8 @@ canvas.drawing, canvas.drawingBuffer {
 		        type: "LiveStream",
 		        target: scannerContainer[0],
 	            constraints: {
-	                width: cameraWidth > cameraHeight ? cameraWidth : cameraHeight,
-	                height: cameraHeight < cameraWidth ? cameraHeight : cameraWidth,
+	                width: cameraWidth > cameraHeight ? cameraHeight : cameraWidth,
+	                height: cameraHeight < cameraWidth ? cameraWidth : cameraHeight,
 	                facingMode: "environment"
 	            },
 	        },
@@ -118,10 +118,10 @@ canvas.drawing, canvas.drawingBuffer {
                     //"code_128_reader",
                     //"ean_reader",
                     //"ean_8_reader",
-                    //"code_39_reader",
+                    "code_39_reader",
                     //"code_39_vin_reader",
                     //"codabar_reader",
-                    "upc_reader",
+                    //"upc_reader",
                     //"upc_e_reader",
                     //"i2of5_reader"
                 ],
@@ -149,8 +149,14 @@ canvas.drawing, canvas.drawingBuffer {
 	           console.log("Initialization finished. Ready to start");
 	           Quagga.start();
 	           scannerContainer.show();
-	           scannerContainer.append("<button class='exit-scanner' onClick='setFocus(currentInput)'>X</button>");
-	           $(".exit-scanner").css("left", $("video").innerWidth() - 40);
+	           scannerContainer.append("<button type='button' class='exit-scanner' onClick='setFocus(currentInput)'>X</button>");
+	           var videoX = 0;
+	           $("video").each(function() {
+	               if ($(this).innerWidth() > 0) {
+	                   videoX = $(this).innerWidth() - 40;
+	               }
+	           });
+	           $(".exit-scanner").css("left", videoX);
 	
 	           // Set flag to is running
 	           scannerIsRunning = true;
@@ -181,21 +187,32 @@ canvas.drawing, canvas.drawingBuffer {
         });
         
         Quagga.onDetected(function (result) {
+            console.log(selectedInput);
 	        selectedInput.val(result.codeResult.code);
 	        hideScanners();
-	        setFocus(selectedInput.nextAll("input").first(), true);
+	        selectedInput.blur();
+	        if (selectedInput.hasClass("barcode-cycle")) {
+	            selectedInput.click();
+	        }
+	        else {
+	           if (selectedInput.nextAll("input")) {
+	               setFocus(selectedInput.nextAll("input").first(), true);
+	           }
+	        }
         });
     }
     
     function setFocus(selectedInput, fireEvent) {
         hideScanners();
-        if (fireEvent) {
-            toggleScanner(selectedInput);
+        if (selectedInput) {
+	        if (fireEvent) {
+	            toggleScanner(selectedInput);
+	        }
+	        else {
+	            selectedInput.removeAttr("readonly");
+	        }
+	        selectedInput.focus();
         }
-        else {
-            selectedInput.removeAttr("readonly");
-        }
-        selectedInput.focus();
     }
     
     function scrollTo(element) {

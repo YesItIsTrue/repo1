@@ -63,9 +63,9 @@ DO TRANSACTION:
                 o-create              = YES
                 o-successful          = YES
                 pal_list.pal_create_date    = TODAY
-                pal_list.pal_created_by     = USERID ("General")
+                pal_list.pal_created_by     = USERID("Core")
                 pal_list.pal_modified_date  = TODAY
-                pal_list.pal_modified_by    = USERID ("General")
+                pal_list.pal_modified_by    = USERID("Core")
                 o-requestedkey          = IF i-requestedkey = "people_id" THEN pal_list.pal_people_ID ELSE pal_list.pal_addr_ID
                 .      
         END.
@@ -77,7 +77,7 @@ DO TRANSACTION:
                     o-successful         = YES
                     pal_list.pal_type          = IF i-new-type <> "" THEN i-new-type ELSE pal_list.pal_type
                     pal_list.pal_modified_date = TODAY
-                    pal_list.pal_modified_by   = USERID ("General")
+                    pal_list.pal_modified_by   = USERID("Core")
                     o-requestedkey       = IF i-requestedkey = "people_id" THEN pal_list.pal_people_ID ELSE pal_list.pal_addr_ID
                     .      
         END.

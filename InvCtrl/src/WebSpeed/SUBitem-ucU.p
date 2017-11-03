@@ -114,7 +114,7 @@ IF AVAILABLE (item_mstr) THEN DO:
         item_mstr.item_type = i-item-type
         item_mstr.item_sku_nbr = i-item-sku-nbr
         item_mstr.item_prog_name = SOURCE-PROCEDURE:FILE-NAME
-        item_mstr.item_modified_by = USERID("InvCtrl")
+        item_mstr.item_modified_by = USERID("Modules")
         item_mstr.item_modified_date = TODAY.
 
 END. /*** of update path ***/
@@ -168,10 +168,10 @@ ELSE DO:
         item_mstr.item_other_id = i-item-other-id
         item_mstr.item_type = i-item-type
         item_mstr.item_sku_nbr = i-item-sku-nbr
-        item_mstr.item_created_by = USERID("InvCtrl")
+        item_mstr.item_created_by = USERID("Modules")
         item_mstr.item_create_date = TODAY
         item_mstr.item_prog_name = SOURCE-PROCEDURE:FILE-NAME
-        item_mstr.item_modified_by = USERID("InvCtrl")
+        item_mstr.item_modified_by = USERID("Modules")
         item_mstr.item_modified_date = TODAY.
 
 END. /*** of creation path ***/

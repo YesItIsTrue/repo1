@@ -1,0 +1,203 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+    <title>Lesson Plan Maint</title>
+    <meta NAME='VERSION' CONTENT='1.0'/>
+    <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+    <meta NAME='CREATE_DATE' CONTENT="09/Sep/2017"/>
+    <meta NAME='LAST_UPDATED' CONTENT="09/Sep/2017"/>   
+    
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+    <style>
+        .delete-plan {
+            margin-top: 5px;
+        }
+    </style>
+    
+    <script>
+        $(document).ready(function() {
+            $(".delete-plan").click(function() {
+                var that = $(this);
+                var keys = $(this).val().split(",");
+                if (keys.length == 3) {
+                    $.post("AJAX-delete-lesson-plan.r",
+                    {
+                        classID: keys[0],
+                        lessonDate: keys[1],
+                        reqNumber: keys[2]
+                    },
+                    function(data, success) {
+                        if (success && data.success) {
+                            that.closest(".w3-row").remove();
+                        }
+                    }
+                    );
+                }
+            });
+            
+            $(".ajax-checkbox").click(function() {
+                console.log($(this));
+                var that = $(this);
+                var keys = $(this).val().split(",");
+                if (keys.length == 3) {
+                    $.post("AJAX-mark-lesson-plan.r",
+                    {
+                        classID: keys[0],
+                        lessonDate: keys[1],
+                        reqNumber: keys[2],
+                        lessonComp: $(this).is(":checked")
+                    },
+                    function(data, success) {
+                        if (success && data.success) {
+                            console.log("field updated");
+                        }
+                    }
+                    );
+                }
+            });
+        });
+    </script>
+    
+</head>
+
+<body class='w3-white'>
+<!--WSS 
+    DEFINE VARIABLE v-class-id LIKE lesson_plan.lesson_class_id NO-UNDO.
+    DEFINE VARIABLE v-class-name AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE v-lesson-date-string AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE v-lesson-date LIKE lesson_plan.lesson_date NO-UNDO.
+    DEFINE VARIABLE v-lesson-req-number LIKE lesson_plan.lesson_req_nbr NO-UNDO.
+    DEFINE VARIABLE v-lesson-comp LIKE lesson_plan.lesson_comp NO-UNDO.
+
+    ASSIGN 
+        v-class-id = INTEGER(html-encode(get-value("h-class-id")))
+        v-lesson-date-string = html-encode(get-value("h-lesson-date"))
+        v-lesson-req-number = html-encode(get-value("h-req-number"))
+        v-lesson-comp = IF get-value("h-lesson-comp") <> "" THEN TRUE ELSE FALSE.
+        
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-lesson-date-string, OUTPUT v-lesson-date).
+        
+    /* Perfom any updates that need to happen before moving on*/
+    IF v-lesson-date <> ? AND v-lesson-req-number <> "" THEN DO:
+        FIND lesson_plan WHERE lesson_plan.lesson_class_id = v-class-id AND lesson_plan.lesson_date = v-lesson-date AND lesson_plan.lesson_req_nbr = v-lesson-req-number AND 
+        lesson_plan.lesson_deleted = ? NO-ERROR.
+        IF AVAILABLE (lesson_plan) THEN DO:
+            ASSIGN
+                lesson_plan.lesson_date = v-lesson-date
+                lesson_plan.lesson_req_nbr = v-lesson-req-number
+                lesson_plan.lesson_comp = v-lesson-comp
+                lesson_plan.lesson_modified_by = USERID("Modules")
+                lesson_plan.lesson_modified_date = TODAY
+                lesson_plan.lesson_prog_name = THIS-PROCEDURE:FILE-NAME.
+        END.
+        ELSE DO:
+            CREATE lesson_plan.
+            ASSIGN
+                lesson_plan.lesson_class_id = v-class-id
+                lesson_plan.lesson_date = v-lesson-date
+                lesson_plan.lesson_req_nbr = v-lesson-req-number
+                lesson_plan.lesson_comp = v-lesson-comp
+                lesson_plan.lesson_created_by = USERID("Modules")
+                lesson_plan.lesson_create_date = TODAY
+                lesson_plan.lesson_prog_name = THIS-PROCEDURE:FILE-NAME.
+        END.
+    END.
+    
+    FOR FIRST sched_mstr WHERE sched_mstr.sched_class_ID = v-class-id AND sched_mstr.sched_deleted = ?,
+        FIRST MB_mstr WHERE MB_mstr.MB_BSA_ID = sched_mstr.sched_BSA_ID AND MB_mstr.MB_deleted = ? NO-LOCK:
+        ASSIGN v-class-name = MB_mstr.MB_name.
+    END. 
+-->
+    <header class='w3-container w3-dark-grey'>
+        <h1>Lesson Plan Maintenance Page</h1> 
+    </header>
+    <br><br>
+        
+        <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+            <form>
+                <input type="hidden" name="h-class-id" value="`v-class-id`"/>
+                <h3>Lesson Plans for `v-class-name`</h3>
+                <div class="w3-row w3-center">
+                    <div class="col-md-3"></div>
+                    <div class="w3-col m2"><strong>Lesson Date</strong></div>
+                    <div class="w3-col m2"><strong>Requirement Number</strong></div>
+                    <div class="w3-col m2"><strong>Completed</strong></div>
+                    <div class="col-md-3"></div>
+                </div>
+                <!--WSS
+                FIND FIRST lesson_plan WHERE lesson_plan.lesson_class_id = v-class-id AND lesson_plan.lesson_deleted = ? NO-ERROR.
+                IF AVAILABLE (lesson_plan) THEN DO:
+	                FOR EACH lesson_plan WHERE lesson_plan.lesson_class_id = v-class-id AND lesson_plan.lesson_deleted = ?
+	                NO-LOCK BY lesson_plan.lesson_date BY lesson_plan.lesson_req_nbr:
+	                    {&OUT}
+	                    "<div class='w3-row'>" SKIP
+	                    "   <div class='col-md-3'></div>" SKIP
+	                    "   <div class='w3-col m2'>" SKIP
+	                    "       <input type='text' class='w3-input w3-border w3-round-large' value=~"" lesson_plan.lesson_date "~" disabled/>" SKIP
+	                    "   </div>" SKIP
+	                    "   <div class='w3-col m2'>" SKIP
+	                    "       <input type='text' class='w3-input w3-border w3-round-large' value=~"" lesson_plan.lesson_req_nbr "~" disabled/>" SKIP
+	                    "   </div>" SKIP
+	                    "   <div class='w3-col m2'>" SKIP
+	                    "       <center>" SKIP
+	                    "          <input type='checkbox' value=~""lesson_plan.lesson_class_ID "," lesson_plan.lesson_date "," lesson_plan.lesson_req_nbr "~" class='w3-check ajax-checkbox'". 
+	                           IF lesson_plan.lesson_comp THEN {&OUT} "checked".
+	                    {&OUT}
+	                    "          />" SKIP
+	                    "       </center>" SKIP
+	                    "   </div>" SKIP
+	                    "   <div class='w3-col m1'>" SKIP
+	                    "   <button type='button' value=~""lesson_plan.lesson_class_ID "," lesson_plan.lesson_date "," lesson_plan.lesson_req_nbr "~" class='delete-plan w3-button w3-round-large w3-hover-red'><i class='fa fa-trash' aria-hidden='true'></i></button>" SKIP
+	                    "   </div>" SKIP
+	                    "   <div class='col-md-2'></div>" SKIP
+	                    "</div>" SKIP.
+	                END.
+	            END.
+	            ELSE DO:
+	               {&OUT} "<center><h3>There are no lesson plans for this class yet.</h3></center>" SKIP.
+	            END.
+                -->
+                <br/>
+                <div class="w3-row w3-center">
+                    <div class="col-md-3"></div>
+                    <div class="w3-col m2"><strong>Lesson Date</strong></div>
+                    <div class="w3-col m2"><strong>Requirement Number</strong></div>
+                    <div class="w3-col m2"><strong>Completed</strong></div>
+                    <div class="col-md-3"></div>
+                </div>
+                <div class='w3-row'>
+                   <div class="col-md-3"></div> 
+                   <div class='w3-col m2'> 
+                       <input type='date' name='h-lesson-date' class='w3-input w3-border w3-round-large' required/> 
+                   </div> 
+                   <div class='w3-col m2'> 
+                       <textarea rows="1" type='text' name='h-req-number' class='w3-input w3-border w3-round-large' required></textarea> 
+                   </div> 
+                   <div class='w3-col m2'> 
+                       <center>
+                            <input class='w3-check' type='checkbox' name='h-lesson-comp'/>
+                       </center> 
+                   </div>
+                   <div class="col-md-3"></div> 
+                </div>
+                <br/>
+                <div class="w3-row">
+                    <center><button id="submit-btn" type='submit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Add New Item</b></BUTTON></center>
+                </div>
+            </form>
+            <form action="event-class-selection.r" style="position: relative; bottom: 7px;">
+                <center><button type='submit' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Back</b></BUTTON></center>
+            </form> 
+        </div>
+        <br/>
+</body>
+</html>

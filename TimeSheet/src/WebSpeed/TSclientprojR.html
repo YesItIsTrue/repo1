@@ -8,18 +8,23 @@
     <META NAME="CREATE_DATE" CONTENT="11/Jan/16">
     <META NAME="MODIFIED_DATE" CONTENT="11/Jan/16">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
-<SCRIPT LANGUAGE="SpeedScript">
-/* Create an unnamed pool to store all the widgets created by this procedure.
-   This is a good default which assures that this procedure's triggers and
-   internal procedures will execute in this procedure's storage, and that
-   proper cleanup will occur on deletion of the procedure. */
-CREATE WIDGET-POOL.
-</SCRIPT>
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
 </HEAD>
 <BODY class='inside'>
 
 <SCRIPT language="SpeedScript">
-{../depot/src/WebSpeed/menuname.i}.
+{TSvert-menu.i}.
   /*------------------------------------------------------------------
     File:           TSclientprojR.html
     Description:    Project by Client Report
@@ -123,13 +128,13 @@ CASE act:
                       
             {&OUT}
             "                       <tr>" SKIP
-            "                           <td><a href='../../TimeSheet/rcode/TSclientmaintU.r" 
+            "                           <td><a href='TSclientmaintU.r"                              /* CODEHAUL */ 
                                             "?h-pp-passBack-peopid=" Client_Mstr.Client_people_ID
                                             "&h-pp-passBack-addrid=" 
                                             "&h-act=MAINTENANCE"
                                             "&whattorun=8.23"
                                             "'>" Client_Mstr.Client_abbv "</a></td>" SKIP 
-            "                           <TD><a href='../../TimeSheet/rcode/TSprojmaintU.r" 
+            "                           <TD><a href='TSprojmaintU.r"                                /* CODEHAUL */ 
                                             "?h-clientid=" Proj_Mstr.Proj_client_ID
                                             "&h-projname=" Proj_Mstr.Proj_name
                                             "&h-act=MAINTENANCE"

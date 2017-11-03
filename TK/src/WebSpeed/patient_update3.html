@@ -9,6 +9,7 @@
     <META NAME="COPYRIGHT" CONTENT="Solsource">
     <META NAME="CREATE_DATE" CONTENT="08/May/14">
     <META NAME="LAST_UPDATED" CONTENT="19/Nov/15">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
     
 <script LANGUAGE="SpeedScript">
@@ -41,8 +42,56 @@
  *
  *  1.6 - written by Jacob Luttrell on 12/Feb/16 - added blank for pref name to SUBpeop-ucU input fields and added state and 
  *          cntry dropdown.i files Marked by 1dot6.
+ 
+ *  1.7 - Andrew Garver 8-26-2017: Making state drop down AJAX driven
  *-------------------------------------------------------------------- */
 CREATE WIDGET-POOL. 
+</script>
+
+<!-- The following script tag and it's contents belong to 1dot7 --> 
+<script>
+    function populateStateDropdown(event){
+            $.post("AJAX-populate-state-dropdown.r",
+            {
+                countryISO: $("[name='h-cntry']").val() ? $("[name='h-cntry']").val() : "USA" 
+            },
+            function(response, status){
+                $("[name='state']").children('option:not(:first)').remove();
+                $.each(response, function (key, value) {
+                    if ($("#selected-state").val() == value) {
+                        $("[name='state']").append("<option value='" + key + "' selected>" + value + "</option>");
+                    }
+                    else {
+                        $("[name='state']").append("<option value='" + key + "'>" + value + "</option>");
+                    }
+                });
+            });
+    }
+    
+    function populateRpStateDropdown(event){
+            $.post("AJAX-populate-state-dropdown.r",
+            {
+                countryISO: $("[name='rpcount']").val() ? $("[name='rpcount']").val() : "USA" 
+            },
+            function(response, status){
+                $("[name='rpstate']").children('option:not(:first)').remove();
+                $.each(response, function (key, value) {
+                    if ($("#selected-rp-state").val() == value) {
+                        $("[name='rpstate']").append("<option value='" + key + "' selected>" + value + "</option>");
+                    }
+                    else {
+                        $("[name='rpstate']").append("<option value='" + key + "'>" + value + "</option>");
+                    }
+                });
+            });
+    }
+    
+    $(document).ready(function() {
+        populateStateDropdown();
+        populateRpStateDropdown();
+        $("[name='h-cntry']").change(() => populateStateDropdown(event));
+        $("[name='rpcount']").change(() => populateRpStateDropdown(event));
+    });
 </script>
   
 </head>
@@ -122,7 +171,7 @@ DEFINE VARIABLE o-fcountry-disp-error AS LOGICAL NO-UNDO.                       
 	/*-------------------------------------------------------------------------*/
 	DEFINE VARIABLE patage AS INTEGER NO-UNDO. /* patient_age */ 
 	
-	DEFINE VARIABLE patcon LIKE patient_condition NO-UNDO.
+	DEFINE VARIABLE patcon LIKE condition_mstr.condition_name NO-UNDO.
 	DEFINE VARIABLE patcp LIKE patient_RP_ID NO-UNDO.  /* The needs to be made into a people record */
 	DEFINE VARIABLE patnotes LIKE patient_notes NO-UNDO.
 	
@@ -185,7 +234,7 @@ DEFINE VARIABLE o-fcountry-disp-error AS LOGICAL NO-UNDO.                       
     DEFINE VARIABLE RP-email2 LIKE people_email NO-UNDO.
     DEFINE VARIABLE RP-add-id LIKE people_addr_id NO-UNDO.
     
-    DEFINE VARIABLE RP-comp LIKE patient_condition NO-UNDO.
+    DEFINE VARIABLE RP-comp LIKE people_company NO-UNDO.
     DEFINE VARIABLE RP-gen LIKE people_gender NO-UNDO.
     DEFINE VARIABLE RP-peop-contact LIKE people_contact NO-UNDO.
     DEFINE VARIABLE RP-peop-addr-ID LIKE people_mstr.people_addr_id NO-UNDO.
@@ -285,7 +334,7 @@ DEFINE VARIABLE o-fcountry-disp-error AS LOGICAL NO-UNDO.                       
     add3            = get-value ("addr3")
     city            = get-value ("patcity")
     
-    cntry           = get-value ("h-cntry")    
+    cntry           = IF get-value ("h-cntry") <> "" THEN get-value ("h-cntry") ELSE "USA"     
     state-prov      = get-value ("state")
     
     patzip          = get-value ("zip")
@@ -364,7 +413,7 @@ DEFINE VARIABLE o-fcountry-disp-error AS LOGICAL NO-UNDO.                       
     RP-state-prov  = get-value ("rpstate")
     RP-zip         = get-value ("rpzip")
     
-    RP-cntry     = get-value ("rpcount")
+    RP-cntry       = IF get-value ("rpcount") <> "" THEN get-value ("rpcount") ELSE "USA"
     
     RP-h-phone     = get-value ("rphome")
     RP-c-phone     = get-value ("rpcell")
@@ -372,6 +421,9 @@ DEFINE VARIABLE o-fcountry-disp-error AS LOGICAL NO-UNDO.                       
     RP-fax-phone   = get-value ("rpfax")        
     RP-email       = get-value ("rpemail")
     RP-email2      = get-value ("rpemail2").
+    
+    {&OUT} "<input type='hidden' id='selected-state' value='" state-prov "'/>" SKIP. /* 1dot7 */
+    {&OUT} "<input type='hidden' id='selected-state' value='" RP-state-prov "'/>" SKIP. /* 1dot7 */
      
 
 {../depot/src/WebSpeed/menuname.i}.    
@@ -875,8 +927,16 @@ IF  patdob <> "" THEN                                         /* 1dot5 */
                                          IF AVAILABLE patient_mstr THEN 
                                          ASSIGN
                                             patdoc   = patient_mstr.patient_doctor_ID
-                                            patcon   = patient_mstr.patient_condition
                                             patnotes = patient_mstr.patient_notes. 
+                                            
+            FIND condition_mstr WHERE condition_mstr.condition_name = patcon NO-ERROR.
+            IF AVAILABLE condition_mstr THEN DO:
+                RUN VALUE(SEARCH("SUBpcl-ucU.r")) (
+                  peop-id,
+                  condition_mstr.condition_ID,
+                  o-pat-success     /* Throw away variable */
+                ).
+            END.
                                             
                                          IF patdoc > 0 THEN DO: 
                     
@@ -1883,7 +1943,6 @@ IF  patdob <> "" THEN                                         /* 1dot5 */
 
                                     RUN VALUE(SEARCH("SUBpat-ucU.r"))               /* 1.21 */
 				                         (o-peop-id, /* o- */
-				                          patcon,
 				                          patnotes,
 				                          RP-peop-ID, /* ?? */
 				                          patdoc, /* doc-id */
@@ -2197,20 +2256,20 @@ IF  patdob <> "" THEN                                         /* 1dot5 */
 				     FIND FIRST people_mstr WHERE people_id = o-RP-peop-id  AND /* was o-peop-id */
 	                            people_mstr.people_deleted  = ? NO-LOCK NO-ERROR. 
                                    
-                                         IF AVAILABLE (people_mstr) THEN DO:
-                                                                                                                                                                 
-	                                       ASSIGN
-	                                            RP-peop-ID   = people_id                                                                                       
-	                                            RP-midn      = people_midname
-	                                            RP-title     = people_prefix
-	                                            RP-suf       = people_suffix
-	                                            RP-email     = people_email  
-	                                            RP-email2    = people_email2   
-	                                            RP-h-phone   = people_homephone
-	                                            RP-w-phone   = people_workphone
-	                                            RP-c-phone   = people_cellphone
-	                                            RP-fax-phone = people_fax                                                            
-                                                prog-RP-dob  = people_dob.  
+	              IF AVAILABLE (people_mstr) THEN DO:
+	                                                                                                                                       
+	              ASSIGN
+	                   RP-peop-ID   = people_id                                                                                       
+	                   RP-midn      = people_midname
+	                   RP-title     = people_prefix
+	                   RP-suf       = people_suffix
+	                   RP-email     = people_email  
+	                   RP-email2    = people_email2   
+	                   RP-h-phone   = people_homephone
+	                   RP-w-phone   = people_workphone
+	                   RP-c-phone   = people_cellphone
+	                   RP-fax-phone = people_fax                                                            
+	                      prog-RP-dob  = people_dob.  
                             
 								                                           IF ITfeedback = YES THEN     
 								                                               {&OUT} "<p>Found a RP person and my id id--" RP-peop-ID  SKIP
@@ -2247,7 +2306,7 @@ IF  patdob <> "" THEN                                         /* 1dot5 */
                                        
                                          END.  /** of if avail people_mstr **/    
                                                                          
-				     ELSE 
+                 ELSE 
 				        
 				                          IF RP-fstn <> "" AND
 	                                         RP-lstn <> ""                   
@@ -2307,8 +2366,16 @@ IF  patdob <> "" THEN                                         /* 1dot5 */
                         
                                         ASSIGN
                                         patient_RP_ID     = o-RP-peop-ID /* This was commented out for some reason */
-                                        patient_notes     = patnotes
-                                        patient_condition = patcon.
+                                        patient_notes     = patnotes.
+                                        
+                                        FIND condition_mstr WHERE condition_mstr.condition_name = patcon NO-ERROR.
+								            IF AVAILABLE condition_mstr THEN DO:
+								                RUN VALUE(SEARCH("SUBpcl-ucU.r")) (
+								                  patient_RP_ID,
+								                  condition_mstr.condition_ID,
+								                  o-pat-success     /* Throw away variable */
+								                ).
+								            END.
                                         
 									                                       IF ITfeedback = YES THEN  
 									                                            {&OUT} "<p>Added RP-ID to patient_RP_ID<p>".

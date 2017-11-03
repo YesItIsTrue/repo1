@@ -8,19 +8,23 @@
     <META NAME="CREATE_DATE" CONTENT="06/Jul/16">
     <META NAME="MODIFIED_DATE" CONTENT="06/Jul/16">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
-<SCRIPT LANGUAGE="SpeedScript">
-/* Create an unnamed pool to store all the widgets created by this procedure.
-   This is a good default which assures that this procedure's triggers and
-   internal procedures will execute in this procedure's storage, and that
-   proper cleanup will occur on deletion of the procedure. */
-CREATE WIDGET-POOL.
-</SCRIPT>
-
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
 </HEAD>
 <BODY class='inside'>
 
 <SCRIPT language="SpeedScript">
-{../depot/src/WebSpeed/menuname.i}.
+{TSvert-menu.i}.
   /*------------------------------------------------------------------
     File:           TSforadmintU.html
     Description:    Time Sheet Report
@@ -320,7 +324,7 @@ CASE act:
 	            {&OUT}
 	                "           <TR>" SKIP
 	                "               <TD align='center'>" projname "</TD>" SKIP
-	                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+	                "               <TD align='center'><a href='TSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname
@@ -329,7 +333,7 @@ CASE act:
 	                                    "&h-admin=YES"
 	                                    "&whattorun=8.1"
 	                "                   '><div>" projtot[2] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+	                "               <TD align='center'><a href='TSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname
@@ -338,7 +342,7 @@ CASE act:
 	                                    "&h-admin=YES"
 	                                    "&whattorun=8.1"
 	                "                   '><div>" projtot[3] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+	                "               <TD align='center'><a href='TSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname
@@ -347,7 +351,7 @@ CASE act:
 	                                    "&h-admin=YES"
 	                                    "&whattorun=8.1"
 	                "                   '><div>" projtot[4] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+	                "               <TD align='center'><a href='TSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname
@@ -356,7 +360,7 @@ CASE act:
 	                                    "&h-admin=YES"
 	                                    "&whattorun=8.1"
 	                "                   '><div>" projtot[5] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+	                "               <TD align='center'><a href='TSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname
@@ -365,7 +369,7 @@ CASE act:
 	                                    "&h-admin=YES"
 	                                    "&whattorun=8.1"
 	                "                   '><div>" projtot[6] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+	                "               <TD align='center'><a href='TSentryU.r"
 	                                    "?h-empid=" empid
 	                                   "&h-clientid=" clientid
 	                                    "&h-projname=" projname
@@ -374,7 +378,7 @@ CASE act:
 	                                    "&h-admin=YES"
 	                                    "&whattorun=8.1"
 	                "                   '><div>" projtot[7] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
+	                "               <TD align='center'><a href='TSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname

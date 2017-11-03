@@ -263,7 +263,7 @@ CASE act:
                 "   <TR>" SKIP
                 "       <TD><center>" state_mstr.state_country_ISO "</center></TD>" SKIP                                                                       
                 "       <TD><center>" state_mstr.state_ISO "</center></TD>" SKIP
-                "       <TD><center><a href='../../DataHub/rcode/STATEmaintU.r"    
+                "       <TD><center><a href='STATEmaintU.r"                                         /* CODEHAUL */    
                         "?h-whichrec=" RECID(state_mstr)
                         "&whattorun=" get-value('whattorun')  /* linking to itself in a different act */ 
                         "&h-act=MAINTENANCE'>" state_mstr.state_display_name "</a></center></TD>" SKIP.
@@ -274,7 +274,7 @@ CASE act:
                isselected = "". 
                
              {&OUT}                                                          
-                "       <TD><center><a href='../../DataHub/rcode/STATEmaintU.r"    
+                "       <TD><center><a href='STATEmaintU.r"                                        /* CODEHAUL */    
                         "?h-country-ISO=" state_mstr.state_country_ISO
                         "&h-state-ISO=" state_mstr.state_ISO 
                         "&h-state-disp=" state_mstr.state_display_name
@@ -374,9 +374,9 @@ CASE act:
                     state_mstr.state_ISO            = v-state-ISO
                     state_mstr.state_display_name   = v-state-disp            
                     state_mstr.state_create_date    = TODAY 
-                    state_mstr.state_created_by     = USERID ("General")   
+                    state_mstr.state_created_by     = USERID("Core")   
                     state_mstr.state_modified_date  = TODAY 
-                    state_mstr.state_modified_by    = USERID ("General")
+                    state_mstr.state_modified_by    = USERID("Core")
                     state_mstr.state_prog_name      = THIS-PROCEDURE:FILE-NAME  
                     state_mstr.state_stateID        = NEXT-VALUE (seq-state)         
                     ucu-error                       = NO  
@@ -434,7 +434,7 @@ CASE act:
                 ASSIGN 
                    state_mstr.state_display_name   = IF v-state-disp <> "" THEN v-state-disp ELSE state_mstr.state_display_name
                    state_mstr.state_modified_date  = TODAY 
-                   state_mstr.state_modified_by    = USERID ("General")
+                   state_mstr.state_modified_by    = USERID("Core")
                    state_mstr.state_prog_name      = THIS-PROCEDURE:FILE-NAME           
                   .  
             

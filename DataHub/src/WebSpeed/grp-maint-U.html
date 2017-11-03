@@ -1,0 +1,186 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+    <title>Group Maint</title>
+    <meta NAME='VERSION' CONTENT='1.0'/>
+    <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+    <meta NAME='CREATE_DATE' CONTENT="02/Nov/2017"/>
+    <meta NAME='LAST_UPDATED' CONTENT="02/Nov/2017"/>   
+    
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    
+    <style>
+        .delete-grp {
+            margin-top: 3px;
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+        
+        .edit_grp {
+            margin-left: 5px;
+            margin-top: 3px;
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+    </style>
+    
+    <script>
+        $(document).ready(function() {
+            $(".delete-grp").click(function() {
+                var that = $(this);
+                $.post("AJAX-delete-grp.r",
+                {
+                    groupID: $(this).val()
+                },
+                function(data, success) {
+                    if (success && data.success) {
+                        that.closest(".w3-row").remove();
+                    }
+                });
+            });
+            
+            $(".edit_grp").click(function() {
+                console.log($(this));
+                $(this).closest(".w3-row").find(".w3-input").each(function(index) {
+                    switch(index) {
+                        case 0:
+                            $("[name='h-grp_ID']").val($(this).val());
+                            break;
+                        case 1:
+                            $("[name='h-grp_type']").val($(this).val());
+                            break;
+                        case 2:
+                            $("[name='h-grp_desc']").val($(this).val());
+                            break;
+                        case 3:
+                            $("[name='h-grp_notes']").val($(this).val());
+                            break;
+                        case 4:
+                            $("[name='h-grp_sec_backdoor']").val($(this).val());
+                            break;
+                    }
+                });
+            });
+        });
+    </script>
+    
+</head>
+
+<body class='w3-white'>
+<!--WSS 
+    DEFINE VARIABLE v-grp_ID LIKE grp_mstr.grp_ID NO-UNDO.
+    DEFINE VARIABLE v-grp_type LIKE grp_mstr.grp_type NO-UNDO.
+    DEFINE VARIABLE v-grp_desc LIKE grp_mstr.grp_desc NO-UNDO.
+    DEFINE VARIABLE v-grp_notes LIKE grp_mstr.grp_notes NO-UNDO.
+    DEFINE VARIABLE v-grp_sec_backdoor LIKE grp_mstr.grp_sec_backdoor NO-UNDO.
+    DEFINE VARIABLE v-success AS LOGICAL NO-UNDO.
+
+    ASSIGN 
+        v-grp_ID = html-encode(get-value("h-grp_ID"))
+        v-grp_type = html-encode(get-value("h-grp_type"))
+        v-grp_desc = html-encode(get-value("h-grp_desc"))
+        v-grp_notes = html-encode(get-value("h-grp_notes"))
+        v-grp_sec_backdoor = IF html-encode(get-value("h-grp_sec_backdoor")) = "yes" THEN YES ELSE NO.
+        
+    /* Perfom any updates that need to happen before moving on*/
+    IF v-grp_ID <> "" THEN DO:
+        RUN VALUE(SEARCH("SUBgrp-ucU.r")) (
+            v-grp_ID,
+	        v-grp_type,
+	        v-grp_desc,
+	        v-grp_notes,
+	        v-grp_sec_backdoor,
+	        OUTPUT v-success
+        ).
+    END.
+-->
+    <header class='w3-container w3-dark-grey'>
+        <h1>Security Group Maintenance Page</h1> 
+    </header> 
+    <br><br> 
+        
+        <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+            <form method="post">
+                <h3>Groups</h3>
+                <!--WSS  
+                FIND FIRST grp_mstr WHERE grp_mstr.grp_deleted = ? NO-ERROR.
+                IF AVAILABLE (grp_mstr) THEN DO:
+                -->
+                <div class="w3-row w3-center">
+                    <div class="w3-col m2"><strong>Group ID</strong></div>
+                    <div class="w3-col m2"><strong>Group Type</strong></div>
+                    <div class="w3-col m4"><strong>Description</strong></div>
+                    <div class="w3-col m2"><strong>Notes</strong></div>
+                    <div class="w3-col m1"><strong>Backdoor?</strong></div>
+                </div>
+                <!--WSS
+                END.
+                
+                FOR EACH grp_mstr WHERE grp_mstr.grp_deleted = ? NO-LOCK BREAK BY grp_mstr.grp_ID:
+                    {&OUT}
+                        "<div class='w3-row'>" SKIP
+                        "   <div class='w3-col m2'>" SKIP
+                        "       <input type='text' class='w3-input w3-border w3-round-large' value=~"" grp_mstr.grp_ID "~" disabled/>" SKIP
+                        "   </div>" SKIP
+                        "   <div class='w3-col m2'>" SKIP
+                        "       <input type='text' class='w3-input w3-border w3-round-large' value=~"" grp_mstr.grp_type "~" disabled/>" SKIP
+                        "   </div>" SKIP
+                        "   <div class='w3-col m4'>" SKIP
+                        "       <textarea rows='1' type='text' class='w3-input w3-border w3-round-large' style='resize:none' disabled>" grp_mstr.grp_desc "</textarea>" SKIP
+                        "   </div>" SKIP
+                        "   <div class='w3-col m2'>" SKIP
+                        "       <textarea rows='1' type='text' class='w3-input w3-border w3-round-large' style='resize:none' disabled>" grp_mstr.grp_notes "</textarea>" SKIP
+                        "   </div>" SKIP
+                        "   <div class='w3-col m1'>" SKIP
+                        "       <input type='text' class='w3-input w3-border w3-round-large' value=~"" grp_mstr.grp_sec_backdoor "~" disabled/>" SKIP
+                        "   </div>" SKIP
+                        "   <div class='w3-col m1'>" SKIP
+                        "       <button type='button' class='edit_grp w3-button w3-round-large'><i class='fa fa-pencil' aria-hidden='true'></i></button>" SKIP
+                        "       <button type='button' value=~"" grp_mstr.grp_ID "~" class='delete-grp w3-button w3-round-large w3-hover-red'><i class='fa fa-trash' aria-hidden='true'></i></button>" SKIP
+                        "   </div>" SKIP
+                        "</div>" SKIP.
+                END.
+                -->
+                <br/>
+                <div class="w3-row w3-center">
+                    <div class="w3-col m2"><strong>Group ID</strong></div>
+                    <div class="w3-col m2"><strong>Group Type</strong></div>
+                    <div class="w3-col m4"><strong>Description</strong></div>
+                    <div class="w3-col m2"><strong>Notes</strong></div>
+                    <div class="w3-col m1"><strong>Backdoor?</strong></div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col m2'> 
+                       <input type='text' name='h-grp_ID' class='w3-input w3-border w3-round-large' required/> 
+                   </div> 
+                   <div class='w3-col m2'> 
+                       <input type='text' name='h-grp_type' class='w3-input w3-border w3-round-large'/> 
+                   </div> 
+                   <div class='w3-col m4'> 
+                       <textarea rows="1" type='text' name='h-grp_desc' class='w3-input w3-border w3-round-large'></textarea> 
+                   </div> 
+                   <div class='w3-col m2'> 
+                       <textarea rows="1" type='text' name='h-grp_notes' class='w3-input w3-border w3-round-large'></textarea> 
+                   </div> 
+                   <div class='w3-col m1'> 
+                       <select name='h-grp_sec_backdoor' class='w3-border w3-round-large w3-select'>
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                    </select> 
+                   </div> 
+                </div>
+                <br/>
+                <div class="w3-row">
+                    <center><button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Add/Edit Group</b></BUTTON></center>
+                </div>
+            </form>
+        </div>
+        <br/>
+</body>
+</html>

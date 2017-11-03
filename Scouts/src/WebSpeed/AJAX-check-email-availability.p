@@ -1,0 +1,57 @@
+/*------------------------------------------------------------------------
+    File        : AJAX-check-email-availability.p
+    Purpose     : 
+
+    Syntax      :
+
+    Description : 
+
+    Author(s)   : Andrew Garver
+    Created     : Fri Oct 17 10:43:53 EDT 2017
+    Notes       :
+  ----------------------------------------------------------------------*/
+
+/* ***************************  Definitions  ************************** */
+
+
+
+/* ********************  Preprocessor Definitions  ******************** */
+
+
+/* ***************************  Main Block  *************************** */
+USING progress.json.objectmodel.*.
+ 
+CREATE WIDGET-POOL.
+DEF VAR cOut AS LONGCHAR.
+
+{src/web2/wrap-cgi.i}
+ 
+RUN process-web-request.
+PROCEDURE createJson :
+    DEF VAR jObj AS jsonObject.
+    jObj = NEW jsonObject().
+    
+    /* Begin logic */
+    DEFINE VARIABLE v-email AS CHARACTER NO-UNDO.
+
+    ASSIGN
+        v-email = get-value("email").
+    
+    FIND people_mstr WHERE people_mstr.people_email = v-email AND people_mstr.people_deleted = ? NO-ERROR.
+    IF NOT AVAILABLE (people_mstr) THEN
+        jObj:add("success", "true").
+    /* End logic */
+ 
+    jObj:write(OUTPUT cOut).
+END PROCEDURE.
+ 
+PROCEDURE outputHeader :
+    output-content-type ("application/json":U).  
+END PROCEDURE.
+ 
+PROCEDURE process-web-request :
+    RUN outputHeader.
+    RUN createJson.
+ 
+    {&OUT} STRING(cOut).
+END PROCEDURE.

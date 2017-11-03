@@ -421,7 +421,7 @@ IF v-act = "VALIDATION" THEN DO:
                                                 "DISABLED"
                                               ELSE 
                                                 ""
-                sched_mstr.sched_modified_by    = USERID("SCOUTS")      /** will need to change when fixing the new database structures **/
+                sched_mstr.sched_modified_by    = USERID("Modules")      /* CODEHAUL */
                 sched_mstr.sched_modified_date  = TODAY
                 sched_mstr.sched_prog_name      = THIS-PROCEDURE:FILE-NAME.        
         
@@ -458,14 +458,14 @@ IF v-act = "VALIDATION" THEN DO:
             
                regis_mstr.regis_people_ID     = v-people_ID
                regis_mstr.regis_class_ID      = sched_mstr.sched_class_ID
-               regis_mstr.regis_created_by    = USERID("SCOUTS")      /** will need to change when fixing the new database structures **/
+               regis_mstr.regis_created_by    = USERID("Modules")      /* CODEHAUL */
                regis_mstr.regis_create_date   = TODAY 
-               regis_mstr.regis_modified_by   = USERID("SCOUTS")      /** will need to change when fixing the new database structures **/
+               regis_mstr.regis_modified_by   = USERID("Modules")      /* CODEHAUL */
                regis_mstr.regis_modified_date = TODAY
                regis_mstr.regis_prog_name     = THIS-PROCEDURE:FILE-NAME 
                
                sched_mstr.sched_used_seats    = sched_mstr.sched_used_seats + 1
-               sched_mstr.sched_modified_by   = USERID("SCOUTS")      /** will need to change when fixing the new database structures **/
+               sched_mstr.sched_modified_by   = USERID("Modules")      /* CODEHAUL */
                sched_mstr.sched_modified_date = TODAY
                sched_mstr.sched_prog_name     = THIS-PROCEDURE:FILE-NAME.
                
@@ -1053,7 +1053,7 @@ CASE v-act:
             ", or <a href=~"mailto:rpcamire@maine.rr.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment~" target=~"_top~">Roland</a>"
             " with the times you will be there. There will be training for Adults offered on Saturday regarding Young Mens and Scouting. It will be epic. </p>" SKIP
             "          <p class='w3-col s12'>If you ARE a regular participant of Man College!!! go ahead an click "
-            "<a href=~"../../Scouts/rcode/Dad-CMS-Event_Register-U.r?h-first_name=" v-firstname 
+            "<a href=~"Dad-CMS-Event_Register-U.r?h-first_name=" v-firstname            /* CODEHAUL */ 
             "&h-last_name=" v-lastname
             "&h-DOB=" v-dob 
             "h-email=" v-email

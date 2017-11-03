@@ -3,10 +3,10 @@
 <HEAD>
 <META NAME="AUTHOR" CONTENT="Trae Luttrell">
 <TITLE>Sign Up Report</TITLE>
-<META NAME='VERSION' CONTENT='1.0'>
+<META NAME='VERSION' CONTENT='1.2'>
     <META NAME='COPYRIGHT' CONTENT='Solsource'>
     <META NAME='CREATE_DATE' CONTENT="15/Apr/17">
-    <META NAME='LAST_UPDATED' CONTENT="15/Aug/17">    
+    <META NAME='LAST_UPDATED' CONTENT="08/Sep/17">    
     <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> 
 <SCRIPT LANGUAGE="SpeedScript">
@@ -74,56 +74,35 @@ CREATE WIDGET-POOL.
     1.0 - written by TRAE LUTTRELL on 15/Apr/17.  Original version.
     1.1 - written by DOUG LUTTRELL on 15/Aug/17.  Changed to work with 
             the new CMC structure (Version 12).  Marked by 1dot1.
-                    
+    1.2 - written by DOUG & TRAE just to mess with you on 08/Sep/17.
+            Changed to support the use of event_ID.  Also removed lots
+            of giant commented out blocks of code from previous versions.
+            Marked by 1dot2.
+                                
   -------------------------------------------------------------------*/
 
 /* ************************* Definitions *************************** */
 DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
 DEFINE VARIABLE ITmessages      AS LOGICAL INITIAL NO   NO-UNDO.
 
-DEFINE VARIABLE v-startdate     AS DATE INITIAL 04/17/17 NO-UNDO.   /* This is the thing that you change to change the report.  */
-                                                                    /* Should actually be tied to the event_ID.  1dot1.         */
-                                                                    
-/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-event_ID      LIKE event_mstr.event_ID NO-UNDO.   /* 1dot2 */
+DEFINE VARIABLE c-people        AS INTEGER NO-UNDO.
 
-/*DEFINE VARIABLE outfile AS CHARACTER FORMAT "x(60)" LABEL "Output File"*/
-/*    INITIAL "C:\progress\WRK\SC-unit-peop-mb-R.txt".                   */
+
 
 /* ************************* Assignments *************************** */
 ASSIGN 
     act             = get-value("h-act")
     /* additional variables here */
+    v-event_ID      = INTEGER(html-encode(get-value("h-event_ID")))
     .
+
 
     
 IF act= "" THEN 
     act = "REPORT".
 
-/*IF act = "VALIDATION" THEN DO:                                                               */
-/*                                                                                             */
-/*    /* add a validation for the search criteria based off of the table(s) you                */
-/*    are searching by. */                                                                     */
-/*                                                                                             */
-/*    FIND /* table */ WHERE /* table_field */ = /* v-field */ NO-LOCK NO-ERROR.               */
-/*                                                                                             */
-/*    IF AVAILABLE ( /* table */ ) THEN                                                        */
-/*                                                                                             */
-/*        ASSIGN                                                                               */
-/*            act = "SEARCH".                                                                  */
-/*                                                                                             */
-/*    ELSE DO:                                                                                 */
-/*        {&OUT}                                                                               */
-/*            "<DIV class='grid_3'> </DIV>" SKIP                                               */
-/*            "<DIV class='grid_6'>" SKIP                                                      */
-/*                "<h2>Incorrect parameters for table " /* table */ ". Search Again.</h2>" SKIP*/
-/*            "</DIV>         <!-- end of grid_6 -->" SKIP                                     */
-/*            "<DIV class='grid_3'> </DIV>" SKIP.                                              */
-/*        ASSIGN                                                                               */
-/*            act = "INITIAL".                                                                 */
-/*                                                                                             */
-/*    END. /* else do not avail */                                                             */
-/*END. /* validation */                                                                        */
-        
+      
 /* ************************* Main Block *************************** */   
 
 IF ITmessages = YES THEN  
@@ -133,11 +112,7 @@ IF ITmessages = YES THEN
 CASE act:
     
     WHEN "Report" THEN DO:
-    
-/*        DEFINE STREAM outward.                  */
-/*                                                */
-/*        OUTPUT stream outward to value(outfile).*/
-        
+            
         {&OUT}
             "<div class=' w3-content w3-responsive'>" SKIP
             "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
@@ -163,7 +138,8 @@ CASE act:
             FIRST people_mstr WHERE people_mstr.people_id = speop_shadow.speop_ID NO-LOCK,                  /* 1dot1 */
             EACH regis_mstr WHERE regis_mstr.regis_people_id = speop_shadow.speop_id NO-LOCK,               /* 1dot1 */
             FIRST sched_mstr WHERE sched_mstr.sched_class_id = regis_mstr.regis_class_ID AND  
-                sched_mstr.sched_start_date = v-startdate NO-LOCK,
+                sched_mstr.sched_event_ID = v-event_ID NO-LOCK,                                             /* 1dot2 */
+/*                sched_mstr.sched_start_date = v-startdate NO-LOCK,                                          /* 1dot2 */*/
             FIRST MB_mstr WHERE MB_mstr.mb_bsa_id = sched_mstr.sched_bsa_id NO-LOCK
                 BREAK 
                     BY speop_shadow.speop_stake                                                                 /* 1dot1 */
@@ -180,13 +156,7 @@ CASE act:
                     "   <th>" speop_shadow.speop_stake " </th>" SKIP                                            /* 1dot1 */
                     "   <th colspan=6>" speop_shadow.speop_ward " </th>" SKIP                                   /* 1dot1 */
                     "</tr>" SKIP.
-            
-/*                PAGE STREAM outward.                                         */
-/*                DISPLAY STREAM outward SKIP(1)                               */
-/*                    people_shadow.people_stake FORMAT "x(24)" COLON 10       */
-/*                    people_shadow.people_ward FORMAT "x(30)" COLON 50 SKIP(1)*/
-/*                        WITH FRAME unithead SIDE-LABELS WIDTH 132.           */
-                        
+                                  
             END.  /** of if first-of people_unit **/
             
             IF FIRST-OF(people_mstr.people_ID) THEN DO:                                                         /* 1dot1 */
@@ -202,29 +172,10 @@ CASE act:
                     "   <td>" MB_mstr.mb_bsa_id "</td>" SKIP
                     "</tr>" SKIP .
                 
-/*                DISPLAY STREAM outward                     */
-/*                    people_shadow.people_ID                */
-/*                    people_shadow.people_lastname          */
-/*                    people_shadow.people_firstname         */
-/*                    people_shadow.people_dob               */
-/*                    /*                                     */
-/*                    people_shadow.people_quorum            */
-/*                    people_shadow.people_member            */
-/*                    */                                     */
-/*                        WITH FRAME maindets WIDTH 132 DOWN.*/
-/*                                                           */
-/*                DOWN STREAM outward WITH FRAME maindets.   */
-            
             END. /*** first people_ID ***/
             
             ELSE DO:
-            
-/*            FOR EACH regis_mstr WHERE regis_mstr.regis_people_id = people_shadow.people_id NO-LOCK,*/
-/*                FIRST sched_mstr WHERE sched_mstr.sched_class_id = regis_mstr.regis_class_id AND   */
-/*                    sched_mstr.sched_start_date > (03/11/17) NO-LOCK,                              */
-/*                FIRST MB_mstr WHERE MB_mstr.mb_bsa_id = sched_mstr.sched_bsa_id NO-LOCK            */
-/*                    BREAK BY MB_mstr.mb_name:                                                      */
-                
+                          
                 {&OUT} 
                     "<tr>" SKIP
                     "   <td></td>" SKIP
@@ -235,17 +186,25 @@ CASE act:
                     "   <td>" sched_mstr.sched_period "</td>" SKIP
                     "   <td>" MB_mstr.mb_bsa_id "</td>" SKIP
                     "</tr>" SKIP.
-                    
-/*                DISPLAY STREAM outward MB_mstr.mb_name AT 15 sched_mstr.sched_period MB_mstr.mb_bsa_id SKIP*/
-/*                    WITH FRAME mbclasses DOWN.                                                             */
-/*                DOWN STREAM outward                                                                        */
-/*                    WITH FRAME mbclasses.                                                                  */
-                
+                                   
             END.  /** of NOT the first of people_ID **/
+            
+            c-people = c-people + 1.
                                
         END.  /** of 4ea. people_mstr **/
         
 /*        OUTPUT stream outward close.*/
+        
+        IF c-people = 0 THEN DO:
+        
+            FIND event_mstr WHERE event_mstr.event_ID = v-event_id AND 
+                event_mstr.event_deleted = ? NO-LOCK.
+        
+            IF AVAILABLE (event_mstr) THEN  {&OUT} "<tr><td colspan=7 class='w3-white'><center><b><i> Sorry, no one has registered for " event_mstr.event_name " yet. </i></b></center></td></tr>" SKIP.
+            
+            ELSE {&OUT} "<tr><td colspan=7><b><i> Sorry, no one has registered for Event_ID = " v-event_ID " yet. </i></b></td></tr>" SKIP.
+            
+        END. /*** c-people = 0 ***/
         
     END. /*** report act ***/
     

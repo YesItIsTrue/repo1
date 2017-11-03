@@ -34,5 +34,5 @@ DEFINE OUTPUT PARAMETER scust86     AS LOGICAL INITIAL NO       NO-UNDO.
                                                         ASSIGN
                                                            scust_deleted       = TODAY  /* (This sets the flag to delete in scust_shadow) */ 
                                                            scust_modified_date = TODAY
-                                                           scust_modified_by   = USERID ("HHI")
+                                                           scust_modified_by   = USERID("Custom")
                                                            scust86              = YES.                  

@@ -268,17 +268,28 @@ END.  /*** of else do --- {4} = DISABLED ***/
                                                                                     {&OUT}
                                                                                         "Section ID = " sectid SKIP.
  
-IF "{1}" = "FIND ITEM" THEN                                                                                                  /* 1dot6 */
+IF "{1}" = "FIND ITEM" THEN DO:                                                                                                  /* 1dot6 */
     {&OUT}                                                                                                                      /* 1dot6 */
     "<BR>"                                                                                                                      /* 1dot6 */
     "<div class='row'>" SKIP                                                                                                    /* 1dot6 */
     "   <div class='grid_3'> </DIV>" SKIP                                                                                       /* 1dot6 */
-    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                                          /* 1dot6 */
-    "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='{1}' class='btn'>{1}</BUTTON></div>" SKIP                 /* 1dot6 */
-    "   <div class='grid_2'> </DIV>" SKIP                                                                                       /* 1dot6 */
-    "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='PROMPT' class='btn'>Add a New Item (Marker) to this Test</BUTTON></div>" SKIP /* 1dot6 */
+    "<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP.                                          /* 1dot6 */
+
+    
+    IF get-value("whattorun") = "4.10" THEN 
+        {&OUT}
+            "   <div class='grid_2'> </DIV>" SKIP  
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='DELETE' class='btn'>Delete this Item (Marker)</BUTTON></div>" SKIP. /* 1dot9 */
+    ELSE
+        {&OUT}
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='{1}' class='btn'>{1}</BUTTON></div>" SKIP                 /* 1dot6 */
+            "   <div class='grid_2'> </DIV>" SKIP                                                                                       /* 1dot6 */
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='PROMPT' class='btn'>Add a New Item (Marker) to this Test</BUTTON></div>" SKIP. /* 1dot6 */
+            
+    {&out}
     "   <div class='grid_3'> </DIV>" SKIP                                                                                       /* 1dot6 */
     "</div>" SKIP.                                                                                                              /* 1dot6 */
+END.
 
 ELSE                                                                                                                            /* 1dot6 */
 {&OUT}                                                                                                                          /* 1dot6 */

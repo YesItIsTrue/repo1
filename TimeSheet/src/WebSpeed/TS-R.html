@@ -8,19 +8,23 @@
     <META NAME="CREATE_DATE" CONTENT="08/Jan/16">
     <META NAME="MODIFIED_DATE" CONTENT="08/Jan/16">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
-<SCRIPT LANGUAGE="SpeedScript">
-/* Create an unnamed pool to store all the widgets created by this procedure.
-   This is a good default which assures that this procedure's triggers and
-   internal procedures will execute in this procedure's storage, and that
-   proper cleanup will occur on deletion of the procedure. */
-CREATE WIDGET-POOL.
-</SCRIPT>
-
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
 </HEAD>
 <BODY class='inside'>
 
 <SCRIPT language="SpeedScript">
-{../depot/src/WebSpeed/menuname.i}.
+{TSvert-menu.i}.
   /*------------------------------------------------------------------
     File:           TSempmaintU.html
     Description:    Time Sheet Report
@@ -75,8 +79,15 @@ DEFINE VARIABLE itmessage   AS LOGICAL INITIAL NO              NO-UNDO.
 ASSIGN 
     raw-week   = html-encode(get-value("html5-week"))
     act        = html-encode(get-value("h-act"))
-    empid      = INTEGER(html-encode(get-value("c-usr")))
     .
+    
+IF get-value("h-empid") <> "" THEN
+    empid = INTEGER(html-encode(get-value("h-empid"))).
+ELSE
+    RUN VALUE(SEARCH("session-get-user-id.r")) (
+        get-cookie("c-session-token"),
+        OUTPUT empid
+    ).
        
  FIND people_mstr WHERE people_mstr.people_id = empid AND
                                people_mstr.people_deleted = ?
@@ -97,7 +108,6 @@ CASE act:
         
         {&OUT}
             "<form>" SKIP
-            "<input type='text' name='c-usr' value='" empid "' hidden/>" SKIP        
             "<DIV class='row'>" SKIP
             "<DIV class='grid_3'> </DIV>" SKIP
             "<DIV class='grid_6'>" SKIP   
@@ -285,57 +295,50 @@ CASE act:
             {&OUT}
                 "           <TR>" SKIP
                 "               <TD align='center'>" projname "</TD>" SKIP
-                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
-                                    "?h-empid=" empid
-                                    "&h-clientid=" clientid
+                "               <TD align='center'><a href='TSentryU.r"
+                                    "?h-clientid=" clientid
                                     "&h-projname=" projname
                                     "&html5-date=" disp-date[2]
                                     "&h-act=TIME"
                                     "&whattorun=8.1"
                 "                   '>" projtot[2] format ">>9.9" "</a></td>" SKIP
-                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
-                                    "?h-empid=" empid
-                                    "&h-clientid=" clientid
+                "               <TD align='center'><a href='TSentryU.r"
+                                    "?h-clientid=" clientid
                                     "&h-projname=" projname
                                     "&html5-date=" disp-date[3]
                                     "&h-act=TIME"
                                     "&whattorun=8.1"
                 "                   '>" projtot[3] format ">>9.9" "</a></td>" SKIP
-                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
-                                    "?h-empid=" empid
-                                    "&h-clientid=" clientid
+                "               <TD align='center'><a href='TSentryU.r"
+                                    "?h-clientid=" clientid
                                     "&h-projname=" projname
                                     "&html5-date=" disp-date[4]
                                     "&h-act=TIME"
                                     "&whattorun=8.1"
                 "                   '>" projtot[4] format ">>9.9" "</a></td>" SKIP
-                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
-                                    "?h-empid=" empid 
-                                    "&h-clientid=" clientid
+                "               <TD align='center'><a href='TSentryU.r"
+                                    "?h-clientid=" clientid
                                     "&h-projname=" projname
                                     "&html5-date=" disp-date[5]
                                     "&h-act=TIME"
                                     "&whattorun=8.1"
                 "                   '>" projtot[5] format ">>9.9" "</a></td>" SKIP
-                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
-                                    "?h-empid=" empid
-                                    "&h-clientid=" clientid
+                "               <TD align='center'><a href='TSentryU.r"
+                                    "?h-clientid=" clientid
                                     "&h-projname=" projname
                                     "&html5-date=" disp-date[6]
                                     "&h-act=TIME"
                                     "&whattorun=8.1"
                 "                   '>" projtot[6] format ">>9.9" "</a></td>" SKIP
-                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
-                                    "?h-empid=" empid
-                                   "&h-clientid=" clientid
+                "               <TD align='center'><a href='TSentryU.r"
+                                    "?h-clientid=" clientid
                                     "&h-projname=" projname
                                     "&html5-date=" disp-date[7]
                                     "&h-act=TIME"
                                     "&whattorun=8.1"
                 "                   '>" projtot[7] format ">>9.9" "</a></td>" SKIP
-                "               <TD align='center'><a href='../../TimeSheet/rcode/TSentryU.r"
-                                    "?h-empid=" empid
-                                    "&h-clientid=" clientid
+                "               <TD align='center'><a href='TSentryU.r"
+                                    "?h-clientid=" clientid
                                     "&h-projname=" projname
                                     "&html5-date=" disp-date[1]
                                     "&h-act=TIME"
@@ -426,7 +429,6 @@ CASE act:
             "</DIV>     <!-- end of row -->" SKIP
             "<BR>" SKIP
             "<form>" SKIP
-            "<input type='text' name='c-usr' value='" empid "' hidden/>" SKIP
             "<div class='row'>" SKIP
             "   <div class='grid_5'> </DIV>" SKIP
             "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP

@@ -53,6 +53,10 @@
             :   If inputs are not found then generate an ISO Error Log report
             :   and e-mail it to magento.interface@holistichealth.com for review.        
         Identified by /* 2dot0 */ 
+                                 
+    Version 2.1 - written by HAROLD LUTTRELL, JR. on 03/Oct/17.  Changed to use
+                    single rcode PROPATH settings in accordance with Release 12
+                    (CMC structure).  Marked by 2dot1.                                   
                                                                        
   ----------------------------------------------------------------------*/
      
@@ -239,10 +243,12 @@ DEFINE VARIABLE o-fstate-error     AS LOGICAL                                   
        
 /* ***************************  Main Block  *************************** */
 
-IF drive_letter = "P" THEN                                                      
-    INPUT FROM "P:\OpenEdge\WRK\RS-SQL-Loads\Input-Files\MAG-CUST-RCD-Extracted.txt". 
-ELSE 
-    INPUT FROM "C:\OpenEdge\Workspace\RS-SQL-Loads\Input-Files\MAG-CUST-RCD-Extracted.txt".
+INPUT FROM VALUE(SEARCH("Input-Files\MAG-CUST-RCD-Extracted.txt")).               /* 2dot1 */
+
+/*IF drive_letter = "P" THEN                                                                 */
+/*    INPUT FROM "P:\OpenEdge\WRK\RS-SQL-Loads\Input-Files\MAG-CUST-RCD-Extracted.txt".      */
+/*ELSE                                                                                       */
+/*    INPUT FROM "C:\OpenEdge\Workspace\RS-SQL-Loads\Input-Files\MAG-CUST-RCD-Extracted.txt".*/
     
 REPEAT:
     

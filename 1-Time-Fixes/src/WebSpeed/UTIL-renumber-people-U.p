@@ -340,7 +340,6 @@ FOR EACH tpm:
                         
                         RUN VALUE(SEARCH("SUBpat-ucU.r"))
                             (v-foundID,
-                             "",                /* old condition field */
                              "",                /* notes */
                              0,                 /* RP ID */
                              0,                 /* doctor_ID */

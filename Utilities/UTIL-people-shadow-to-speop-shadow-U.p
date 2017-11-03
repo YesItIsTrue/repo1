@@ -5,7 +5,7 @@
 
     Syntax      :
 
-    Description : Merges Scouts.people_shadow to Custom_ALL.speop_shadow
+    Description : Merges Scouts.people_shadow to Custom.speop_shadow
 
     Author(s)   : Andrew Garver
     Created     : Tue Jun 20 09:50:24 EDT 2017
@@ -54,7 +54,7 @@ OUTPUT STREAM new-people TO "C:\PROGRESS\WRK\new-people-mstr-records.csv" APPEND
 OUTPUT STREAM new-speop TO "C:\PROGRESS\WRK\new-speop-shadow-records.csv" APPEND.         /* 111 */
 
 PROCEDURE CreateSpeopRecord:
-    DEFINE OUTPUT PARAMETER o-speop_ID LIKE Custom_ALL.speop_shadow.speop_ID NO-UNDO.
+    DEFINE OUTPUT PARAMETER o-speop_ID LIKE Custom.speop_shadow.speop_ID NO-UNDO.
     DEFINE OUTPUT PARAMETER o-success AS LOGICAL INITIAL NO NO-UNDO.
      
     IF NOT AVAILABLE (Scouts.people_shadow) THEN
@@ -63,20 +63,20 @@ PROCEDURE CreateSpeopRecord:
         RETURN.
     END.
         
-    CREATE Custom_ALL.speop_shadow.
+    CREATE Custom.speop_shadow.
     ASSIGN
-        Custom_ALL.speop_shadow.speop_stake        = Scouts.people_shadow.people_stake
-        Custom_ALL.speop_shadow.speop_ward         = Scouts.people_shadow.people_ward
-        Custom_ALL.speop_shadow.speop_lds          = Scouts.people_shadow.people_member
-        Custom_ALL.speop_shadow.speop_quorum       = Scouts.people_shadow.people_quorum
-        Custom_ALL.speop_shadow.speop_Tsize        = Scouts.people_shadow.people_Tsize
-        Custom_ALL.speop_shadow.speop_troop        = v-int-troop
-        Custom_ALL.speop_shadow.speop_scout_rank   = Scouts.people_shadow.people_sct_rank
-        Custom_ALL.speop_shadow.speop_allergies    = Scouts.people_shadow.people_allergies
-        Custom_ALL.speop_shadow.speop_med_con      = Scouts.people_shadow.people_med_con
-        Custom_ALL.speop_shadow.speop_photo        = Scouts.people_shadow.people_photo
-        Custom_ALL.speop_shadow.speop_par_app      = Scouts.people_shadow.people_par_app
-        Custom_ALL.speop_shadow.speop_med_form     = Scouts.people_shadow.people_med_form
+        Custom.speop_shadow.speop_stake        = Scouts.people_shadow.people_stake
+        Custom.speop_shadow.speop_ward         = Scouts.people_shadow.people_ward
+        Custom.speop_shadow.speop_lds          = Scouts.people_shadow.people_member
+        Custom.speop_shadow.speop_quorum       = Scouts.people_shadow.people_quorum
+        Custom.speop_shadow.speop_Tsize        = Scouts.people_shadow.people_Tsize
+        Custom.speop_shadow.speop_troop        = v-int-troop
+        Custom.speop_shadow.speop_scout_rank   = Scouts.people_shadow.people_sct_rank
+        Custom.speop_shadow.speop_allergies    = Scouts.people_shadow.people_allergies
+        Custom.speop_shadow.speop_med_con      = Scouts.people_shadow.people_med_con
+        Custom.speop_shadow.speop_photo        = Scouts.people_shadow.people_photo
+        Custom.speop_shadow.speop_par_app      = Scouts.people_shadow.people_par_app
+        Custom.speop_shadow.speop_med_form     = Scouts.people_shadow.people_med_form
         o-speop_ID                                 = Scouts.people_shadow.people_ID
         o-success                                  = TRUE.
         
@@ -89,8 +89,8 @@ PROCEDURE UpdateRegisMstr:
         FOR EACH Modules.regis_mstr WHERE Modules.regis_mstr.regis_people_id = i-speop_id AND 
                 Modules.regis_mstr.regis_deleted = ? EXCLUSIVE-LOCK:    /* 1dot1 */
             ASSIGN
-                Modules.regis_mstr.regis_par_app = Custom_ALL.speop_shadow.speop_par_app
-                Modules.regis_mstr.regis_med_form = Custom_ALL.speop_shadow.speop_med_form.    
+                Modules.regis_mstr.regis_par_app = Custom.speop_shadow.speop_par_app
+                Modules.regis_mstr.regis_med_form = Custom.speop_shadow.speop_med_form.    
         END.
 END PROCEDURE.
 
@@ -130,18 +130,18 @@ PROCEDURE UpdateTableRecordID:
     DEFINE OUTPUT PARAMETER o-success AS LOGICAL INITIAL NO NO-UNDO.
     
     CASE i-table-name:
-        WHEN "Custom_ALL.speop_shadow" THEN 
+        WHEN "Custom.speop_shadow" THEN 
             DO:
-                IF NOT AVAILABLE (Custom_ALL.speop_shadow) THEN
+                IF NOT AVAILABLE (Custom.speop_shadow) THEN
                 DO:
-                    DISPLAY "Error: Custom_ALL.speop_shadow not available.".
+                    DISPLAY "Error: Custom.speop_shadow not available.".
                     RETURN.
                 END.
                 
                 ASSIGN 
-                    Custom_ALL.speop_shadow.speop_ID       = v-correct-seq-id.
+                    Custom.speop_shadow.speop_ID       = v-correct-seq-id.
                     
-                EXPORT STREAM new-speop DELIMITER ";" Custom_ALL.speop_shadow.
+                EXPORT STREAM new-speop DELIMITER ";" Custom.speop_shadow.
             END.
         WHEN "Modules.regis_mstr" THEN
             DO:
@@ -158,7 +158,7 @@ PROCEDURE UpdateTableRecordID:
 END.
 
 /******************************************************************************************************** 
-First check for holes in the General.people_mstr sequence, then check if that hole is filled by General.D_people_mstr. 
+First check for holes in the people_mstr sequence, then check if that hole is filled by D_people_mstr. 
 Finally, return sequence number if it is missing from both.
 *********************************************************************************************************/
 PROCEDURE FindAvailableSequenceNumber:
@@ -169,14 +169,14 @@ PROCEDURE FindAvailableSequenceNumber:
     DEFINE VARIABLE c-seq-number AS INTEGER INITIAL 1 NO-UNDO.
     
     DO WHILE c-seq-number < i-upper-bound:
-        IF CAN-FIND (General.people_mstr WHERE General.people_mstr.people_id = c-seq-number AND 
-                General.people_mstr.people_deleted = ? no-lock) THEN    /* 1dot1 */
+        IF CAN-FIND (people_mstr WHERE people_mstr.people_id = c-seq-number AND 
+                people_mstr.people_deleted = ? no-lock) THEN    /* 1dot1 */
             DO: /*Increment our search to the next id*/
                 ASSIGN 
                     c-seq-number = c-seq-number + 1.
             END.
-        ELSE IF CAN-FIND (General.D_people_mstr WHERE General.D_people_mstr.D_people_id = c-seq-number AND 
-                General.D_people_mstr.D_people_deleted = ? no-lock) THEN    /* 1dot1 */
+        ELSE IF CAN-FIND (D_people_mstr WHERE D_people_mstr.D_people_id = c-seq-number AND 
+                D_people_mstr.D_people_deleted = ? no-lock) THEN    /* 1dot1 */
             DO: /*Increment our search to the next id*/
                 ASSIGN 
                     c-seq-number = c-seq-number + 1.
@@ -194,23 +194,23 @@ END.
 PROCEDURE CreatePeopleMasterRecordWithFirstAvailableSequenceNumber:
     CREATE people_mstr.
     ASSIGN 
-        General.people_mstr.people_id           = v-correct-seq-id
-        General.people_mstr.people_firstname    = Scouts.people_shadow.people_firstname
-        General.people_mstr.people_midname      = ""
-        General.people_mstr.people_lastname     = Scouts.people_shadow.people_lastname
-        General.people_mstr.people_prefix       = ""
-        General.people_mstr.people_suffix       = ""
-        General.people_mstr.people_company      = ""
-        General.people_mstr.people_gender       = ?
-        General.people_mstr.people_homephone    = ""
-        General.people_mstr.people_workphone    = ""
-        General.people_mstr.people_cellphone    = ""
-        General.people_mstr.people_fax          = ""
-        General.people_mstr.people_email        = ""
-        General.people_mstr.people_email2       = ""
-        General.people_mstr.people_addr_id      = 0
-        General.people_mstr.people_contact      = ""
-        General.people_mstr.people_DOB          = Scouts.people_shadow.people_DOB
+        people_mstr.people_id           = v-correct-seq-id
+        people_mstr.people_firstname    = Scouts.people_shadow.people_firstname
+        people_mstr.people_midname      = ""
+        people_mstr.people_lastname     = Scouts.people_shadow.people_lastname
+        people_mstr.people_prefix       = ""
+        people_mstr.people_suffix       = ""
+        people_mstr.people_company      = ""
+        people_mstr.people_gender       = ?
+        people_mstr.people_homephone    = ""
+        people_mstr.people_workphone    = ""
+        people_mstr.people_cellphone    = ""
+        people_mstr.people_fax          = ""
+        people_mstr.people_email        = ""
+        people_mstr.people_email2       = ""
+        people_mstr.people_addr_id      = 0
+        people_mstr.people_contact      = ""
+        people_mstr.people_DOB          = Scouts.people_shadow.people_DOB
         people_mstr.people_create_date          = TODAY
         people_mstr.people_created_by           = USERID ("General")
         people_mstr.people_modified_date        = TODAY
@@ -235,13 +235,13 @@ FOR EACH Scouts.people_shadow EXCLUSIVE-LOCK:
             v-correct-seq-id = v-people-id.
     END.
     ELSE IF v-find-error = NO AND v-people-id <> Scouts.people_shadow.people_ID THEN /*A matching record was found but the ID was wrong*/
-        DO: /*Update the created speop record's ID to the id of the matched General.people_mstr record.*/
+        DO: /*Update the created speop record's ID to the id of the matched people_mstr record.*/
             ASSIGN 
                 c-incorrect-record-ids = c-incorrect-record-ids + 1
                 v-correct-seq-id     = v-people-id.
         END.
     ELSE IF v-find-error = YES THEN /*If no record could be found by ID or by info*/
-        DO: /*Create a new General.people_mstr record*/
+        DO: /*Create a new people_mstr record*/
            RUN FindAvailableSequenceNumber (10000, OUTPUT v-correct-seq-id, OUTPUT v-success).
            RUN CreatePeopleMasterRecordWithFirstAvailableSequenceNumber.
 
@@ -250,13 +250,38 @@ FOR EACH Scouts.people_shadow EXCLUSIVE-LOCK:
         END.
     ELSE
         DISPLAY "Error: Logic is broken.".
+        
+    /* Update regis_mstr, MBC_det, and attend_det with the correct ids */
+    FOR EACH regis_mstr WHERE regis_people_id = Scouts.people_shadow.people_id EXCLUSIVE-LOCK:
+        ASSIGN 
+            regis_mstr.regis_people_id = v-correct-seq-id
+            regis_mstr.regis_modified_date = TODAY 
+            regis_mstr.regis_modified_by = USER("General")
+            regis_mstr.regis_prog_name = THIS-PROCEDURE:FILENAME.
+    END.
     
-    FIND Custom_ALL.speop_shadow WHERE Custom_ALL.speop_shadow.speop_ID = v-correct-seq-id AND  /* 1dot1 */
-        Custom_ALL.speop_shadow.speop_deleted = ? NO-ERROR.     /* 1dot1 */
-    IF NOT AVAILABLE (Custom_ALL.speop_shadow) THEN
+    FOR EACH Modules.MBC_det WHERE regis_people_id = Scouts.people_shadow.people_id EXCLUSIVE-LOCK:
+        ASSIGN 
+            Modules.MBC_det.MBC_people_id = v-correct-seq-id
+            Modules.MBC_det.MBC_modified_date = TODAY 
+            Modules.MBC_det.MBC_modified_by = USER("General")
+            Modules.MBC_det.MBC_prog_name = THIS-PROCEDURE:FILENAME.
+    END.
+    
+    FOR EACH Modules.attend_det WHERE regis_people_id = Scouts.people_shadow.people_id EXCLUSIVE-LOCK:
+        ASSIGN 
+            Modules.attend_det.attend_people_id = v-correct-seq-id
+            Modules.attend_det.attend_modified_date = TODAY 
+            Modules.attend_det.attend_modified_by = USER("General")
+            Modules.attend_det.attend_prog_name = THIS-PROCEDURE:FILENAME.
+    END.
+    
+    FIND Custom.speop_shadow WHERE Custom.speop_shadow.speop_ID = v-correct-seq-id AND  /* 1dot1 */
+        Custom.speop_shadow.speop_deleted = ? NO-ERROR.     /* 1dot1 */
+    IF NOT AVAILABLE (Custom.speop_shadow) THEN
         RUN CreateSpeopRecord (OUTPUT v-created-speop-id, OUTPUT v-success).
     
-    RUN UpdateTableRecordID ("Custom_ALL.speop_shadow", OUTPUT v-success).
+    RUN UpdateTableRecordID ("Custom.speop_shadow", OUTPUT v-success).
     RUN UpdateTableRecordID ("Modules.regis_mstr", OUTPUT v-success).
     
     RUN CreateRespDetRecords.

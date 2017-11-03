@@ -59,7 +59,7 @@ IF AVAILABLE (qoh_det) THEN DO:
         qoh_det.qoh_expire_date = i-qoh-expire-date
         qoh_det.qoh_last_count = i-qoh-last-count
         qoh_det.qoh_prog_name = SOURCE-PROCEDURE:FILE-NAME
-        qoh_det.qoh_modified_by = USERID("InvCtrl")
+        qoh_det.qoh_modified_by = USERID("Modules")
         qoh_det.qoh_modified_date = TODAY.
         
 END. /*** of update path ***/
@@ -84,10 +84,10 @@ ELSE DO:
         qoh_det.qoh_status = i-qoh-status
         qoh_det.qoh_expire_date = i-qoh-expire-date
         qoh_det.qoh_last_count = i-qoh-last-count
-        qoh_det.qoh_created_by = USERID("InvCtrl")
+        qoh_det.qoh_created_by = USERID("Modules")
         qoh_det.qoh_create_date = TODAY
         qoh_det.qoh_prog_name = SOURCE-PROCEDURE:FILE-NAME
-        qoh_det.qoh_modified_by = USERID("InvCtrl")
+        qoh_det.qoh_modified_by = USERID("Modules")
         qoh_det.qoh_modified_date = TODAY.
 
 END. /*** of creation path ***/

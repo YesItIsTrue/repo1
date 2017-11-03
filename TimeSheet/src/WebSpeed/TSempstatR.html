@@ -8,19 +8,23 @@
     <META NAME="CREATE_DATE" CONTENT="07/Jan/16">
     <META NAME="MODIFIED_DATE" CONTENT="07/Jan/16">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
-<SCRIPT LANGUAGE="SpeedScript">
-/* Create an unnamed pool to store all the widgets created by this procedure.
-   This is a good default which assures that this procedure's triggers and
-   internal procedures will execute in this procedure's storage, and that
-   proper cleanup will occur on deletion of the procedure. */
-CREATE WIDGET-POOL.
-</SCRIPT>
-
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
 </HEAD>
 <BODY class='inside'>
 
 <SCRIPT language="SpeedScript">
-{../depot/src/WebSpeed/menuname.i}.
+{TSvert-menu.i}.
   /*------------------------------------------------------------------
     File:           TSstatR.html
     Description:    Time Sheet Report
@@ -57,10 +61,17 @@ DEFINE VARIABLE act           AS CHARACTER                     NO-UNDO.
 DEFINE VARIABLE itmessage     AS LOGICAL INITIAL NO            NO-UNDO.
 
 ASSIGN 
-    empid       = INTEGER(html-encode(get-value("c-usr")))
     raw-week    = html-encode(get-value("html5-week"))
     act         = html-encode(get-value("h-act"))
     .
+    
+IF get-value("h-empid") <> "" THEN
+    empid = INTEGER(html-encode(get-value("h-empid"))).
+ELSE
+    RUN VALUE(SEARCH("session-get-user-id.r")) (
+        get-cookie("c-session-token"),
+        OUTPUT empid
+    ).
 
         FIND people_mstr WHERE people_mstr.people_id = empid AND
                                people_mstr.people_deleted = ?
@@ -80,7 +91,6 @@ CASE act:
         
         {&OUT}
             "<form>" SKIP
-            "<input type='text' name='c-usr' value='" empid "' hidden/>" SKIP           
             "<DIV class='row'>" SKIP
             "<DIV class='grid_3'> </DIV>" SKIP
             "<DIV class='grid_6'>" SKIP   
@@ -181,7 +191,7 @@ CASE act:
                 
             {&OUT}
                 "       <TR>" SKIP
-                "           <TD><a href='../../TimeSheet/rcode/TSentryU.r" 
+                "           <TD><a href='TSentryU.r"                            /* CODEHAUL */ 
                                     "?h-empid=" empid
                                     "&h-clientid=" Hours_Mstr.Hours_client_ID
                                     "&h-projname=" Hours_Mstr.Hours_project_name
@@ -208,7 +218,6 @@ CASE act:
             "</DIV>     <!-- end of row -->" SKIP 
             "<BR>" SKIP 
             "<form>" SKIP
-            "<input type='text' name='c-usr' value='" empid "' hidden/>" SKIP   
             "<div class='row'>" SKIP
             "   <div class='grid_5'> </DIV>" SKIP
             "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP

@@ -8,7 +8,7 @@
     <META NAME='COPYRIGHT' CONTENT='Solsource'>
     <META NAME='CREATE_DATE' CONTENT='01/Dec/15'>
     <META NAME='LAST_UPDATED' CONTENT='4/Apr/16'>    
-    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' /> 
 
 <SCRIPT LANGUAGE="SpeedScript">
 /* Create an unnamed pool to store all the widgets created by this procedure.
@@ -49,6 +49,10 @@ CREATE WIDGET-POOL.
    *        Prefname.  Marked by 1dot1
    *  1.2 - Written by Jacob Luttrell on 04/Apr/16.  Temporary fix to allow
    *        search of the doctor or customer tables. Marked by 1dot2.
+   *  1.3 - written by DOUG LUTTRELL on 03/Oct/17.  Changed to use the new
+   *            single rcode PROPATH structure with Release 12 (CMC structure).
+   *            Marked by 13.
+   *
    **********************************************************************/
 {../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
    
@@ -219,7 +223,8 @@ CASE act:
                       
           {&OUT}
             "  <tr>" SKIP
-            "       <td><a href='../../" pp-project "/rcode/" pp-out
+/*            "       <td><a href='../../" pp-project "/rcode/" pp-out*/                /* 13 */
+            "       <td><a href='" pp-out                                               /* 13 */
                             "?h-act=" pp-act 
                             "&whattorun=" whatshouldrun 
                             "&h-PEOP-passBack-integer1=" pp-passBack-int1                                                                
@@ -268,7 +273,8 @@ CASE act:
                       
           {&OUT}
             "  <tr>" SKIP
-            "       <td><a href='../../" pp-project "/rcode/" pp-out
+/*            "       <td><a href='../../" pp-project "/rcode/" pp-out                            /* 13 */*/
+            "       <td><a href='" pp-out                            /* 13 */
                             "?h-act=" pp-act 
                             "&whattorun=" whatshouldrun 
                             "&h-PEOP-passBack-integer1=" pp-passBack-int1                                                                
@@ -314,7 +320,8 @@ CASE act:
 	                  
 	          {&OUT}
 	            "  <tr>" SKIP
-	            "       <td><a href='../../" pp-project "/rcode/" pp-out
+/*	            "       <td><a href='../../" pp-project "/rcode/" pp-out                       /* 13 */*/
+	            "       <td><a href='" pp-out                       /* 13 */
 	                            "?h-act=" pp-act 
 	                            "&whattorun=" whatshouldrun 
 	                            "&h-PEOP-passBack-integer1=" pp-passBack-int1                                                                

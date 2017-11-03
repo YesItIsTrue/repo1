@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">  
+    <TITLE>Event Announcement</TITLE>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="12/Sep/2017">
+    <META NAME='LAST_UPDATED' CONTENT="12/Sep/2017"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1">   
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<STYLE>
+
+.bgimg, .bgimg2, .bgimg3, .bgimg-main {
+        min-height: 100%;
+        background-position: center;
+        background-size: contain;
+        background-repeat: no-repeat;
+} 
+
+.bgimg {background-image: url("/depot/src/HTMLContent/images/Youth-CMS/AMS.jpg")}
+.bgimg2 {background-image: url("/depot/src/HTMLContent/images/Youth-CMS/john_sullivan.png")}
+.bgimg3 {background-image: url("/depot/src/HTMLContent/images/Youth-CMS/For_the_Strength_of_Youth2.jpg")}
+.bgimg-main {background-image: url("/depot/src/HTMLContent/images/Youth-CMS/Ask-logo.jpg")}
+
+</STYLE>
+    
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+
+  /*------------------------------------------------------------------
+    File: event-announcement-R.html
+    Description: A program that is designed to more or less dynamically make a 
+        one page announcement for an event. Ideal for those without sign up forms.
+    
+    Revision History:
+        
+        1dot0 - Original version. Created by TRAE LUTTRELL 12/Sep/2017.
+
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+
+DEFINE VARIABLE v-event_id          LIKE event_mstr.event_ID NO-UNDO.
+DEFINE VARIABLE v-event_name        LIKE event_mstr.event_name NO-UNDO.
+DEFINE VARIABLE v-event_color_theme LIKE event_mstr.event_color_theme NO-UNDO.
+DEFINE VARIABLE v-event_slogan      LIKE event_mstr.event_slogan NO-UNDO.
+
+ASSIGN 
+    act         = html-encode(get-value("h-act"))
+    v-event_ID  = INTEGER(html-encode(get-value("h-event_ID"))).
+
+IF v-event_ID = 0 THEN ASSIGN v-event_id = 201709.
+
+FIND event_mstr WHERE event_mstr.event_ID = v-event_id AND 
+    event_mstr.event_deleted = ? NO-LOCK NO-ERROR.
+
+IF AVAILABLE event_mstr THEN DO:
+
+    ASSIGN 
+     v-event_name = event_mstr.event_name
+     v-event_color_theme = event_mstr.event_color_theme
+     v-event_slogan = event_mstr.event_slogan.
+    
+END. /*** event assignments ***/
+
+ASSIGN 
+    v-event_name = IF v-event_name = "" THEN "An Unknown Event" ELSE v-event_name
+    v-event_color_theme = IF v-event_color_theme = "" THEN "https://www.w3schools.com/lib/w3-theme-deep-orange.css" ELSE v-event_color_theme
+    v-event_slogan = IF v-event_slogan = "" THEN "It will be very fun!" ELSE v-event_slogan.
+
+
+{&OUT} "<link rel='stylesheet' type='text/css' href='" v-event_color_theme "'>" SKIP.
+
+{&OUT}
+    "</head>" SKIP
+    "<body class='w3-light-grey'>" SKIP
+    "<div class='w3-responsive'>" SKIP   
+    "   <header class='w3-theme-dark'>" SKIP
+    "       <h1>" v-event_name ": " v-event_slogan "</h1>" SKIP
+    "   </header>" SKIP
+    "   <div class='w3-row-padding w3-content' style='max-width:1400px'>" SKIP
+    "       <div class='w3-quarter'>" SKIP.
+
+/********* * * * * * *  CUT HERE AND PUT INTO INCLUDE FILE  * * * * * * * *************/ 
+
+{event-upcoming.i}.
+
+/************* * * * * * * * * * * * * to be an include file * * * * * * * * * * * * * **********************/
+    
+{&OUT} 
+    "           <br>" SKIP
+    "           <div class='w3-card-4 w3-white'>" SKIP
+    "              <ul class='w3-ul'>" SKIP
+    "                  <li class='w3-bar'>" SKIP
+    "                      <div class='w3-bar-item'>" SKIP
+    "                          <span class='w3-large'>Mike</span><br>" SKIP
+    "                          <span>Web Designer</span>" SKIP
+    "                      </div>" SKIP
+    "                  </li>" SKIP
+    "                  <li class='w3-bar'>" SKIP
+    "                      <div class='w3-bar-item'>" SKIP
+    "                          <span class='w3-large'>Mike</span><br>" SKIP
+    "                          <span>Web Designer</span>" SKIP
+    "                      </div>" SKIP
+    "                  </li>" SKIP
+    "                  <li class='w3-bar'>" SKIP
+    "                      <div class='w3-bar-item'>" SKIP
+    "                          <span class='w3-large'>Mike</span><br>" SKIP
+    "                          <span>Web Designer</span>" SKIP
+    "                      </div>" SKIP
+    "                  </li>" SKIP
+    "               </ul>" SKIP
+    "           </div>" SKIP
+    "       </div> <!--- end of first quarter --->" SKIP
+    "       <DIV class='w3-half w3-content bgimg-main w3-center'>" SKIP
+    "       </DIV>" SKIP(1)
+    "       <div class='w3-quarter'>" SKIP
+    "           <div class='w3-card-4 w3-white'>" SKIP
+    "              <ul class='w3-ul w3-card-4'>" SKIP
+    "                  <li class='w3-bar'>" SKIP
+    "                      <div class='w3-bar-item'>" SKIP
+    "                          <span class='w3-large'>Mike</span><br>" SKIP
+    "                          <span>Web Designer</span>" SKIP
+    "                      </div>" SKIP
+    "                  </li>" SKIP
+    "                  <li class='w3-bar'>" SKIP
+    "                      <div class='w3-bar-item'>" SKIP
+    "                          <span class='w3-large'>Mike</span><br>" SKIP
+    "                          <span>Web Designer</span>" SKIP
+    "                      </div>" SKIP
+    "                  </li>" SKIP
+    "                  <li class='w3-bar'>" SKIP
+    "                      <div class='w3-bar-item'>" SKIP
+    "                          <span class='w3-large'>Mike</span><br>" SKIP
+    "                          <span>Web Designer</span>" SKIP
+    "                      </div>" SKIP
+    "                  </li>" SKIP
+    "               </ul>" SKIP
+    "           </div>" SKIP
+    "           <br>" SKIP
+    "           <div class='w3-card-4 w3-white'>" SKIP
+    "              <ul class='w3-ul w3-card-4'>" SKIP
+    "                  <li class='w3-bar'>" SKIP
+    "                      <div class='w3-bar-item'>" SKIP
+    "                          <span class='w3-large'>Mike</span><br>" SKIP
+    "                          <span>Web Designer</span>" SKIP
+    "                      </div>" SKIP
+    "                  </li>" SKIP
+    "                  <li class='w3-bar'>" SKIP
+    "                      <div class='w3-bar-item'>" SKIP
+    "                          <span class='w3-large'>Mike</span><br>" SKIP
+    "                          <span>Web Designer</span>" SKIP
+    "                      </div>" SKIP
+    "                  </li>" SKIP
+    "                  <li class='w3-bar'>" SKIP
+    "                      <div class='w3-bar-item'>" SKIP
+    "                          <span class='w3-large'>Mike</span><br>" SKIP
+    "                          <span>Web Designer</span>" SKIP
+    "                      </div>" SKIP
+    "                  </li>" SKIP
+    "               </ul>" SKIP
+    "           </div>" SKIP
+    "       </div> <!--- end of last quarter --->" SKIP
+    "   </DIV>" SKIP(1)
+    "</div>" SKIP
+    "<BR>" SKIP. 
+
+
+
+</SCRIPT>
+</BODY>
+</HTML>

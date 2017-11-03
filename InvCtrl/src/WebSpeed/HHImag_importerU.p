@@ -92,10 +92,10 @@ FOR EACH QOHcatcher NO-LOCK
             
             ASSIGN 
                 site_mstr.site_name = qohcatcher.site
-                site_mstr.site_created_by = USERID("InvCtrl")
+                site_mstr.site_created_by = USERID("Modules")
                 site_mstr.site_create_date = TODAY
                 site_mstr.site_prog_name = SOURCE-PROCEDURE:FILE-NAME
-                site_mstr.site_modified_by = USERID("InvCtrl")
+                site_mstr.site_modified_by = USERID("Modules")
                 site_mstr.site_modified_date = TODAY.
             
         END. /*** no site found, make one ***/
@@ -104,7 +104,7 @@ FOR EACH QOHcatcher NO-LOCK
             ASSIGN 
                 site_mstr.site_deleted = ?
                 site_mstr.site_prog_name = SOURCE-PROCEDURE:FILE-NAME
-                site_mstr.site_modified_by = USERID("InvCtrl")
+                site_mstr.site_modified_by = USERID("Modules")
                 site_mstr.site_modified_date = TODAY.
         
         /* ELSE you are ALL SET. */
@@ -131,10 +131,10 @@ FOR EACH QOHcatcher NO-LOCK
             ASSIGN 
                 warehouse_mstr.warehouse_site = qohcatcher.site
                 warehouse_mstr.warehouse_name = qohcatcher.warehouse 
-                warehouse_mstr.warehouse_created_by = USERID("InvCtrl")
+                warehouse_mstr.warehouse_created_by = USERID("Modules")
                 warehouse_mstr.warehouse_create_date = TODAY
                 warehouse_mstr.warehouse_prog_name = SOURCE-PROCEDURE:FILE-NAME
-                warehouse_mstr.warehouse_modified_by = USERID("InvCtrl")
+                warehouse_mstr.warehouse_modified_by = USERID("Modules")
                 warehouse_mstr.warehouse_modified_date = TODAY.
             
         END. /*** no warehouse found, make one ***/
@@ -143,7 +143,7 @@ FOR EACH QOHcatcher NO-LOCK
             ASSIGN 
                 warehouse_mstr.warehouse_deleted = ?
                 warehouse_mstr.warehouse_prog_name = SOURCE-PROCEDURE:FILE-NAME
-                warehouse_mstr.warehouse_modified_by = USERID("InvCtrl")
+                warehouse_mstr.warehouse_modified_by = USERID("Modules")
                 warehouse_mstr.warehouse_modified_date = TODAY.
                 
         /* ELSE you are ALL SET. */
@@ -172,10 +172,10 @@ FOR EACH QOHcatcher NO-LOCK
                 loc_mstr.loc_site = qohcatcher.site
                 loc_mstr.loc_warehouse = qohcatcher.warehouse
                 loc_mstr.loc_name = qohcatcher.loc
-                loc_mstr.loc_created_by = USERID("InvCtrl")
+                loc_mstr.loc_created_by = USERID("Modules")
                 loc_mstr.loc_create_date = TODAY
                 loc_mstr.loc_prog_name = SOURCE-PROCEDURE:FILE-NAME
-                loc_mstr.loc_modified_by = USERID("InvCtrl")
+                loc_mstr.loc_modified_by = USERID("Modules")
                 loc_mstr.loc_modified_date = TODAY.
             
         END. /*** no loc found, make one ***/
@@ -184,7 +184,7 @@ FOR EACH QOHcatcher NO-LOCK
             ASSIGN 
                 loc_mstr.loc_deleted = ?
                 loc_mstr.loc_prog_name = SOURCE-PROCEDURE:FILE-NAME
-                loc_mstr.loc_modified_by = USERID("InvCtrl")
+                loc_mstr.loc_modified_by = USERID("Modules")
                 loc_mstr.loc_modified_date = TODAY.
                 
         /* ELSE you are ALL SET. */
@@ -213,10 +213,10 @@ FOR EACH QOHcatcher NO-LOCK
                 item_mstr.item_desc1 = qohcatcher.item_name
                 item_mstr.item_other_id = qohcatcher.item_other_id
                 item_mstr.item_type = qohcatcher.item_type
-                item_mstr.item_created_by = USERID("InvCtrl")
+                item_mstr.item_created_by = USERID("Modules")
                 item_mstr.item_create_date = TODAY
                 item_mstr.item_prog_name = SOURCE-PROCEDURE:FILE-NAME
-                item_mstr.item_modified_by = USERID("InvCtrl")
+                item_mstr.item_modified_by = USERID("Modules")
                 item_mstr.item_modified_date = TODAY.
                 
         END. /*** no item, created one ***/
@@ -230,7 +230,7 @@ FOR EACH QOHcatcher NO-LOCK
                 item_mstr.item_other_id = qohcatcher.item_other_id
                 item_mstr.item_type = qohcatcher.item_type
                 item_mstr.item_prog_name = SOURCE-PROCEDURE:FILE-NAME
-                item_mstr.item_modified_by = USERID("InvCtrl")
+                item_mstr.item_modified_by = USERID("Modules")
                 item_mstr.item_modified_date = TODAY.
         
         END. /*** Item_mstr available ***/

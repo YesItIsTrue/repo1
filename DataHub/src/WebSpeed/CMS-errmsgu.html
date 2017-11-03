@@ -208,7 +208,7 @@ CREATE WIDGET-POOL.
                 ASSIGN 
                     err_message.err_msg             = errmsg
                     err_message.err_type            = errtype
-                    err_message.err_modified_by     = userid("General")
+                    err_message.err_modified_by     = USERID("Core")
                     err_message.err_modified_date   = today 
                     progstatus                      = "<center><h2>Record Modified</h2></center><br />".   
                         
@@ -249,9 +249,9 @@ CREATE WIDGET-POOL.
                                                     NEXT-VALUE(seq-err)
                                                   ELSE  
                                                     errnum  
-                err_message.err_created_by      = userid("General")
+                err_message.err_created_by      = USERID("Core")
                 err_message.err_create_date     = TODAY
-                err_message.err_modified_by     = userid("General")
+                err_message.err_modified_by     = USERID("Core")
                 err_message.err_modified_date   = TODAY.
 
 			{&OUT} progstatus skip 

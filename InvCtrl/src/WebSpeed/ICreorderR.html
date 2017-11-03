@@ -265,7 +265,7 @@ CASE act:
                         ASSIGN v-site-found = YES.
 
                         {&OUT}
-                            "<td><a href=~"../../InvCtrl/rcode/ICinv-receiptU.r?h-site="  qoh_det.qoh_site
+                            "<td><a href=~"ICinv-receiptU.r?h-site="  qoh_det.qoh_site              /* CODEHAUL */
                             "&h-warehouse=" site_mstr.site_def_ware
                             "&h-loc=" warehouse_mstr.warehouse_def_loc
                             "&h-item_nbr=" item_mstr.item_nbr
@@ -284,7 +284,7 @@ CASE act:
                     IF v-site-found = NO THEN DO:
                         
                         {&OUT}
-                            "<td><a href=~"../../InvCtrl/rcode/ICinv-receiptU.r?h-item_nbr=" item_mstr.item_nbr
+                            "<td><a href=~"ICinv-receiptU.r?h-item_nbr=" item_mstr.item_nbr         /* CODEHAUL */
                             "&h-lot=" qoh_det.qoh_lot
                             "&h-serial=" qoh_det.qoh_serial
                             "&h-quantity=" math-rec-buy

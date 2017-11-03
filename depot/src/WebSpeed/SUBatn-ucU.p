@@ -68,7 +68,7 @@ DO TRANSACTION:
                 atn_det.atn_processed       = "NEW"    
                 o-ucatn-create              = YES
                 atn_det.atn_create_date     = TODAY
-                atn_det.atn_created_by      = USERID ("General")
+                atn_det.atn_created_by      = USERID("Core")
 
                 .
                 
@@ -82,7 +82,7 @@ DO TRANSACTION:
             o-ucatn-name                = atn_det.atn_name      
             o-ucatn-value               = atn_det.atn_value      
             atn_det.atn_modified_date   = TODAY
-            atn_det.atn_modified_by     = USERID ("General")
+            atn_det.atn_modified_by     = USERID("Core")
             atn_det.atn_prog_name       = SOURCE-PROCEDURE:FILE-NAME
             .        
     END. 

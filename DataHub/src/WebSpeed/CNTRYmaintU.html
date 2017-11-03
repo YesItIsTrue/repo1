@@ -184,7 +184,7 @@ CASE act:
             {&OUT} 
 	            "   <TR>" SKIP
 	            "       <TD><center>" country_mstr.country_ISO "</center></TD>" SKIP
-	            "       <TD><center><a href='../../DataHub/rcode/CNTRYmaintU.r"    
+	            "       <TD><center><a href='CNTRYmaintU.r"    
 		                "?h-whichrec=" RECID(country_mstr)
 		                "&whattorun=" get-value('whattorun')  /* linking to itself in a different act */ 
 		                "&h-act=MAINTENANCE'>" country_mstr.country_display_name "</a></center></TD>" SKIP                                                         
@@ -196,7 +196,7 @@ CASE act:
 	           isselected = "". 
 	           
 	         {&OUT}                                                          
-	            "       <TD><center><a href='../../DataHub/rcode/CNTRYmaintU.r"    
+	            "       <TD><center><a href='CNTRYmaintU.r"    
 		                "?h-country-ISO=" country_mstr.country_ISO
 		                "&h-country-disp=" country_mstr.country_display_name
 		                "&whattorun=" get-value('whattorun')  /* linking to itself in a different act */ 
@@ -285,10 +285,10 @@ CASE act:
 		            country_mstr.country_ISO            = v-country-iso
 		            country_mstr.country_display_name   = v-country-disp            
 		            country_mstr.country_create_date    = TODAY 
-		            country_mstr.country_created_by     = USERID ("General")   
+		            country_mstr.country_created_by     = USERID("Core")   
 			        country_mstr.country_intl_prefix    = v-intl-prfx
 			        country_mstr.country_modified_date  = TODAY 
-			        country_mstr.country_modified_by    = USERID ("General")
+			        country_mstr.country_modified_by    = USERID("Core")
 			        country_mstr.country_prog_name      = THIS-PROCEDURE:FILE-NAME           
 		            .  
 	        
@@ -337,7 +337,7 @@ CASE act:
 		           country_mstr.country_display_name   = IF v-country-disp     <> "" THEN v-country-disp  ELSE country_mstr.country_display_name          
 		           country_mstr.country_intl_prefix    = IF v-intl-prfx        <> 0  THEN v-intl-prfx     ELSE country_mstr.country_intl_prefix    
 		           country_mstr.country_modified_date  = TODAY 
-		           country_mstr.country_modified_by    = USERID ("General")
+		           country_mstr.country_modified_by    = USERID("Core")
 		           country_mstr.country_prog_name      = THIS-PROCEDURE:FILE-NAME           
 		          .  
 		    

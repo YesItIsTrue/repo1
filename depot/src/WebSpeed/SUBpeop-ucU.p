@@ -85,9 +85,9 @@ DO TRANSACTION:
             people_mstr.people_DOB          = i-ucpeople-DOB
             o-ucpeople-successful                   = YES
             people_mstr.people_create_date          = TODAY
-            people_mstr.people_created_by           = USERID ("General")
+            people_mstr.people_created_by           = USERID("Core")
             people_mstr.people_modified_date        = TODAY
-            people_mstr.people_modified_by          = USERID ("General")
+            people_mstr.people_modified_by          = USERID("Core")
             people_mstr.people_second_addr_ID       = i-ucpeople-second_addr_ID
             o-ucpeople-id                           = people_mstr.people_id
             people_mstr.people_prefname             = i-ucpeople-prefname      /* 2dot1 */
@@ -112,7 +112,7 @@ DO TRANSACTION:
                 o-ucpeople-update                   = YES
                 o-ucpeople-successful               = YES
                 people_mstr.people_modified_date    = TODAY
-                people_mstr.people_modified_by      = USERID ("General")
+                people_mstr.people_modified_by      = USERID("Core")
                 o-ucpeople-id                       = people_mstr.people_id
                 people_mstr.people_firstname        = IF i-ucpeople-firstname      <> "" THEN i-ucpeople-firstname     ELSE people_mstr.people_firstname
                 people_mstr.people_midname          = IF i-ucpeople-midname        <> "" THEN i-ucpeople-midname       ELSE people_mstr.people_midname

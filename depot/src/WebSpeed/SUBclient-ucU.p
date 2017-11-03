@@ -64,7 +64,7 @@ DO TRANSACTION:
                 o-ucclnt-update                  = YES
                 o-ucclnt-successful              = YES
                 Client_Mstr.Client_modified_date = TODAY
-                Client_Mstr.Client_modified_by   = USERID ("General")                    
+                Client_Mstr.Client_modified_by   = USERID("Modules")                    
                 o-ucclnt-id                      = Client_Mstr.Client_people_ID 
 /*                Client_Mstr.Client_prog_name     = i-ucclnt-progname*/
                 Client_Mstr.Client_def_profit_margin = i-ucclnt-profitmargin          
@@ -83,9 +83,9 @@ DO TRANSACTION:
                 o-ucclnt-create                  = YES
                 o-ucclnt-successful              = YES
                 Client_Mstr.Client_create_date   = TODAY
-                Client_Mstr.Client_created_by    = USERID ("General")                    
+                Client_Mstr.Client_created_by    = USERID("Modules")                    
                 Client_Mstr.Client_modified_date = TODAY
-                Client_Mstr.Client_modified_by   = USERID ("General")                 
+                Client_Mstr.Client_modified_by   = USERID ("Modules")                 
                 o-ucclnt-id                      = Client_Mstr.Client_people_ID
 /*                Client_Mstr.Client_prog_name     = i-ucclnt-progname*/
                 Client_Mstr.Client_def_profit_margin = i-ucclnt-profitmargin  

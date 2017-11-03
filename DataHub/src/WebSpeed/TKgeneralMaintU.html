@@ -70,7 +70,11 @@ CREATE WIDGET-POOL.
                      dates are being updated in the trh_hist.  
      Version 3.4 - written by Jacob Luttrell on 12Apr16.  added statuslist.i in
                     place of the defined variable statlist. Added code to change
-                    status to deleted or void when aproprete. /* 3dot4 */                                                                                                   
+                    status to deleted or void when aproprete. /* 3dot4 */    
+    Version 3.5 -  written by DOUG LUTTRELL on 03/Oct/17.  Changed to use
+                    single rcode PROPATH structure in accordance with the 
+                    changes to Release 12 (CMC structure).  Marked by 3dot5.                    
+                                                                                                                   
   -------------------------------------------------------------------*/  
 {../depot/src/WebSpeed/menuname.i}.
   
@@ -245,7 +249,7 @@ CASE v-act:
                 "           <tr>" SKIP
                 "               <td>"
 /*                "<a href='http://localhost:3333/DataHub/rcode/TKgeneralMaintU.r"*/
-                "<a href='../../DataHub/rcode/TKgeneralMaintU.r"    /** 1.1 **/
+                "<a href='TKgeneralMaintU.r"    /** 1.1 **/         /* 3dot5 */
                 "?h-TK_ID=" TK_mstr.TK_ID
                 "&h-TK_test_seq=" TK_mstr.TK_test_seq
                 "&whattorun=1.5"   /* linking to itself in a different act */ 
@@ -260,7 +264,7 @@ CASE v-act:
             IF AVAILABLE (people_mstr) THEN
               {&OUT}
                 "               <td>" SKIP
-                "                   <a href=~"../../DataHub/rcode/TKtestSearchR.r"  /** 1.1 **/
+                "                   <a href=~"TKtestSearchR.r"  /** 1.1 **/             /* 3dot5 */
                 "?h-first=" people_mstr.people_firstname 
                 "&h-last=" people_mstr.people_lastname
                 "&whattorun=" whatshouldrun
@@ -420,7 +424,7 @@ CASE v-act:
              IF  v-pat_lastname  = "hyperlink here" THEN  
                    {&OUT}
                       "                   <td>Patient Name</td>"  SKIP
-		              "       <td><a href='../../DataHub/rcode/PATpickerR.r"
+		              "       <td><a href='PATpickerR.r"                                      /* 3dot5 */
 		                "?h-prevproc=TKgeneralMaintU.r"                         /* Calling Procedure */
 		                "&h-pp-act=MAINTENANCE"                                 /* Calling Procedure's Act */
 		                "&h-pp-whattorun=" whatshouldrun                        /* Calling Procedure's Whattorun */
@@ -435,7 +439,7 @@ CASE v-act:
                  {&OUT}         
                      "                 <tr>" SKIP
                      "                   <td>Patient Name</td>" SKIP
-                     "       <td><a href='../../DataHub/rcode/PATpickerR.r"
+                     "       <td><a href='PATpickerR.r"                                     /* 3dot5 */
                         "?h-prevproc=TKgeneralMaintU.r"                         /* Calling Procedure */
                         "&h-pp-act=MAINTENANCE"                                 /* Calling Procedure's Act */
                         "&h-pp-whattorun=" whatshouldrun                        /* Calling Procedure's Whattorun */
@@ -450,7 +454,7 @@ CASE v-act:
               IF  v-cust_lastname  = "hyperlink here" THEN
                    {&OUT}
                       "                   <td>Customer Name</td>" SKIP
-                      "       <td><a href='../../DataHub/rcode/PATpickerR.r"
+                      "       <td><a href='PATpickerR.r"                                /* 3dot5 */
                         "?h-prevproc=TKgeneralMaintU.r"                         /* Calling Procedure */
                         "&h-pp-act=MAINTENANCE"                                 /* Calling Procedure's Act */
                         "&h-pp-whattorun=" whatshouldrun                        /* Calling Procedure's Whattorun */
@@ -464,7 +468,7 @@ CASE v-act:
              IF  v-cust_lastname  <> "hyperlink here" THEN
        {&OUT}
                     "                   <td>Customer Name</td>" SKIP
-                  "       <td><a href='../../DataHub/rcode/PATpickerR.r"
+                  "       <td><a href='PATpickerR.r"                                    /* 3dot5 */
                         "?h-prevproc=TKgeneralMaintU.r"                         /* Calling Procedure */
                         "&h-pp-act=MAINTENANCE"                                 /* Calling Procedure's Act */
                         "&h-pp-whattorun=" whatshouldrun                        /* Calling Procedure's Whattorun */
@@ -738,7 +742,7 @@ CASE v-act:
                            IF AVAILABLE trh_hist THEN                                           /* 3dot0 */
                             ASSIGN                                                              /* 3dot0 */
                                trh_hist.trh_date = datelist[14]                                             /* 3dot2 */
-                               trh_hist.trh_modified_by = USERID ("General")                                /* 3dot2 */
+                               trh_hist.trh_modified_by = USERID("Modules")                                /* 3dot2 */
                                trh_hist.trh_prog_name = THIS-PROCEDURE:FILE-NAME                            /* 3dot2 */
                                trh_hist.trh_modified_date = TODAY.                              /* 3dot0 */
 

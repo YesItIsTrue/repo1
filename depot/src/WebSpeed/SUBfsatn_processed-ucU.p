@@ -44,11 +44,11 @@ FOR EACH fs_mstr WHERE fs_mstr.fs_file_ID = i-fsatn-id
               
         ASSIGN 
             fs_mstr.fs_processed = i-processed
-            fs_mstr.fs_modified_by = USERID("General")
+            fs_mstr.fs_modified_by = USERID("Core")
             fs_mstr.fs_modified_date = TODAY
             
             atn_det.atn_processed = i-processed
-            atn_det.atn_modified_by = USERID("General")
+            atn_det.atn_modified_by = USERID("Core")
             atn_det.atn_modified_date = TODAY
             
             o-successful = YES. 

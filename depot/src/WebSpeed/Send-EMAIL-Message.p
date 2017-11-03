@@ -9,6 +9,7 @@
 NOTE 1:  If you want to see this program work, copy the following lines of code, starting 
          with the DEFINE statement thru the last variable on the RUN Statement and 
          paste it in your ABL Scratchpad and execute.
+         
 NOTE 2:  If you want to send an attachment with the message, put the file-name in the 
          variable  'msg-attach-file-name'  else leave it blank. 
                       
@@ -52,6 +53,16 @@ NOTE 2:  If you want to send an attachment with the message, put the file-name i
     Author(s)   : Harold Luttrell
     Created     : Fri Dec 30 18:02:19 CST 2016
     Notes       :
+        
+    Revision History:
+    -----------------
+    1.1 - written by Harold Luttrell, Sr. on 15/Sept/17. 
+          Changed database names for the CMC Release 12.0 & 12.1.
+          Changed:  GENERAL to CORE,
+                    HHI     to MODULES,
+                    RS      to CUSTOM_ALL.
+          Marked by /* 1dot1 */.
+    
   ----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
@@ -68,7 +79,7 @@ DEFINE INPUT  PARAMETER msg-attach-file-name    AS CHARACTER FORMAT "x(4000)"   
 DEFINE VARIABLE what_drive_letter               AS CHARACTER FORMAT "x(01)" NO-UNDO.
 
 /* ***************************  E-Mail  Definitions  *************************** */
-DEFINE VARIABLE cmdname         AS CHARACTER INITIAL "P:\OpenEdge\Batch-Runs\errormail.exe"         NO-UNDO.
+DEFINE VARIABLE cmdname         AS CHARACTER INITIAL "C:\Apps\Utils\errormail.exe"                  NO-UNDO.
 DEFINE VARIABLE emailaddr       AS CHARACTER INITIAL "-r hhi.techsupport@mysolsource.com"           NO-UNDO.
 DEFINE VARIABLE subjtxt         AS CHARACTER INITIAL "-s "                                          NO-UNDO.
 DEFINE VARIABLE messagetxt      AS CHARACTER INITIAL "-m  "                                         NO-UNDO.
@@ -106,42 +117,39 @@ IF what_drive_letter = "C" THEN DO:
     programs on their PC's/Laptop's then if an e-mail is generated it will go to 
     their MySolsource.com e-mail account. */
     
-    ASSIGN cmdname   = "C:\OpenEdge\Batch-Runs\errormail.exe".
+    ASSIGN cmdname   = "C:\Apps\Utils\errormail.exe".
     
     IF  e_to-whom <> "" THEN 
             ASSIGN emailaddr = "-r " + e_to-whom.
             
-    ELSE IF  USERID("General")       = "Doug.Luttrell"   OR 
-             USERID("HHI")           = "Doug.Luttrell"   OR 
-             USERID("RS")            = "Doug.Luttrell"   OR 
-             USERID("TimeSheet")     = "Doug.Luttrell"  THEN 
+    ELSE IF  USERID("CORE")         = "Doug.Luttrell"   OR 
+             USERID("MODULES")      = "Doug.Luttrell"   OR 
+             USERID("CUSTOM")   = "Doug.Luttrell"   THEN 
                 ASSIGN 
                     emailaddr = "-r doug.luttrell@mysolsource.com".
             
-    ELSE IF USERID("General")   = "Harold.Luttrell"  OR  
-            USERID("HHI")       = "Harold.Luttrell"  OR  
-            USERID("RS")        = "Harold.Luttrell"  OR 
-            USERID("TimeSheet") = "Harold.Luttrell"  THEN  
+    ELSE IF USERID("CORE")          = "Harold.Luttrell"  OR  
+            USERID("MODULES")       = "Harold.Luttrell"  OR  
+            USERID("CUSTOM")    = "Harold.Luttrell"  THEN  
                 ASSIGN 
                     emailaddr = "-r harold.luttrell@mysolsource.com".
             
-    ELSE IF USERID("General")   = "Trae.Luttrell"  OR  
-            USERID("HHI")       = "Trae.Luttrell"  OR
-            USERID("RS")        = "Trae.Luttrell" OR 
-            USERID("TimeSheet") = "Trae.Luttrell"  THEN  
+    ELSE IF USERID("CORE")          = "Trae.Luttrell"  OR  
+            USERID("MODULES")       = "Trae.Luttrell"  OR
+            USERID("CUSTOM")    = "Trae.Luttrell"  THEN  
                 ASSIGN 
                     emailaddr = "-r trae.luttrell@mysolsource.com".
                 
-    ELSE IF USERID("General")   = "Andrew.Garver"  OR  
-            USERID("HHI")       = "Andrew.Garver"  OR
-            USERID("RS")        = "Andrew.Garver"  OR 
-            USERID("TimeSheet") = "Andrew.Garver"  THEN 
+    ELSE IF USERID("CORE")          = "Andrew.Garver"  OR  
+            USERID("MODULES")       = "Andrew.Garver"  OR
+            USERID("CUSTOM")    = "Andrew.Garver"  THEN 
                 ASSIGN 
                     emailaddr = "-r Andrew.Garver@mysolsource.com".
            
     ELSE 
         ASSIGN 
             emailaddr = "-r hhi.techsupport@mysolsource.com".
+
 END.  /* of if what_drive_letter = C */            
  
 OS-COMMAND SILENT   

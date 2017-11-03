@@ -23,6 +23,11 @@
         Fixed e-mail format to match others.
         Identified by /* 1dot2 */
                   
+    1.3 - written by HAROLD LUTTRELL JR. on 03/Oct/17.  Changed to use
+            single rcode PROPATH settings pursuant to the rules of
+            Release 12 (CMC structure).  Need to include the RUN VALUE(SEARCH
+            style commands and eliminate the C: vs. P: business.  Marked by 1dot3. 
+                              
   ----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
@@ -88,10 +93,12 @@ EXPORT STREAM outward DELIMITER ";"
 
 /* ***************************  Main Block  *************************** */
 
-IF drive_letter = "P" THEN                                                      
-    INPUT FROM "P:\OpenEdge\WRK\RS-SQL-Loads\Input-Files\MPA_TEST_DETAILS_RCD_NONULLS.txt". 
-ELSE
-    INPUT FROM "C:\OpenEdge\Workspace\RS-SQL-Loads\Input-Files\MPA_TEST_DETAILS_RCD_NONULLS.txt".  
+INPUT FROM VALUE(SEARCH("Input-Files\MPA_TEST_DETAILS_RCD_NONULLS.txt")).               /* 1dot3 */
+
+/*IF drive_letter = "P" THEN                                                                       */
+/*    INPUT FROM "P:\OpenEdge\WRK\RS-SQL-Loads\Input-Files\MPA_TEST_DETAILS_RCD_NONULLS.txt".      */
+/*ELSE                                                                                             */
+/*    INPUT FROM "C:\OpenEdge\Workspace\RS-SQL-Loads\Input-Files\MPA_TEST_DETAILS_RCD_NONULLS.txt".*/
 
     REPEAT:
 

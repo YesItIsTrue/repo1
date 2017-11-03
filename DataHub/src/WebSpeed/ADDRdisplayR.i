@@ -21,26 +21,26 @@
 /* ***************************  Main Block  *************************** */
 IF AVAILABLE (morepeople) THEN DO:
 
-    RUN VALUE(SEARCH("SUBcountry-findR.p")) (                                              /* 1dot2 */
+    RUN VALUE(SEARCH("SUBcountry-findR.r")) (                                              /* 1dot2 */
         addr_mstr.addr_country,                                                            /* 1dot2 */
         OUTPUT o-fcountry-ISO,                                                             /* 1dot2 */
         OUTPUT o-fcountry-error                                                            /* 1dot2 */
         ).                                                                                 /* 1dot2 */
 
-    RUN VALUE(SEARCH("SUBstate-findR.p")) (                                                /* 1dot2 */
+    RUN VALUE(SEARCH("SUBstate-findR.r")) (                                                /* 1dot2 */
         o-fcountry-ISO,                                                                    /* 1dot2 */
         addr_mstr.addr_stateprov,                                                          /* 1dot2 */
         OUTPUT o-fstate-ISO,                                                               /* 1dot2 */
         OUTPUT o-fstate-error                                                              /* 1dot2 */
         ).                                                                                 /* 1dot2 */
 
-    RUN VALUE(SEARCH("SUBcountry-disp-name-findR.p")) (                                    /* 1dot2 */
+    RUN VALUE(SEARCH("SUBcountry-disp-name-findR.r")) (                                    /* 1dot2 */
         o-fcountry-ISO,                                                                    /* 1dot2 */
         OUTPUT o-fcountry-disp-name,                                                       /* 1dot2 */
         OUTPUT o-fcountry-disp-error                                                       /* 1dot2 */
         ).                                                                                 /* 1dot2 */
        
-    RUN VALUE(SEARCH("SUBstate-disp-name-findR.p")) (                                      /* 1dot2 */
+    RUN VALUE(SEARCH("SUBstate-disp-name-findR.r")) (                                      /* 1dot2 */
         o-fcountry-ISO,                                                                    /* 1dot2 */
         o-fstate-ISO,                                                                      /* 1dot2 */                    
         OUTPUT o-fstate-disp-name,                                                         /* 1dot2 */ 

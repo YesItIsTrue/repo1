@@ -1,0 +1,28 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Andrew Garver">
+<TITLE>Redirect</TITLE>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<SCRIPT LANGUAGE="SpeedScript">
+/*
+* This file serves as a middle-man when deleting cookies. Because cookies have to make
+* a round trip to be wiped from the client, we must navigate to this page first before
+* navigating back to the login page to actually delete the cookie.
+* This file is also the only reliable way of redirecting to another webpage from a 
+* Progress HTTP Header function.
+*/
+CREATE WIDGET-POOL.
+
+DEFINE INPUT PARAMETER v-redirect-location AS CHARACTER NO-UNDO.
+</SCRIPT>
+</HEAD>
+<BODY>
+<input type="hidden" id="redirect-location" value="`v-redirect-location`"/>
+<script>
+    $(document).ready(function() {
+        window.location = $("#redirect-location").val();
+    });
+</script>
+</BODY>
+</HTML>

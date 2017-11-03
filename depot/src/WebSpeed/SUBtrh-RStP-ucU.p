@@ -61,9 +61,9 @@ DO TRANSACTION:
             trh_hist.trh_lot            = i-ctrh-lot    
             trh_hist.trh_serial         = i-ctrh-serial        
             trh_hist.trh_create_date    = i-ctrh-date 
-            trh_hist.trh_created_by     = USERID ("General")
+            trh_hist.trh_created_by     = USERID("Modules")
             trh_hist.trh_modified_date  = i-ctrh-date
-            trh_hist.trh_modified_by    = USERID ("General")
+            trh_hist.trh_modified_by    = USERID("Modules")
             trh_hist.trh_site           = i-ctrh-site
             trh_hist.trh_sequence       = i-ctrh-sequence
             o-ctrh-id                   = trh_hist.trh_id

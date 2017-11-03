@@ -1,0 +1,38 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+    <HEAD>
+        <META NAME="AUTHOR" CONTENT="Alex Pearlstein">
+        <TITLE>WebSpeed Script</TITLE>
+        <SCRIPT LANGUAGE="SpeedScript">
+            CREATE WIDGET-POOL.
+
+            DEFINE VARIABLE cookievar AS c.
+
+            PROCEDURE Output-Header:
+                ASSIGN cookievar = get-value("cookievar").
+                CASE get-value("Button"):
+                    WHEN "Get" THEN get-cookie("testcookie").
+                    WHEN "Set" THEN set-cookie("testcookie":U, cookievar, ?, ?, "/", ?, ?).  
+                    WHEN "Delete" THEN delete-cookie("testcookie", ?, ?).
+                END CASE.
+            END PROCEDURE.
+        </SCRIPT>
+    </HEAD>
+    <BODY>
+        <FORM method="Post" Name="cookieform" action="example_cookie.html">
+            <CENTER>
+                <INPUT type="text" name="cookievar" value="` cookievar `">
+                <INPUT type="submit" name="button" value="Set">
+                <INPUT type="submit" name="button" value="Get">
+                <INPUT type="submit" name="button" value="delete"><BR>
+        </FORM>
+        This is a link to this same page<BR><BR></Center>
+        The cookies current value is "<Font color=Green>` get-cookie("testcookie") `"</font>
+        using the get-cookie() function <BR>
+        The action was <Font color=Green> "` get-value("Button") `" </font><BR>
+        The variable's current value is <Font color=Green> "` cookievar `" </font><BR><BR>
+
+        A cookie must make a round trip for the value to be looked at.<BR>First by clicking on Set cookie we post the information to the server.<BR>Then the returning page sets the cookie on the client.<Br>
+        After the cookie is set on the client machine, then it can be looked at by the server.<BR>This Procedure <B>MUST</B> be in the HTML HEAD of the document<BR>
+    </BODY>
+</HTML>

@@ -19,7 +19,6 @@
 
 ROUTINE-LEVEL ON ERROR UNDO, THROW.
 DEFINE INPUT PARAMETER i-ucpatient-people-id    LIKE people_mstr.people_id          NO-UNDO.
-DEFINE INPUT PARAMETER i-ucpatient-condition    LIKE patient_mstr.patient_condition NO-UNDO.
 DEFINE INPUT PARAMETER i-ucpatient-notes        LIKE patient_mstr.patient_notes     NO-UNDO.
 DEFINE INPUT PARAMETER i-ucpatient-RP_ID        LIKE patient_mstr.patient_RP_ID     NO-UNDO.
 DEFINE INPUT PARAMETER i-ucpatient-doctor_ID    LIKE patient_mstr.patient_doctor_ID NO-UNDO.
@@ -58,7 +57,7 @@ DO TRANSACTION:
                 o-ucpatient-update                  = YES
                 o-ucpatient-successful              = YES
                 patient_mstr.patient_modified_date  = TODAY
-                patient_mstr.patient_modified_by    = USERID ("HHI")
+                patient_mstr.patient_modified_by    = USERID("Modules")
                 o-ucpatient-id                      = patient_mstr.patient_id                
                 .
                                                 
@@ -74,16 +73,15 @@ DO TRANSACTION:
                 o-ucpatient-create                  = YES
                 o-ucpatient-successful              = YES
                 patient_mstr.patient_create_date    = TODAY
-                patient_mstr.patient_created_by     = USERID ("HHI")
+                patient_mstr.patient_created_by     = USERID("Modules")
                 patient_mstr.patient_modified_date  = TODAY
-                patient_mstr.patient_modified_by    = USERID ("HHI")
+                patient_mstr.patient_modified_by    = USERID("Modules")
                 o-ucpatient-id                      = patient_mstr.patient_id 
                 .
                 
         END. /*** of not avail ELSE DO ***/
         
-        ASSIGN 
-            patient_mstr.patient_condition  = IF i-ucpatient-condition  <> "" THEN i-ucpatient-condition    ELSE patient_mstr.patient_condition
+        ASSIGN
             patient_mstr.patient_notes      = IF i-ucpatient-notes      <> ?  THEN i-ucpatient-notes        ELSE patient_mstr.patient_notes   
             patient_mstr.patient_RP_ID      = IF i-ucpatient-RP_ID      <> 0  THEN i-ucpatient-RP_ID        ELSE patient_mstr.patient_RP_ID
             patient_mstr.patient_doctor_ID  = IF i-ucpatient-doctor_ID  <> 0  THEN i-ucpatient-doctor_ID    ELSE patient_mstr.patient_doctor_ID

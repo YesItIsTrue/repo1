@@ -1,0 +1,799 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <TITLE>Schedule Maintenance</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="07/Apr/2017">
+    <META NAME='LAST_UPDATED' CONTENT="07/Apr/2017">   
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css">
+    
+<SCRIPT LANGUAGE="SpeedScript">
+
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY class='w3-white'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File:
+    periodription:
+    Created:
+        
+        if the class that you are making is more than one period... then you need to
+        update the sched__dec01 with the number of extra periods it occupies.
+        
+
+  -----------------------------------------------------------------
+
+  Revision History:
+  -----------------
+  1.0 - written by TRAE LUTTRELL on 07/Apr/17.  Original version.
+  1.1 - written by TRAE LUTTRELL on 08/Sep/17.  Fixed pathing issues inside
+		HREF tags.  Not marked.
+  1.2 - written by TRAE LUTTRELL on 08/Sep/17   Fixed typos in headers
+  -------------------------------------------------------------------*/
+       
+
+
+/****************************************  VARIABLES  *************************************/  
+DEFINE VARIABLE x                   AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE y                   AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE act                 AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-itmessages           AS LOGICAL INITIAL no               NO-UNDO.
+DEFINE VARIABLE error-message       AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-name              LIKE event_mstr.event_name          NO-UNDO.
+DEFINE VARIABLE v-html-from-date    AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-html-to-date      AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-start_date        LIKE sched_mstr.sched_start_date    NO-UNDO.
+DEFINE VARIABLE v-html-start_date   AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-end_date          LIKE sched_mstr.sched_end_date      NO-UNDO.
+DEFINE VARIABLE v-html-end_date     AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE v-contact           LIKE event_mstr.event_contact       NO-UNDO.
+DEFINE VARIABLE c-event             AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE v-event             LIKE event_mstr.event_ID            NO-UNDO.
+DEFINE VARIABLE v-period            LIKE sched_mstr.sched_period        NO-UNDO.
+DEFINE VARIABLE v-MB_BSA_ID         LIKE MB_mstr.MB_BSA_ID              NO-UNDO.
+DEFINE VARIABLE v-instructor        LIKE speop_shadow.speop_ID        NO-UNDO.                                  /* 1dot1 */
+DEFINE VARIABLE v-extra_length      LIKE sched_mstr.sched__dec01        NO-UNDO.
+DEFINE VARIABLE v-total_seats       LIKE sched_mstr.sched_total_seats   NO-UNDO.
+DEFINE VARIABLE v-class_ID          LIKE sched_mstr.sched_class_ID      NO-UNDO.
+DEFINE VARIABLE c-sched_item        AS INTEGER                          NO-UNDO.
+DEFINE VARIABLE v-mb_name           LIKE MB_mstr.MB_name NO-UNDO.
+DEFINE VARIABLE c-sched             AS INTEGER NO-UNDO.
+
+ASSIGN 
+    act                 = html-encode(get-value("h-act"))
+    v-class_ID          = INTEGER(html-encode(get-value("h-class_ID")))
+    v-name              = html-encode(get-value("h-name"))
+    v-html-start_date   = html-encode(get-value("h-start_date"))
+    v-html-end_date     = html-encode(get-value("h-end_date"))
+    v-instructor        = INTEGER(html-encode(get-value("h-instructor")))    
+    v-MB_BSA_ID         = INTEGER(html-encode(get-value("h-mb_BSA_ID")))
+    v-contact           = INTEGER(html-encode(get-value("h-contact")))
+    v-event             = INTEGER(html-encode(get-value("h-event")))
+    v-extra_length      = DECIMAL(html-encode(get-value("h-extra_length")))
+    v-total_seats       = INTEGER(html-encode(get-value("h-total_seats")))
+    v-period            = html-encode(get-value("h-period")).
+
+IF act = "" THEN ASSIGN act = "Select_Event".
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-start_date, OUTPUT v-start_date).
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-end_date, OUTPUT v-end_date).
+
+IF act = "Verification" THEN DO:
+    
+    
+END. /*** of verification act ***/      
+    
+CASE act:
+
+    WHEN "Login" THEN DO:
+        
+    END. /*** Login ***/
+
+    WHEN "Select_Event" THEN DO:
+    
+        {&OUT}
+            "<header class='w3-container w3-dark-grey'>" SKIP
+                "<h1>Schedule Maintenance</h1>" SKIP
+            "</header>" SKIP
+        
+            "<br><br>" SKIP
+        
+            "<form>" SKIP
+            "<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>" SKIP
+            "    <h2>Event Selection</h2>"
+            "    <p>Choose an Event whoose schedual you'd like to change.</p>"
+
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Event Name</label>" SKIP
+            "           <select name='h-event' class='w3-border w3-round-large w3-select w3-hover-theme' required>" SKIP.
+     
+        FOR EACH event_mstr WHERE event_mstr.event_start_date >= (TODAY - 14) NO-LOCK
+            BREAK BY event_mstr.event_start_date BY event_mstr.event_start_time BY event_mstr.event_name:    
+                 
+                {&OUT} "               <option value='" event_mstr.event_id "'>" event_mstr.event_name " </option>" SKIP.
+            
+        END. /**** sched_mstr 4ea ****/
+        
+        {&OUT} 
+            "           </select>" SKIP
+            "    </p>" SKIP
+            
+            "<br>" SKIP
+            
+            "</div>"
+            
+            "<br>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='List' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "<br><br><br><br><br><br><br>" SKIP.  
+        
+    END. /*** Select_event ***/
+
+    WHEN "List" THEN DO:
+    
+        FIND event_mstr WHERE event_mstr.event_ID = v-event NO-LOCK NO-ERROR.
+    
+        IF AVAILABLE (event_mstr) THEN ASSIGN v-name = event_mstr.event_name.
+        
+        ELSE ASSIGN v-name = "an Unavailable Event".
+    
+        {&OUT}
+            "<header class='w3-container w3-dark-grey'>" SKIP
+                "<h1> List of Scheduled Classes in " v-name " </h1>" SKIP
+            "</header>" SKIP
+        
+            "<br><br>" SKIP
+            "<div class='w3-card-4 w3-content w3-white' style='max-width:1100px;'>" SKIP
+            "<ul class='w3-ul'>" SKIP. 
+    
+        FOR EACH sched_mstr WHERE sched_mstr.sched_event_ID = v-event NO-LOCK
+                BREAK BY INTEGER(sched_mstr.sched_period) BY sched_mstr.sched_BSA_ID:
+        
+            ASSIGN 
+                c-sched = c-sched + 1.
+        
+            FIND MB_mstr WHERE MB_mstr.MB_BSA_ID = sched_mstr.sched_BSA_ID NO-LOCK NO-ERROR.
+            IF AVAILABLE (mb_mstr) THEN ASSIGN v-mb_name = MB_mstr.MB_name.
+            ELSE ASSIGN v-mb_name = "an Unavailable Class".
+        
+            IF FIRST-OF (INTEGER(sched_mstr.sched_period)) THEN 
+                {&OUT}
+		            "</ul>" SKIP
+		            "</div>"  SKIP
+		            "<br>" SKIP
+		            "    <H2 class='w3-border-dark-grey w3-topbar'>Period " sched_mstr.sched_period "</h2>"
+		            "<div class='w3-card-4 w3-content w3-white' style='max-width:1100px;'>" SKIP
+                    "<ul class='w3-ul'>" SKIP. 
+        
+            {&OUT}
+                "<a href=~"sched_maintU.r?h-act=Edit&h-event=" v-event 
+                "&h-name=" v-name
+                "&h-class_ID=" sched_mstr.sched_class_ID
+                "&h-mb_name=" v-mb_name  
+                "&h-period=" sched_mstr.sched_period "~" style='text-decoration:none;'>" SKIP
+                "    <li class='w3-padding-16 w3-white w3-hover-pale-green' style='border-bottom: 1px solid #ddd !important;'>" SKIP
+                "        <span class='w3-closebtn w3-padding w3-margin-right w3-medium w3-xlarge'><i class='fa fa-pencil-square-o'></i></span>" SKIP
+                "        <span class='w3-xlarge'>" sched_mstr.sched_class_ID " - " v-mb_name "</span>" SKIP
+                "    </li>" SKIP
+                "</a>" SKIP.
+        
+        END. /*** 4ea sched_mstr ***/
+        
+        {&OUT}
+            "</ul>" SKIP
+            "</div>"  SKIP
+            "<br>" SKIP.
+        
+        IF c-sched < 1 THEN {&OUT}                    
+            "    <div class='w3-card-2 w3-panel w3-pale-yellow w3-leftbar w3-border w3-border-yellow w3-content' style='max-width:800px;'>" SKIP
+            "       <p>Sorry, there were no scheduled classes found searching with that event.</p>" SKIP
+            "    </div>" SKIP.
+        
+        {&OUT} 
+            "<form>" SKIP
+            "<input type='hidden' name='h-event' value='" v-event "'/>" SKIP
+            "<input type='hidden' name='h-name' value='" v-name "'/>" SKIP
+            "<input type='hidden' name='' value='"  "'/>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Create' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Create New</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button  type='submit' name='h-act' value='' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP .
+        
+    END. /**** Create Act ****/
+
+    WHEN "Create" THEN DO:
+        
+        {&OUT}
+            "<header class='w3-container w3-dark-grey'>" SKIP
+                "<h1>New Schedule Item Creation</h1>" SKIP
+            "</header>" SKIP
+        
+            "<br><br>" SKIP
+        
+            "<form>" SKIP
+            "<input type='hidden' name='h-event' value='" v-event "'/>" SKIP
+            "<input type='hidden' name='h-name' value='" v-name "'/>" SKIP
+            "<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>" SKIP
+            "    <h2>Input Details for New Schedule Item in " v-name "</h2>"
+            "    <p>The 'Extra Periods' field is for classes that are longer than one period. For example, if you had some sort of lab class that took of three periods worth of time you would put a two in that field.</p>"
+
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Period</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-period' value='" v-period "' type='text' required>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Merit Badge ID</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-mb_BSA_ID' value='" v-MB_BSA_ID "' type='number' required>" SKIP
+            "    </p>" SKIP 
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Extra Periods?</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-extra_length' value='" v-extra_length "' type='number'>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Total Seats</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-total_seats' value='" v-total_seats "' type='number'>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Instructor ID</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-instructor' value='" v-instructor "' type='number'>" SKIP
+            "    </p>" SKIP
+            
+            "   <div class='w3-row-padding'>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>Start Date</label>" SKIP
+            "           <input class='w3-input w3-border w3-round-large' name='h-start-date' value='" v-start_date "' type='date'>" SKIP
+            "       </p>" SKIP 
+            "       <p class='w3-half'>" SKIP
+            "           <label>End Date</label>" SKIP
+            "           <input class='w3-input w3-border w3-round-large' name='h-end-date' value='" v-end_date "' type='date'>" SKIP
+            "       </p>" SKIP
+            "   </div>" SKIP
+            
+            "<br>" SKIP
+            
+            "</div>"
+            
+            "<br>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='DB_Create' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='Reset' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Reset</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "<br><br><br><br><br><br><br>" SKIP.    
+        
+        
+    END. /**** Create Act ****/
+    
+    WHEN "Edit" THEN DO:
+    
+        FIND sched_mstr WHERE sched_mstr.sched_class_ID = v-class_ID
+            NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (sched_mstr) THEN DO:  
+        
+            {&OUT}
+            "<header class='w3-container w3-dark-grey'>" SKIP
+                "<h1> Schedule Maintenance</h1>" SKIP                                                           /* 1dot2 */                                      
+            "</header>" SKIP
+        
+            "<br><br>" SKIP
+        
+            "<form>" SKIP
+            "<input type='hidden' name='h-event' value='" v-event "'/>" SKIP
+            "<input type='hidden' name='h-class_ID' value='" sched_mstr.sched_class_ID "'/>" SKIP 
+            "<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>" SKIP
+            "    <h2>Edit Schedule Item in " v-name "</h2>"
+            "    <p>The 'Extra Periods' field is for classes that are longer than one period. For example, if you had some sort of lab class that took of three periods worth of time you would put a two in that field.</p>"
+
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Period</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-period' value='" sched_mstr.sched_period "' type='text' required>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Merit Badge ID</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-mb_BSA_ID' value='" sched_mstr.sched_BSA_ID "' type='number' required>" SKIP
+            "    </p>" SKIP 
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Extra Periods?</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-extra_length' value='" sched_mstr.sched__dec01 "' type='number'>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Total Seats</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-total_seats' value='" sched_mstr.sched_total_seats "' type='number'>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Instructor ID</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-instructor' value='" sched_mstr.sched_instructor_ID "' type='number'>" SKIP
+            "    </p>" SKIP
+            
+            "   <div class='w3-row-padding'>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>Start Date</label>" SKIP
+            "           <input class='w3-input w3-border w3-round-large' name='h-start-date' value='" sched_mstr.sched_start_date "' type='date'>" SKIP
+            "       </p>" SKIP 
+            "       <p class='w3-half'>" SKIP
+            "           <label>End Date</label>" SKIP
+            "           <input class='w3-input w3-border w3-round-large' name='h-end-date' value='" sched_mstr.sched_end_date "' type='date'>" SKIP
+            "       </p>" SKIP
+            "   </div>" SKIP
+            "<br>" SKIP
+            
+            "</div>"
+            
+            "<br>" SKIP
+            
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='DB_Edit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='Reset' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Reset</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "<br><br><br><br><br><br><br>" SKIP. 
+            
+        END. /*** avail sched_mstr for editing ***/
+        
+        ELSE DO:
+        
+            {&OUT}
+                "<header class='w3-container w3-dark-grey'>" SKIP
+                    "<h1> Schedule Maintenance</h1>" SKIP
+                "</header>" SKIP
+                "<br><br>" SKIP
+                "<br>" SKIP          
+                "    <div class='w3-card-2 w3-panel w3-pale-red w3-leftbar w3-border w3-border-red w3-content' style='max-width:800px;'>" SKIP
+                "       <p>Sorry, that schedule item has been corrupted. sched_class_id = " v-class_ID " .</p>" SKIP
+                "          <br><br>" SKIP
+                "    </div>" SKIP
+                "  <br><br>" SKIP
+                "<form>" SKIP
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                "   <div class='w3-center w3-col s12'>" SKIP
+                "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
+                "   </div>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP.
+            
+        END. /*** not avail for editing. ****/       
+        
+    END. /**** Edit Act ****/
+    
+    WHEN "DB_Create" THEN DO:
+        
+        ASSIGN c-sched_item = 0.
+    
+        FOR EACH sched_mstr WHERE sched_mstr.sched_BSA_ID = v-MB_BSA_ID AND 
+            sched_mstr.sched_event_ID = v-event AND 
+            sched_mstr.sched_period = v-period NO-LOCK:
+     
+            ASSIGN c-sched_item = c-sched_item + 1.
+     
+            FIND FIRST MB_mstr WHERE MB_mstr.MB_BSA_ID = sched_mstr.sched_BSA_ID NO-LOCK NO-ERROR.
+            IF AVAILABLE (mb_mstr) THEN ASSIGN v-mb_name = MB_mstr.MB_name.
+            ELSE ASSIGN v-mb_name = "an Unnamed Merit Badge".
+     
+        END. /*** sched_mstr available, update? ***/
+        
+        IF c-sched_item <> 0 THEN {&OUT}
+                "<header class='w3-container w3-dark-grey'>" SKIP
+                    "<h1> Schedule Maintenance</h1>" SKIP                                                   /* 1dot2 */
+                "</header>" SKIP
+                "<br><br>" SKIP
+                "<br>" SKIP          
+                "    <div class='w3-card-2 w3-panel w3-pale-yellow w3-leftbar w3-border w3-border-yellow w3-content' style='max-width:800px;'>" SKIP
+                "       <p>There is already " c-sched_item " class(es) teaching " v-mb_name " during the " v-period " period for the " v-name " event.</p>" SKIP
+                "      <p>If you'd like to make another one click 'Confirm Creation' otherwise seach again."
+                "    </div>" SKIP
+                "  <br><br>" SKIP
+                "<form>" SKIP
+                "<input type='hidden' name='h-event' value='" v-event "'/>" SKIP
+                "<input type='hidden' name='h-class_ID ' value='" v-class_ID "'/>" SKIP 
+                "<input type='hidden' name='h-period ' value='" v-period "'/>" SKIP 
+                "<input type='hidden' name='h-mb_bsa_ID' value='" v-mb_BSA_ID "'/>" SKIP
+                "<input type='hidden' name='h-extra_length' value='" v-extra_length "'/>" SKIP
+                "<input type='hidden' name='h-instructor' value='" v-instructor "'/>" SKIP
+                "<input type='hidden' name='h-start_date' value='" v-html-start_date "'/>" SKIP
+                "<input type='hidden' name='h-end_date' value='" v-html-end_date "'/>" SKIP
+                "<input type='hidden' name='h-name' value='" v-name "'/>" SKIP 
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                "   <div class='w3-center w3-col s12'>" SKIP
+                "       <button type='submit' name='h-act' value='DB_confirmed_creation' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Confirm Creation</b></BUTTON>" SKIP
+                "   </div>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP
+                "<form>" SKIP
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                "   <div class='w3-center w3-col s12'>" SKIP
+                "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
+                "   </div>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP.
+        
+        ELSE DO:
+            
+/**********************************************************************************************************************************
+***************             So, I was polishing up this program (1dot2) and found this section
+****************        and the nearly identical section immediatly following in the "confirmCreation" 
+***************         act. This bothered me because it's messy and redundant. However, it is 
+***************         in here so that you don't have to have some way to skip the verification 
+***************         at the start of this act. If you want to change it to not be so redundant
+***************         that is fine, just make sure you still have the user confirm they want the 
+***************         values that you actually pull from the database. 
+***********************************************************************************************************************************/
+        
+            IF v-itmessages = YES THEN {&OUT} "<h3>Well, you ended up here :)</h3>" SKIP.
+        
+            CREATE sched_mstr.
+            
+            ASSIGN
+                sched_mstr.sched_class_ID       = NEXT-VALUE(SEQ-CLASS) + 2054
+                sched_mstr.sched_start_date     = v-start_date
+                sched_mstr.sched_end_date       = v-end_date
+                sched_mstr.sched_period         = v-period               
+                sched_mstr.sched_instructor     = v-instructor
+                sched_mstr.sched_BSA_ID         = v-MB_BSA_ID
+                sched_mstr.sched_total_seats    = v-total_seats
+                sched_mstr.sched__dec01         = v-extra_length
+                sched_mstr.sched_event_ID       = v-event.
+        
+            {&OUT}
+            "<header class='w3-container w3-dark-grey'>" SKIP
+                "<h1> Schedule Maintenance</h1>" SKIP
+            "</header>" SKIP
+        
+            "<br><br>" SKIP
+        
+            "<form>" SKIP
+            "<div class='w3-container w3-card-2 w3-pale-green w3-round w3-content w3-leftbar w3-border w3-border-green' style='max-width:1000px;'>" SKIP
+            "    <h2>Your New Schedule Item was Created with the Following Details in " v-name "</h2>"
+            "    <p>Feel free to look over this and make sure it has the data you want it to.</p>"
+
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Period</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-period' value='" sched_mstr.sched_period "' type='text' disabled>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Merit Badge ID</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-mb_BSA_ID' value='" sched_mstr.sched_BSA_ID "' type='number' disabled>" SKIP
+            "    </p>" SKIP 
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Extra Periods?</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-extra_length' value='" sched_mstr.sched__dec01 "' type='number' disabled>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Total Seats</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-total_seats' value='" sched_mstr.sched_total_seats "' type='number' disabled>" SKIP
+            "    </p>" SKIP
+            
+            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Instructor ID</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-instructor' value='" sched_mstr.sched_instructor_ID "' type='number' disabled>" SKIP
+            "    </p>" SKIP
+            
+            "   <div class='w3-row-padding'>" SKIP
+            "       <p class='w3-half'>" SKIP
+            "           <label>Start Date</label>" SKIP
+            "           <input class='w3-input w3-border w3-round-large' name='h-start-date' value='" sched_mstr.sched_start_date "' type='date' disabled>" SKIP
+            "       </p>" SKIP 
+            "       <p class='w3-half'>" SKIP
+            "           <label>End Date</label>" SKIP
+            "           <input class='w3-input w3-border w3-round-large' name='h-end-date' value='" sched_mstr.sched_end_date "' type='date' disabled>" SKIP
+            "       </p>" SKIP
+            "   </div>" SKIP
+
+            "<br>" SKIP
+            "</div>"
+            "<br>" SKIP
+            
+            
+     
+            "<input type='hidden' name='h-name' value='" v-name "'/>" SKIP
+            "<input type='hidden' name='h-event' value='" v-event "'/>" SKIP
+            "<input type='hidden' name='' value='"  "'/>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Create' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Create New</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Back to Start</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<input type='hidden' name='h-class_ID ' value='" sched_mstr.sched_class_ID "'/>" SKIP 
+            "<input type='hidden' name='h-period ' value='" sched_mstr.sched_period "'/>" SKIP 
+            "<input type='hidden' name='h-mb_bsa_ID' value='" sched_mstr.sched_BSA_ID "'/>" SKIP
+            "<input type='hidden' name='h-extra_length' value='" sched_mstr.sched__dec01 "'/>" SKIP
+            "<input type='hidden' name='h-instructor' value='" sched_mstr.sched_instructor_ID "'/>" SKIP
+            "<input type='hidden' name='h-start_date' value='" sched_mstr.sched_start_date "'/>" SKIP
+            "<input type='hidden' name='h-end_date' value='" sched_mstr.sched_end_date "'/>" SKIP
+            "<input type='hidden' name='h-event' value='" sched_mstr.sched_event_ID "'/>" SKIP 
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Edit' class='w3-btn-block w3-black w3-round' style='max-width:400px;'><b>Edit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "<br><br><br><br><br><br><br>" SKIP. 
+            
+        END. /*** sched_mstr not available, - creation ***/
+        
+    END. /**** DB_Create Act ****/
+    
+    WHEN "DB_confirmed_creation" THEN DO:
+    
+        CREATE sched_mstr.
+            
+	    ASSIGN
+	        sched_mstr.sched_start_date = v-start_date
+	        sched_mstr.sched_end_date = v-end_date
+	        sched_mstr.sched_period = v-period
+	        sched_mstr.sched_class_ID = NEXT-VALUE(seq-class)
+	        sched_mstr.sched_instructor = v-instructor
+	        sched_mstr.sched_BSA_ID = v-MB_BSA_ID
+	        sched_mstr.sched_total_seats = v-total_seats
+	        sched_mstr.sched__dec01 = v-extra_length
+	        sched_mstr.sched_event_ID = v-event.
+	
+	    {&OUT}
+		    "<header class='w3-container w3-dark-grey'>" SKIP
+		        "<h1> Schedule Maintenance</h1>" SKIP
+		    "</header>" SKIP
+		
+		    "<br><br>" SKIP
+		
+		    "<form>" SKIP
+		    "<div class='w3-container w3-card-2 w3-pale-green w3-round w3-content w3-leftbar w3-border w3-border-green' style='max-width:1000px;'>" SKIP
+		    "    <h2>Your New Schedule Item was Created with the Following Details in " v-name "</h2>"
+		    "    <p>Feel free to look over this and make sure it has the data you want it to.</p>"
+		
+		    "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+		    "        <label>Period</label>" SKIP
+		    "        <input class='w3-input w3-border w3-round-large' name='h-period' value='" sched_mstr.sched_period "' type='text' disabled>" SKIP
+		    "    </p>" SKIP
+		    
+		    "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+		    "        <label>Merit Badge ID</label>" SKIP
+		    "        <input class='w3-input w3-border w3-round-large' name='h-mb_BSA_ID' value='" sched_mstr.sched_BSA_ID "' type='number' disabled>" SKIP
+		    "    </p>" SKIP 
+		    
+		    "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+		    "        <label>Extra Periods?</label>" SKIP
+		    "        <input class='w3-input w3-border w3-round-large' name='h-extra_length' value='" sched_mstr.sched__dec01 "' type='number' disabled>" SKIP
+		    "    </p>" SKIP
+		    
+		    "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+            "        <label>Total Seats</label>" SKIP
+            "        <input class='w3-input w3-border w3-round-large' name='h-total_seats' value='" sched_mstr.sched_total_seats "' type='number' disabled>" SKIP
+            "    </p>" SKIP
+		    
+		    "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+		    "        <label>Instructor ID</label>" SKIP
+		    "        <input class='w3-input w3-border w3-round-large' name='h-instructor' value='" sched_mstr.sched_instructor_ID "' type='number' disabled>" SKIP
+		    "    </p>" SKIP
+		    
+		    "   <div class='w3-row-padding'>" SKIP
+		    "       <p class='w3-half'>" SKIP
+		    "           <label>Start Date</label>" SKIP
+		    "           <input class='w3-input w3-border w3-round-large' name='h-start-date' value='" sched_mstr.sched_start_date "' type='date' disabled>" SKIP
+		    "       </p>" SKIP 
+		    "       <p class='w3-half'>" SKIP
+		    "           <label>End Date</label>" SKIP
+		    "           <input class='w3-input w3-border w3-round-large' name='h-end-date' value='" sched_mstr.sched_end_date "' type='date' disabled>" SKIP
+		    "       </p>" SKIP
+		    "   </div>" SKIP
+		
+		    "<br>" SKIP
+		    "</div>"
+		    "<br>" SKIP
+		    
+		    "<div class='w3-row-padding w3-margin'>" SKIP
+		    "   <div class='w3-center w3-col s12'>" SKIP
+		    "       <button type='submit' name='h-act' value='input' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Back to Start</b></BUTTON>" SKIP
+		    "   </div>" SKIP
+		    "</div>" SKIP
+		    "<input type='hidden' name='h-class_ID' value='" sched_mstr.sched_class_ID "'/>" SKIP 
+		    "<input type='hidden' name='h-period' value='" sched_mstr.sched_period "'/>" SKIP 
+		    "<input type='hidden' name='h-mb_bsa_ID' value='" sched_mstr.sched_BSA_ID "'/>" SKIP
+		    "<input type='hidden' name='h-extra_length' value='" sched_mstr.sched__dec01 "'/>" SKIP
+		    "<input type='hidden' name='h-instructor' value='" sched_mstr.sched_instructor_ID "'/>" SKIP
+		    "<input type='hidden' name='h-start_date' value='" sched_mstr.sched_start_date "'/>" SKIP
+		    "<input type='hidden' name='h-end_date' value='" sched_mstr.sched_end_date "'/>" SKIP
+		    "<input type='hidden' name='h-event' value='" sched_mstr.sched_event_ID "'/>" SKIP 
+		    "<div class='w3-row-padding w3-margin'>" SKIP
+		    "   <div class='w3-center w3-col s12'>" SKIP
+		    "       <button type='submit' name='h-act' value='Edit' class='w3-btn-block w3-black w3-round' style='max-width:400px;'><b>Edit</b></BUTTON>" SKIP
+		    "   </div>" SKIP
+		    "</div>" SKIP
+		    "</form>" SKIP
+		    "<br><br><br><br><br><br><br>" SKIP. 
+        
+    END. /*** confirmed create ***/
+    
+    WHEN "DB_edit" THEN DO:
+    
+        FIND sched_mstr WHERE sched_mstr.sched_class_ID = v-class_ID EXCLUSIVE-LOCK NO-ERROR.
+    
+        IF AVAILABLE (sched_mstr) THEN DO:
+    
+            ASSIGN
+                sched_mstr.sched_start_date = v-start_date
+				sched_mstr.sched_end_date = v-end_date
+				sched_mstr.sched_period = v-period
+				sched_mstr.sched_instructor = v-instructor
+				sched_mstr.sched_BSA_ID = v-MB_BSA_ID
+				sched_mstr.sched_total_seats = v-total_seats
+				sched_mstr.sched__dec01 = v-extra_length
+				sched_mstr.sched_event_ID = v-event.                                                        /* 1dot2 */
+    
+            {&OUT}
+                "<header class='w3-container w3-dark-grey'>" SKIP
+                    "<h1>Schedule Maintenance</h1>" SKIP
+                "</header>" SKIP
+            
+                "<br><br>" SKIP
+            
+                "<form>" SKIP
+                "<div class='w3-container w3-card-2 w3-pale-green w3-round w3-content w3-leftbar w3-border w3-border-green' style='max-width:1000px;'>" SKIP
+                "    <h2>Your Schedule Item was Updated with the Following Details " v-name "</h2>"
+				"    <p>Feel free to look over this and make sure it has the data you want it to.</p>"
+				
+				"    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+				"        <label>Period</label>" SKIP
+				"        <input class='w3-input w3-border w3-round-large' name='h-period' value='" sched_mstr.sched_period "' type='text' disabled>" SKIP
+				"    </p>" SKIP
+				
+				"    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+				"        <label>Merit Badge ID</label>" SKIP
+				"        <input class='w3-input w3-border w3-round-large' name='h-mb_BSA_ID' value='" sched_mstr.sched_BSA_ID "' type='number' disabled>" SKIP
+				"    </p>" SKIP 
+				
+				"    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+				"        <label>Extra Periods?</label>" SKIP
+				"        <input class='w3-input w3-border w3-round-large' name='h-extra_length' value='" sched_mstr.sched__dec01 "' type='number' disabled>" SKIP
+				"    </p>" SKIP
+				
+				"    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+				"        <label>Total Seats</label>" SKIP
+				"        <input class='w3-input w3-border w3-round-large' name='h-total_seats' value='" sched_mstr.sched_total_seats "' type='number' disabled>" SKIP
+				"    </p>" SKIP
+				
+				"    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
+				"        <label>Instructor ID</label>" SKIP
+				"        <input class='w3-input w3-border w3-round-large' name='h-instructor' value='" sched_mstr.sched_instructor_ID "' type='number' disabled>" SKIP
+				"    </p>" SKIP
+				
+				"   <div class='w3-row-padding'>" SKIP
+				"       <p class='w3-half'>" SKIP
+				"           <label>Start Date</label>" SKIP
+				"           <input class='w3-input w3-border w3-round-large' name='h-start-date' value='" sched_mstr.sched_start_date "' type='date' disabled>" SKIP
+				"       </p>" SKIP 
+				"       <p class='w3-half'>" SKIP
+				"           <label>End Date</label>" SKIP
+				"           <input class='w3-input w3-border w3-round-large' name='h-end-date' value='" sched_mstr.sched_end_date "' type='date' disabled>" SKIP
+				"       </p>" SKIP
+				"   </div>" SKIP  
+    
+                "<br>" SKIP
+                
+                "</div>"
+                
+                "<br>" SKIP
+                "<input type='hidden' name='h-class_ID' value='" sched_mstr.sched_class_ID "'/>" SKIP 
+	            "<input type='hidden' name='h-period' value='" sched_mstr.sched_period "'/>" SKIP 
+	            "<input type='hidden' name='h-mb_bsa_ID' value='" sched_mstr.sched_BSA_ID "'/>" SKIP
+	            "<input type='hidden' name='h-extra_length' value='" sched_mstr.sched__dec01 "'/>" SKIP
+	            "<input type='hidden' name='h-instructor' value='" sched_mstr.sched_instructor_ID "'/>" SKIP
+	            "<input type='hidden' name='h-start_date' value='" sched_mstr.sched_start_date "'/>" SKIP
+	            "<input type='hidden' name='h-end_date' value='" sched_mstr.sched_end_date "'/>" SKIP  
+	            "<input type='hidden' name='h-event' value='" sched_mstr.sched_event_ID "'/>" SKIP 
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                "   <div class='w3-center w3-col s12'>" SKIP
+                "       <button type='submit' name='h-act' value='Edit' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Edit Again</b></BUTTON>" SKIP
+                "   </div>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP
+                "<form>" SKIP
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                "   <div class='w3-center w3-col s12'>" SKIP
+                "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
+                "   </div>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP
+                "<br><br><br><br><br><br><br>" SKIP.    
+        
+        END. /*** available edited thing ***/
+        
+        ELSE DO:
+        
+            {&OUT}
+                "<header class='w3-container w3-dark-grey'>" SKIP
+                    "<h1> Schedule Maintenance</h1>" SKIP                                                   /* 1dot2 */
+                "</header>" SKIP
+                "<br><br>" SKIP
+                "<br>" SKIP          
+                "    <div class='w3-card-2 w3-panel w3-pale-red w3-leftbar w3-border w3-border-red w3-content' style='max-width:800px;'>" SKIP
+                "       <p>Something bad happened, and the schedule item with the ID of (" v-class_ID ") has been corrupted.</p>" SKIP
+                "          <br><br>" SKIP
+                "    </div>" SKIP
+                "  <br><br>" SKIP
+                "<form>" SKIP
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                "   <div class='w3-center w3-col s12'>" SKIP
+                "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
+                "   </div>" SKIP
+                "</div>" SKIP
+                "</form>" SKIP.    
+            
+        END. /*** the thing you edited got misplaced :( lost an event ID? ***/
+        
+    END. /*** db_edit ***/
+
+    OTHERWISE DO:
+        
+        {&OUT}
+            "<div class='w3-container'>" SKIP
+            "<form>" SKIP
+            "<div class='w3-card-8 w3-content w3-white' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-red'>" SKIP
+            "       <h1>Error</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>Could not find act '" act "'.</p>" SKIP
+            "    </div>" SKIP
+
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+            
+    END. /*** otherwise ***/
+    
+END CASE.
+
+</SCRIPT>
+</BODY>
+</HTML>

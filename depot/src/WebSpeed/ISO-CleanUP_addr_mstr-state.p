@@ -189,7 +189,7 @@ FOR EACH addr_mstr
                 
             IF update-flag = YES THEN 
                 ASSIGN addr_mstr.addr_stateprov     = o-fstate-ISO
-                    addr_mstr.addr_modified_by   = USERID ("General")
+                    addr_mstr.addr_modified_by   = USERID("Core")
                     addr_mstr.addr_modified_date = TODAY
                     addr_mstr.addr_prog_name     = "ISO-CleanUP-addr_mstr-state.p - addr_mstr.addr_stateprov updated with new state_ISO.".
                                            
@@ -223,7 +223,7 @@ FOR EACH addr_mstr
                     IF update-flag = YES THEN 
                         ASSIGN  
                             people_mstr.people_addr_id       = h-address-buf.addr_id
-                            people_mstr.people_modified_by   = USERID ("General")
+                            people_mstr.people_modified_by   = USERID("Core")
                             people_mstr.people_modified_date = TODAY
                             people_mstr.people_prog_name     = "ISO-CleanUP-addr_mstr-state.p - people_addr_id new address-ID.".
                                 
@@ -248,7 +248,7 @@ FOR EACH addr_mstr
                     IF update-flag = YES THEN
                         ASSIGN  
                             people_mstr.people_second_addr_ID = h-address-buf.addr_id
-                            people_mstr.people_modified_by    = USERID ("General")
+                            people_mstr.people_modified_by    = USERID("Core")
                             people_mstr.people_modified_date  = TODAY
                             people_mstr.people_prog_name      = "ISO-CleanUP-addr_mstr-state.p - people_second_addr_id new address-ID.".
 
@@ -259,7 +259,7 @@ FOR EACH addr_mstr
             IF update-flag = YES AND 
                 DIFF-addr-Id = YES THEN
                 ASSIGN  addr_mstr.addr_deleted       = TODAY 
-                    addr_mstr.addr_modified_by   = USERID ("General")
+                    addr_mstr.addr_modified_by   = USERID("Core")
                     addr_mstr.addr_modified_date = TODAY 
                     addr_mstr.addr_prog_name     = "ISO-CleanUP-addr_mstr-state.p - flagged for deletion."
                     kount [3]                    = (kount [3] + 1).

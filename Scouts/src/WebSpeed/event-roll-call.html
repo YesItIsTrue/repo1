@@ -1,0 +1,223 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+    <head>
+        <META NAME="author" CONTENT="Andrew Garver"/>
+        <TITLE>Class Attendance</TITLE>
+        <META NAME="version" CONTENT="1.0"/>
+        <META NAME="copyright" CONTENT="Solsource"/>
+        <META NAME="create_date" CONTENT="8/Sept/2017"/>
+        <META NAME="last_updated" CONTENT="8/Sept/2017"/>   
+        <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.8.0/JsBarcode.all.min.js"></script>
+		<link rel="import" href="/depot/rcode/barcode-reader.r" id="barcode-reader">
+        <style>
+            @media print{
+                .pagebreak {page-break-after: always;}
+            }
+            @media (min-width: 600px) {
+                .mobile-right-align {text-align: right;}   
+            }
+            p {
+                margin-top: 0px !important;
+                margin-bottom: 0px !important;
+            }
+            .error-msg {color:red}
+            .w3-col {padding: 3px}
+            .w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
+            .w3-theme-background {color::#000 !important; background-color:#fff !important}
+            .w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
+            .w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+            .w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+        </style>
+        <script>
+            var presentStudents = [];
+            $(document).ready(function() {
+                function changeCSS() {
+	                if($(window).width() <= 767){
+	                    $('#main-container').removeClass('w3-card-4');
+	                    $('#main-container').removeClass('w3-container');
+	                }
+	                else {
+	                    $('#main-container').addClass('w3-card-4');
+	                    $('#main-container').addClass('w3-container');
+	                }
+                }
+                
+                changeCSS();
+                
+                $(window).resize(function(){
+			         changeCSS();
+			    });
+            
+                $("[name='h-class-id']").blur(function() {
+                   $.post("AJAX-fetch-class-name.r",
+                    {
+                        classID: $("[name='h-class-id']").val() 
+                    },
+                    function(response, status){
+                        if (status == "success" && response.className != undefined) {
+                            $("#class-name").text(response.className);
+                            $("#class-img").attr("src", response.imgPath);
+                            $("#class-error").hide();
+                        }
+                        else {
+                            $("#class-error").show();
+                        }
+                    });
+                });
+                
+                $("#h-student-id").blur(function(e) {
+                    $.post("AJAX-fetch-student-name.r",
+                    {
+                        studentID: $("#h-student-id").val() 
+                    },
+                    function(response, status){
+                        if (status == "success" && response.studentName) {
+                            if ($.inArray($("#h-student-id").val(), presentStudents) == -1) {
+                                presentStudents.push($("#h-student-id").val());
+                                $("#student-container").show();
+	                            $("#students-present").append("<center><p>" + response.studentName + "</p></center>");
+	                            $("#h-student-id").val("");
+	                            $("#student-error").hide();
+	                            $("#dupe-student-error").hide();
+                            }
+                            else {
+                                $("#dupe-student-error").show();
+                                $("#h-student-id").val("");
+                            }
+                        }
+                        else {
+                            $("#student-error").show();
+                        }
+                    });
+                });
+                
+                $(".barcode-input").after("<span class='barcode-import'></span>");
+                $(".barcode-import").append(document.importNode(document.querySelector('#barcode-reader').import.querySelector('#barcode-elements'), true))
+                $(".barcode-input")
+                    .on("click", function() { toggleScanner($(this)) })
+                    .on("blur", function() {$(this).attr("readonly", "readonly")})
+                    .attr("readonly", "readonly");
+                    
+                $("#rollCallForm").submit( function(eventObj) {
+                    var students = "";
+                    presentStudents.forEach(function(student) {
+                        students += students == "" ? (student) : ("," + student);
+                    });
+			        $('<input />').attr('type', 'hidden')
+                    .attr('name', "h-students")
+			        .attr('value', students)
+			        .appendTo('#rollCallForm');
+                    return true;
+			  });
+            });
+        </script>
+    </head>
+    <body>
+    <!--WSS {../depot/src/WebSpeed/menuname.i}. -->
+        <header class='w3-container w3-dark-grey'>
+            <center><h1>Class Attendance</h1></center>
+        </header>
+    <!--WSS
+        DEFINE VARIABLE v-class-id LIKE Attend_det.attend_class_ID NO-UNDO.
+        DEFINE VARIABLE v-student-ids AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+        
+        ASSIGN 
+	        v-class-id = INTEGER(get-value("h-class-id"))
+	        v-student-ids = get-value("h-students")
+	        v-act = get-value("h-act").
+                
+        IF v-act = "Submit" THEN DO:
+            FIND FIRST lesson_plan WHERE lesson_class_id = v-class-id AND lesson_date = TODAY AND lesson_deleted = ? NO-ERROR.
+            IF AVAILABLE (lesson_plan) THEN DO:
+                DEFINE VARIABLE i AS INTEGER NO-UNDO.
+	       		DO i = 1 TO NUM-ENTRIES(v-student-ids):
+                    FIND Attend_det WHERE attend_people_id = INTEGER(ENTRY(i, v-student-ids)) AND attend_class_ID = v-class-id AND
+                    attend_date = TODAY AND attend_deleted = ? NO-ERROR.
+	                IF NOT AVAILABLE(Attend_det) THEN DO:
+	                    CREATE Attend_det.
+	                    ASSIGN
+	                        attend_people_id = INTEGER(ENTRY(i, v-student-ids))
+	                        attend_class_ID = v-class-id
+	                        attend_date = TODAY
+	                        attend_present = TRUE
+	                        attend_created_by = USERID("Modules")
+	                        attend_modified_by = USERID("Modules")
+	                        attend_create_date = TODAY
+	                        attend_modified_date = TODAY
+	                        attend_prog_name = THIS-PROCEDURE:FILENAME.
+	                END. /* IF NOT AVAILABLE (Attend_det)... */
+	                ELSE DO:
+	                    ASSIGN
+	                        attend_present = TRUE
+	                        attend_modified_by = USERID("Modules")
+	                        attend_modified_date = TODAY
+	                        attend_prog_name = THIS-PROCEDURE:FILENAME.
+	                END.
+	       		END. /* DO i = 1... */
+	    -->
+	        <br/>
+	        <div id="student-container" class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+	            <form action="/DataHub/rcode/menupager.r?c-usr=&whattorun=15&h-menuheadername=Scouts">
+	                <center><h4>Roll Recorded Successfully</h4></center>
+	                <br/>
+	                <center><button type='submit' class='w3-btn-block w3-green w3-round' style="max-width: 300px"><b>Great!</b></button></center>
+	            </form>
+	        </div>
+	    <!--WSS     
+	        END. /* IF AVAILABLE (lesson_plan)... */
+	        ELSE DO:
+		-->
+		    <br/>
+	        <div id="student-container" class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+	            <form action="event-roll-call.r">
+		            <center><h2>Whoops!</h2><h4>You are trying to take roll for a class that isn't scheduled today. 
+		            Please contact an administrator in order to make sure things get recorded correctly.</h4></center>
+		            <br/>
+		            <center><button type='submit' class='w3-btn-block w3-green w3-round' style="max-width: 300px"><b>Ok</b></button></center>
+		        </form>
+		    </div>
+    <!--WSS 		
+		    END.
+		END.
+		ELSE DO:
+    -->
+        <div class="w3-margin"'>
+            <form id="rollCallForm">
+	            <div id="main-container" class="w3-card-4 w3-container" style="max-width: 1000px; margin: auto;">
+			        <div class="w3-row">
+			            <div class="w3-col s7">
+			                <h2 id="class-name">No Class Selected</h2>
+			            </div>
+			            <div class="w3-col s5">
+			                <img id="class-img" src="" style="max-height: 115px" alt=""/>
+			            </div>
+			        </div>
+	                <label>Class ID</label>
+	                <input type="text" name="h-class-id" class="w3-border w3-round-large w3-select barcode-input"/>
+	                <p id="class-error" class="error-msg" hidden>No class could be found with that ID. Please scan again.</p>
+	                <label>Student ID</label>
+	                <input type="text" id="h-student-id" class="w3-border w3-round-large w3-select barcode-input barcode-cycle"/>
+	                <p id="student-error" class="error-msg" hidden>No student could be found with that ID. Please scan again.</p>
+	                <p id="dupe-student-error" class="error-msg" hidden>That student has already been marked present!</p>
+	                <hr/>
+	                <div id="student-container" class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:425px;' hidden>
+	                    <center><h4>Students Present Today</h4></center>
+	                    <div id="students-present"></div>
+	                    <br/>
+	                </div>
+	                <br/>
+	            </div>
+	            <br/>
+	            <center><button type='submit' name="h-act" value="Submit" class='w3-btn-block w3-green w3-round' style="max-width: 425px"><b>Submit Roll</b></button></center>
+            </form>
+        </div>
+        <!--WSS 
+        END.
+        -->
+    </body>
+</html>

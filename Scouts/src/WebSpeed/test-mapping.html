@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+    <title>Lesson Plan Maint</title>
+    <meta NAME='VERSION' CONTENT='1.0'/>
+    <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+    <meta NAME='CREATE_DATE' CONTENT="09/Sep/2017"/>
+    <meta NAME='LAST_UPDATED' CONTENT="09/Sep/2017"/>   
+    
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+    <style>
+        .delete-req {
+            margin-top: 3px;
+        }
+    </style>
+    
+    <script>
+        $(document).ready(function() {
+            $(".delete-req").click(function() {
+                var that = $(this);
+                var keys = $(this).val().split(",");
+                if (keys.length == 3) {
+                    $.post("AJAX-delete-mb-req.r",
+                    {
+                        reqNum: keys[0],
+                        mbID: keys[1],
+                        mbYear: keys[2]
+                    },
+                    function(data, success) {
+                        if (success && data.success) {
+                            that.closest(".w3-row").remove();
+                        }
+                    }
+                    );
+                }
+            });
+        });
+    </script>
+    
+</head>
+
+<body class='w3-white'>
+    <header class='w3-container w3-dark-grey'>
+        <h1>Lesson Plan Maintenance Page</h1> 
+    </header>
+    <br><br>
+        
+        <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+            <form>
+                <input type="hidden" name="h-class-id" value=""/>
+                <h3>Lesson Plans</h3>
+                <div class="w3-row w3-center">
+                    <div class="col-md-3"></div>
+                    <div class="w3-col m2"><strong>Lesson Date</strong></div>
+                    <div class="w3-col m2"><strong>Requirement Number</strong></div>
+                    <div class="w3-col m2"><strong>Completed</strong></div>
+                    <div class="col-md-3"></div>
+                </div>
+	                    <div class='w3-row'> 
+                            <div class="col-md-3"></div>
+                            <div class='w3-col m2'> 
+	                           <input type='text' class='w3-input w3-border w3-round-large' value="" disabled/> 
+                            </div>
+                            <div class='w3-col m2'>
+	                           <input type='text' class='w3-input w3-border w3-round-large' value="" disabled/>
+                            </div>
+                            <div class='w3-col m2'>
+	                           <center><input type='checkbox' class='w3-check' disabled/></center>
+                            </div>
+                            <div class="col-md-3"></div>
+	                    </div>
+	                
+	               <center><h3>There are no lesson plans for this class yet.</h3></center>
+	            
+                <br/>
+                <div class="w3-row w3-center">
+                    <div class="col-md-3"></div>
+                    <div class="w3-col m2"><strong>Lesson Date</strong></div>
+                    <div class="w3-col m2"><strong>Requirement Number</strong></div>
+                    <div class="w3-col m2"><strong>Completed</strong></div>
+                    <div class="col-md-3"></div>
+                </div>
+                <div class='w3-row'>
+                    <div class="col-md-3"></div>
+                    <div class='w3-col m2'> 
+                       <input type='date' name='h-lesson-date' class='w3-input w3-border w3-round-large' required/> 
+                    </div> 
+                    <div class='w3-col m2'> 
+                       <textarea rows="1" type='text' name='h-req-number' class='w3-input w3-border w3-round-large' required></textarea> 
+                    </div> 
+                    <div class='w3-col m2'> 
+                       <center><input class='w3-check' type='checkbox' name='h-lesson-comp'/></center>
+                    </div>
+                    <div class="col-md-3"></div>
+                </div>
+                <br/>
+                <div class="w3-row">
+                    <center><button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Add/Edit Item</b></BUTTON></center>
+                </div>
+            </form>
+            <form action="event-class-selection.r" style="position: relative; bottom: 7px;">
+                <center><button type='submit' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Back</b></BUTTON></center>
+            </form> 
+        </div>
+        <br/>
+</body>
+</html>

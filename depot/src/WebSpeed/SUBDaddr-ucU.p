@@ -56,9 +56,9 @@ DO TRANSACTION:
             D_addr_mstr.D_addr_country       = i-D_addr_country
             o-Daddr-successful          = YES
             D_addr_mstr.D_addr_create_date   = TODAY
-            D_addr_mstr.D_addr_created_by    = USERID ("General")
+            D_addr_mstr.D_addr_created_by    = USERID("Core")
             D_addr_mstr.D_addr_modified_date = TODAY
-            D_addr_mstr.D_addr_modified_by   = USERID ("General")
+            D_addr_mstr.D_addr_modified_by   = USERID("Core")
             D_addr_mstr.D_addr_type          = i-D_addr_type
             o-Daddr-id                  = D_addr_mstr.D_addr_id
             D_addr_mstr.D_addr_prog_name     = SOURCE-PROCEDURE:FILE-NAME
@@ -84,7 +84,7 @@ DO TRANSACTION:
                 o-Daddr-update              = YES
                 o-Daddr-successful          = YES
                 D_addr_mstr.D_addr_modified_date = TODAY
-                D_addr_mstr.D_addr_modified_by   = USERID ("General")
+                D_addr_mstr.D_addr_modified_by   = USERID("Core")
                 o-Daddr-id                  = D_addr_mstr.D_addr_id
                 D_addr_mstr.D_addr_addr1         = IF i-D_addr_addr1     <> "" THEN i-D_addr_addr1       ELSE D_addr_mstr.D_addr_addr1
                 D_addr_mstr.D_addr_addr2         = IF i-D_addr_addr2     <> "" THEN i-D_addr_addr2       ELSE D_addr_mstr.D_addr_addr2   

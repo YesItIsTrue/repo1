@@ -55,7 +55,7 @@ DO TRANSACTION:
             o-att-find-create                   = YES
             o-att-find-success                  = YES
             att_files.att_create_date   = TODAY
-            att_files.att_created_by    = USERID ("General")
+            att_files.att_created_by    = USERID("Core")
             att_files.att_table         = i-att_table
             att_files.att_field1        = i-att_field1
             att_files.att_field2        = i-att_field2
@@ -75,7 +75,7 @@ DO TRANSACTION:
             att_files.att_minor_version = i-att_minor_version
                 
             att_files.att_modified_date = TODAY
-            att_files.att_modified_by   = USERID ("General")
+            att_files.att_modified_by   = USERID("Core")
             att_files.att_prog_name     = SOURCE-PROCEDURE:FILE-NAME
             o-att_file_id                       = att_files.att_file_id
             .
@@ -111,7 +111,7 @@ DO TRANSACTION:
                 o-att-find-create                   = YES               /* 1dot1 */
                 o-att-find-success                  = YES               /* 1dot1 */
                 att_files.att_create_date   = TODAY             /* 1dot1 */    
-                att_files.att_created_by    = USERID ("General")    /* 1dot1 */
+                att_files.att_created_by    = USERID("Core")    /* 1dot1 */
                 .                                                       /* 1dot1 */
         END.                                                            /* 1dot1 */
         
@@ -137,7 +137,7 @@ DO TRANSACTION:
                 att_files.att_minor_version = IF i-att_minor_version <> "" THEN i-att_minor_version ELSE att_files.att_minor_version 
                 
                 att_files.att_modified_date = TODAY
-                att_files.att_modified_by   = USERID ("General")
+                att_files.att_modified_by   = USERID("Core")
                 att_files.att_prog_name     = SOURCE-PROCEDURE:FILE-NAME
                 o-att_file_id                       = att_files.att_file_id
                 o-att-find-update                   = YES

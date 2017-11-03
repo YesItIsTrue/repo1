@@ -1,0 +1,624 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <TITLE>Youth Conference 2 Registration</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="28/Sep/2017">
+    <META NAME='LAST_UPDATED' CONTENT="28/Sep/2017">   
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> 
+    
+<SCRIPT LANGUAGE="SpeedScript">
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+<style>
+/***** ****** W3CSS THEME FOR #3C4D71, LDS.org color ***** *****/
+.w3-theme-l5 {color:#000 !important; background-color:#f2f4f8 !important}
+.w3-theme-l4 {color:#000 !important; background-color:#d3dae8 !important}
+.w3-theme-l3 {color:#000 !important; background-color:#a7b4d1 !important}
+.w3-theme-l2 {color:#fff !important; background-color:#7b8fb9 !important}
+.w3-theme-l1 {color:#fff !important; background-color:#536b9e !important}
+.w3-theme-d1 {color:#fff !important; background-color:#364566 !important}
+.w3-theme-d2 {color:#fff !important; background-color:#303d5b !important}
+.w3-theme-d3 {color:#fff !important; background-color:#2a3650 !important}
+.w3-theme-d4 {color:#fff !important; background-color:#242e44 !important}
+.w3-theme-d5 {color:#fff !important; background-color:#1e2639 !important}
+.w3-theme-light {color:#000 !important; background-color:#f2f4f8 !important}
+.w3-theme-dark {color:#fff !important; background-color:#1e2639 !important}
+.w3-theme-action {color:#fff !important; background-color:#1e2639 !important}
+.w3-theme {color:#fff !important; background-color:#3c4d71 !important}
+.w3-text-theme {color:#3c4d71 !important}
+.w3-border-theme {border-color:#3c4d71 !important}
+.w3-hover-theme:hover {color:#fff !important; background-color:#3c4d71 !important}
+.w3-hover-text-theme {color:#3c4d71 !important}
+.w3-hover-border-theme:hover {border-color:#3c4d71 !important}
+.w3-theme-body {color:#000 !important; background-color:#ffffff !important}
+.w3-theme-background {color::#000 !important; background-color:#F1F1F3 !important}
+.w3-theme-accent {color:#FFFFFF !important; background-color:#0091BC !important}
+.w3-hover-theme-accent:hover {color:#FFFFFF !important; background-color:##0091BC !important}
+.w3-hover-border-theme-accent:hover {color:#FFFFFF !important; background-color:##0091BC !important}
+
+</style>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+</HEAD>
+
+<BODY class='w3-theme-body'>
+
+<SCRIPT LANGUAGE="SpeedScript">
+
+  /*------------------------------------------------------------------
+    File:
+    Description:
+    Created:
+        
+  -----------------------------------------------------------------
+    Revision History:
+    -----------------
+    1.0 - written by TRAE LUTTRELL on 28/Sept/2017. Copied the AMSmeritU.html 
+        as a starting place                   
+                    
+  -------------------------------------------------------------------*/
+
+DEFINE VARIABLE x               AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE y               AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE act             AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE ITmessages      AS LOGICAL INITIAL NO       NO-UNDO.
+DEFINE VARIABLE error-message   AS CHARACTER                NO-UNDO.
+
+DEFINE VARIABLE v-lastname      LIKE people_mstr.people_lastname     NO-UNDO. 
+DEFINE VARIABLE v-firstname     LIKE people_mstr.people_firstname    NO-UNDO. 
+DEFINE VARIABLE v-DOB           LIKE people_mstr.people_DOB     NO-UNDO.
+DEFINE VARIABLE v-html-DOB      AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-unit          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-people_id     AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-member        LIKE speop_shadow.speop_lds NO-UNDO.                                        
+DEFINE VARIABLE v-troop         LIKE speop_shadow.speop_troop NO-UNDO.                                      
+DEFINE VARIABLE v-stake         LIKE speop_shadow.speop_stake NO-UNDO.   
+DEFINE VARIABLE v-Tsize         LIKE speop_shadow.speop_Tsize NO-UNDO. 
+
+DEFINE VARIABLE v-event_id      LIKE event_mstr.event_ID NO-UNDO. 
+DEFINE VARIABLE v-event_name    LIKE event_mstr.event_name NO-UNDO.
+DEFINE VARIABLE v-addr_ID       LIKE people_mstr.people_addr_id NO-UNDO.                              
+
+DEFINE VARIABLE v-error         AS LOGICAL NO-UNDO.                                                         
+DEFINE VARIABLE v-ran           AS LOGICAL NO-UNDO.                                                         
+DEFINE VARIABLE v-created       AS LOGICAL NO-UNDO.                                                         
+DEFINE VARIABLE v-updated       AS LOGICAL NO-UNDO.                                                         
+DEFINE VARIABLE v-avail         AS LOGICAL NO-UNDO.                                                         
+DEFINE VARIABLE v-success       AS LOGICAL NO-UNDO.                                                         
+        
+ASSIGN 
+    v-event_ID              = INTEGER(html-encode(get-value("h-event_ID")))
+    act                     = html-encode(get-value("h-act"))    
+       
+    v-lastname              = html-encode(get-value("h-lastname"))
+    v-firstname             = html-encode(get-value("h-firstname"))
+    v-html-DOB              = html-encode(get-value("h-DOB"))
+    v-people_id             = INTEGER(html-encode(get-value("h-people_ID")))
+    v-unit                  = html-encode(get-value("h-unit"))
+    v-stake                 = html-encode(get-value("h-stake"))
+    v-troop                 = INTEGER(html-encode(get-value("h-troop")))
+    v-Tsize                 = html-encode(get-value("h-Tsize"))                                              
+    .
+    
+IF v-unit <> "DidntChoose" THEN DO:        /* member-ish */
+
+    IF v-stake = "" THEN    
+        v-stake = "Augusta".    /* is this right? */
+
+    IF v-member = ? THEN
+        v-member = YES.         /* here's the ish part */
+        
+END.  /** of if v-unit <> "" **/
+
+IF act <> "" AND ITmessages = YES THEN 
+    {&OUT}
+        "<H1>Act = " act "</H1>" SKIP
+        "<UL>" SKIP
+        "</UL>" SKIP.
+
+IF act= "" THEN 
+    act = "YouthInfo".
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-DOB, OUTPUT v-DOB).
+
+IF v-event_ID <> 0 THEN DO:
+    
+	FIND event_mstr WHERE event_mstr.event_ID = v-event_ID 
+	    AND event_mstr.event_deleted = ? NO-LOCK.
+	    
+	IF AVAILABLE (event_mstr) THEN DO:
+	   
+	   ASSIGN 
+	       v-event_name = event_mstr.event_name
+	       v-event_id = event_mstr.event_ID.
+	
+	   IF v-event_name = "" THEN ASSIGN v-event_name = "an Unnamed Event".
+	
+	END. /*** event available ***/   
+	   
+	ELSE ASSIGN v-event_name = "an Unavailable Event".
+
+END. /** event_ID <> 0 ***/
+
+ELSE ASSIGN v-event_name = "an Unknown Event".
+
+                                                    IF ITmessages = YES THEN 
+                                                            {&OUT} "<H3>Event Info</H3>" SKIP
+                                                                "<UL>" SKIP
+                                                                "   <LI>v-event_name = " v-event_name "</LI>" SKIP
+                                                                "   <li>v-event_ID = " v-event_ID "<li>" SKIP  
+                                                                "</UL>" SKIP.
+
+IF act = "Verification" THEN DO:
+
+                                                            IF ITmessages = YES THEN 
+                                                            {&OUT} "<H3>Start OF the Verification act</H3>" SKIP
+                                                                "<UL>" SKIP
+                                                                "   <LI>people_id = " v-people_id "</LI>" SKIP 
+                                                                "</UL>" SKIP.
+    
+    ASSIGN 
+        v-ran = NO 
+        v-success = YES. 
+           
+    RUN VALUE(SEARCH("SUBpeop-datefindR.r")) ("",                       /* Prefix */
+                                              v-firstname,              /* Firstname */
+                                              "",                       /* Middle Name */
+                                              v-lastname,               /* Lastname */
+                                              "",                       /* Suffix */
+                                              v-dob,                    /* DOB */
+                                              OUTPUT v-people_ID,       /* People ID */
+                                              OUTPUT v-addr_ID,         /* old address ID --- need to remove */
+                                              OUTPUT v-error,           /* returned error */
+                                              OUTPUT v-ran).            /* did it run? */
+                                                      
+/*        IF v-ran = YES AND v-error = NO AND v-people_ID = 0 THEN DO:*/
+    IF v-ran <> YES THEN DO:
+        
+        {&OUT} "<H1>Subroutine SUBpeop-datefindR.r failed. Contact <a href='mailto:solsource.techsupport@mysolsource.com'>Solsource Techsupport</a> immediately!</H1>".
+        
+    END.  /** of else do --- unable to update people_mstr **/                                                /*** 1dot2 ***/
+    
+    ELSE DO:
+        
+                                                            IF ITmessages = YES THEN 
+                                                            {&OUT} "<H3>Just ran the SUBpeop-datefindR.r</H3>" SKIP
+                                                                "<UL>" SKIP
+                                                                "   <LI>Act = " act "</LI>" SKIP
+                                                                "</UL>" SKIP.
+             
+        RUN VALUE(SEARCH("SUBpeop-ucU.r")) (v-people_ID,            /* People ID */ 
+                                             v-firstname,            /* Firstname */
+                                             "",                     /* Middle Name */
+                                             v-lastname,             /* Lastname */
+                                             "",                     /* Prefix */
+                                             "",                     /* Suffix */
+                                             "",                     /* Company */ 
+                                             ?,                      /* Gender */
+                                             "",                     /* Home Phone */
+                                             "",                     /* Work Phone */
+                                             "",                     /* Cell Phone */
+                                             "",                     /* Fax Phone */
+                                             "",                     /* Email */
+                                             "",                     /* Email 2 */
+                                             0,                     /* Address ID ---- will need to be replaced -- pal_list */
+                                             "",                     /* Contact ---- will need to be replaced -- plink_mstr */
+                                             v-DOB,                  /* DOB */
+                                             0,                     /* Address ID 2 -- will need to be replaced -- pal_list */
+                                             "",                     /* Preferred Name */
+                                             "",                     /* Title */
+                                             OUTPUT v-people_ID,     /* People_ID */
+                                             OUTPUT v-created,       /* people_mstr created */
+                                             OUTPUT v-updated,       /* people_mstr updated */
+                                             OUTPUT v-avail,         /* people_mstr available */
+                                             OUTPUT v-success).      /* update successful? */
+                                                 
+        IF v-success <> YES THEN DO:
+        
+            {&OUT} "<H1>Subroutine SUBpeop-ucU.r has failed!  Contact <a href='mailto:solsource.techsupport@mysolsource.com'>Solsource Techsupport</a> immediately!</H1>".
+        
+        END.  /** of else do --- v-ran = YES AND v-error = NO AND v-people_ID = 0 **/
+        
+        ELSE DO:
+            
+                                                            IF ITmessages = YES THEN 
+                                                            {&OUT} "<H3>Just ran the SUBpeop-ucU.r</H3>" SKIP
+                                                                "<UL>" SKIP                                                                
+                                                                "   <LI>Act = " act "</LI>" SKIP
+                                                                "   <LI>people_id = " v-people_id "</LI>" SKIP
+                                                                "</UL>" SKIP.           
+            
+            FIND speop_shadow WHERE speop_shadow.speop_ID = v-people_ID 
+                EXCLUSIVE-LOCK NO-ERROR.
+                
+            IF NOT AVAILABLE (speop_shadow) THEN DO:
+                
+                CREATE speop_shadow.
+                ASSIGN 
+                    speop_shadow.speop_ID           = v-people_ID
+                    speop_shadow.speop_create_date  = TODAY 
+                    speop_shadow.speop_created_by   = USERID("CUSTOM").
+                    
+            END.  /** of if not avail speop_shadow **/
+            
+            ASSIGN
+                speop_shadow.speop_Tsize            = IF v-Tsize <> "" THEN v-Tsize ELSE speop_shadow.speop_Tsize 
+                speop_shadow.speop_ward             = IF v-unit <> "" THEN v-unit ELSE speop_shadow.speop_ward
+                speop_shadow.speop_stake            = IF v-stake <> "" THEN v-stake ELSE speop_shadow.speop_stake
+                speop_shadow.speop_LDS              = IF v-member <> ? THEN v-member ELSE speop_shadow.speop_LDS
+                speop_shadow.speop_troop            = IF v-troop <> 0 THEN v-troop ELSE speop_shadow.speop_troop
+                speop_shadow.speop_modified_by      = USERID("CUSTOM")
+                speop_shadow.speop_modified_date    = TODAY
+                speop_shadow.speop_prog_name        = THIS-PROCEDURE:FILE-NAME.
+                
+        END. /*** of ELSE DO --- if v-success = yes ---- create a people_mstr ***/
+
+		FIND regis_mstr WHERE regis_mstr.regis_people_id = v-people_id AND 
+		       regis_mstr.regis_class_ID = 201710 AND 
+		       regis_mstr.regis_deleted = ?
+		           NO-LOCK NO-ERROR.
+                    
+		IF NOT AVAILABLE (regis_mstr) THEN DO: 
+		
+		    CREATE regis_mstr.
+		    
+		    ASSIGN 
+		        regis_mstr.regis_people_id      = v-people_id 
+		        regis_mstr.regis_class_ID       = 201710
+		        act                             = "success"
+		        regis_mstr.regis_created_by     = USERID("MODULES")
+		        regis_mstr.regis_create_date    = TODAY
+		        regis_mstr.regis_modified_by    = USERID("MODULES") 
+                regis_mstr.regis_modified_date  = TODAY 
+                regis_mstr.regis_prog_name      = THIS-PROCEDURE:FILE-NAME.
+                
+            /* Create answer records for the questions */
+            DO x = 1 TO NUM-ENTRIES(get-value(?)):
+                
+                IF get-value(ENTRY(x, get-value(?)))  <> "" THEN DO:
+                    
+                    FIND dcq_mstr WHERE RECID(dcq_mstr) = INTEGER(ENTRY(x, get-value(?))) 
+                        AND dcq_mstr.dcq_deleted = ? NO-ERROR.
+                    
+                    IF AVAILABLE (dcq_mstr) THEN DO:
+                        
+	                    CREATE dca_det.
+	                    
+	                    ASSIGN 
+	                        dca_det.dca_event_ID = dcq_mstr.dcq_event_ID
+	                        dca_det.dca_question = dcq_mstr.dcq_question
+	                        dca_det.dca_people_ID = regis_mstr.regis_people_id
+	                        dca_det.dca_answer_datatype = dcq_mstr.dcq_answer_type
+	                        dca_det.dca_answer_value = get-value(ENTRY(x, get-value(?)))
+	                        dca_det.dca_created_by = USERID("Modules")
+	                        dca_det.dca_modified_by = USERID("Modules")
+	                        dca_det.dca_create_date = TODAY
+	                        dca_det.dca_modified_date = TODAY
+	                        dca_det.dca_prog_name = THIS-PROCEDURE:FILE-NAME.
+	                        
+	                END. /* If avail dcq_mstr */    
+	                    
+                END. /* if get-value(things) <> "" */
+                
+            END. /* DO x = 1 to num-entires */
+		
+		END.  /** of if not avail regis_mstr --- MB1 **/
+
+        ELSE ASSIGN act = "AlreadySignedUp".
+
+    END.  /*** of ELSE DO --- people_mstr finding by date sub routine didn't crash ***/
+
+END. /*** act = "Verification" ***/
+
+/**************************************  MAIN PROGRAM  ********************************************/
+
+CASE act:
+
+    WHEN "Login" THEN DO:
+        
+    END. /*** Login ***/
+
+    WHEN "YouthInfo" THEN DO: 
+        
+        {&OUT}
+            "<div class='w3-responsive' >" SKIP
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>Registration Page for " v-event_name "</h1>" SKIP
+            "   </header>" SKIP
+            "   <br>" SKIP
+              
+            "   <div class='w3-content w3-card-4 w3-theme-background w3-round' style='max-width:1000px'>" SKIP  
+            "   <form method='POST'>" SKIP
+            "       <input type='hidden' name='h-event_ID' value='" v-event_ID "' />" SKIP
+        /*  "       <br>" SKIP*/
+        
+            "       <header class='w3-container w3-text-theme'>" SKIP
+            "           <h1 class='w3-bottombar w3-border-theme'>Personal Information</h1>" SKIP
+            "       </header>" SKIP
+        
+            "       <div class='w3-row-padding w3-margin-top'>" SKIP
+            "           <DIV class='w3-col l6'>" SKIP
+            "               <label class='w3-text-theme w3-col l6'><b>First Name</b></label>" SKIP
+            "               <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='h-firstname' value='" v-firstname "' required/>" SKIP
+            "           </DIV>" SKIP
+            "           <DIV class='w3-col l6'>" SKIP
+            "               <label class='w3-text-theme w3-col l6'><b>Last Name</b></label>" SKIP
+            "               <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='h-lastname' value='" v-lastname "' required/>" SKIP
+            "           </DIV>" SKIP
+            "       </div>" SKIP
+            "       <div class='w3-row-padding'>" SKIP
+            "           <DIV class='w3-col l6'>" SKIP
+            "               <label class='w3-text-theme'><b>Date of Birth</b></label>" SKIP
+            "               <INPUT class='w3-select w3-border w3-round' type='date' name='h-DOB' value='" v-DOB "' required/>" SKIP
+            "           </div>" SKIP
+            "       <DIV class='w3-col l6'>" SKIP
+            "           <DIV class='w3-text-theme'><b>LDS Unit</b></DIV>" SKIP
+            "               <select name='h-unit' class='w3-border w3-round w3-select w3-margin-bottom' required>" SKIP 
+            "               <option value=''></option>" SKIP           
+            "               <option value='NonMember'>I'm not a Mormon (yet)</option>" SKIP
+            "               <option value='Auburn'>Auburn</option>" SKIP
+            "               <option value='Cornish'>Cornish</option>" SKIP
+            "               <option value='Damariscotta'>Damariscotta</option>" SKIP
+            "               <option value='Farmingdale'>Farmingdale</option>" SKIP
+            "               <option value='Oxford'>Oxford</option>" SKIP
+            "               <option value='Portland'>Portland</option>" SKIP
+            "               <option value='Saco'>Saco</option>" SKIP
+            "               <option value='Topsham'>Topsham</option>" SKIP
+            "               <option value='Windham'>Windham</option>" SKIP
+            "               <option value='Winthrop'>Winthrop</option>" SKIP
+            "               <option value='Yarmouth'>Yarmouth</option>" SKIP
+            "           </select>" SKIP
+            "       </DIV>" SKIP
+            "   </div>" SKIP
+            
+            "   <div class='w3-row-padding'>" SKIP
+            "       <DIV class='w3-col l6'>" SKIP
+            "           <p class=''>" SKIP
+            "           <input class='ss-scanfield w3-radio' type='radio' name='h-gender' value='male' required/>" SKIP
+            "           <label class='w3-text-theme'><b>Male</b></label>" SKIP
+            "           </p><p>" SKIP
+            "           <input class='ss-scanfield w3-radio' type='radio' name='h-gender' value='female' required/>" SKIP
+            "           <label class='w3-text-theme'><b>Female</b></label>" SKIP
+            "           </p>" SKIP
+            "       </DIV>" SKIP
+            "       <DIV class='w3-col l6'>" SKIP
+            "           <DIV class='w3-text-theme'><b>Adult T-Shirt Size</b></DIV>" SKIP
+            "               <select name='h-Tsize' class='w3-border w3-round w3-select w3-margin-bottom' required>" SKIP            
+            "               <option value=''></option>" SKIP
+            "               <option value='Wee'>Wee</option>" SKIP
+            "               <option value='XS'>XS</option>" SKIP
+            "               <option value='Small'>Small</option>" SKIP
+            "               <option value='Medium'>Medium</option>" SKIP
+            "               <option value='Large'>Large</option>" SKIP
+            "               <option value='XLarge'>XLarge</option>" SKIP
+            "               <option value='XXL'>XXL</option>" SKIP
+            "               <option value='XXXL'>XXXL</option>" SKIP
+            "               <option value='4XL'>4XL</option>" SKIP
+            "               <option value='5XL'>5XL</option>" SKIP
+            "               </select>" SKIP
+            "           </DIV>" SKIP
+            "       </div>" SKIP.
+            
+            FOR EACH dcq_mstr WHERE dcq_mstr.dcq_event_ID = v-event_ID AND
+			    dcq_mstr.dcq_deleted = ? NO-LOCK 
+			        BREAK BY dcq_mstr.dcq_category_sort BY dcq_mstr.dcq_category BY dcq_mstr.dcq_question_sort BY dcq_mstr.dcq_question:
+			            
+			    IF FIRST-OF (dcq_mstr.dcq_category) THEN DO: 
+			        
+			        {&OUT}
+			            "       <div class='w3-container w3-text-theme'>" SKIP
+			            "           <h1 class='w3-bottombar w3-border-theme'>" dcq_mstr.dcq_category "</h1>" SKIP
+			            "       </div>  <!-- end of DIV --- category heading -->" SKIP
+			            "       <div class='w3-container'>" SKIP.
+			        
+			    END.  /** of if first-of dcq_category_sort **/            
+			            
+			    {&OUT}
+			        "           <div class='w3-row-padding'>" SKIP
+			        "               <DIV class='w3-text-theme'><b>" dcq_mstr.dcq_question "</b></DIV>  <!-- end of DIV --- Question itself -->" SKIP.
+			        
+			    CASE dcq_answer_type:
+			        
+			       WHEN "CHARACTER" THEN DO:  
+			           
+			           {&OUT}
+			                "               <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='" RECID(dcq_mstr) 
+			                "' value='"  "' />" SKIP
+			                "           </div>     <!-- end of DIV --- row -->" SKIP
+			                "           <br>" SKIP.
+			                
+			       END.  /** of when dcq_answer_type = character **/
+			       
+			       WHEN "LOGICAL" THEN DO: 
+			
+			           {&OUT}
+			                "                   <INPUT class='w3-check w3-border w3-round' type='checkbox' name='" RECID(dcq_mstr) 
+			                "' value='YES' /> Yes" SKIP
+			                "           </div>     <!-- end of DIV --- row -->" SKIP
+			                "           <br>" SKIP.        
+			       
+			       END.  /** of when dcq_answer_type = logical **/
+			   
+			       WHEN "DECIMAL" THEN DO: 
+			       
+			           {&OUT}
+			                "                   <INPUT class='w3-input w3-border w3-round' type='number' name='" RECID(dcq_mstr) 
+			                "' value='" "' />" SKIP                
+			                "           </div>     <!-- end of DIV --- row -->" SKIP
+			                "           <br>" SKIP.
+			                           
+			       END.  /** of when dcq_answer_type = decimal **/
+			       
+			       WHEN "DATE" THEN DO: 
+			           
+			           {&OUT}
+			                "               <INPUT class='w3-input w3-border w3-round' type='date' name='" RECID(dcq_mstr) "' />" SKIP
+			                "           </div>     <!-- end of DIV --- row -->" SKIP
+			                "           <br>" SKIP.        
+			           
+			       END.  /** of when dcq_answer_type = date **/
+			       
+			       OTHERWISE DO: 
+			           
+			           {&OUT}
+			                "               <INPUT class='ss-scanfield w3-input w3-border w3-round' type='TEXT' name='" RECID(dcq_mstr) 
+			                "' value='"  "' />" SKIP
+			                "           </div>     <!-- end of DIV --- row -->" SKIP
+			                "           <br>" SKIP.
+			       
+			       END.  /** of when dcq_answer_type = some other type of answer that we didn't plan for **/
+			       
+			    END CASE.  /*** of case dcq_answer_type ***/   
+			            
+			    IF LAST-OF (dcq_mstr.dcq_category) THEN DO:
+			         
+			        {&OUT}
+			           "       </div>     <!-- end of DIV --- row container -->" SKIP.
+			    
+			    END.  /** of if last-of dcq_category **/       
+			        
+			END.  /** of 4ea. dcq_mstr **/
+            
+            
+        {&OUT}
+            "           <br>" SKIP
+            "       </div>" SKIP
+             
+            "   </div>" SKIP 
+            "<br>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Verification' class='w3-btn-block w3-theme-l2 w3-round' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='Reset' class='w3-btn-block w3-theme-l2 w3-round' style='max-width:400px;'><b>Reset</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+             
+    END. /*** of new user --- act =  "YouthInfo" ***/
+             
+    WHEN "Success" THEN DO:
+        
+        {&OUT}
+            "<div class='w3-responsive' >" SKIP
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>" v-event_name " Message</h1>" SKIP
+            "   </header>" SKIP
+            "   <br>" SKIP
+            "<form method='POST'>" SKIP
+            "   <input type='hidden' name='h-event_ID' value='" v-event_ID "' />" SKIP
+            "<div class='w3-card-4 w3-content w3-white w3-round' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-green'>" SKIP
+            "       <h1>Congratulations</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>You have successfully signed " v-firstname " " v-lastname " up for " v-event_name ".</p>" SKIP
+            "    </div>" SKIP
+    
+            "    <button type='submit' name='h-act' value='YouthInfo' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-blue'>Submit Another</BUTTON>" SKIP
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-green'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+        
+    END. /*** Success ***/
+    
+    WHEN "CriticalError" THEN DO:
+        
+         {&OUT}
+            "<div class='w3-responsive' >" SKIP
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>" v-event_name " Message</h1>" SKIP
+            "   </header>" SKIP
+            "   <br>" SKIP
+            "<form method='POST'>" SKIP
+            "   <input type='hidden' name='h-event_ID' value='" v-event_ID "' />" SKIP
+            "<div class='w3-card-4 w3-content w3-white w3-round' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-red'>" SKIP
+            "       <h1>Error</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>You have encountered a critical error. Feel free to click the back button, refresh your browser and try again.</p>" SKIP.
+            
+IF ITmessages = YES THEN {&OUT} "   <br><P> " error-message " </P>" SKIP.
+
+        {&OUT}
+            "    </div>" SKIP
+
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+            
+        
+    END. /*** Critical Error! ***/ 
+
+    WHEN "AlreadySignedUp" THEN DO:
+        
+        {&OUT}
+            "<div class='w3-responsive' >" SKIP
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>" v-event_name " Message</h1>" SKIP
+            "   </header>" SKIP
+            "   <br>" SKIP
+            "<form method='POST'>" SKIP
+            "   <input type='hidden' name='h-event_ID' value='" v-event_ID "' />" SKIP
+            "<div class='w3-card-4 w3-content w3-white w3-round' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-yellow'>" SKIP
+            "       <h1>Whoa Hoss!</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>" v-firstname " " v-lastname " is already signed up for " v-event_name "!</p>" SKIP
+            "    </div>" SKIP
+    
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-yellow'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+        
+    END. /*** Already signed up! ***/
+
+    OTHERWISE DO:
+        
+        {&OUT}
+            "<div class='w3-responsive' >" SKIP
+            "   <header class='w3-container w3-theme-dark w3-margin-bottom'>" SKIP
+            "       <h1>" v-event_name " Message</h1>" SKIP
+            "   </header>" SKIP
+            "   <br>" SKIP
+            "<form method='POST'>" SKIP
+            "   <input type='hidden' name='h-event_ID' value='" v-event_ID "' />" SKIP
+            "<div class='w3-card-4 w3-content w3-white w3-round' style='max-width:1250px;'>" SKIP
+            "    <header class='w3-container w3-red'>" SKIP
+            "       <h1>Error</h1>" SKIP
+            "    </header>" SKIP
+            
+            "    <div class='w3-container'>" SKIP
+            "       <p>Could not find act '" act "'.</p>" SKIP
+            "    </div>" SKIP
+
+            "    <button type='submit' name='h-act' value='' class='w3-btn-block w3-left-align w3-padding-16 w3-hover-red'>Return to Start</BUTTON>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP
+            "</div>" SKIP.
+            
+    END. /*** otherwise ***/
+    
+END CASE.
+
+</SCRIPT>
+</BODY>
+</HTML>

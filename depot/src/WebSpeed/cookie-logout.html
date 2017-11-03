@@ -1,0 +1,37 @@
+<!doctype html public "-//ietf//dtd html//en">
+<html>
+    <head>
+        <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+        <title>Logout</title>
+        <meta NAME='VERSION' CONTENT='1.0'/>
+        <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+        <meta NAME='CREATE_DATE' CONTENT="31/Aug/2017"/>
+        <meta NAME='LAST_UPDATED' CONTENT="31/Aug/2017"/>   
+        <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+        <!--WSS
+        DEFINE VARIABLE v-session-token AS CHARACTER NO-UNDO.
+        PROCEDURE Output-Header:
+            DEFINE VARIABLE v-cookies AS CHARACTER NO-UNDO.
+            DEFINE VARIABLE i AS INTEGER NO-UNDO.
+            ASSIGN
+                v-session-token = html-encode(get-cookie("c-session-token")) 
+                v-cookies = get-cookie(?).
+            
+            DO i = 1 TO NUM-ENTRIES(v-cookies):
+                set-cookie(ENTRY(i, v-cookies), "deleted", ADD-INTERVAL(TODAY, -1, "days"), ?, "/", ?, ?).
+            END.
+        END PROCEDURE.
+        
+        FIND session_det WHERE session_det.session_token = v-session-token NO-ERROR.
+        IF AVAILABLE (session_det) THEN 
+            DELETE session_det.
+        
+        DEFINE INPUT PARAMETER v-redirect-location AS CHARACTER NO-UNDO.
+        RUN VALUE(SEARCH("cookie-redirect.r")) (
+            v-redirect-location
+        ).
+         -->
+    </head>
+    <body>
+    </body>
+</html>

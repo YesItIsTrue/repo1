@@ -87,7 +87,7 @@ DEFINE VARIABLE v-test_family LIKE test_mstr.test_family NO-UNDO.
 /*DEFINE VARIABLE c-verification  AS INTEGER INITIAL 0 NO-UNDO. /** counter for the verification ***/*/
 
 /*** Everytimers ***/
-DEFINE VARIABLE x AS INTEGER NO-UNDO.
+DEFINE VARIABLE x AS INTEGER NO-UNDO. 
 /* DEFINE VARIABLE y AS INTEGER NO-UNDO. */
 DEFINE VARIABLE z AS INTEGER NO-UNDO.
 DEFINE VARIABLE v-ITmessages AS LOGICAL INITIAL NO NO-UNDO.
@@ -560,7 +560,7 @@ ELSE DO: /*** ELSE = Something Exists, so keep going ***/
     
                     IF TK_mstr.TK_test_seq > x THEN DO:
                     
-                        {DV-DAW-moveDwight-U.i}.
+                        {DV-DAW-moveDwight-U.i}. 
                         {DV-DAW-export.i 45 "Patient Found: TK_mstr.TK_test_seq > x variable"}.
                         NEXT verification-loop.
                         
@@ -654,7 +654,6 @@ ELSE DO: /*** ELSE = Something Exists, so keep going ***/
             
                 RUN VALUE(SEARCH("SUBpat-ucU.p")) 
                     (people_mstr.people_id, /* patient_mstr.patient_id */
-                    "",                     /* patient_mstr.patient_condition */
                     "",                     /* patient_mstr.patient_notes */
                     people_mstr.people_id,  /*responsible party */
                     0,                      /* doctor_id */

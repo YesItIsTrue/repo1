@@ -2,12 +2,13 @@
 <HTML>
 <HEAD>
  
-    <meta NAME="AUTHOR" CONTENT="Trae Luttrell">
+    <meta NAME='AUTHOR' CONTENT='Trae Luttrell'>
     <title>Event Selection</title>
-    <meta NAME='VERSION' CONTENT='1.0'>
+    <meta NAME='VERSION' CONTENT='1.1'>
     <meta NAME='COPYRIGHT' CONTENT='Solsource'>
-    <meta NAME='CREATE_DATE' CONTENT="20/Feb/2017">
-    <meta NAME='LAST_UPDATED' CONTENT="20/Feb/2017">
+    <meta NAME='CREATE_DATE' CONTENT='20/Feb/2017'>
+    <meta NAME='LAST_UPDATED' CONTENT='31/Aug/2017'>
+    <meta NAME='MODIFIED_BY' CONTENT='DOUG LUTTRELL'>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css">
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -29,6 +30,16 @@ CREATE WIDGET-POOL.
     File:
     Description:
     Created:
+        
+    ---------------------------------------------------------------
+    Revision History:
+    -----------------
+    1.0 - written by TRAE LUTTRELL on 20/Feb/17.  Original Version.
+    1.1 - written by DOUG LUTTRELL on 31/Aug/17.  Modified to support
+            a list in the category of events.  Marked by 1dot1.
+    1.2 - written by DOUG LUTTRELL on 05/Oct/17.  Corrected typos and 
+            updated emails to use an include file.  Marked by 1dot2.                    
+                    
   -------------------------------------------------------------------*/
 DEFINE VARIABLE v-group AS CHARACTER NO-UNDO.
 DEFINE VARIABLE v-stake AS CHARACTER NO-UNDO.
@@ -41,11 +52,11 @@ IF v-group = "" THEN
     v-group = "Combined".
         
 IF v-stake = "" THEN 
-    v-stake = "Augusta Maine Stake ".
+    v-stake = "Augusta Maine Stake".        /** removed extra space after --- 1dot1 **/
     
 {&OUT}
     "<header class='w3-container w3-theme-dark'>" SKIP
-    "    <h1>" v-stake v-group " Activities</h1>" SKIP
+    "    <h1>" v-stake " " v-group " Activities</h1>" SKIP                                      /* 1dot2 */
     "</header>" SKIP
     "<br><br>" SKIP(1)
     
@@ -58,12 +69,22 @@ IF v-stake = "" THEN
         "   <ul class='w3-ul'>" SKIP. 
            
 FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND 
-        (event_mstr.event_category = v-group OR 
+/*        (event_mstr.event_category = v-group OR                                                 /* 1dot1 */*/
+        (LOOKUP(v-group,event_mstr.event_category) > 0 OR                                       /* 1dot1 */
          event_mstr.event_category = "COMBINED") AND 
         event_mstr.event_deleted = ? NO-LOCK 
-    BREAK BY event_mstr.event_start_date BY event_mstr.event_name:
-        
-
+    BREAK BY YEAR(event_mstr.event_start_date) BY event_mstr.event_start_date BY event_mstr.event_name:     /* 1dot1 */
+    
+    /*** begin 1dot1 ***/
+    IF FIRST-OF (YEAR(event_mstr.event_start_date)) THEN 
+        {&OUT}
+            "       <li class='w3-padding w3-white w3-theme' style='border-bottom: 1px solid #ddd !important;'>" SKIP
+            "           <span class='w3-closebtn w3-margin-right w3-medium'></span>" SKIP
+            "           <span class='w3-margin-right w3-xlarge'>" SKIP
+            "               <CENTER>" YEAR(event_mstr.event_start_date) "</CENTER>" SKIP 
+            "           </span>" SKIP
+            "       </li>" SKIP.                
+    /*** end 1dot1 ***/
     
     IF event_mstr.event_url <> "" THEN  
         {&OUT}
@@ -96,10 +117,22 @@ END.  /** of 4ea. event_mstr **/
     
  
 FOR EACH event_mstr WHERE event_mstr.event_start_date < TODAY AND 
-        (event_mstr.event_category = v-group OR 
+/*        (event_mstr.event_category = v-group OR                                                 /* 1dot1 */*/
+        (LOOKUP(v-group,event_mstr.event_category) > 0 OR                                       /* 1dot1 */
          event_mstr.event_category = "COMBINED") AND
         event_mstr.event_deleted = ? NO-LOCK 
-    BREAK BY event_mstr.event_start_date DESCENDING BY event_mstr.event_name:
+    BREAK BY YEAR(event_mstr.event_start_date) BY event_mstr.event_start_date BY event_mstr.event_name:     /* 1dot1 */
+    
+    /*** begin 1dot1 ***/
+    IF FIRST-OF (YEAR(event_mstr.event_start_date)) THEN 
+        {&OUT}
+            "       <li class='w3-padding w3-white w3-theme' style='border-bottom: 1px solid #ddd !important;'>" SKIP
+            "           <span class='w3-closebtn w3-margin-right w3-medium'></span>" SKIP
+            "           <span class='w3-margin-right w3-xlarge'>" SKIP
+            "               <CENTER>" YEAR(event_mstr.event_start_date) "</CENTER>" SKIP 
+            "           </span>" SKIP
+            "       </li>" SKIP.                
+    /*** end 1dot1 ***/
     
     IF event_mstr.event_url <> "" THEN 
         {&OUT}
@@ -128,40 +161,37 @@ END.  /** of 4ea. event_mstr **/
     "<div class='w3-container w3-center'>" SKIP
     "   <h5>Got a question or want to make a comment?" SKIP.
     
-IF v-group = "YM" THEN 
-    {&OUT}    
-        "       <a href='mailto:doug.luttrell@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Doug</a>, " SKIP
-        "       <a href='mailto:drmerryman@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Dave</a>, " SKIP
-        "       <a href='mailto:scott.e.pratt@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Scott</a>, or " SKIP
-        "       <a href='mailto:rpcamire@maine.rr.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Roland</a> " SKIP.
+IF v-group = "YM" THEN DO: 
+    
+    {CMS-presidency-emails-R.i "SYMP"}.
+    
+END.  /** of if v-group = YM **/
 
-ELSE IF v-group = "Combined" THEN 
+ELSE IF v-group = "Combined" THEN DO: 
+    
+    {CMS-presidency-emails-R.i "SYMP"}.
+    
     {&OUT}
-        "       <a href='mailto:doug.luttrell@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Doug</a>, " SKIP
-        "       <a href='mailto:drmerryman@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Dave</a>, " SKIP
-        "       <a href='mailto:scott.e.pratt@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Scott</a>, " SKIP
-        "       <a href='mailto:rpcamire@maine.rr.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Roland</a>,  " SKIP   
-/*        "<BR>" SKIP*/
-/*        "OR" SKIP  */
-/*        "<BR>" SKIP*/ 
-        "       <a href='mailto:leslie.crowley@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Leslie</a>, " SKIP
-        "       <a href='mailto:rwheele1@maine.rr.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Kim</a>, " SKIP
-        "       <a href='mailto:3rdgradesthebest@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Debbie</a>, or " SKIP
-        "       <a href='mailto:sara.diai23@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Sara</a> " SKIP.         
+        ", ".
         
-ELSE IF v-group = "YW" OR v-group = "Combined" THEN 
-    {&OUT}
-        "       <a href='mailto:leslie.crowley@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Leslie</a>, " SKIP
-        "       <a href='mailto:rwheele1@maine.rr.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Kim</a>, " SKIP
-        "       <a href='mailto:3rdgradesthebest@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Debbie</a>, or " SKIP
-        "       <a href='mailto:sara.diai23@gmail.com?Subject=Augusta%20Maine%20Stake%20Activities%20Question/Comment' target='_top'>Sara</a> " SKIP.    
-         
-ELSE 
-    {&OUT}
-        "       <a href='mailto:solsource.techsupport@mysolsource.com?Subject=Event%20Missing%20Group%20Type' target='_top'>Solsource Techsupport</a> " SKIP.
+    {CMS-presidency-emails-R.i "SYWP"}. 
+    
+END.  /** of else if v-group = combined **/
+        
+ELSE IF v-group = "YW" THEN DO: 
+    
+    {CMS-presidency-emails-R.i "SYWP"}.
+    
+END.  /** of if v-group = YW **/ 
+
+ELSE DO: 
+    
+    {CMS-presidency-emails-R.i "WRONG"}.
+    
+END.  /** of else do --- not YM, YW, or Combined **/
         
 {&OUT}                     
-    "would love to hear from you." SKIP
+    " would love to hear from you." SKIP
     "   </h5>" SKIP
     "</div>     <!-- end of div --- footer -->" SKIP(1).
     

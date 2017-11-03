@@ -10,8 +10,19 @@
     Author(s)   : Mark Jacobs
     Created     : Tue Feb 24 15:48:42 EST 2015
     Notes       :
-        
- Version 1.1 - written by DOUG LUTTRELL on 08/Oct/15.  Tweaked the hyperlink to point to the proper place.
+ 
+ -----------------------------------------------------------------------
+ 
+ Revision History:
+ -----------------
+ 1.0  -  written by MARK JACOBS on 24/Feb/15.  Original Version.
+ 1.1  -  written by DOUG LUTTRELL on 08/Oct/15.  Tweaked the hyperlink 
+            to point to the proper place.
+ 1.2  -  written by DOUG LUTTRELL on 03/Oct/17.  Changed hyperlinks (again)
+            to not specify specific directories but to depend on the 
+            PROPATH settings.  This is in accordance with the directory
+            changes of Release 12 (CMC structure).  Not marked.
+ 
         
   ----------------------------------------------------------------------*/
 
@@ -27,7 +38,7 @@
       {&OUT}
        "<tr>"       
             "<td></td>" SKIP   
-            "<td nowrap>" "<a href=~"../../DataHub/rcode/TRH-history-R.r?h-low-serial=" TK_ID  "&h-high-serial=" Tk_ID "&h-low-seq=" TK_test_seq "&h-high-seq=" TK_test_seq "&whattorun=1.41&h-act=1~">" TK_ID "</a> / " TK_test_seq  " </td>" SKIP
+            "<td nowrap>" "<a href=~"TRH-history-R.r?h-low-serial=" TK_ID  "&h-high-serial=" Tk_ID "&h-low-seq=" TK_test_seq "&h-high-seq=" TK_test_seq "&whattorun=1.41&h-act=1~">" TK_ID "</a> / " TK_test_seq  " </td>" SKIP
             "<td>" Tk_test_type "</td>" SKIP            
       /*      "<td>" TK_test_seq "</td>" SKIP      */ 
             "<td>" TK_mstr.TK_lab_sample_ID  " / " TK_mstr.TK_lab_seq  " </td>"    /* 2dot3 */
@@ -59,7 +70,7 @@
             
              IF AVAILABLE (peop-pat-buf) THEN DO:                         /* Patient look up */
       {&OUT}
-            "<td nowrap><a href=~"../../DataHub/rcode/PATmainviewR.r?h-act=SELECTED&h-peopleid=" peop-pat-buf.people_id "&whattorun=3.11 "~" > " peop-pat-buf.people_lastname ", " peop-pat-buf.people_firstname "</a></TD>" SKIP . 
+            "<td nowrap><a href=~"PATmainviewR.r?h-act=SELECTED&h-peopleid=" peop-pat-buf.people_id "&whattorun=3.11 "~" > " peop-pat-buf.people_lastname ", " peop-pat-buf.people_firstname "</a></TD>" SKIP . 
             
             END.  /* IF AVAILABLE (peop-pat-buf) THEN DO:  */
             
@@ -80,7 +91,7 @@
            
            {&OUT} 
             "<td nowrap>"
-                 "<a href='../../DataHub/rcode/PEOPmaintU.r?"                                      /* 2dot3 */
+                 "<a href='PEOPmaintU.r?"                                      /* 2dot3 */
                  "h-people_id=" peop-cust-buf.people_id                                              /* 2dot3 */
                  "&h-act=EDIT"                                                                     /* 2dot3 */
                  "&whattorun=35.99'>"                                                              /* 2dot3 */ 

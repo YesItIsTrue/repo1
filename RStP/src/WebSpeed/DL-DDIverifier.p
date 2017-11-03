@@ -213,7 +213,6 @@ DO:
                 
                     RUN VALUE(SEARCH("SUBpat-ucU.r")) 
                         (people_mstr.people_id, /* patient_mstr.patient_id */
-                        "",                     /* patient_mstr.patient_condition */
                         "",                     /* patient_mstr.patient_notes */
                         people_mstr.people_id,  /* responsible party */
                         0,                      /* doctor_id */

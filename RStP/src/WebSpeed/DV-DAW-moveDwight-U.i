@@ -9,8 +9,16 @@
     Author(s)   : Trae Luttrell
     Created     : Thu Aug 13 19:04:49 EDT 2015
 
+    ------------------------------------------------------------------  
+    Revision History:
+    -----------------
+    1.0 - written by TRAE LUTTRELL on 13/Aug/15.  Original Version.
+    1.1 - written by DOUG LUTTRELL on 01/Sep/17.  Changed to work 
+            with CMC structure and 12.1 codebase.  Removed TRANSACTION
+            keyword that was being using incorrectly.  Marked by 1dot1.
+            
   ----------------------------------------------------------------------*/
-DO TRANSACTION ON ERROR UNDO:  
+DO ON ERROR UNDO:                                   /* 1dot1 */
     
     ASSIGN bigchar = SUBSTRING(v-filelocation,1, (R-INDEX (v-filelocation,"."))) + "pdf".
     
@@ -71,4 +79,4 @@ DO TRANSACTION ON ERROR UNDO:
         v-testkitID
         v-testtype.
 
-END. /* of Transaction */
+END. /* of DO */                                /* 1dot1 */

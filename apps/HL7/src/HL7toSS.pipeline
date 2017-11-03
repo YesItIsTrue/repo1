@@ -1,0 +1,183 @@
+<?xml version="1.0"?>
+<pipeline version="0.2" zoom="70">
+	<nodes>
+		<node ID="1" Operation="CONVERTTOXML" x="981" y="203" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="2">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="DataType" value="text"/>
+					<property name="Default Value" isURL="true" value="Inbound_EDI_Files\Sample_UTOX_HL7.txt"/>
+				</properties>
+			</input_port>
+			<output_port name="Output" ID="3">
+				<properties>
+					<property name="Name" value="Output"/>
+					<property name="DataType" value="node"/>
+					<property name="Copy to URL" isURL="true" value="HL7_XML_Files\HL7_OUTPUT.xml"/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="Convert to XML"/>
+				<property name="Adapter URL" isURL="true" value="converter:EDI:user=file://c:\apps\HL7\src\SEF_files\HL7Converter.sef"/>
+			</properties>
+		</node>
+		<node ID="4" Operation="CHOOSE" x="979" y="351" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input #0" function="input" ID="5">
+				<properties>
+					<property name="Name" value="Input #0"/>
+					<property name="DataType" value="node()"/>
+					<property name="Default Value" isURL="true" value=""/>
+				</properties>
+			</input_port>
+			<output_port name="Output #0" ID="6">
+				<properties>
+					<property name="Name" value="Output #0"/>
+					<property name="DataType" value="node()"/>
+					<property name="Copy to URL" isURL="true" value=""/>
+				</properties>
+			</output_port>
+			<output_port name="Output 'no match'" ID="7">
+				<properties>
+					<property name="Name" value="Output 'no match'"/>
+					<property name="DataType" value="node()"/>
+					<property name="Copy to URL" isURL="true" value=""/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="Choose"/>
+				<property name="Number of inputs" value="1"/>
+				<property name="Number of choices" value="1"/>
+				<property name="XPath #0" value='//OBR//OBR.4.2[contains(text(),"/")]'/>
+			</properties>
+		</node>
+		<node ID="8" Operation="XSLT" x="881" y="500" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="9">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="Default Value" isURL="true" value="HL7_XML_Files\HL7_OUTPUT.xml"/>
+				</properties>
+			</input_port>
+			<output_port name="Output" ID="10">
+				<properties>
+					<property name="Name" value="Output"/>
+					<property name="DataType" value="node"/>
+					<property name="Copy to URL" isURL="true" value=""/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="MPA XSLT operator"/>
+				<property name=".xsl file" isURL="true" value="XSL_files\MPA.xsl"/>
+				<property name="Base URL" isURL="true" value=""/>
+			</properties>
+		</node>
+		<node ID="11" Operation="VALIDATE" x="881" y="653" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="12">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="DataType" value="node"/>
+					<property name="Default Value" value=""/>
+				</properties>
+			</input_port>
+			<output_port name="Output valid" ID="13">
+				<properties>
+					<property name="Name" value="Output valid"/>
+					<property name="DataType" value="node"/>
+					<property name="Copy to URL" isURL="true" value="SS_XML_Files\SS_MPA_OUTPUT.xml"/>
+				</properties>
+			</output_port>
+			<output_port name="Output invalid" ID="14">
+				<properties>
+					<property name="Name" value="Output invalid"/>
+					<property name="DataType" value="node"/>
+					<property name="Copy to URL" isURL="true" value="Error_log\ERROR_MPA_OUTPUT.xml"/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="MPA Validate operator"/>
+				<property name="XML Schemas" isURL="true" value="SS_XML_Files\DONT_TOUCH\SS_MPA.xsd;"/>
+			</properties>
+		</node>
+		<node ID="15" Operation="XSLT" x="1081" y="499" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="16">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="Default Value" isURL="true" value="HL7_XML_Files\HL7_OUTPUT.xml"/>
+				</properties>
+			</input_port>
+			<output_port name="Output" ID="17">
+				<properties>
+					<property name="Name" value="Output"/>
+					<property name="DataType" value="node"/>
+					<property name="Copy to URL" isURL="true" value=""/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="BIOMED XSLT operator"/>
+				<property name=".xsl file" isURL="true" value="XSL_files\BIOMED.xsl"/>
+				<property name="Base URL" isURL="true" value=""/>
+			</properties>
+		</node>
+		<node ID="18" Operation="VALIDATE" x="1081" y="650" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="19">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="DataType" value="node"/>
+					<property name="Default Value" value=""/>
+				</properties>
+			</input_port>
+			<output_port name="Output valid" ID="20">
+				<properties>
+					<property name="Name" value="Output valid"/>
+					<property name="DataType" value="node"/>
+					<property name="Copy to URL" isURL="true" value="SS_XML_Files\SS_BIOMED_OUTPUT.xml"/>
+				</properties>
+			</output_port>
+			<output_port name="Output invalid" ID="21">
+				<properties>
+					<property name="Name" value="Output invalid"/>
+					<property name="DataType" value="node"/>
+					<property name="Copy to URL" isURL="true" value="Error_log\ERROR_BIOMED_OUTPUT.xml"/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="BIOMED Validate operator"/>
+				<property name="XML Schemas" isURL="true" value="SS_XML_Files\DONT_TOUCH\SS_BIOMED.xsd;"/>
+			</properties>
+		</node>
+	</nodes>
+	<edges>
+		<edge ID="22" fromNode="1" toNode="4" fromPort="3" toPort="5" style="line"/>
+		<edge ID="23" fromNode="4" toNode="8" fromPort="6" toPort="9" style="line"/>
+		<edge ID="24" fromNode="4" toNode="15" fromPort="7" toPort="16" style="line"/>
+		<edge ID="25" fromNode="8" toNode="11" fromPort="10" toPort="12" style="line"/>
+		<edge ID="26" fromNode="15" toNode="18" fromPort="17" toPort="19" style="line"/>
+	</edges>
+	<scenarios current="Scenario1">
+		<scenario name="Scenario1">
+			<deployment DeploymentModule="Java Deployer">
+				<properties>
+					<DeployDialogProperties>
+						<property name="Target Directory" value="." type="6"/>
+						<property name="Package Name" value="" type="1"/>
+						<property name="Class Name" value="HL7toSS" type="1"/>
+						<property name="Execution Log" value="stdout" type="4"/>
+						<property name="Add to Project" value="No" type="5"/>
+						<property name="Generate Inline Code" value="Yes" type="5"/>
+						<property name="VS Project name" value="HL7toSS" type="1"/>
+						<property name="Open the C# file" value="Yes" type="5"/>
+						<property name="Main Method" value="Yes" type="5"/>
+						<property name="Create VS Project" value="Yes" type="5"/>
+						<property name="Embed XQuery" value="Yes" type="5"/>
+					</DeployDialogProperties>
+				</properties>
+			</deployment>
+			<execution-framework type="ddxq">
+				<component name="FO operator" value="RenderX XEP"/>
+				<component name="XSLT operator" value="Java built-in"/>
+				<component name="Validate operator" value="Java built-in"/>
+				<component name="XQuery operator" value="DataDirect XQuery"/>
+			</execution-framework>
+		</scenario>
+	</scenarios>
+	<merged-xquery-collections/>
+</pipeline>

@@ -1,0 +1,844 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>  
+ 
+<TITLE>TestKit COLLECTED Update</TITLE>
+
+<META NAME="AUTHOR" CONTENT="Harold luttrell, Sr.">
+    <META NAME="VERSION" CONTENT="1.6">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="29/Sep/15">
+    <META NAME="LAST_UPDATED" CONTENT="11/Mar/16">
+    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    
+<SCRIPT LANGUAGE="SpeedScript">
+
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and  
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */   
+CREATE WIDGET-POOL.
+ 
+</SCRIPT>
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT language='SpeedScript'>
+  /*------------------------------------------------------------------
+     Main-program  : TKcollectedU.html.
+     Description   : Program displays only MPA Tests  and
+                   :     BioMed Tests. 
+                  
+     Sub-programs  : none.
+                   : 
+     Description   : Selects the TK_mstr records where the TK_mstr.TK_status 
+                   : = "SOLD,SHIPPED" 
+                   : and displays information on the screen for the 
+                   : test kit along with the patient's name, lab sample id and   
+                   : a check box to be selected by the user to flag the testkits as 
+                   : "COLLECTED" and create a trh history record. 
+             
+      - - Version History - -
+      Version: 1.0    By Harold Luttrell, Sr.
+          1.0 - Sept. 29, 2015 - Original code.
+    
+    1.1 - written by DOUG LUTTRELL on 05/Oct/15.  Pathing *.p vs. *.r.  Also the 
+            hyperlink pathing issue with the whattorun.  And the conditional RUNs
+            for the data manipulation.  Marked by 1dot1.
+            
+    1.2 - Written by Jacob Luttrell on 31/Oct/15. fixed spelling error
+            and fixed customer hyperlink. Marked by 1dot2. 
+            
+    1.3 - Modified by Harold Luttrell on 06/Nov/15.
+            Removed the check where TK_mstr.TK_lab_sample_ID <> ""
+            per the e-mail from Doug as follows:
+                Program: TKcollectedU.html (1.10) 
+                    selects 18 TK_mstr records that have a TK_status of either 
+                    SOLD or SHIPPED and the TK_Lab_Sample_ID is NOT blank.
+
+                    In Scratch pad: There are over 5,200 TK_mstr records that 
+                    have either SOLD or SHIPPED and the 
+                    TK_Lab_Sample_ID is blank.
+
+                Question:
+                    When do the 5,200 TK_mstr records get the TK_lab_sample_ID 
+                    entered so they will show up in the TKcolledtedU program
+                    Or should they be showing up in the TKcollectedU program 
+                    with blank TK_Lab_sample_ids ??????
+                    
+                Doug's reply:
+                    I think these are two separate issues.
+
+                    TKcollectedU.html should be controlling selection based 
+                    on TK_status only, not TK_status and TK_lab_sample_ID.
+
+                    We should probably allow them in one of the functions to 
+                    assign a Lab Sample ID to a Testkit.  Since that would be 
+                    a one-at-a-time function, perhaps the appropriate place 
+                    is in the 1.5 Testkit Maintenance.
+                    NOTE:  1.5 currently allows the user to change or enter
+                    the Lab Sample ID.  No changes required.
+            Marked by /* 1dot3 */. 
+      
+      1.4 - Modified by Jacob Luttrell on 20/Nov/15.
+                Added statlist and changed lookup. Marked by 1dot4.
+      
+      1.5 - Modified by Jacob Luttrell on 19/Feb/16. 
+                Changed TK_testtype to TK_test_type (unmarked).
+                Added updated external procedure SUBtrh_RStP-ucU in place of 
+                trh-altered internal procedure for v11.1 release. Marked
+                by 1dot5. 
+               
+      1.6 - Modified by Jacob Luttrell on 11/Mar/16. Marked by 1dot6. Added 
+                SUBtrh-findR.p, changed what trh_date is updated by, and added
+                the statuslist.i. 
+      
+      1.61 - Modified by Jacob Luttrell on 27/Apr/17. Found an oddity where sometimes the patient
+            information is not displayed.  Fixed CSS header.  Marked by 161.              
+            
+      1.7 - written by DOUG LUTTRELL on 03/Oct/17.  Changed to work
+        with single rcode PROPATH tied to Release 12 (CMC structure).
+        Marked by 1dot7.
+                                               
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.   /*** menu name assignment ***/
+
+       /**** Procedure to created historical (modified date) trh_hist records ****/
+PROCEDURE trh-altered: 
+    /* ***************************  Definitions  ************************** */
+    
+  /*  ROUTINE-LEVEL ON ERROR UNDO, THROW. */
+    
+    DEFINE INPUT PARAMETER i-ctrh-id        LIKE trh_hist.trh_id        NO-UNDO.
+    DEFINE INPUT PARAMETER i-ctrh-item      LIKE trh_hist.trh_item      NO-UNDO.
+    DEFINE INPUT PARAMETER i-ctrh-action    LIKE trh_hist.trh_action    NO-UNDO.
+    DEFINE INPUT PARAMETER i-ctrh-qty       LIKE trh_hist.trh_qty       NO-UNDO.
+    DEFINE INPUT PARAMETER i-ctrh-loc       LIKE trh_hist.trh_loc       NO-UNDO.
+    DEFINE INPUT PARAMETER i-ctrh-lot       LIKE trh_hist.trh_lot       NO-UNDO.
+    DEFINE INPUT PARAMETER i-ctrh-serial    LIKE trh_hist.trh_serial    NO-UNDO.
+    DEFINE INPUT PARAMETER i-ctrh-site      LIKE trh_hist.trh_site      NO-UNDO.
+    DEFINE INPUT PARAMETER i-ctrh-sequence  LIKE trh_hist.trh_sequence  NO-UNDO.
+    DEFINE INPUT PARAMETER i-ctrh-date      AS DATE                     NO-UNDO.
+    
+    DEFINE OUTPUT PARAMETER o-ctrh-id       LIKE trh_hist.trh_id        NO-UNDO.
+    DEFINE OUTPUT PARAMETER o-ctrh-error    AS LOGICAL INITIAL YES      NO-UNDO.
+    
+    /* ***************************  Main Block  *************************** */
+    
+    maineblock: 
+    DO TRANSACTION:
+    
+        IF i-ctrh-id = 0 THEN 
+        DO:
+        
+            CREATE trh_hist.
+        
+            ASSIGN 
+                trh_hist.trh_id             = NEXT-VALUE (seq-trh)
+                trh_hist.trh_item           = i-ctrh-item
+                trh_hist.trh_action         = i-ctrh-action
+                trh_hist.trh_qty            = i-ctrh-qty
+                trh_hist.trh_loc            = i-ctrh-loc
+                trh_hist.trh_lot            = i-ctrh-lot    
+                trh_hist.trh_serial         = i-ctrh-serial        
+                trh_hist.trh_create_date    = i-ctrh-date               
+                trh_hist.trh_created_by     = USERID("Modules")
+                trh_hist.trh_modified_date  = i-ctrh-date               
+                trh_hist.trh_modified_by    = USERID("Modules")
+                trh_hist.trh_site           = i-ctrh-site
+                trh_hist.trh_sequence       = i-ctrh-sequence
+                trh_hist.trh_prog_name      = THIS-PROCEDURE:FILE-NAME 
+                
+                o-ctrh-id                   = trh_hist.trh_id
+                o-ctrh-error                = NO             
+                .      
+            
+        END.  /*** of no id DO ***/
+        ELSE 
+            
+            ASSIGN 
+                o-ctrh-error = YES.
+    
+    END. /*** of maineblock ***/
+             
+END PROCEDURE.  /* trh-altered */
+
+DEFINE VARIABLE o-ctrh-id       LIKE trh_hist.trh_id                NO-UNDO.
+DEFINE VARIABLE o-ctrh-error    AS LOGICAL INITIAL YES              NO-UNDO.
+
+
+DEFINE VARIABLE act         AS CHARACTER FORMAT "x(50)"             NO-UNDO.
+
+DEFINE VARIABLE f-kitid     LIKE TK_mstr.Tk_ID                  NO-UNDO.
+DEFINE VARIABLE t-kitid     LIKE TK_mstr.Tk_ID                  NO-UNDO.
+DEFINE VARIABLE f-test-seq  LIKE TK_mstr.TK_test_seq                NO-UNDO.
+DEFINE VARIABLE t-test-seq  LIKE TK_mstr.TK_test_seq                NO-UNDO.
+DEFINE VARIABLE f-typ       LIKE TK_mstr.TK_test_type           NO-UNDO.
+DEFINE VARIABLE t-typ       LIKE TK_mstr.TK_test_type           NO-UNDO.
+
+DEFINE VARIABLE f-fname     LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE t-fname     LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE f-lname     LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE t-lname     LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE cust-fname  LIKE people_mstr.people_firstname       NO-UNDO. 
+DEFINE VARIABLE cust-lname  LIKE people_mstr.people_lastname        NO-UNDO. 
+DEFINE VARIABLE cust-id     AS INTEGER                              NO-UNDO.
+DEFINE VARIABLE peop-fname  LIKE people_mstr.people_firstname       NO-UNDO.    /* 1dot3 */ 
+DEFINE VARIABLE peop-lname  LIKE people_mstr.people_lastname        NO-UNDO.    /* 1dot3 */           
+DEFINE VARIABLE cust-email  LIKE people_mstr.people_email           NO-UNDO.    /* 1dot6 */
+
+DEFINE VARIABLE ip-Calendar-Date     AS CHARACTER FORMAT "x(10)"       NO-UNDO.
+DEFINE VARIABLE ip-Stripped-Calendar-Date   AS DATE                    NO-UNDO.
+DEFINE VARIABLE MMDDYYYY                    AS CHARACTER FORMAT "x(10)" NO-UNDO. 
+DEFINE VARIABLE ip-checked-recid            AS CHARACTER               NO-UNDO. 
+DEFINE VARIABLE x                           AS INTEGER                 NO-UNDO. 
+DEFINE VARIABLE Flip-flag                   AS LOGICAL FORMAT "yes/no" NO-UNDO.
+DEFINE VARIABLE selected-kount              AS INTEGER                 NO-UNDO.
+DEFINE VARIABLE updated-kount               AS INTEGER                 NO-UNDO.
+DEFINE VARIABLE whattorun                   AS CHARACTER               NO-UNDO.
+DEFINE VARIABLE slash-from                  AS CHARACTER               NO-UNDO.
+DEFINE VARIABLE slash-to                    AS CHARACTER               NO-UNDO.
+
+DEFINE VARIABLE v-trhid                 AS INTEGER                  NO-UNDO.    /* 1dot6 */ 
+DEFINE VARIABLE v-trhfound              AS LOG INITIAL NO           NO-UNDO.    /* 1dot6 */
+
+{../depot/src/WebSpeed/Statuslist.i}.                                           /* 1dot6 */
+
+/*DEFINE VARIABLE statlist AS CHARACTER                                                                                                                                       /* 1dot4 */*/
+/*    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,COMPLETE,PAID_BY_CUST,VEND_PAID,DELETED,VOID" NO-UNDO.   /* 1dot4 */*/
+ 
+/*DEFINE VARIABLE process-list                AS CHARACTER               NO-UNDO.                  */
+/*/*  lookup(tk_status,process-list) > 0 :  means did find IT   or = 0 :  means did NOT find it  */*/
+/*ASSIGN  process-list  = "SOLD,SHIPPED".                                                          */
+      
+ASSIGN
+
+	whattorun          =   get-value ("whattorun")
+	act                =   get-value ("h-act")
+	ip-Calendar-Date   =   get-value ("h-Calendar-Date")
+
+	f-kitid            =   get-value ("h-from-id")
+	t-kitid            =   get-value ("h-to-id")		
+	f-test-seq         =   INTEGER (get-value ("h-f-test-seq")) 
+	t-test-seq         =   INTEGER (get-value ("h-t-test-seq"))
+	f-typ              =   get-value ("h-from-typ")
+    t-typ              =   get-value ("h-to-typ")
+    ip-checked-recid   =   get-value ("h-Pay").
+
+/****************    Main Code   *******************/
+/*{&OUT}  "ACT =" act.*/
+IF act = "Display_Selected_Data,clear_fields" THEN 
+    ASSIGN act = "clear_fields".
+    
+IF act  = "" THEN 
+    ASSIGN  act = "Enter_Selections".
+
+IF act = "Display_Selected_Data" THEN DO:                           
+        
+        {&OUT}
+  /*******************************  0/12/0 DIVs ---- Full width  **************************/
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            
+            "<FORM  method='GET' >"  SKIP
+            "<DIV class = 'table_report_FromTo'>"  SKIP
+            "<center'>"  SKIP
+            "<TABLE>"  SKIP
+            " <Thead>"  SKIP     
+            "   <Tr><Th colspan=9>Select  Testkits  to  be  Collected</Th></Tr>"  SKIP                              /* 161 */           
+            "   <Tr><Th> From </Th>"  SKIP.
+  /*------------------------- Start of From Row -----------------*/  
+  
+    IF ip-Calendar-Date <> "" THEN DO:                                                                              /* 1dot1 */   
+        RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                                                                      /* 1dot1 */
+                 (ip-Calendar-Date, OUTPUT ip-Stripped-Calendar-Date).
+    END.  /** of if ip-Calendar-Date <> "" **/                                                                      /* 1dot1 */
+
+        ASSIGN MMDDYYYY = substring(ip-Calendar-Date, 6, 2) + "/" +
+                          substring(ip-Calendar-Date, 9, 2) + "/" + 
+                          substring(ip-Calendar-Date, 1, 4).
+        
+        ASSIGN slash-from = " / " + STRING(f-test-seq).
+        
+        IF  f-test-seq = 0 THEN
+                ASSIGN slash-from = "".   
+           
+        ASSIGN slash-to = " / " + STRING(t-test-seq).
+        
+        IF  t-test-seq = 0 THEN 
+                ASSIGN slash-to = "".   
+
+        {&OUT}
+            "<input type='hidden' name='whattorun' value='" whattorun "'>"  SKIP  
+            "<th align='center'><input type='hidden' name='h-from-id' value='" f-kitid "' >" /* <SPAN style='COLOR: #0000FF;'>" */ f-kitid                                        /* 1dot5 - removed span tags */
+                               "<input type='hidden' name='h-f-test-seq' value='" f-test-seq "' >" /* <SPAN style='COLOR: #0000FF;'>" */ slash-from "</th>"  SKIP
+            "<th align='center'><input type='hidden' name='h-from-typ' value='" f-typ "' >" /* <SPAN style='COLOR: #0000FF;'>" */ f-typ "</th>"  SKIP 
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th> Using HHI Collected Date of </th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP.
+            
+  /*------------------------- End of From Row ------------------*/
+  /*------------------------- Start of To Row ------------------*/
+        {&OUT}
+	        "</Tr>"  SKIP
+	        "<Tr>"  SKIP
+	        "<Th> To </Th>"  SKIP  
+            "<th align='center'><input type='hidden' name='h-to-id' value='" t-kitid "'>" /*<SPAN style='COLOR: #0000FF;'>" */  t-kitid "  
+                                <input type='hidden' name='h-t-test-seq' value='" t-test-seq "' >" /* <SPAN style='COLOR: #0000FF;'>" */ slash-to "</th>"  SKIP
+            "<th align='center'><input type='hidden' name='h-to-typ' value='" t-typ "' >" /* <SPAN style='COLOR: #0000FF;'>" */ t-typ  "</th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP 
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th align='center'><input type='hidden' name='h-Calendar-Date' value='" ip-Calendar-Date "' >" /* <SPAN style='COLOR: #0000FF;'>" */ MMDDYYYY "</th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th>" "&nbsp" "</th></tr>"  SKIP.
+  /*------------------------- End of To Row ------------------*/              
+  /*------------------------ Report Headings -----------------*/          
+        {&OUT}
+            "</Tr>"  SKIP
+            "<Tr>"  SKIP
+            "   <Th>Check as Collected</Th>"  SKIP                                                                          /* 161 */
+            "   <Th>Testkit ID / Seq</Th>"  SKIP                                                                            /* 161 */
+            "   <Th>Type</Th>"  SKIP                                                                                        /* 161 */
+            "   <Th>Status</Th>"  SKIP                                                                                      /* 161 */
+            "   <Th>Lab ID</Th>"  SKIP                                                                                      /* 161 */    
+            "   <Th>Lab Sample ID / Seq</Th>"  SKIP                                                                         /* 161 */
+            "   <Th>Patient</Th>"  SKIP                                                                                     /* 161 */
+            "   <Th>Customer</Th>"  SKIP                                                                                    /* 161 */
+            "   <Th>Prof</Th>"  SKIP                                                                                        /* 161 */
+            "</Tr>"  SKIP               
+            "</Thead>"  SKIP.    
+
+        FOR EACH test_mstr WHERE test_mstr.test_family = "MPA" OR 
+                                 test_mstr.test_family = "BioMed" NO-LOCK,     
+            EACH TK_mstr 
+                WHERE
+                    TK_mstr.tk_test_type      = test_mstr.test_type AND  
+/*                    TK_mstr.TK_lab_sample_ID <> "" AND*/                  /* 1dot3 */
+                                                          
+                    TK_mstr.TK_deleted      = ? AND 
+                    
+/*                    lookup(tk_status,process-list) > 0   AND                     /* > 0  means it will process the data. */*/
+                    
+                    LOOKUP(TK_status,statlist) >= LOOKUP("SOLD",statlist) AND       /* 1dot4 */
+                    LOOKUP(TK_status,statlist) < LOOKUP("COLLECTED",statlist) AND   /* 1dot4 */
+                    
+                    ((TK_mstr.Tk_ID >= f-kitid OR
+                      f-kitid = "") AND
+                     (TK_mstr.Tk_ID <= t-kitid OR
+                      t-kitid = "")) AND
+
+                    ((TK_mstr.Tk_test_seq >= f-test-seq OR
+                      f-test-seq = 0) AND
+                     (TK_mstr.TK_test_seq <= t-test-seq OR
+                      t-test-seq = 0)) AND         
+               
+                   ((TK_mstr.Tk_test_type >= f-typ OR
+                      f-typ = "") AND
+                     (TK_mstr.Tk_test_type <= t-typ OR
+                      t-typ = "")) 
+                      
+                         NO-LOCK
+                             BREAK BY TK_mstr.tk_id BY TK_mstr.tk_test_seq: 
+                          
+/* -----------------  counting component below  ----------------------------- */   
+                            selected-kount = selected-kount + 1.        
+/* -------------------------------------------------------------------------- */      
+                                                        
+                FIND patient_mstr
+                  WHERE patient_mstr.patient_id         = TK_mstr.Tk_patient_id AND 
+                        patient_mstr.patient_deleted    = ?  
+                      NO-LOCK NO-ERROR.
+
+                FIND cust_mstr WHERE cust_mstr.cust_id = TK_mstr.TK_cust_ID AND                                     /* 161 */  
+                        cust_mstr.cust_deleted = ? 
+                      NO-LOCK NO-ERROR.   
+                
+                ASSIGN                                                          /* 1dot3 */                                               
+                   peop-fname = ""                                              /* 1dot3 */                                     
+                   peop-lname = "".                                             /* 1dot3 */
+                                          
+                FIND people_mstr 
+                  WHERE people_mstr.people_id       = /* patient_mstr.patient_ID */    TK_mstr.TK_patient_ID AND
+                        people_mstr.people_deleted  = ? 
+                      NO-LOCK NO-ERROR. 
+
+                IF AVAILABLE (people_mstr) THEN                         /* 1dot3 */
+                    ASSIGN                                                      /* 1dot3 */                                             
+                       peop-fname = people_mstr.people_firstname                /* 1dot3 */                     
+                       peop-lname = people_mstr.people_lastname.                /* 1dot3 */
+                       
+		        {&OUT}
+		          "<tr>"       
+		            "<td> <input type='checkbox' name='h-Pay' value='" recid(TK_mstr) "' autofocus /></td>" SKIP  
+		            "<Td nowrap>" "<a href='TRH-history-R.r?h-act=1&h-low-serial="            /* 1dot7 */ 
+		                                  TK_mstr.TK_ID "&h-low-seq=" TK_mstr.TK_test_seq 
+		                "&h-high-serial=" TK_mstr.TK_ID "&h-high-seq=" TK_mstr.TK_test_seq 
+		                "&whattorun=1.41&submit=Search'>"                                                             /* 1dot1 */
+		                TK_mstr.Tk_ID "</a>"' / ' TK_mstr.TK_test_seq "</Td>" SKIP
+		            "<td>" TK_mstr.Tk_test_type "</td>" SKIP            
+		            "<td>" TK_mstr.Tk_status "</td>" SKIP              
+		            "<td>" TK_mstr.Tk_lab_id "</td>" SKIP
+		            "<td>" TK_mstr.Tk_lab_sample_ID " / " TK_mstr.TK_lab_seq "</td>" SKIP. 
+            
+                IF TK_mstr.TK_patient_ID > 0 THEN DO:                                                  /* 161 */ 
+            
+	             IF AVAILABLE (people_mstr) THEN                                /* Patient look up */
+	               {&OUT}
+	                   "<td nowrap>" "<a href='PATmainviewR.r?h-act=SELECTED&whattorun=3.11&h-peopleid="       /* 1dot7 */ 
+/*	                   people_mstr.people_id  "'>" people_mstr.people_lastname ", "*/         /* 1dot3 */
+/*	                   people_mstr.people_firstname "</a></TD>".                   */         /* 1dot3 */
+                       people_mstr.people_id  "'>" peop-lname ", "                            /* 1dot3 */
+                       peop-fname "</a></TD>".                                                /* 1dot3 */
+                  
+                 ELSE
+                    {&OUT} "<td>ERROR! TK_patient_ID exists without people_mstr.</td>" SKIP.            /* 161 */          
+      
+                END.  /** of if tk_patient_ID > 0 **/                                                   /* 161 */
+      
+                ELSE                                                                                    /* 161 */
+                    {&OUT}                                                                              /* 161 */
+                        "<TD></TD>" SKIP.                                                               /* 161 */
+	  	                                             
+                FIND cust_mstr                                          /* 1dot3 */
+                  WHERE cust_mstr.cust_id = TK_mstr.Tk_cust_id AND      /* 1dot3 */ 
+                        cust_mstr.cust_deleted      = ?                 /* 1dot3 */
+                      NO-LOCK NO-ERROR.                                         /* 1dot3 */   
+            
+                ASSIGN                                                          /* 1dot3 */
+                    cust-fname = ""                                             /* 1dot3 */
+                    cust-lname = "".                                            /* 1dot3 */   
+                      
+	             IF AVAILABLE (cust_mstr) THEN DO:                               /* Customer look up */	         
+		              FIND people_mstr 
+                        WHERE people_mstr.people_id       = cust_mstr.cust_ID AND
+                              people_mstr.people_deleted  = ?  
+                        NO-LOCK NO-ERROR.  
+                        
+                      IF AVAILABLE (people_mstr) THEN DO:                                                              /* 1dot6 */             
+		                ASSIGN
+		                    cust-fname = people_mstr.people_firstname
+		                    cust-lname = people_mstr.people_lastname.
+		           
+			          {&OUT}
+                        "<td nowrap>" 
+                              "<a href='PEOPmaintU.r?"                                      /* 1dot6 */     /* 1dot7 */
+							  "h-people_id=" people_mstr.people_id                                              /* 1dot6 */
+							  "&h-act=EDIT"                                                                     /* 1dot6 */
+							  "&whattorun=35.99'>"                                                              /* 1dot6 */                       
+/*                            "<a href=TK_custupdate.r?"                                                                /* 1dot2 */          */
+/*                            "h-cust-id=" people_mstr.people_id                                                                  /* 1dot2 */*/
+/*                            "&e-mail=" people_mstr.people_email                                                                 /* 1dot2 */*/
+/*                            "&f-name=" people_mstr.people_firstname                                                             /* 1dot2 */*/
+/*                            "&l-name=" people_mstr.people_lastname                                                              /* 1dot2 */*/
+/*                            "&whattorun=2.3"                                                                                    /* 1dot2 */*/
+/*                            "&h-keep-going=YES"                                                                                 /* 1dot2 */*/
+/*                            "&h-first-stop=1>"                                                                                             */
+                            cust-lname ", " cust-fname "</a></td>" SKIP.                                                                   /* 1dot2 */
+					
+					   END. /* if available people_mstr */                                                                      /* 1dot6 */
+					   ELSE                                                                                                     /* 1dot6 */
+					      
+					       {&OUT} "<td>Error: Customer master record exists<br>without a people master record.</td>" SKIP.      /* 1dot6 */
+					       
+	             END. /* IF AVAILABLE  (cust_mst) THEN DO: */
+	
+	             ELSE
+	
+	                   {&OUT} "<td></td>" SKIP.
+
+	               {&OUT} 
+		                   "<td>" TK_mstr.Tk_domestic "</td>"
+		               "</tr>" SKIP.
+
+        END. /* of FOR EACH test_mstr and Tk_mstr */   
+
+        {&OUT} 
+            "<Tfoot>"                                                           /* 161 */              
+            "<tr><td colspan=9>This Selection Criteria retrieved " selected-kount " Records.  </td></tr>" 
+            "<tr><td colspan=9><i><b>End of Report</b></i></td></tr>"           /* 1dot5 */
+            "</Tfoot>".                                                         /* 1dot5 */
+      
+        {&OUT}
+            "</TABLE>"
+            "</center>"     
+            "</div>"
+                        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP.   
+
+        {&OUT}
+            "</DIV>"  SKIP
+            /*** Triple Button ***/
+            "<BR>" SKIP           
+            "<div class='row'>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='UPDATE_by_boxes' 
+                     class='btn'>Process selected check box(s)</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='clear_fields' 
+                     class='btn'>Enter New Selection Criteria</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Enter_Selections' 
+                     class='btn'>Change Current Selection Criteria</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "</div>" SKIP
+            "<BR>" SKIP
+            "</form>"  SKIP.
+            
+END.    /*  IF act = "Display_Selected_Data"  */                                /* end of STEP 2 */
+
+ELSE IF act = "UPDATE_by_boxes" THEN DO:                                        /* STEP 3 */
+   
+        ASSIGN  act = "".
+
+    IF ip-Calendar-Date <> "" THEN DO:                                                                                  /* 1dot1 */    
+        RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                                                                          /* 1dot1 */    
+	       (ip-Calendar-Date, OUTPUT ip-Stripped-Calendar-Date).
+    END.  /** of if ip-Calendar-Date <> "" **/                                                                          /* 1dot1 */
+    
+ /* ------------------- Generate the Updated Report ------------ */
+        {&OUT}
+ /*******************************  0/12/0 DIVs ---- Full width  **************************/
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            
+            "<FORM  method='GET' >"  SKIP
+            "<DIV class = 'table_report_FromTo'>"  SKIP
+            "<center'>"  SKIP
+            "<TABLE>"  SKIP
+            " <Thead>"  SKIP     
+            "   <Tr><Td colspan=8>Updated  Testkit  Processed</Td></Tr>"  SKIP                     
+            "   <Tr><Th> From </Th>"  SKIP.
+ /*------------------------- Start of From Row -----------------*/   
+
+	        ASSIGN MMDDYYYY = substring(ip-Calendar-Date, 6, 2) + "/" +
+	                          substring(ip-Calendar-Date, 9, 2) + "/" + 
+	                          substring(ip-Calendar-Date, 1, 4).
+	        
+	        ASSIGN slash-from = " / " + STRING(f-test-seq).
+	        
+	        IF  f-test-seq = 0 THEN 
+	                ASSIGN slash-from = "".   
+	           
+	        ASSIGN slash-to = " / " + STRING(t-test-seq).
+	        
+	        IF  t-test-seq = 0 THEN  
+	                ASSIGN slash-to = "".    
+	        
+        {&OUT}
+            "<input type='hidden' name='whattorun' value='" whattorun "'>"  SKIP  
+            "<th align='center'><input type='hidden' name='h-from-id' value='" f-kitid "' ><SPAN style='COLOR: #0000FF;'>" f-kitid " 
+                                <input type='hidden' name='h-f-test-seq' value='" f-test-seq "' ><SPAN style='COLOR: #0000FF;'>" slash-from "</th>"  SKIP
+            "<th align='center'><input type='hidden' name='h-from-typ' value='" f-typ "' ><SPAN style='COLOR: #0000FF;'>" f-typ "</th>"  SKIP 
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th> Using Completion Date of </th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP.
+            
+  /*------------------------- End of From Row ------------------*/
+  /*------------------------- Start of To Row ------------------*/
+        {&OUT}
+            "</Tr>"  SKIP
+            "<Tr>"  SKIP
+            "<Th> To </Th>"  SKIP  
+            "<th align='center'><input type='hidden' name='h-to-id' value='" t-kitid "'><SPAN style='COLOR: #0000FF;'>" t-kitid " 
+                                <input type='hidden' name='h-t-test-seq' value='" t-test-seq "' ><SPAN style='COLOR: #0000FF;'>" slash-to "</th>"  SKIP
+            "<th align='center'><input type='hidden' name='h-to-typ' value='" t-typ "' ><SPAN style='COLOR: #0000FF;'>" t-typ  "</th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP 
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th align='center'><input type='hidden' name='h-Calendar-Date' value='" ip-Calendar-Date "' ><SPAN style='COLOR: #0000FF;'>" MMDDYYYY "</th>"  SKIP
+            "<th>" "&nbsp" "</th>"  SKIP
+            "<th>" "&nbsp" "</th></tr>"  SKIP.
+  /*------------------------- End of To Row ------------------*/              
+  /*------------------------ Report Headings -----------------*/          
+        {&OUT}
+            "</Tr>"  SKIP
+            "<Tr>"  SKIP
+            "   <Td>Testkit ID / Seq</Td>"  SKIP          
+            "   <Td>Type</Td>"  SKIP                                                 
+            "   <Td>Status</Td>"  SKIP
+            "   <Td>Lab ID</Td>"  SKIP
+            "   <Td>Lab Sample ID / Seq</Td>"  SKIP
+            "   <Td>Patient</Td>"  SKIP
+            "   <Td>Customer</Td>"  SKIP
+            "   <Td>Prof</Td>"  SKIP  
+            "</Tr>"  SKIP               
+            "</Thead>"  SKIP.  
+              
+  /*-------------------- Update the Selected records -----------------*/   	
+	    DO x = 1 TO NUM-ENTRIES(ip-checked-recid): 
+	
+	        FIND TK_mstr 
+	            WHERE   RECID(TK_mstr)  =   INTEGER(ENTRY(x, ip-checked-recid))
+	                EXCLUSIVE-LOCK NO-ERROR.
+	       
+	        IF AVAILABLE (TK_mstr) THEN DO:
+	            
+                ASSIGN  TK_mstr.TK_status           = "COLLECTED"
+                        TK_mstr.TK_modified_by      = USERID("Modules")
+                        TK_mstr.TK_modified_date    = TODAY
+                        TK_mstr.TK_prog_name        = THIS-PROCEDURE:FILE-NAME. /* 1dot6 */  
+                        
+                ASSIGN updated-kount = (updated-kount + 1).                        
+	       
+	       ASSIGN                                                               /* 1dot6 */
+                v-trhid     = 0                                                 /* 1dot6 */
+                v-trhfound  = NO.                                               /* 1dot6 */
+	       
+	        RUN VALUE(SEARCH("SUBtrh-findR.r"))                                 /* 1dot6 */
+                (TK_mstr.tk_test_type,                                          /* 1dot6 */
+                 TK_mstr.TK_status,                                             /* 1dot6 */
+                 TK_mstr.TK_ID,                                                 /* 1dot6 */
+                 TK_mstr.TK_test_seq,                                           /* 1dot6 */
+                 OUTPUT v-trhid,                                                /* 1dot6 */
+                 OUTPUT v-trhfound).                                            /* 1dot6 */
+	        
+	/*  CREATE a hist FOR the COMPLETEed Testkit..... USING entered date  */ 
+	        
+	          /* 1dot5 --> */
+                 RUN VALUE(SEARCH("SUBtrh-ucU.r"))
+                    (v-trhid,                        /**  i-ctrh-id   **/       /* 1dot6 */
+                     TK_mstr.TK_test_type,       /**  i-ctrh-item **/
+                     TK_mstr.TK_status,          /**  i-ctrh-action **/
+                     1,                              /**  i-ctrh-qty  **/
+                     "",                             /**  i-ctrh-loc  **/
+                     "",                             /**  i-ctrh-lot  **/
+                     TK_mstr.TK_ID,              /**  i-ctrh-serial  **/
+                     "",                             /**  i-ctrh-site  **/
+                     TK_mstr.TK_test_seq,        /**  i-ctrh-sequence **/ 
+                                          
+                     "",                            /*i-ctrh-comments*/
+                     TK_mstr.TK_magento_order,      /*i-ctrh-other   */
+                     TK_mstr.Tk_cust_id,            /*i-ctrh-people  */
+                     "",                            /*i-ctrh-order   */
+                     ip-Stripped-Calendar-Date,     /*i-ctrh-date    */             /* 1dot6 */
+                     STRING(TIME,"HH:MM:SS"),       /*i-ctrh-time    */
+                     (TK_mstr.TK_lab_sample_ID + " / " + STRING(TK_mstr.TK_lab_seq)),      /*i-ctrh-ref     */
+                     "", /* warehouse */        
+                     OUTPUT o-ctrh-id,
+                     OUTPUT o-ctrh-error). 
+             /* <-- 1dot5 */ 
+	        	        
+/*	            RUN  trh-altered                                                */
+/*	                   (0,                              /**  i-ctrh-id   **/    */
+/*	                    TK_mstr.TK_test_type,       /**  i-ctrh-item **/    */
+/*	                    "COLLECTED",                    /**  i-ctrh-action **/  */
+/*	                    1,                              /**  i-ctrh-qty  **/    */
+/*	                    "",                             /**  i-ctrh-loc  **/    */
+/*	                    "",                             /**  i-ctrh-lot  **/    */
+/*	                    TK_mstr.TK_ID,              /**  i-ctrh-serial  **/ */
+/*	                    "",                             /**  i-ctrh-site  **/   */
+/*	                    TK_mstr.TK_test_seq,        /**  i-ctrh-sequence **/*/
+/*	                    ip-Stripped-Calendar-Date,                              */
+/*	                    OUTPUT o-ctrh-id,                                       */
+/*	                    OUTPUT o-ctrh-error).                                   */
+	    
+	            IF o-ctrh-error = YES THEN DO:                
+	                    MESSAGE "0-CREATE Error from pgm: create-trh-hist !  " SKIP
+	                             "  The returned o-ctrh-id value = " o-ctrh-id
+	                        VIEW-AS ALERT-BOX INFORMATION BUTTONS OK.                        
+	            END.    /** IF value = NO from utilities pgm. **/  
+
+                FIND patient_mstr
+                  WHERE patient_mstr.patient_id         = TK_mstr.Tk_patient_id AND 
+                        patient_mstr.patient_deleted    = ?  
+                      NO-LOCK NO-ERROR.
+                                
+/*                FIND cust_mstr                                                     */
+/*                  WHERE TK_mstr.Tk_cust_id                  = cust_mstr.cust_id AND*/
+/*                        cust_mstr.cust_deleted      = ?                            */
+/*                      NO-LOCK NO-ERROR.                                                    */
+                
+                ASSIGN                                                          /* 1dot3 */                                               
+                   peop-fname = ""                                              /* 1dot3 */                                    
+                   peop-lname = "".                                             /* 1dot3 */ 
+                                          
+                FIND people_mstr 
+                  WHERE people_mstr.people_id       /* = patient_mstr.patient_ID */   = TK_mstr.TK_patient_ID  AND
+                        people_mstr.people_deleted  = ? 
+                      NO-LOCK NO-ERROR. 
+                
+                IF AVAILABLE (people_mstr) THEN                         /* 1dot3 */ 
+                    ASSIGN                                                      /* 1dot3 */                                                 
+                       peop-fname = people_mstr.people_firstname                /* 1dot3 */                                      
+                       peop-lname = people_mstr.people_lastname.                /* 1dot3 */ 
+                       
+                {&OUT}
+                  "<tr>"       
+                    "<Td nowrap>" "<a href='TRH-history-R.r?h-act=1&h-low-serial="              /* 1dot7 */ 
+                                          TK_mstr.TK_ID "&h-low-seq=" TK_mstr.TK_test_seq 
+                        "&h-high-serial=" TK_mstr.TK_ID "&h-high-seq=" TK_mstr.TK_test_seq 
+                        "&whattorun=1.41&submit=Search'>"                                                               /* 1dot1 */ 
+                        TK_mstr.Tk_ID "</a>"' / ' TK_mstr.TK_test_seq "</Td>" SKIP
+                    "<td>" TK_mstr.Tk_test_type "</td>" SKIP            
+                    "<td>" TK_mstr.Tk_status "</td>" SKIP              
+                    "<td>" TK_mstr.Tk_lab_id "</td>" SKIP
+                    "<td>" TK_mstr.Tk_lab_sample_ID " / " TK_mstr.TK_lab_seq "</td>" SKIP. 
+            
+                 IF AVAILABLE (people_mstr) THEN                                /* Patient look up */
+                   {&OUT}
+                       "<td nowrap>" "<a href='PATmainviewR.r?h-act=SELECTED&whattorun=3.11&h-peopleid="    /* 1dot7 */ 
+/*                       people_mstr.people_id  "'>" people_mstr.people_lastname ", "*/
+/*                       people_mstr.people_firstname "</a></TD>".                   */
+                       people_mstr.people_id  "'>" peop-lname ", "                       /* 1dot3 */ 
+                       peop-fname "</a></TD>".                                           /* 1dot3 */
+                 ELSE
+                   {&OUT} "<td></td>" SKIP.
+        
+                 ASSIGN                                                         /* 1dot3 */
+                        cust-fname = ""                                         /* 1dot3 */
+                        cust-lname = "".                                        /* 1dot3 */
+                    
+                 FIND cust_mstr                                              /* 1dot3 */
+                      WHERE  cust_mstr.cust_id = TK_mstr.Tk_cust_id AND      /* 1dot3 */ 
+                             cust_mstr.cust_deleted      = ?                 /* 1dot3 */
+                         NO-LOCK NO-ERROR.                                           /* 1dot3 */ 
+                            
+                 IF AVAILABLE (cust_mstr) THEN DO:                               /* Customer look up */
+             
+                      FIND people_mstr WHERE people_mstr.people_id = cust_mstr.cust_ID AND
+                                   people_mstr.people_deleted  = ? 
+                                  NO-LOCK NO-ERROR. 
+                      
+                      IF AVAILABLE (people_mstr) THEN                                
+                         ASSIGN
+                            cust-fname = people_mstr.people_firstname
+                            cust-lname = people_mstr.people_lastname.
+                   
+                      {&OUT} 
+                        "<td nowrap>" "<a href=TK_custupdate.r?"                                                                /* 1dot2 */                                                        
+                            "h-cust-id=" people_mstr.people_id                                                                  /* 1dot2 */
+                            "&e-mail=" people_mstr.people_email                                                                 /* 1dot2 */
+                            "&f-name=" people_mstr.people_firstname                                                             /* 1dot2 */
+                            "&l-name=" people_mstr.people_lastname                                                              /* 1dot2 */
+                            "&whattorun=2.3"                                                                                    /* 1dot2 */
+                            "&h-keep-going=YES"                                                                                 /* 1dot2 */
+                            "&h-first-stop=1>" cust-lname                                                                       /* 1dot2 */
+                            ", " cust-fname "</a></td>" SKIP.                                                                   /* 1dot2 */
+                
+                 END. /* IF AVAILABLE  (cust_mst) THEN DO: */
+             
+                 ELSE
+
+                       {&OUT} "<td></td>" SKIP.
+
+                 {&OUT}
+                 "       <td>" TK_mstr.Tk_domestic "</td>" SKIP
+                        "</tr>" SKIP.
+                                    
+            END.    /**  IF AVAILABLE (TK_mstr)  **/
+            	                     
+	        RELEASE TK_mstr NO-ERROR.
+	                      
+	    END.    /**  DO x = 1 TO NUM-ENTRIES(ip-checked-recid)  **/ 
+
+        {&OUT}   
+            "<tr><td colspan=8>Testkits checked as completed =  " updated-kount " Records.  </td></tr>" 
+            "<Tfoot>"                                                                           /* 1dot3 */
+            "<tr><td colspan=8><SPAN><i><b>End of Updated Report</span></b></i></td></tr>"      /* 1dot3 */ 
+            "</Tfoot>"                                                                          /* 1dot3 */ 
+            "</TABLE>"
+            "</center>"     
+            "</div>"  
+            "</DIV>"  SKIP
+            
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP 
+            
+            /*** Double Button ***/
+            "<BR>" SKIP           
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='clear_fields' 
+                     class='btn'>Enter New Selection Criteria</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Enter_Selections' 
+                     class='btn'>Change Current Selection Criteria</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "<BR>" SKIP           
+            "</form>"  SKIP.
+	             
+END.    /*  IF act = "UPDATE_by_boxes"  */                                      /* end of STEP 3 */ 
+    
+IF act = "Enter_Selections" OR 
+   act = "clear_fields"     THEN DO:                                            /* STEP 1 */
+
+    IF act = "clear_fields" THEN DO: 
+        ASSIGN  act             = "Enter_Selections"
+	            f-kitid         =  ""
+	            t-kitid         =  ""       
+	            f-test-seq      =  0
+	            t-test-seq      =  0
+	            f-typ           =  ""
+	            t-typ           =  ""
+	            ip-Calendar-Date   = "".            
+    END.  /** IF act = "clear_fields" **/ 
+     
+    {&OUT}
+  /*******************************  0/12/0 DIVs ---- Full width  **************************/
+       "<DIV class='row'>" SKIP
+       "<DIV class='grid_12'>" SKIP
+       
+       "<FORM  method='GET' >"  SKIP
+       "   <input type='hidden' name='h-act' value='Display_Selected_Data'></td>"  SKIP 
+       "<DIV class='table_2col' >"  SKIP
+       "<TABLE>"  SKIP    
+       "   <THEAD>"  SKIP
+       "       <TR>"  SKIP
+       "           <TH colspan=4 style='text-align:center;'>Search Criteria</TH>"  SKIP                                             
+       "       </TR>"  SKIP
+       "   </THEAD>"  SKIP
+       "   <TR>"  SKIP            
+       "       <Td>From Testkit ID</Td>"  SKIP 
+       "       <Td><input type='text' name='h-from-id' value='" f-kitid "' autofocus ></Td>"  SKIP
+       "       <Td>To</Td><Td><input type='text' name='h-to-id' value='" t-kitid "'></Td>"  SKIP 
+       "   </TR>"  SKIP 
+       "   <TR>"  SKIP 
+       "       <Td>From Testkit Seq</Td>"  SKIP
+       "       <Td><align='left'><input type='text' name='h-f-test-seq' value='" f-test-seq "' ></Td>"  SKIP                                
+       "       <Td>To</Td>"  SKIP
+       "       <Td><input type='text' name='h-t-test-seq' value='" t-test-seq "' ></Td>"  SKIP
+       "   </TR>"  SKIP               
+       "   <TR>"  SKIP
+       "       <Td align='right' >From Type</td><td><input type='text' name='h-from-typ' value='" f-typ "' ></Td>"  SKIP        
+       "       <Td>To</Td>"  SKIP
+       "       <Td><input type='text' name='h-to-typ' value='" t-typ "'></Td>"  SKIP
+       "   </TR>"  SKIP                                         
+       "   <TR class='break'>"  SKIP
+       "       <Td colspan=4></Td>"  SKIP
+       "   </TR>"  SKIP
+       "       <Td>Enter Completion Date</Td>"  SKIP                                                                                         /* 1dot2 */
+       "       <Td class='req' colspan=4><input type='date' name='h-Calendar-Date' value='" ip-Calendar-Date "' required></Td>"  SKIP                                                            
+       "</Table>"  SKIP  
+       "</DIV>"  SKIP 
+                     
+       "</DIV>         <!-- end of grid_12 -->" SKIP
+       "</DIV>     <!-- end of row -->" SKIP 
+               
+       "<BR>" SKIP           
+       "<div class='row'>" SKIP
+       "   <input type='hidden' name='whattorun' value='" whattorun "'>"
+       "   <div class='grid_3'> </DIV>" SKIP
+       "   <div class='grid_2'><BUTTON type='submit' name='submit' value='Select'
+                class='btn'>Select</BUTTON></div>" SKIP
+       "   <div class='grid_2'> </DIV>" SKIP
+       "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='clear_fields' 
+                class='btn'>Clear Fields</BUTTON></div>" SKIP
+       "   <div class='grid_3'> </DIV>" SKIP
+       "</div>" SKIP
+       "<BR>" SKIP 
+       "</form>"  SKIP.
+ 
+END.    /*** IF act = "Enter_Selections" ***/                                   /* end of STEP 1 */
+                 
+</SCRIPT>  
+</BODY>
+</HTML>

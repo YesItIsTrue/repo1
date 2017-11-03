@@ -8,7 +8,7 @@
     <META NAME="VERSION" CONTENT="2.3">
     <META NAME="COPYRIGHT" CONTENT="Solsource">
     <META NAME="CREATE_DATE" CONTENT="08/May/14">
-    <META NAME="LAST_UPDATED" CONTENT="12/Feb/16">
+    <META NAME="LAST_UPDATED" CONTENT="10/Oct/17">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
 
  
@@ -37,6 +37,15 @@
  *          Removed old styling HTML code from the From and To display so that it will display black instead of blue, not marked.
  * 2.3 - written by Jacob Luttrell on 12/Feb/16. Adjusted testtype to test_type to match database also fixed Lab Sequence display
  *          marked by /* 2dot3 */
+ *
+ * 3.0 - 10/10/2017 - Harold Luttrell, Sr.
+ *       Changed six (6) :  IF(LOGICAL (get-value ("is-paid"))) = YES THEN 
+ *               statements to 
+ *                          IF  get-value ("is-paid") = "YES" THEN  
+ *               I don't think that the way this code was origin written is working correctly
+ *                  and I don't think that is going to work correctly now !!!!!!!!!!!!!!!!!!!!!!
+ *       Identified by /* 3dot0 */
+ *
  *-------------------------------------------------------------------- */
 
  
@@ -172,39 +181,45 @@ CREATE WIDGET-POOL.
        
        f-test-seq   =   INTEGER (get-value("h-f-test-seq"))  /* added 1/8/15 */
        t-test-seq   =   INTEGER (get-value("h-t-test-seq"))
-       
+ 
        /* ------------------------------------------------------------------------- */ 
-       paid         =   IF(LOGICAL (get-value ("is-paid"))) = YES THEN
+/*       paid         =   IF(LOGICAL (get-value ("is-paid"))) = YES THEN*/                  /* 3dot0 */
+       paid         =   IF  get-value ("is-paid") = "YES" THEN                              /* 3dot0 */
                                        yes
                                        else
-                                       ?      
+                                       ?     
                                                                         
-       notpaid      =   IF (LOGICAL (get-value ("not-paid"))) = YES THEN
+/*       notpaid      =   IF (LOGICAL (get-value ("not-paid"))) = YES THEN*/                /* 3dot0 */
+       notpaid      =   IF  get-value ("not-paid") = "YES" THEN                             /* 3dot0 */
                                         no
                                         else
                                         ? 
      /* -------------------------------------------------------------------------*/    
    
-       dom           =   IF(LOGICAL (get-value ("domestic"))) = YES THEN
+/*       dom           =   IF(LOGICAL (get-value ("domestic"))) = YES THEN*/                /* 3dot0 */
+       dom           =   IF  get-value ("domestic") = "YES" THEN                            /* 3dot0 */
                                         yes
                                         ELSE
                                         ?  
                                              
-       inter         =   IF(LOGICAL (get-value("inter-al"))) = yes THEN
+/*       inter         =   IF(LOGICAL (get-value("inter-al"))) = yes THEN*/                 /* 3dot0 */
+       inter         =   IF  get-value("inter-al") = "YES" THEN                             /* 3dot0 */
                                         no
                                       ELSE
                                         ? 
                                          
                                               
-       prof          =   if(LOGICAL (get-value ("profal"))) = yes THEN
+/*       prof          =   if(LOGICAL (get-value ("profal"))) = yes THEN*/                  /* 3dot0 */
+       prof          =   IF  get-value ("profal") = "YES" THEN                              /* 3dot0 */
                                         yes
                                         ELSE
                                         ?  
-       non-prof      =   if(LOGICAL (get-value ("not-profal"))) = yes THEN
+/*       non-prof      =   if(LOGICAL (get-value ("not-profal"))) = yes THEN*/              /* 3dot0 */
+       non-prof      =   IF  get-value ("not-profal") = "YES" THEN                          /* 3dot0 */
                                         no
                                         ELSE
                                         ? .
-                                        
+                                     
        IF paid = YES AND notpaid = NO THEN
            ASSIGN
            paid          = ?
@@ -222,7 +237,7 @@ CREATE WIDGET-POOL.
             prof      = ?
             non-prof  = ?
             both-prof = "bothck". 
-     
+   
     IF  fdate <> "" THEN                                                    /* 2dot2 */                                              
     RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                     
     (fdate, OUTPUT prog-fdate).
@@ -1091,7 +1106,7 @@ CREATE WIDGET-POOL.
 					                     
 					                     
         {tk-searchR.i}.    
-         
+           
         
 /*    {&OUT}                                                                                                                                                                                                                                         */
 /*       "<tr>"                                                                                                                                                                                                                                   */

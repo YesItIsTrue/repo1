@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project HL7 with libraries in sub-folder">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <target name="create_run_jar">
+        <jar destfile="C:/apps/HL7/src/HL7toSS.jar">
+            <manifest>
+                <attribute name="Main-Class" value="HL7toSS"/>
+                <attribute name="Class-Path" value=". HL7toSS_lib/mail.jar HL7toSS_lib/activation.jar HL7toSS_lib/wstx-asl.jar HL7toSS_lib/jsr173_1.0_api.jar HL7toSS_lib/EDI.jar HL7toSS_lib/XMLConverters.jar HL7toSS_lib/XMLPipeline.jar HL7toSS_lib/saxonsa.jar"/>
+            </manifest>
+            <fileset dir="C:/apps/HL7/bin"/>
+        </jar>
+        <delete dir="C:/apps/HL7/src/HL7toSS_lib"/>
+        <mkdir dir="C:/apps/HL7/src/HL7toSS_lib"/>
+        <copy file="C:/Program Files (x86)/Stylus Studio 2009 Release 2 XML Enterprise Suite/Components/XML Converters for Java/lib/javamail/mail.jar" todir="C:/apps/HL7/src/HL7toSS_lib"/>
+        <copy file="C:/Program Files (x86)/Stylus Studio 2009 Release 2 XML Enterprise Suite/Components/XML Converters for Java/lib/javamail/activation.jar" todir="C:/apps/HL7/src/HL7toSS_lib"/>
+        <copy file="C:/Program Files (x86)/Stylus Studio 2009 Release 2 XML Enterprise Suite/Components/XML Converters for Java/lib/codehaus/wstx-asl.jar" todir="C:/apps/HL7/src/HL7toSS_lib"/>
+        <copy file="C:/Program Files (x86)/Stylus Studio 2009 Release 2 XML Enterprise Suite/Components/XML Converters for Java/lib/codehaus/jsr173_1.0_api.jar" todir="C:/apps/HL7/src/HL7toSS_lib"/>
+        <copy file="C:/Program Files (x86)/Stylus Studio 2009 Release 2 XML Enterprise Suite/Components/XML Converters for Java/lib/EDI.jar" todir="C:/apps/HL7/src/HL7toSS_lib"/>
+        <copy file="C:/Program Files (x86)/Stylus Studio 2009 Release 2 XML Enterprise Suite/Components/XML Converters for Java/lib/XMLConverters.jar" todir="C:/apps/HL7/src/HL7toSS_lib"/>
+        <copy file="C:/Program Files (x86)/Stylus Studio 2009 Release 2 XML Enterprise Suite/bin/Plugins/XMLPipeline.jar" todir="C:/apps/HL7/src/HL7toSS_lib"/>
+        <copy file="C:/Program Files (x86)/Stylus Studio 2009 Release 2 XML Enterprise Suite/bin/saxonsa.jar" todir="C:/apps/HL7/src/HL7toSS_lib"/>
+    </target>
+</project>

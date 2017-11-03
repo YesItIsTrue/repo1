@@ -67,6 +67,10 @@
             of code which often did not get marked.  The rest was marked by 2dot2.
             See also RStP-TESTS_RESULT_RCD-U-1.p.
                   
+    2.21 - written by HAROLD LUTTRELL, SR. (sort of) on 22/Aug/17.  He found the 
+            problem and identified the solution but had to get on the plane to 
+            come to Maine.  Changed a FIND to FIND FIRST.  Typing done by JR.  
+            Marked by 221.                        
   ----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
@@ -144,7 +148,7 @@ FOR EACH TESTS_DETAIL_RCD WHERE LOOKUP(TESTS_DETAIL_RCD.Progress_Flag,loadedlist
     recordsprocessed = recordsprocessed + 1. 
     
     /**** begin 2dot1 ****/
-    FIND TESTS_RESULT_RCD WHERE TESTS_RESULT_RCD.PatientID = TESTS_DETAIL_RCD.PatientID AND 
+    FIND FIRST TESTS_RESULT_RCD WHERE TESTS_RESULT_RCD.PatientID = TESTS_DETAIL_RCD.PatientID AND               /* 221 */ 
         TESTS_RESULT_RCD.lab_sampleid = TESTS_DETAIL_RCD.Lab_Sampleid AND 
         TESTS_RESULT_RCD.Lab_Sampleid_SeqNbr = TESTS_DETAIL_RCD.Lab_Sampleid_SeqNbr AND 
         TESTS_RESULT_RCD.Test_Abbv = TESTS_DETAIL_RCD.Test_Abbv 

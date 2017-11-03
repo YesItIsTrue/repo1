@@ -76,9 +76,9 @@ DO TRANSACTION:
             D_people_mstr.D_people_DOB       = i-D_people_DOB
             o-Dpeople-successful                = YES
             D_people_mstr.D_people_create_date       = TODAY
-            D_people_mstr.D_people_created_by        = USERID ("General")
+            D_people_mstr.D_people_created_by        = USERID("Core")
             D_people_mstr.D_people_modified_date     = TODAY
-            D_people_mstr.D_people_modified_by       = USERID ("General")
+            D_people_mstr.D_people_modified_by       = USERID("Core")
             D_people_mstr.D_people_second_addr_ID    = i-D_people_second_addr_ID
             o-Dpeople-id                        = D_people_mstr.D_people_id
             D_people_mstr.D_people_prefname          = i-D_people_prefname      
@@ -105,7 +105,7 @@ DO TRANSACTION:
                 o-Dpeople-update                 = YES
                 o-Dpeople-successful             = YES
                 D_people_mstr.D_people_modified_date  = TODAY
-                D_people_mstr.D_people_modified_by    = USERID ("General")
+                D_people_mstr.D_people_modified_by    = USERID("Core")
                 o-Dpeople-id                     = D_people_mstr.D_people_id
                 D_people_mstr.D_people_firstname      = IF i-D_people_firstname      <> "" THEN i-D_people_firstname     ELSE D_people_mstr.D_people_firstname
                 D_people_mstr.D_people_midname        = IF i-D_people_midname        <> "" THEN i-D_people_midname       ELSE D_people_mstr.D_people_midname

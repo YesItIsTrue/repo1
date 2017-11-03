@@ -65,7 +65,7 @@ DO TRANSACTION:
                 o-ucemph-update              = YES
                 o-ucemph-successful          = YES
                 Emph_hist.Emph_modified_date = TODAY
-                Emph_hist.Emph_modified_by   = USERID ("General")
+                Emph_hist.Emph_modified_by   = USERID("Modules")
 /*                Emph_hist.Emph_prog_name     = i-ucemph-progname*/
                 o-ucemph-id                  = Emph_hist.Emph_emp_ID
                 o-ucemph-action              = Emph_hist.Emph_action
@@ -86,9 +86,9 @@ DO TRANSACTION:
                 o-ucemph-create              = YES
                 o-ucemph-successful          = YES
                 Emph_hist.Emph_create_date   = TODAY
-                Emph_hist.Emph_created_by    = USERID ("General")                    
+                Emph_hist.Emph_created_by    = USERID("Modules")                    
                 Emph_hist.Emph_modified_date = TODAY
-                Emph_hist.Emph_modified_by   = USERID ("General") 
+                Emph_hist.Emph_modified_by   = USERID("Modules") 
 /*                Emph_hist.Emph_prog_name     = i-ucemph-progname*/
                 o-ucemph-id                  = Emph_hist.Emph_emp_ID
                 o-ucemph-action              = Emph_hist.Emph_action

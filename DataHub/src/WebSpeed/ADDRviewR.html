@@ -6,7 +6,9 @@
     <META NAME="COPYRIGHT" CONTENT="Solsource">
     <META NAME="CREATE_DATE" CONTENT="09/Oct/14">
     <META NAME="CREATE_DATE" CONTENT="17/Feb/16">
-    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 <SCRIPT LANGUAGE="SpeedScript">
 /* Create an unnamed pool to store all the widgets created by this procedure.
    This is a good default which assures that this procedure's triggers and
@@ -14,13 +16,31 @@
    proper cleanup will occur on deletion of the procedure. */
 CREATE WIDGET-POOL.
 </SCRIPT>
+
+<style>
+.inline-form {
+    display: inline-block;
+}
+.btn {
+    width: 200px;
+}
+.print-margin {
+    padding-left: 20%;
+    padding-right: 20%;
+}
+.print-label {
+    border: 1px solid black;
+    border-radius: 5px;
+    height: 100px;
+    white-space: nowrap;
+}
+</style>
 </HEAD>
 
 <BODY class='inside'>
 <SCRIPT language="SpeedScript"> 
 {../depot/src/WebSpeed/menuname.i}.
 </SCRIPT> 
-<CENTER>
 <SCRIPT LANGUAGE="SpeedScript"> 
   /*------------------------------------------------------------------
     File:           hhi_label_view.html -> ADRSviewR.html 
@@ -110,23 +130,9 @@ ASSIGN
         "a-toTK = " get-value('a-toTK') SKIP(1). 
  
  {&OUT}   
+"<center>"
 "<div class='row'>
-    <div class='grid_3'></div>
-    <div class='grid_6'>
-       <P>Does this look right?</P>".
-/*		<table>                                                                                */
-/*			<tr>                                                                               */
-/*				<td><FORM action='ADDRprintR.r' method='post'>                                 */
-/*				    <INPUT type='hidden' name='b-fromTK' value='" fromTK "' />                 */
-/*				    <INPUT type='hidden' name='b-toTK' value='" toTK "' />                     */
-/*				    <INPUT type='hidden' name='b-fromFN' value='" fromFN "' />                 */
-/*				    <INPUT type='hidden' name='b-toFN' value='" toFN "' />                     */
-/*				    <INPUT type='hidden' name='b-fromLN' value='" fromLN "' />                 */
-/*				    <INPUT type='hidden' name='b-toLN' value='" toLN "' />                     */
-/*				    <INPUT type='hidden' name='b-numpgs' value=" numpgs " />                   */
-/*				    <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />*/
-/*				    <INPUT type='submit' value='Yes' name='s-Submit' />                        */
-/*				</FORM></td>."                                                                 */
+       <h2>Does this look right?</h2>".
 		
 												                                    IF ITmessage = Yes THEN DO:
 												                                    {&OUT}
@@ -138,50 +144,29 @@ ASSIGN
 												                                        "b-toLN = " toLN "<br>"
 												                                        "b-numpgs = " numpgs "<br></P>".
 												                                   END.
-{&OUT}		
-/*				"<td><FORM action='ADDRcriteriaR.r' method='post'>                                             */
-/*				    <INPUT type='hidden' name='h-act' value='INITIAL' />                                       */
-/*                    <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />				*/
-/*				    <INPUT type='submit' value='No' name='s-Submit' />                                         */
-/*				    </FORM>                                                                                    */
-/*				</td>                                                                                          */
-/*			</tr>                                                                                           */
-/*		</table>                                                                                         */
-"</div> <!-- grid_6 -->" SKIP
-"     <div class='grid_3'></div>" SKIP
-"</div> <!-- row -->" SKIP
-"<BR>" SKIP
-"<div class='row'>" SKIP
-"   <div class='grid_3'> </DIV>" SKIP
-"   <div class='grid_2'>"
-"<FORM action='ADDRprintR.r' method='post'>
-                    <INPUT type='hidden' name='b-fromTK' value='" fromTK "' />
-                    <INPUT type='hidden' name='b-toTK' value='" toTK "' />
-                    <INPUT type='hidden' name='b-fromFN' value='" fromFN "' />
-                    <INPUT type='hidden' name='b-toFN' value='" toFN "' />
-                    <INPUT type='hidden' name='b-fromLN' value='" fromLN "' />
-                    <INPUT type='hidden' name='b-toLN' value='" toLN "' />
-                    <INPUT type='hidden' name='b-numpgs' value=" numpgs " />
-                    <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                
-"<BUTTON type='submit' name='s-Submit' value='Yes' class='btn'>Yes</BUTTON>" SKIP
-"</FORM>" 
-"</div>" SKIP
-"   <div class='grid_2'></DIV>" SKIP
-"   <div class='grid_2'>" SKIP
-"<FORM action='ADDRcriteriaR.r' method='post'>" SKIP
-"<INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP
-"<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' /> " SKIP
-"<BUTTON type='submit' name='s-Submit' value='No' class='btn'>No</BUTTON>" SKIP
-"</div>" SKIP
-"   <div class='grid_3'> </DIV>" SKIP
-"</div>" SKIP
-
-
- "<div class='row'> 
-    <div class='grid_1'></div>
-    <div class='grid_10'>  
-        <table class='print_label'>".
-
+{&OUT}
+    "<div>" SKIP
+		"<FORM action='ADDRprintR.r' method='post' class='inline-form'>
+		    <INPUT type='hidden' name='b-fromTK' value='" fromTK "' />
+		    <INPUT type='hidden' name='b-toTK' value='" toTK "' />
+		    <INPUT type='hidden' name='b-fromFN' value='" fromFN "' />
+		    <INPUT type='hidden' name='b-toFN' value='" toFN "' />
+		    <INPUT type='hidden' name='b-fromLN' value='" fromLN "' />
+		    <INPUT type='hidden' name='b-toLN' value='" toLN "' />
+		    <INPUT type='hidden' name='b-numpgs' value=" numpgs " />
+		    <INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' />" SKIP                
+		    "<BUTTON type='submit' name='s-Submit' value='Yes' class='btn'>Yes</BUTTON>" SKIP
+		"</FORM>" SKIP
+		"<FORM action='ADDRcriteriaR.r' method='post' class='inline-form'>" SKIP
+			"<INPUT type='hidden' name='h-act' value='INITIAL' />" SKIP
+			"<INPUT type='hidden' name='whattorun' value='" get-value('whattorun') "' /> " SKIP
+			"<BUTTON type='submit' name='s-Submit' value='No' class='btn'>No</BUTTON>" SKIP
+	    "</FORM>" SKIP
+	"</div>" SKIP
+"</center>" SKIP
+	        
+	    "<div class='container-fluid'>" SKIP
+	    "<div class='row print-margin'>" SKIP.
     
 /*************************** Main Body ******************************/
 
@@ -207,14 +192,31 @@ froot_loop:
    {ADDRdisplayR.i}.
             
    IF y >= 3 THEN DO:
-       {&OUT}
-            "<tr><td>" labelline[1] "</td><td>" labelline[7] "</td><td>" labelline[13] "</td></tr>
-             <tr><td>" labelline[2] "</td><td>" labelline[8] "</td><td>" labelline[14] "</td></tr>
-			 <tr><td>" labelline[3] "</td><td>" labelline[9] "</td><td>" labelline[15] "</td></tr>
-			 <tr><td>" labelline[4] "</td><td>" labelline[10] "</td><td>" labelline[16] "</td></tr>
-             <tr><td>" labelline[5] "</td><td>" labelline[11] "</td><td>" labelline[17] "</td></tr>
-             <tr><td>" labelline[6] "</td><td>" labelline[12] "</td><td>" labelline[18] "</td></tr>
-             <tr><td>&nbsp;</td></tr>". 
+        {&OUT}
+	        "<div class='col-md-4 print-label'>" SKIP
+	            "<div>" labelline[1] "</div>" SKIP
+	            "<div>" labelline[2] "</div>" SKIP
+	            "<div>" labelline[3] "</div>" SKIP
+	            "<div>" labelline[4] "</div>" SKIP
+	            "<div>" labelline[5] "</div>" SKIP
+	            "<div>" labelline[6] "</div>" SKIP
+	        "</div>" SKIP
+	        "<div class='col-md-4 print-label'>" SKIP
+	            "<div>" labelline[7] "</div>" SKIP
+	            "<div>" labelline[8] "</div>" SKIP
+	            "<div>" labelline[9] "</div>" SKIP
+	            "<div>" labelline[10] "</div>" SKIP
+	            "<div>" labelline[11] "</div>" SKIP
+	            "<div>" labelline[12] "</div>" SKIP
+	        "</div>" SKIP
+	        "<div class='col-md-4 print-label'>" SKIP
+	            "<div>" labelline[13] "</div>" SKIP
+	            "<div>" labelline[14] "</div>" SKIP
+	            "<div>" labelline[15] "</div>" SKIP
+	            "<div>" labelline[16] "</div>" SKIP
+	            "<div>" labelline[17] "</div>" SKIP
+	            "<div>" labelline[18] "</div>" SKIP
+	        "</div>".
              
        DO z = 1 TO 18: 
         labelline[z] = "" .
@@ -243,14 +245,31 @@ froot_loop:
 END. /*** of for each patient_mstr ***/
 
 IF y <> 0 THEN DO:
-       {&OUT}
-            "<tr><td>" labelline[1] "</td><td>" labelline[7] "</td><td>" labelline[13] "</td></tr>
-             <tr><td>" labelline[2] "</td><td>" labelline[8] "</td><td>" labelline[14] "</td></tr>
-             <tr><td>" labelline[3] "</td><td>" labelline[9] "</td><td>" labelline[15] "</td></tr>
-             <tr><td>" labelline[4] "</td><td>" labelline[10] "</td><td>" labelline[16] "</td></tr>
-             <tr><td>" labelline[5] "</td><td>" labelline[11] "</td><td>" labelline[17] "</td></tr>
-             <tr><td>" labelline[6] "</td><td>" labelline[12] "</td><td>" labelline[18] "</td></tr>
-             <tr><td>&nbsp;</td></tr>". 
+    {&OUT}
+	    "<div class='col-md-4 print-label'>" SKIP
+                "<div>" labelline[1] "</div>" SKIP
+                "<div>" labelline[2] "</div>" SKIP
+                "<div>" labelline[3] "</div>" SKIP
+                "<div>" labelline[4] "</div>" SKIP
+                "<div>" labelline[5] "</div>" SKIP
+                "<div>" labelline[6] "</div>" SKIP
+            "</div>" SKIP
+            "<div class='col-md-4 print-label'>" SKIP
+                "<div>" labelline[7] "</div>" SKIP
+                "<div>" labelline[8] "</div>" SKIP
+                "<div>" labelline[9] "</div>" SKIP
+                "<div>" labelline[10] "</div>" SKIP
+                "<div>" labelline[11] "</div>" SKIP
+                "<div>" labelline[12] "</div>" SKIP
+            "</div>" SKIP
+            "<div class='col-md-4 print-label'>" SKIP
+                "<div>" labelline[13] "</div>" SKIP
+                "<div>" labelline[14] "</div>" SKIP
+                "<div>" labelline[15] "</div>" SKIP
+                "<div>" labelline[16] "</div>" SKIP
+                "<div>" labelline[17] "</div>" SKIP
+                "<div>" labelline[18] "</div>" SKIP
+            "</div>".
 END. 
 
                                                     IF ITmessage = YES THEN DO:
@@ -259,12 +278,8 @@ END.
                                                        "numpgs = " numpgs "<br></p>".
                                                        END.                                
 {&OUT}
-
-       " </table>
-   </div> <!-- grid_10 -->
-   <div class='grid_1'></div>
-</div> <!-- row -->".
+      "</div>" SKIP
+    "</div>" SKIP.
 </SCRIPT>
-</CENTER>
 </BODY>
 </HTML>

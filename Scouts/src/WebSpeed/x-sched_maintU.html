@@ -50,7 +50,7 @@ DEFINE VARIABLE c-event             AS INTEGER                          NO-UNDO.
 DEFINE VARIABLE v-event             LIKE event_mstr.event_ID            NO-UNDO.
 DEFINE VARIABLE v-period            LIKE sched_mstr.sched_period        NO-UNDO.
 DEFINE VARIABLE v-MB_BSA_ID         LIKE MB_mstr.MB_BSA_ID              NO-UNDO.
-DEFINE VARIABLE v-instructor        LIKE people_shadow.people_ID        NO-UNDO.
+DEFINE VARIABLE v-instructor        LIKE speop_shadow.speop_ID        NO-UNDO.                                  /* 1dot1 */
 DEFINE VARIABLE v-extra_length      LIKE sched_mstr.sched__dec01        NO-UNDO.
 DEFINE VARIABLE v-total_seats       LIKE sched_mstr.sched_total_seats   NO-UNDO.
 DEFINE VARIABLE v-class_ID          LIKE sched_mstr.sched_class_ID      NO-UNDO.
@@ -151,7 +151,7 @@ CASE act:
             "<ul class='w3-ul'>" SKIP. 
     
         FOR EACH sched_mstr WHERE sched_mstr.sched_event_ID = v-event NO-LOCK
-                BREAK BY sched_mstr.sched_period BY sched_mstr.sched_BSA_ID:
+                BREAK BY INTEGER(sched_mstr.sched_period) BY sched_mstr.sched_BSA_ID:
         
             ASSIGN 
                 c-sched = c-sched + 1.
@@ -160,7 +160,7 @@ CASE act:
             IF AVAILABLE (mb_mstr) THEN ASSIGN v-mb_name = MB_mstr.MB_name.
             ELSE ASSIGN v-mb_name = "an Unavailable Class".
         
-            IF FIRST-OF (sched_mstr.sched_period) THEN 
+            IF FIRST-OF (INTEGER(sched_mstr.sched_period)) THEN 
                 {&OUT}
 		            "</ul>" SKIP
 		            "</div>"  SKIP
@@ -170,11 +170,11 @@ CASE act:
                     "<ul class='w3-ul'>" SKIP. 
         
             {&OUT}
-                "<a href='../../Scouts/rcode/sched_maintU.r?h-act=Edit&h-event=" v-event 
+                "<a href=~"sched_maintU.r?h-act=Edit&h-event=" v-event 
                 "&h-name=" v-name
                 "&h-class_ID=" sched_mstr.sched_class_ID
                 "&h-mb_name=" v-mb_name  
-                "&h-period=" sched_mstr.sched_period "' style='text-decoration:none;'>" SKIP
+                "&h-period=" sched_mstr.sched_period "~" style='text-decoration:none;'>" SKIP
                 "    <li class='w3-padding-16 w3-white w3-hover-pale-green' style='border-bottom: 1px solid #ddd !important;'>" SKIP
                 "        <span class='w3-closebtn w3-padding w3-margin-right w3-medium w3-xlarge'><i class='fa fa-pencil-square-o'></i></span>" SKIP
                 "        <span class='w3-xlarge'>" sched_mstr.sched_class_ID " - " v-mb_name "</span>" SKIP
@@ -508,6 +508,15 @@ CASE act:
             "</div>"
             "<br>" SKIP
             
+            
+     
+            "<input type='hidden' name='h-name' value='" v-name "'/>" SKIP
+            "<input type='hidden' name='' value='"  "'/>" SKIP
+            "<div class='w3-row-padding w3-margin'>" SKIP
+            "   <div class='w3-center w3-col s12'>" SKIP
+            "       <button type='submit' name='h-act' value='Create' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Create New</b></BUTTON>" SKIP
+            "   </div>" SKIP
+            "</div>" SKIP
             "<div class='w3-row-padding w3-margin'>" SKIP
             "   <div class='w3-center w3-col s12'>" SKIP
             "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Back to Start</b></BUTTON>" SKIP

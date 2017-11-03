@@ -32,5 +32,5 @@ DEFINE OUTPUT PARAMETER pat86     AS LOGICAL INITIAL NO       NO-UNDO.
                                             ASSIGN
                                                patient_deleted        = TODAY  /* (This sets the flag to delete in patient_mstr) */
                                                patient_modified_date  = TODAY
-                                               patient_modified_by    = USERID ("General") 
+                                               patient_modified_by    = USERID("Modules") 
                                                pat86                 = YES.                  

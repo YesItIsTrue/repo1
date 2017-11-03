@@ -8,18 +8,23 @@
     <META NAME="CREATE_DATE" CONTENT="01/Jan/16">
     <META NAME="MODIFIED_DATE" CONTENT="01/Jan/16">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
-<SCRIPT LANGUAGE="SpeedScript">
-/* Create an unnamed pool to store all the widgets created by this procedure.
-   This is a good default which assures that this procedure's triggers and
-   internal procedures will execute in this procedure's storage, and that
-   proper cleanup will occur on deletion of the procedure. */
-CREATE WIDGET-POOL.
-</SCRIPT>
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
 </HEAD>
 <BODY class='inside'>
 
 <SCRIPT language="SpeedScript">
-{../depot/src/WebSpeed/menuname.i}.
+{TSvert-menu.i}.
   /*------------------------------------------------------------------
     File:           TSclientmaintU.html
     Description:    Client Maintenance Screen
@@ -377,7 +382,7 @@ CASE act:
             "                           <td>Abbreviated Name</td>" skip
             "                           <td><input type='text' name='h-clientabbv' value='" clientabbv "' /></td>" skip
             "                           <td>Client Full Name</td>" skip
-            "                           <td><a href='../../DataHub/rcode/PEOPmaintU.r" 
+            "                           <td><a href='PEOPmaintU.r"                                  /* CODEHAUL */ 
                                               "?h-people_id=" clientid                                             
                                               "&h-act=EDIT"
                                               "&whattorun=35.99' >" clientname "</a></td>" skip             
@@ -471,7 +476,7 @@ CASE act:
             
             "                       <tr>" skip
             "                           <td>Address</td>" skip
-            "                           <td colspan='3'><a href='../../DataHub/rcode/ADDRpickP.r" 
+            "                           <td colspan='3'><a href='ADDRpickP.r"               /* CODEHAUL */ 
                                              "?h-prevproc=TSclientmaintU.r"               /* Calling Procedure */
                                              "&h-act=MAINTENANCE"                         /* Calling Procedure's Act */                              
                                              "&h-pp-passBack-peopid=" clientid            /* Calling Procedure's people id to pass back. */          
@@ -1060,7 +1065,7 @@ CASE act:
                          addrline = "Click here to add an address.".  
                                
                      {&OUT}             
-            "                           <td colspan='3'><a href='../../DataHub/rcode/ADDRpickP.r" 
+            "                           <td colspan='3'><a href='ADDRpickP.r"               /* CODEHAUL */ 
                                              "?h-prevproc=TSclientmaintU.r"               /* Calling Procedure */
                                              "&h-act=MAINTENANCE"                         /* Calling Procedure's Act */                              
                                              "&h-pp-passBack-peopid=" clientid            /* Calling Procedure's people id to pass back. */          

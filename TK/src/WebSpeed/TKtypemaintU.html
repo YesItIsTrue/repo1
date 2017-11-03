@@ -731,7 +731,7 @@ IF v-act = 3 THEN DO:                                               /* create te
         ASSIGN
             test_mstr.test_type         = v-type
             test_mstr.test_create_date  = TODAY
-            test_mstr.test_created_by   = USERID ("General")
+            test_mstr.test_created_by   = USERID("Modules")
             v-act                       = 4
             test_mstr.test_prog_name    = THIS-PROCEDURE:FILE-NAME                                  /* 1dot8 */
             .
@@ -974,7 +974,7 @@ IF v-act = 4 THEN DO:
             test_mstr.test_lab_desc         = IF v-lab_desc         <> "" THEN v-lab_desc       ELSE test_mstr.test_lab_desc
             test_mstr.test_cost             = IF v-cost             <> 0  THEN v-cost           ELSE test_mstr.test_cost
             test_mstr.test_modified_date    = TODAY 
-            test_mstr.test_modified_by      = USERID ("General")
+            test_mstr.test_modified_by      = USERID("Modules")
             test_mstr.test_prog_name        = THIS-PROCEDURE:FILE-NAME.                                                                          /* 1dot8 */ 
         
                                                                                                         IF v-ITmessages = YES THEN

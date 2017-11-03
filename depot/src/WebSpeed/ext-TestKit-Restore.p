@@ -31,7 +31,7 @@ DEFINE OUTPUT PARAMETER o-act       AS INTE NO-UNDO.
                     ASSIGN
                     TK_mstr.TK_deleted       = ?
                     TK_mstr.TK_modified_date = TODAY
-                    TK_mstr.TK_modified_by   = USERID ("HHI")
+                    TK_mstr.TK_modified_by   = USERID("Modules")
                     TK_mstr.TK_status        = p-tk-status        
                     o-act                    = 1.        
                 

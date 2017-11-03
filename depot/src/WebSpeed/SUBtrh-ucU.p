@@ -69,9 +69,9 @@ DO TRANSACTION:
 /*            trh_hist.trh_lot            = i-ctrh-lot*/
             trh_hist.trh_serial         = i-ctrh-serial        
             trh_hist.trh_create_date    = TODAY 
-            trh_hist.trh_created_by     = USERID ("General")
+            trh_hist.trh_created_by     = USERID("Modules")
 /*            trh_hist.trh_modified_date  = TODAY             */
-/*            trh_hist.trh_modified_by    = USERID ("General")*/
+/*            trh_hist.trh_modified_by    = USERID("Modules")*/
 /*            trh_hist.trh_site           = i-ctrh-site       */
             trh_hist.trh_sequence       = i-ctrh-sequence
 /*        /* 1dot2 --> */                                     */
@@ -94,7 +94,7 @@ DO TRANSACTION:
         trh_hist.trh_loc            = IF i-ctrh-loc         = "" THEN trh_hist.trh_loc ELSE i-ctrh-loc 
         trh_hist.trh_lot            = IF i-ctrh-lot         = "" THEN trh_hist.trh_lot ELSE i-ctrh-lot     
         trh_hist.trh_modified_date  = TODAY
-        trh_hist.trh_modified_by    = USERID ("General")
+        trh_hist.trh_modified_by    = USERID("Modules")
         trh_hist.trh_site           = IF i-ctrh-site        = "" THEN trh_hist.trh_site ELSE i-ctrh-site 
         /* 1dot2 --> */
         trh_hist.trh_comments       = IF i-ctrh-comments    = "" THEN trh_hist.trh_comments ELSE i-ctrh-comments 

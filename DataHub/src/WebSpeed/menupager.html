@@ -37,6 +37,11 @@ CREATE WIDGET-POOL.
  *  3.5 - written by DOUG LUTTRELL on 25/Dec/14.  Includes the new CSS
  *          references from Quinton.  Syncs this file up with the menu.html
  *          program.  Marked by 3dot5.
+ *  3.6 - written by DOUG LUTTRELL on 01/Oct/17.  Changed to work with 
+ *          correct PROPATH settings brought on by change to the new
+ *          CMC structure (Release 12).  Still need to add in the 
+ *          data entry code to allow users to type in the menu item they
+ *          want to run.  Marked by 3dot6.
  *
  ******************************************************************
  
@@ -56,6 +61,9 @@ CREATE WIDGET-POOL.
     DEFINE VARIABLE entryfill AS CHARACTER FORMAT "x(16)" NO-UNDO.
     DEFINE VARIABLE x AS INTEGER NO-UNDO.                         /** junk counter for menu filling **/
     DEFINE VARIABLE v-user-id AS CHARACTER INITIAL 0 NO-UNDO.
+    
+    DEFINE VARIABLE localpathing AS LOG INITIAL NO NO-UNDO.    /* change to NO before putting on server */      /* 3dot6 */
+    
     
     ASSIGN v-user-id = get-value('c-usr').
                                       
@@ -113,7 +121,7 @@ IF showmsg = YES THEN
                              menu_mstr.MENU_exprog + "?c-usr=" + v-user-id + "&whattorun=" + menu_mstr.menu_num + "." + string(menu_mstr.menu_sel) 
                            ELSE 
                              menu_mstr.MENU_exprog + "&c-usr=" + v-user-id + "&whattorun=" + menu_mstr.menu_num + "." + string(menu_mstr.menu_sel) 
-             modulepath  = IF menu_mstr.menu_module <> "" then
+             modulepath  = IF menu_mstr.menu_module <> "" AND localpathing = YES then       /* 3dot6 */
                                 "../../" + menu_mstr.menu_module + "/rcode/"
                            ELSE 
                              "".

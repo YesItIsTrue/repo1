@@ -66,7 +66,7 @@ DO TRANSACTION:
                 o-ucscust-update                    = YES
                 o-ucscust-successful                = YES
                 scust_shadow.scust_modified_date    = TODAY
-                scust_shadow.scust_modified_by      = USERID("HHI")                                     /* 1.01 */
+                scust_shadow.scust_modified_by      = USERID("Custom")                                     /* 1.01 */
                 o-ucscust-id                        = scust_shadow.scust_id                
                 .
                 
@@ -80,9 +80,9 @@ DO TRANSACTION:
                 o-ucscust-create                    = YES
                 o-ucscust-successful                = YES
                 scust_shadow.scust_create_date      = TODAY
-                scust_shadow.scust_created_by       = USERID("HHI")                                     /* 1.01 */
+                scust_shadow.scust_created_by       = USERID("Custom")                                     /* 1.01 */
                 scust_shadow.scust_modified_date    = TODAY
-                scust_shadow.scust_modified_by      = USERID("HHI")                                     /* 1.01 */
+                scust_shadow.scust_modified_by      = USERID("Custom")                                     /* 1.01 */
                 o-ucscust-id                        = scust_shadow.scust_id 
                 .
                 

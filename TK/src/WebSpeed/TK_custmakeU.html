@@ -9,8 +9,35 @@
 <META NAME="COPYRIGHT" CONTENT="Solsource">
 <META NAME="CREATE_DATE" CONTENT="08/May/14">
 <META NAME="LAST_UPDATED" CONTENT="17/Feb/16">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <LINK rel='stylesheet' type='text/css'
 	href='/depot/src/HTMLContent/stylesheets/core.css' />
+	
+<!-- The following script tag and it's contents belong to 1dot7 -->	
+<script>
+    function populateStateDropdown(event){
+            $.post("AJAX-populate-state-dropdown.r",
+            {
+                countryISO: $("[name='h-country']").val() ? $("[name='h-country']").val() : "USA" 
+            },
+            function(response, status){
+                $("[name='h-state']").children('option:not(:first)').remove();
+                $.each(response, function (key, value) {
+                    if ($("#selected-state").val() == value) {
+                        $("[name='h-state']").append("<option value='" + key + "' selected>" + value + "</option>");
+                    }
+                    else {
+                        $("[name='h-state']").append("<option value='" + key + "'>" + value + "</option>");
+                    }
+                });
+            });
+    }
+    
+    $(document).ready(function() {
+        populateStateDropdown();
+        $("[name='h-country']").change(() => populateStateDropdown(event));
+    });
+</script>
 
 
 
@@ -43,6 +70,7 @@
  *          copy that was downloaded from release 10.2 NOT MARKED.   
  * 1.6 - written by Jacob Luttrell on 17Feb16.  Added .i files for state and
  *          country dropdowns. Marked by 1dot6.
+ * 1.7 - Andrew Garver, 8/22/17. Removing StateDropDown.i and replacing with AJAX
  *-------------------------------------------------------------------- */
 
 /* Create an unnamed pool to store all the widgets created by this procedure.
@@ -220,7 +248,7 @@ ASSIGN
 	addr3           =   get-value ("h-addr3")
 	city            =   get-value ("h-city")
 	state           =   get-value ("h-state")
-	country         =   get-value ("h-country")
+	country         =   IF get-value ("h-country") <> "" THEN get-value ("h-country") ELSE "USA" /* 1dot7 */
 	zipcode         =   get-value ("h-zipcode")   
 	
 	homephone       =   get-value ("h-homephone")                                        /* 1dot3 */
@@ -259,6 +287,8 @@ ASSIGN
 		                          
 																				IF ITfeedback = YES THEN
 																				    {&OUT} "<H1>" THIS-PROCEDURE:FILE-NAME "</H1>".
+																				    
+{&OUT} "<input type='hidden' id='selected-state' value='" state "'/>" SKIP. /* 1dot7 */
  
 IF flowctrl = "" THEN 
     flowctrl = "INITIAL". 
@@ -381,24 +411,6 @@ CASE flowctrl:
             "       <TD class='REQ'>" SKIP
             "           <select name='h-state' tabindex=11>" SKIP
             "               <option value=''></option>" SKIP.
-
-/*        FOR EACH state_mstr NO-LOCK :*/
-
-            {../depot/src/WebSpeed/StateDropDown.i state country}.                       /* 1dot6 */
-          
-/*          FOR EACH state_mstr  WHERE                                                                                                  */
-/*                   state_mstr.state_deleted = ? NO-LOCK:  /* 1dot4 */  /* MJ added 9/9 This edit was made In case of future deletes */*/
-/*                                                                                                                                      */
-/*            IF state_mstr.State_ISO = state AND                                                                                       */
-/*                state_mstr.state_country = country THEN                                                                               */
-/*                isselected  = "SELECTED".                                                                                             */
-/*            ELSE                                                                                                                      */
-/*                isselected  = "".                                                                                                     */
-/*                                                                                                                                      */
-/*            {&OUT}                                                                                                                    */
-/*                "<option value=~"" state_mstr.State_ISO "~" " isselected " >" state_mstr.State_Display_Name "</option>" SKIP.         */
-/*                                                                                                                                      */
-/*        END.  /** of 4ea. state_mstr **/                                                                                              */
 
         {&OUT}
             "           </SELECT>" SKIP

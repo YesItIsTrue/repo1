@@ -57,6 +57,10 @@ CREATE WIDGET-POOL.
                 to the SUBtrh-ucU. marked by 1dot5
      1.51 - written by Jacob Luttrell on 19/Mar/16. Testtype dropdown respects effective dates
                 marked by 1dot51           
+     1.6 - Andrew Garver 8-29-2017, Adding in barcode printing functionality
+                NOTE:  There MUST be a directory on the server called C:\apps\barcode 
+                for this to work!
+            
   -------------------------------------------------------------------*/
 /* ***************************  Definitions  ************************** */
   
@@ -87,13 +91,17 @@ DEFINE VARIABLE o-uctkm-successful  AS LOGICAL INITIAL NO  NO-UNDO.
 DEFINE VARIABLE o-ctrh-id           LIKE trh_hist.trh_id        NO-UNDO.
 DEFINE VARIABLE o-ctrh-error        AS LOGICAL INITIAL YES      NO-UNDO.
 
-DEFINE VARIABLE itmessage           AS LOGICAL INITIAL NO  NO-UNDO.
+DEFINE VARIABLE ITmessages           AS LOGICAL INITIAL NO  NO-UNDO.
 DEFINE VARIABLE errorcount1         AS INTEGER NO-UNDO.
 DEFINE VARIABLE errorcount2         AS INTEGER NO-UNDO.
 
 DEFINE VARIABLE over-ride           AS LOGICAL NO-UNDO.                                  /* 1dot4 */
 DEFINE VARIABLE v-trhid             AS INTEGER                  NO-UNDO.                 /* 1dot5 */ 
 DEFINE VARIABLE v-trhfound          AS LOG INITIAL NO           NO-UNDO.                 /* 1dot5 */
+
+DEFINE STREAM barcodeFile.                                                               /* 1dot6 */
+OUTPUT STREAM barcodeFile TO "C:\apps\Barcode\barcode-data.txt".                         /* 1dot6 */
+
 /* ********************  Preprocessor Definitions  ******************** */
 
 ASSIGN 
@@ -200,7 +208,7 @@ CASE act:
 		    "</div>" /* class='row' */ SKIP
 		    "<br>" SKIP. 
 		    
-		                                                                                                                              IF itmessage = YES THEN
+		                                                                                                                              IF ITmessages = YES THEN
                                                                                                                                        {&OUT}
                                                                                                                                             "act = " act "<br>" SKIP
                                                                                                                                             "v-testtype = " v-testtype "<br>" SKIP
@@ -234,7 +242,7 @@ CASE act:
     WHEN "PROMPT" THEN DO:
 /*    {TKcreateU-header.i "DISABLED" "NOTHING"}.*/
 
-                                                                                                                                      IF itmessage = YES THEN
+                                                                                                                                      IF ITmessages = YES THEN
                                                                                                                                        {&OUT}
                                                                                                                                             "act = " act "<br>" SKIP
                                                                                                                                             "v-testtype = " v-testtype "<br>" SKIP
@@ -341,7 +349,7 @@ CASE act:
             "</div>" /* class='row' */ SKIP
             "<br>" SKIP.
             
-                                                                                                                                      IF itmessage = YES THEN
+                                                                                                                                      IF ITmessages = YES THEN
                                                                                                                                        {&OUT}
                                                                                                                                             "act = " act "<br>" SKIP
                                                                                                                                             "v-testtype = " v-testtype "<br>" SKIP
@@ -374,7 +382,7 @@ CASE act:
     
     WHEN "REVIEW" THEN DO:
 
-                                                                                      IF itmessage = YES THEN
+                                                                                      IF ITmessages = YES THEN
                                                                                        {&OUT}
                                                                                             "act = " act "<br>" SKIP
                                                                                             "v-testtype = " v-testtype "<br>" SKIP
@@ -453,7 +461,7 @@ CASE act:
 	            "</div>" /* class='row' */ SKIP
 	            "<br>" SKIP.
 	            
-                                                                                    IF itmessage = YES THEN
+                                                                                    IF ITmessages = YES THEN
                                                                                      {&OUT}
                                                                                           "act = " act "<br>" SKIP
                                                                                           "v-testtype = " v-testtype "<br>" SKIP
@@ -490,7 +498,7 @@ CASE act:
     
     WHEN "CREATE" THEN DO: 
     
-                                                                                     IF itmessage = YES THEN
+                                                                                     IF ITmessages = YES THEN
                                                                                       {&OUT}
                                                                                            "act = " act "<br>" SKIP
                                                                                            "v-testtype = " v-testtype "<br>" SKIP
@@ -501,17 +509,18 @@ CASE act:
                                                                                            "v-qty = " v-qty "<br>" SKIP.
         FIND test_mstr WHERE test_mstr.test_type = v-testtype NO-LOCK NO-ERROR.                                                 /* 1dot31 */   
         IF AVAILABLE (test_mstr) THEN DO:                                                                                       /* 1dot31 */
+            EXPORT STREAM barcodeFile "BarcodeData".                                                              /* 1dot6 */
      
 	        DO x = v-firstid TO v-lastid:
 	           DO v-currseq = 1 TO test_mstr.test_group_qty:                                                                    /* 1dot31 */
 	            v-tkid  = STRING(v-testtype + "-" + STRING(x)).
-	
+
 	            FIND /* FIRST */ TK_mstr WHERE                                                                                  /* removed in 1dot31 */
 	                                     TK_mstr.TK_ID = v-tkid AND 
 	                                     TK_mstr.TK_test_seq = v-currseq                                                        /* 1dot31 */
 	                                     NO-LOCK NO-ERROR.
 
-                                                                                  IF itmessage = YES THEN
+                                                                                  IF ITmessages = YES THEN
                                                                                    {&OUT}
                                                                                         "DO x... before IF NOT AVAIL... <br>" SKIP
                                                                                         "act = " act "<br>" SKIP
@@ -525,7 +534,7 @@ CASE act:
 
             IF NOT AVAILABLE (tk_mstr) THEN DO:
 
-                                                                                IF itmessage = YES THEN
+                                                                                IF ITmessages = YES THEN
                                                                                    {&OUT}
                                                                                         "IF NOT AVAIL... before RUN... <br>" SKIP
                                                                                         "act = " act "<br>" SKIP
@@ -571,7 +580,7 @@ CASE act:
                         OUTPUT o-uctkm-successful
 		            ).
 		           
-																	IF itmessage = YES THEN
+																	IF ITmessages = YES THEN
 																	   {&OUT}
 																	        "<br><br>RUN VALUE(SEARCH('SUBtkmstrRSTPucU.p')) <br>" SKIP
 																	        "act = " act "<br>" SKIP
@@ -601,7 +610,7 @@ CASE act:
                         OUTPUT v-trhid,                                                /* 1dot5 */
                         OUTPUT v-trhfound).                                            /* 1dot5 */
 
-                                                                    IF itmessage = YES THEN
+                                                                    IF ITmessages = YES THEN
                                                                        {&OUT}
                                                                             "<br><br>RUN VALUE(SEARCH('SUBtrh-findR.r')) <br>" SKIP
                                                                             "act = " act "<br>" SKIP
@@ -676,7 +685,7 @@ CASE act:
 		                   "<div class='grid_5'></div>" SKIP
 		               "</div>" /* class='row' */ SKIP.
 								        
-                                                                         IF itmessage = YES THEN
+                                                                         IF ITmessages = YES THEN
                                                                             {&OUT}
                                                                                  " RUN VALUE(SEARCH('SUBtrh-ucU.p')) <br>" SKIP
                                                                                  "act = " act "<br>" SKIP
@@ -691,9 +700,11 @@ CASE act:
                                                                                  "o-uctkm-update = " o-uctkm-update "<br>" SKIP.								        
 		
 		            IF o-uctkm-successful = NO OR o-ctrh-error = YES THEN
-		                 errorcount1 = errorcount1 + 1. 
+		                 errorcount1 = errorcount1 + 1.
+	                ELSE
+                        EXPORT STREAM barcodeFile v-tkid.	           /* 1dot6 */
 
-/* ********************************************************* Procedure to write to BarTender goes here *********************************************************** */
+                        /* ^^^ Procedure to write to BarTender goes here ^^^ */
 	                
 				    END.  /** if not avail tk_mstr **/
 				
@@ -701,7 +712,12 @@ CASE act:
 		                errorcount2 = errorcount2 + 1. 
 	            END. /* of do v-currseq = 1 to test_group_qty */                                                    /* 1dot31 */
 	        END.  /** of DO x = v-firstid TO v-lastid --- v-makekits = NO **/
-        END. /* of if avail test_mstr */                                                                            /* 1dot31 */           
+	        
+	        OUTPUT STREAM barcodeFile CLOSE.
+	        
+	        OS-COMMAND NO-WAIT VALUE("C:\apps\Barcode\print-barcodes.bat").                                          /* 1dot6 */
+	        
+        END. /* of if avail test_mstr */                                                                            /* 1dot31 */      
         IF errorcount1 > 0 THEN 
             {&OUT}
                 "<div class='row'>" SKIP
@@ -755,6 +771,7 @@ CASE act:
 	                    "<div class='grid_8'>" SKIP                                                                /* 1dot1 */
 	                    "<center>" SKIP   
 	                       "<h2>Data created successfully! Created " v-qty " testkits of the " v-testtype " test type.</h2>" SKIP   /* 1dot1 */
+	                       "<h3>Printing labels now...</h3>" SKIP   /* 1dot6 */
 	                    "</center>" SKIP
 	                    "</div>" /* class='grid_8' */ SKIP                                                         /* 1dot1 */
 	                    "<div class='grid_2'></div>" SKIP                                                          /* 1dot1 */

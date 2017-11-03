@@ -7,6 +7,13 @@
     Author(s)   : Harold D. Luttrell
     Created     : Jan 29, 2017
                 :
+    Updated:        Sept. 7, 2017
+    Version:        1.1
+    Author:         Harold Luttrell, Sr,
+    Description:    Added ‘../HL7/src/WebSpeed/’ to the front of 
+                    the ‘XML_TT_People_Data.i’ statement.
+                    Identified by: /* 1dot1 */
+                    
   ----------------------------------------------------------------------*/
  
 /* ***************************  Definitions  ************************** */
@@ -15,7 +22,7 @@ ROUTINE-LEVEL ON ERROR UNDO, THROW.
 
 /* ********************  Preprocessor Definitions  ******************** */
 
-{XML_TT_People_Data.i}.  
+{../HL7/src/WebSpeed/XML_TT_People_Data.i}.                             /* 1dot1 */ 
 
 DEFINE INPUT PARAMETER  i-TT-People-Seq-Nbr         AS INTEGER                          NO-UNDO.
 DEFINE INPUT PARAMETER  i-people-id                 LIKE people_mstr.people_id  NO-UNDO.
@@ -65,7 +72,7 @@ DEFINE OUTPUT PARAMETER o-discrepy-error            AS LOGICAL INITIAL NO       
                     D_people_workphone      = XML_TT_People_Data.TT-people_workphone
                     D_people_DOB            = i-h-DOB
                     D_people_prefname       = XML_TT_People_Data.TT-people_prefname
-                    D_people_created_by     = USERID ("General")
+                    D_people_created_by     = USERID("Core")
                     D_people_create_date    = TODAY
                     D_people_prog_name      = SOURCE-PROCEDURE:FILE-NAME
                     D_people_Occured_Date   = TODAY  

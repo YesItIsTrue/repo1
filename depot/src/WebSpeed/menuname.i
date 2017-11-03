@@ -1,6 +1,6 @@
 /***********************************************************************************************
  *
- *  menuname.i - 12/Jan/15 - Doug Luttrell - Version 1.1
+ *  menuname.i - 11/Aug/17 - Doug Luttrell - Version 1.21
  *
  *  -----------------------------------------------------------------------------------------
  * 
@@ -17,7 +17,8 @@
  *  1.1 - written by DOUG LUTTRELL on 12/Jan/15.  Apparently we need to pass the whattorun 
  *          variable around.  Also making changes to display the menu number in front of the
  *          title.
- *  1.11 - written by DOUG LUTTRELL on 11/Aug/17.  Working on the update to CMC (Version 12).
+ *  1.2 - written by ANDREW GARVER in August of 2017.  Added the Back button.  Not marked.
+ *  1.21 - written by DOUG LUTTRELL on 11/Aug/17.  Working on the update to CMC (Version 12).
  *          Tried to fix the long-standing "error" that was in this include of the menu_mstr 
  *          table being unknown or ambiguous.  Finally used the voodoo approach that makes 
  *          Trae happy.  Re-typed (character for character) about a half dozen lines of code
@@ -29,12 +30,9 @@
  *
  *  Usage Instructions:
  *  -------------------
- *  1) Make sure this file is in the WebSpeed folder of your depot project.
- *  2) Add the following code to your program:
+ *  Add the following code to your program:
  *
  *          {../depot/src/WebSpeed/menuname.i}.
- *
- *  3) Enjoy.
  *
  ***********************************************************************************************/ 
 
@@ -87,6 +85,17 @@
         
      /************  End of program naming code  *****************/
      
-    /*     Back button     */
+        /*     Back button     */
+    /*
     {&OUT}
-        "<a href='http://localhost:3333/DataHub/rcode/menupager.html?c-usr=" get-value('c-usr') "&whattorun=" ENTRY(1, whatshouldrun, '.') "&h-menuheadername=" menuheadername "'><img src='/depot/src/HTMLContent/images/back-arrow.png' style='width: 2.5%; position: absolute; right: 1%; top: 2%;'/></a>".
+        "<a href='http://localhost:3333/DataHub/rcode/menupager.html?c-usr=" 
+        IF get-value('c-usr') THEN 
+          get-value('c-usr') 
+        ELSE 
+          get-value('h-empid') 
+        "&whattorun=" ENTRY(1, whatshouldrun, '.') 
+        "&h-menuheadername=" menuheadername "'>"
+        "<img src='/depot/src/HTMLContent/images/back-arrow.png' style='width: 2.5%; position: absolute; right: 1%; top: 2%;'/></a>".
+    */
+    
+    

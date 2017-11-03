@@ -8,19 +8,23 @@
     <META NAME="CREATE_DATE" CONTENT="13/Jan/16">
     <META NAME="MODIFIED_DATE" CONTENT="13/Jan/16">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
-<SCRIPT LANGUAGE="SpeedScript">
-/* Create an unnamed pool to store all the widgets created by this procedure.
-   This is a good default which assures that this procedure's triggers and
-   internal procedures will execute in this procedure's storage, and that
-   proper cleanup will occur on deletion of the procedure. */
-CREATE WIDGET-POOL.
-</SCRIPT>
-
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
 </HEAD>
 <BODY class='inside'>
 
 <SCRIPT language="SpeedScript">
-{../depot/src/WebSpeed/menuname.i}.
+{TSvert-menu.i}.
   /*------------------------------------------------------------------
     File:           TSpayrollR.html
     Description:    Payroll Report
@@ -174,7 +178,7 @@ CASE act:
                      
             {&OUT}
             "           <tr>" SKIP
-            "               <TD><a href='../../TimeSheet/rcode/TSempmaintU.r" 
+            "               <TD><a href='TSempmaintU.r"                                 /* CODEHAUL */ 
                                     "?h-pp-passBack-int1=" Emp_Mstr.Emp_ID
                                     "&h-pp-passBack-int2=" people_mstr.people_addr_id
                                     "&h-act=MAINTENANCE"

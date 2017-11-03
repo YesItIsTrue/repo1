@@ -91,7 +91,7 @@ DO TRANSACTION:
                 o-uchours-update                = YES 
                 o-uchours-successful            = YES
                 Hours_Mstr.Hours_modified_date  = TODAY
-                Hours_Mstr.Hours_modified_by    = USERID ("General")
+                Hours_Mstr.Hours_modified_by    = USERID("Modules")
 /*                Hours_Mstr.Hours_prog_name      = i-uchours-progname*/
                 o-uchours-clientid              = Hours_Mstr.Hours_client_ID
                 o-uchours-projname              = Hours_Mstr.Hours_project_name
@@ -114,9 +114,9 @@ DO TRANSACTION:
                 o-uchours-create                = YES
                 o-uchours-successful            = YES
                 Hours_Mstr.Hours_create_date    = TODAY
-                Hours_Mstr.Hours_created_by     = USERID ("General")                    
+                Hours_Mstr.Hours_created_by     = USERID("Modules")                    
                 Hours_Mstr.Hours_modified_date  = TODAY
-                Hours_Mstr.Hours_modified_by    = USERID ("General") 
+                Hours_Mstr.Hours_modified_by    = USERID("Modules") 
 /*                Hours_Mstr.Hours_prog_name      = i-uchours-progname*/
                 o-uchours-clientid              = Hours_Mstr.Hours_client_ID
                 o-uchours-projname              = Hours_Mstr.Hours_project_name    

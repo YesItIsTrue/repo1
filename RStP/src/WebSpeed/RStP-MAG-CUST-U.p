@@ -283,8 +283,8 @@ FOR EACH MAG_CUST_RCD                                                        /**
     RUN VALUE(SEARCH("RStP-MAG-CUST-BIL-U.r"))                                  /* 1dot5 */
             (MAG_CUST_RCD.magento-id,
              OUTPUT op-error-nbr,
-             OUTPUT new-Billing-Cust-ID). 
-
+             OUTPUT new-Billing-Cust-ID).
+    
     IF  MAG_CUST_RCD.Progress_Flag = "U" THEN 
         ASSIGN  MAG_CUST_RCD.Progress_Flag     = "IU"
                 MAG_CUST_RCD.Progress_DateTime  = TODAY.                     

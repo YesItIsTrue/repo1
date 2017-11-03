@@ -9,15 +9,22 @@
     <META NAME='LAST_UPDATED' CONTENT="07/Jul/16">    
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
-<SCRIPT LANGUAGE="SpeedScript">
-/* Create an unnamed pool to store all the widgets created by this procedure.
-   This is a good default which assures that this procedure's triggers and
-   internal procedures will execute in this procedure's storage, and that
-   proper cleanup will occur on deletion of the procedure. */
-CREATE WIDGET-POOL.
-</SCRIPT>
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
+</HEAD>
 
-<script language="javascript">
+<BODY>
+<script>
     function inputNumber(button) {
         var fieldValue = $("#id-number").val();
         $("#id-number").val(fieldValue + $(button).val());
@@ -27,9 +34,6 @@ CREATE WIDGET-POOL.
         $("#id-number").val("");
     }
 </script>
-</HEAD>
-
-<BODY>
 <SCRIPT LANGUAGE="SpeedScript">
   /*------------------------------------------------------------------
     Template Notes: 
@@ -46,7 +50,7 @@ CREATE WIDGET-POOL.
     Created:
   -------------------------------------------------------------------*/
 
-{../depot/src/WebSpeed/menuname.i}.
+{TSvert-menu.i}.
 
 /* ************************* Definitions *************************** */
 DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.

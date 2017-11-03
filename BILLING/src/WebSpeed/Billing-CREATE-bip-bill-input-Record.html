@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"> 
 <HTML>  
-<HEAD>   
+<HEAD>     
 <META NAME="AUTHOR" CONTENT="Harold Luttrell, Sr.">
 
     <link rel='stylesheet' href='/depot/src/HTMLContent/stylesheets/core.css' type='text/css'/>    
@@ -49,6 +49,11 @@
                                     changed '.html' to '.r' and
                                     added the META & css.
                                                    
+        1.5 - written by DOUG LUTTRELL on 22/Aug/17.  Change RUN commands to
+                use VALUE(SEARCH()) functionality to fix pathing issues.  Also
+                there was an old patient find program being referenced that 
+                hasn't existed for a long time.  Marked by 1dot5.
+                                                                    
   ----------------------------------------------------------------------*/    
 CREATE WIDGET-POOL.
 </SCRIPT>
@@ -219,7 +224,8 @@ IF override-error <> "Bypass" AND override-error <> "Override" THEN DO:
     END.  /** IF ip-lab-id = "" **/
 	        
     ASSIGN ip-Pay-Term = LC(ip-Pay-Term).
-    RUN VALUE (codetorun) (ip-Pay-Term, OUTPUT op_text). 
+/*    RUN VALUE (codetorun) (ip-Pay-Term, OUTPUT op_text).                                                /* 1dot5 */*/
+    RUN VALUE(SEARCH("subr_Up_Low_Case.r")) (ip-Pay-Term, OUTPUT op_text).                              /* 1dot5 */
     ASSIGN ip-Pay-Term = op_text.
     
     IF ip-Invoice-Nbr = "" THEN DO: 
@@ -235,7 +241,8 @@ IF override-error <> "Bypass" AND override-error <> "Override" THEN DO:
 /*    ASSIGN  ip_text = ip-Invoice-Date.
     RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
     ASSIGN  ip-Stripped-Invoice-Date   =   DATE(op_text).  */
-    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Invoice-Date, OUTPUT Progress-Date). 
+/*    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Invoice-Date, OUTPUT Progress-Date).                         /* 1dot5 */*/
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (ip-Invoice-Date, OUTPUT Progress-Date).                         /* 1dot5 */
     ASSIGN  ip-Stripped-Invoice-Date   =   Progress-Date.
 	         	        
 /*  MESSAGE ip-Stripped-Invoice-Date VIEW-AS ALERT-BOX BUTTONS OK.         */    
@@ -259,7 +266,8 @@ IF override-error <> "Bypass" AND override-error <> "Override" THEN DO:
 /*    ASSIGN  ip_text = ip-Activity-Date.
     RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
     ASSIGN  ip-Stripped-Activity-Date   =   DATE(op_text).  */
-    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Activity-Date, OUTPUT Progress-Date). 
+/*    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Activity-Date, OUTPUT Progress-Date).                        /* 1dot5 */*/
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (ip-Activity-Date, OUTPUT Progress-Date).                        /* 1dot5 */
     ASSIGN  ip-Stripped-Activity-Date   =   Progress-Date.
              
 /*  MESSAGE ip-Stripped-Activity-Date VIEW-AS ALERT-BOX BUTTONS OK.     */
@@ -285,7 +293,8 @@ IF override-error <> "Bypass" AND override-error <> "Override" THEN DO:
 /*     ASSIGN  ip_text = ip-Bill-Due-Date. 
      RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
      ASSIGN ip-Stripped-Bill-Due-Date   =   DATE(op_text).  */
-     RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Bill-Due-Date, OUTPUT Progress-Date). 
+/*     RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Bill-Due-Date, OUTPUT Progress-Date).                           /* 1dot5 */*/
+     RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (ip-Bill-Due-Date, OUTPUT Progress-Date).                           /* 1dot5 */
      ASSIGN  ip-Stripped-Bill-Due-Date   =   Progress-Date.
      
      IF ip-Stripped-Bill-Due-Date = ? OR ip-Bill-Due-Date = "" THEN DO:
@@ -308,16 +317,19 @@ IF override-error <> "Bypass" AND override-error <> "Override" THEN DO:
 	        
      ELSE DO:  
          ASSIGN ip-Pat-First-Name = LC(ip-Pat-First-Name).
-         RUN VALUE (codetorun) (ip-Pat-First-Name, OUTPUT op_text). 
+/*         RUN VALUE (codetorun) (ip-Pat-First-Name, OUTPUT op_text).                                             /* 1dot5 */*/
+         RUN VALUE(SEARCH("subr_Up_Low_Case.r")) (ip-Pat-First-Name, OUTPUT op_text).                           /* 1dot5 */
          ASSIGN ip-Pat-First-Name = op_text. 
      END.  /** ELSE DO: **/ 
 	
      ASSIGN ip-Pat-Mid-Name = LC(ip-Pat-Mid-Name).
-     RUN VALUE (codetorun) (ip-Pat-Mid-Name, OUTPUT op_text). 
+/*     RUN VALUE (codetorun) (ip-Pat-Mid-Name, OUTPUT op_text).                                                   /* 1dot5 */*/
+     RUN VALUE(SEARCH("subr_Up_Low_Case.r")) (ip-Pat-Mid-Name, OUTPUT op_text).                                 /* 1dot5 */
      ASSIGN ip-Pat-Mid-Name = op_text.
      
      ASSIGN ip-Pat-Suffix = LC(ip-Pat-Suffix).
-     RUN VALUE (codetorun) (ip-Pat-Suffix, OUTPUT op_text). 
+/*     RUN VALUE (codetorun) (ip-Pat-Suffix, OUTPUT op_text).                                                     /* 1dot5 */*/
+     RUN VALUE(SEARCH("subr_Up_Low_Case.r")) (ip-Pat-Suffix, OUTPUT op_text).                                   /* 1dot5 */
      ASSIGN ip-Pat-Suffix = op_text.
      
      IF ip-Pat-Last-Name = "" THEN DO:
@@ -330,7 +342,8 @@ IF override-error <> "Bypass" AND override-error <> "Override" THEN DO:
 	        
      ELSE DO:  
          ASSIGN ip-Pat-Last-Name = LC(ip-Pat-Last-Name).
-         RUN VALUE (codetorun) (ip-Pat-Last-Name, OUTPUT op_text). 
+/*         RUN VALUE (codetorun) (ip-Pat-Last-Name, OUTPUT op_text).                                          /* 1dot5 */*/
+         RUN VALUE(SEARCH("subr_Up_Low_Case.r")) (ip-Pat-Last-Name, OUTPUT op_text).                        /* 1dot5 */
          ASSIGN ip-Pat-Last-Name = op_text.           
      END.  /** ELSE DO: **/ 
 	            
@@ -366,7 +379,8 @@ IF override-error <> "Bypass" AND override-error <> "Override" THEN DO:
 	        
 /*    {&OUT}    "</table></div></center>".  */ 
                                 
-    RUN "../depot/rcode/find-patient.r"
+/*    RUN "../depot/rcode/find-patient.r"         /** this program was replaced long ago ---- 1dot5 **/*/
+    RUN VALUE(SEARCH("SUBpat-findR.r"))                                                                     /* 1dot5 */
             (blank_prefix,          
             ip-Pat-First-Name,    
             ip-Pat-Mid-Name,      
@@ -464,7 +478,8 @@ IF override-error = "Bypass" THEN DO:
 /*    ASSIGN ip_text = ip-Activity-Date.
     RUN "../depot/rcode/subr_YY_to_CCYY.r" (ip_text, OUTPUT op_text). 
     ASSIGN ip-Activity-Date = op_text. */
-    RUN "../depot/rcode/subr_YY_to_CCYY.r" (ip-Stripped-Activity-Date, OUTPUT ip-Activity-Date). 
+/*    RUN "../depot/rcode/subr_YY_to_CCYY.r" (ip-Stripped-Activity-Date, OUTPUT ip-Activity-Date).                    /* 1dot5 */*/
+    RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (ip-Stripped-Activity-Date, OUTPUT ip-Activity-Date).                    /* 1dot5 */
     
   /* date */  
                                
@@ -560,7 +575,8 @@ IF  NOT Error-flag THEN DO:
 /*    ASSIGN  ip_text = ip-Invoice-Date.
     RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
     ASSIGN  ip-Stripped-Invoice-Date   =   DATE(op_text).  */
-    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Invoice-Date, OUTPUT Progress-Date). 
+/*    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Invoice-Date, OUTPUT Progress-Date).                             /* 1dot5 */*/
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (ip-Invoice-Date, OUTPUT Progress-Date).                             /* 1dot5 */
     ASSIGN  ip-Stripped-Invoice-Date   =   Progress-Date.
              
 /*  MESSAGE ip-Stripped-Invoice-Date VIEW-AS ALERT-BOX BUTTONS OK.         */  
@@ -570,7 +586,8 @@ IF  NOT Error-flag THEN DO:
 /*    ASSIGN  ip_text = ip-Activity-Date.
     RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
     ASSIGN  ip-Stripped-Activity-Date   =   DATE(op_text).    */
-    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Activity-Date, OUTPUT Progress-Date). 
+/*    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Activity-Date, OUTPUT Progress-Date).                            /* 1dot5 */*/
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (ip-Activity-Date, OUTPUT Progress-Date).                            /* 1dot5 */
     ASSIGN  ip-Stripped-Activity-Date   =   Progress-Date.
              
 /*  MESSAGE ip-Stripped-Activity-Date VIEW-AS ALERT-BOX BUTTONS OK.     */
@@ -580,7 +597,9 @@ IF  NOT Error-flag THEN DO:
 /*    ASSIGN  ip_text = ip-Bill-Due-Date. 
     RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip_text, OUTPUT op_text). 
     ASSIGN ip-Stripped-Bill-Due-Date   =   DATE(op_text).  */
-    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Bill-Due-Date, OUTPUT Progress-Date). 
+/*    RUN "../depot/rcode/subr_CCYY_to_YY.r" (ip-Bill-Due-Date, OUTPUT Progress-Date).                            /* 1dot5 */*/
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (ip-Bill-Due-Date, OUTPUT Progress-Date).                            /* 1dot5 */                                 
+    
     ASSIGN  ip-Stripped-Bill-Due-Date   =   Progress-Date. 
      
     IF ip-Stripped-Bill-Due-Date = ? OR ip-Bill-Due-Date = "" THEN DO:
@@ -679,7 +698,8 @@ IF  NOT Error-flag THEN DO:
 /*					             "<td>" bip_bill_input.bip_Invoice_Date "</td>" SKIP */
 
 /* Change the date to mm-dd-yyyy format for displaying only. */      
-            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).       
+/*            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).             /* 1dot5 */*/
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).             /* 1dot5 */       
  
             {&OUT}          /*     "<td>" CCYY-Date "</td>" SKIP  */
                                  "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP 
@@ -694,7 +714,8 @@ IF  NOT Error-flag THEN DO:
 /*					             "<td>" bip_bill_input.bip__date01 "</td>" SKIP   */
    
 /* Change the date to mm-dd-yyyy format for displaying only. */      
-            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip__date01, OUTPUT CCYY-Date).       
+/*            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip__date01, OUTPUT CCYY-Date).                  /* 1dot5 */*/
+			RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (bip_bill_input.bip__date01, OUTPUT CCYY-Date).                  /* 1dot5 */
 					                            
             {&OUT}       /*        "<td>" CCYY-Date "</td>" SKIP   */
                                  "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP  
@@ -721,8 +742,9 @@ IF  NOT Error-flag THEN DO:
 /*            	                 "<td>" bip_bill_input.bip_Activity_Date "</td>" SKIP    */
 
 /* Change the date to mm-dd-yyyy format for displaying only. */      
-            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).       
-
+/*            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).            /* 1dot5 */*/
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).            /* 1dot5 */
+            
             {&OUT}       /*        "<td>" CCYY-Date "</td>" SKIP    */
                                  "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP 
 					         "</tr>" SKIP
@@ -760,7 +782,9 @@ IF  NOT Error-flag THEN DO:
 /*                              "<td>" bip_bill_input.bip_Invoice_Date "</td>" SKIP   */
                                             
 /* Change the date to mm-dd-yyyy format for displaying only. */      
-            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).       
+/*            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).             /* 1dot5 */*/
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).             /* 1dot5 */
+            
                                             
             {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
                                 "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP 
@@ -772,7 +796,8 @@ IF  NOT Error-flag THEN DO:
 /*                              "<td>" bip_bill_input.bip__date01 "</td>" SKIP    */
                                             
 /* Change the date to mm-dd-yyyy format for displaying only. */      
-            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip__date01, OUTPUT CCYY-Date).       
+/*            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip__date01, OUTPUT CCYY-Date).                  /* 1dot5 */*/
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (bip_bill_input.bip__date01, OUTPUT CCYY-Date).                  /* 1dot5 */       
                                             
             {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
                                 "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP 
@@ -800,7 +825,8 @@ IF  NOT Error-flag THEN DO:
 /*                              "<td>" bip_bill_input.bip_Activity_Date "</td>" SKIP      */
                                             
 /* Change the date to mm-dd-yyyy format for displaying only. */      
-            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).       
+/*            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).        /* 1dot5 */*/
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).        /* 1dot5 */
                                             
             {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
                                 "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP
@@ -839,7 +865,8 @@ IF  NOT Error-flag THEN DO:
 /*                              "<td>" bip_bill_input.bip_Invoice_Date "</td>" SKIP       */
 
 /* Change the date to mm-dd-yyyy format for displaying only. */      
-            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).       
+/*            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).             /* 1dot5 */*/
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (bip_bill_input.bip_Invoice_Date, OUTPUT CCYY-Date).             /* 1dot5 */
                                             
             {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
                                 "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP 
@@ -851,7 +878,8 @@ IF  NOT Error-flag THEN DO:
 /*                              "<td>" bip_bill_input.bip__date01 "</td>" SKIP        */
 
 /* Change the date to mm-dd-yyyy format for displaying only. */      
-            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip__date01, OUTPUT CCYY-Date).       
+/*            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip__date01, OUTPUT CCYY-Date).                  /* 1dot5 */*/
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (bip_bill_input.bip__date01, OUTPUT CCYY-Date).                  /* 1dot5 */
                                             
             {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
                                 "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP
@@ -873,7 +901,8 @@ IF  NOT Error-flag THEN DO:
 /*                                "<td>" bip_bill_input.bip_Activity_Date "</td>" SKIP      */
 
 /* Change the date to mm-dd-yyyy format for displaying only. */      
-            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).       
+/*            RUN "../depot/rcode/subr_YY_to_CCYY.r" (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).                /* 1dot5 */*/
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (bip_bill_input.bip_Activity_Date, OUTPUT CCYY-Date).                /* 1dot5 */
                                             
             {&OUT}       /*       "<td>" CCYY-Date "</td>" SKIP    */
                                 "<td><input type='date' name='html5-date' value='" CCYY-Date "' disabled />" " </td>" SKIP                                 
@@ -987,7 +1016,8 @@ IF  NOT Error-flag THEN DO:
 /*    reject the input due to edit errors.                                                       */  
 /*************************************************************************************************/  
                                                
-                    RUN "../BILLING/rcode/Billing-Match-UnMatch.r".       
+/*                    RUN "../BILLING/rcode/Billing-Match-UnMatch.r".                                             /* 1dot5 */*/
+                    RUN VALUE(SEARCH("Billing-Match-UnMatch.r")).                                               /* 1dot5 */
 
 
                     IF act = 86 THEN 

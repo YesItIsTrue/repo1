@@ -70,7 +70,7 @@ DO TRANSACTION:
             TKR_det.TKR_test_seq        = i-ucTKRdet-test_seq
             TKR_det.TKR_item            = i-ucTKRdet-item
             TKR_det.TKR_create_date     = TODAY 
-            TKR_det.TKR_created_by      = USERID("HHI")
+            TKR_det.TKR_created_by      = USERID("Modules")
             o-ucTKRdet-create           = YES. 
             
     END. /*** of if id = "" THEN DO: ***/
@@ -86,7 +86,7 @@ DO TRANSACTION:
         TKR_det.TKR_meanSD          = IF i-ucTKRdet-meanSD      <> "" THEN i-ucTKRdet-meanSD        ELSE TKR_det.TKR_meanSD                           /* 2dot0 */
         TKR_det.TKR_plusSD          = IF i-ucTKRdet-plusSD      <> "" THEN i-ucTKRdet-plusSD        ELSE TKR_det.TKR_plusSD 
         TKR_det.TKR_modified_date   = TODAY
-        TKR_det.TKR_modified_by     = USERID ("HHI")
+        TKR_det.TKR_modified_by     = USERID("Modules")
         TKR_det.TKR_prog_name       = SOURCE-PROCEDURE:FILE-NAME        /* 1dot1 */
         /*TODO: Do we want to simply cut this out since this is meant to be a sub proc, or do we want to update the corresponding fields in the TK_mstr table instead? */
         /*TKR_det.TKR__char01         = IF i-ucTKRdet-char01      <> "" THEN i-ucTKRdet-char01        ELSE TKR_det.tkr__char01*/

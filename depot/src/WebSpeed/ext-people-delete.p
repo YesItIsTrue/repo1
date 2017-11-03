@@ -31,5 +31,5 @@ DEFINE OUTPUT PARAMETER peop86   AS LOGICAL INITIAL NO       NO-UNDO.
                                         ASSIGN
                                         people_deleted       = TODAY
                                         people_modified_date = TODAY
-                                        people_modified_by   = USERID ("General")
+                                        people_modified_by   = USERID("Core")
                                         peop86                = YES.                  

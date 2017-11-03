@@ -18,53 +18,11 @@
 /* ********************  Preprocessor Definitions  ******************** */
 
 
-/* ***************************  Main Block  *************************** */
-{&OUT}
-    "<div class='w3-theme-d5 title-bar var-width'>" SKIP
-    "<h1 class='center'>Data Discrepancy Reconciliation</h1>" SKIP
-    "</div>" SKIP
-    "<br>" SKIP
-/*    "<div class='var-width'>" SKIP                                                                                       */
-/*    "<button class='btn w3-theme-d3' data-toggle='collapse' data-target='#people_search'>Search records</button>" SKIP   */
-/*    "<div id='people_search' class='collapse'>" SKIP                                                                     */
-/*    "<form class='w3-card w3-theme-l5 people-search' action='hhi-record-search.html' method='GET'>" SKIP                 */
-/*    "   <div id='record_data'>" SKIP                                                                                     */
-/*    "       <div class='row'>" SKIP                                                                                      */
-/*    "           <div class='col-md-6'>" SKIP                                                                             */
-/*    "               <label for='#record_data'>On Record</label>" SKIP                                                    */
-/*    "               <input type='text' class='form-control' placeholder='First Name' name='record_firstname'/>" SKIP     */
-/*    "           </div>" SKIP                                                                                             */
-/*    "           <div class='col-md-6'>" SKIP                                                                             */
-/*    "               <label for='#discrepancy_data'>Discrepancy</label>" SKIP                                             */
-/*    "               <input type='text' class='form-control' placeholder='First Name' name='discrepancy_firstname'/>" SKIP*/
-/*    "           </div>" SKIP                                                                                             */
-/*    "       </div>" SKIP                                                                                                 */
-/*    "   </div>" SKIP                                                                                                     */
-/*    "   <div id='discrepancy_data'>" SKIP                                                                                */
-/*    "       <div class='row'>" SKIP                                                                                      */
-/*    "           <div class='col-md-6'>" SKIP                                                                             */
-/*    "               <input type='text' class='form-control' placeholder='Last Name' name='record_lastname'/>" SKIP       */
-/*    "           </div>" SKIP                                                                                             */
-/*    "           <div class='col-md-6'>" SKIP                                                                             */
-/*    "               <input type='text' class='form-control' placeholder='Last Name' name='discrepancy_lastname'/>" SKIP  */
-/*    "           </div>" SKIP                                                                                             */
-/*    "       </div>" SKIP                                                                                                 */
-/*    "   </div>" SKIP                                                                                                     */
-/*    "   <div class='row'>" SKIP                                                                                          */
-/*    "       <div class='col-md-6'></div>" SKIP                                                                           */
-/*    "       <div class='col-md-6'>" SKIP                                                                                 */
-/*    "           <input type='submit' class='btn btn-warning search-submit' value='Search'/>" SKIP                        */
-/*    "       </div>" SKIP                                                                                                 */
-/*    "   </div>" SKIP                                                                                                     */
-/*    "</form>" SKIP                                                                                                       */
-/*    "<br>" SKIP                                                                                                          */
-/*    "</div>" SKIP                                                                                                        */
-/*    "</div>" SKIP                                                                                                        */
-/*    "<br>" SKIP                                                                                                         */
-      .          
+/* ***************************  Main Block  *************************** */    
 IF NOT AVAILABLE (people_mstr) AND NOT AVAILABLE ({1}) THEN 
 DO:
-    {&OUT} 
+    {&OUT}
+        "<br/><br/><br/>" SKIP 
         "<h2 class='center'>All finished!</h2>" SKIP
         "<h3 class='center'>You have reconciled all flagged discrepancies</h3>" SKIP.    
 END.

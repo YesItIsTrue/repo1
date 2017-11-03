@@ -1,0 +1,258 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Andrew Garver">
+    <TITLE>Address Maintenance</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="8/Sept/2017">
+    <META NAME='LAST_UPDATED' CONTENT="8/Sept/2017">   
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+    <style>
+        label {padding-top: 10px}
+        .w3-select {
+          margin: 5px 0px 10px 0px;
+          padding-left: 10px;
+        }
+        .w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
+        .w3-theme-background {color::#000 !important; background-color:#fff !important}
+        .w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
+        .w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+        .w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+    </style>
+</HEAD>
+<BODY class='w3-white'>
+<!--WSS {../depot/src/WebSpeed/menuname.i}. -->
+<header class='w3-container w3-dark-grey'>
+<h1>People Maintenance</h1>
+</header>
+<br><br>
+<script language='SpeedScript'>
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-people-id        LIKE people_mstr.people_id          NO-UNDO.
+DEFINE VARIABLE v-people-firstname LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE v-people-midname   LIKE people_mstr.people_midname     NO-UNDO.
+DEFINE VARIABLE v-people-lastname  LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-people-prefix    LIKE people_mstr.people_prefix      NO-UNDO.
+DEFINE VARIABLE v-people-suffix    LIKE people_mstr.people_suffix      NO-UNDO.
+DEFINE VARIABLE v-people-company   LIKE people_mstr.people_company     NO-UNDO.
+DEFINE VARIABLE v-people-gender    LIKE people_mstr.people_gender      NO-UNDO.
+DEFINE VARIABLE v-people-homephone LIKE people_mstr.people_homephone   NO-UNDO.
+DEFINE VARIABLE v-people-workphone LIKE people_mstr.people_workphone   NO-UNDO.
+DEFINE VARIABLE v-people-cellphone LIKE people_mstr.people_cellphone   NO-UNDO.
+DEFINE VARIABLE v-people-fax       LIKE people_mstr.people_fax         NO-UNDO.
+DEFINE VARIABLE v-people-email     LIKE people_mstr.people_email       NO-UNDO.
+DEFINE VARIABLE v-people-email2    LIKE people_mstr.people_email2      NO-UNDO.
+DEFINE VARIABLE v-people-addr_id   LIKE people_mstr.people_addr_id     NO-UNDO.
+DEFINE VARIABLE v-people-contact   LIKE people_mstr.people_contact     NO-UNDO.
+DEFINE VARIABLE v-people-DOB       LIKE people_mstr.people_DOB         NO-UNDO.
+DEFINE VARIABLE v-people-second_addr_ID LIKE people_mstr.people_second_addr_ID NO-UNDO.
+DEFINE VARIABLE v-people-prefname  LIKE people_mstr.people_prefname    NO-UNDO. /* 2dot1 */
+DEFINE VARIABLE v-people-title     LIKE people_mstr.people_title       NO-UNDO. /* 2dot3 */
+
+DEFINE VARIABLE v-people-create     AS LOGICAL INITIAL NO                 NO-UNDO.
+DEFINE VARIABLE v-people-update     AS LOGICAL INITIAL NO                 NO-UNDO.
+DEFINE VARIABLE v-people-avail      AS LOGICAL INITIAL YES                NO-UNDO.
+DEFINE VARIABLE v-people-successful AS LOGICAL INITIAL NO                 NO-UNDO.
+
+DEFINE VARIABLE redirect-act AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_name AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_addr_id AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_desc AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_slogan AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_contact AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_start_date AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_end_date AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_ID AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_color_theme AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_category AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_URL AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_dress_code AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event-start-time-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event-end-time-string AS CHARACTER NO-UNDO.
+
+ASSIGN
+    v-act = get-value("this-act")
+    redirect-act = get-value("redirect-act")
+    h-event_name = get-value("eventName")
+    h-event_addr_id = get-value("eventAddressID")
+    h-event_desc = get-value("eventDescription")
+    h-event_slogan = get-value("eventSlogan")
+    h-event_contact = get-value("eventContact")
+    h-event_start_date = get-value("eventStartDate")
+    h-event_end_date = get-value("eventEndDate")
+    h-event_ID = get-value("eventID")
+    h-event_color_theme = get-value("eventColorTheme")
+    h-event_category = get-value("eventCategory")
+    h-event_URL = get-value("eventURL")
+    h-event_dress_code = get-value("eventDressCode")
+    h-event-start-time-string = get-value("eventStartTimeString")
+    h-event-end-time-string = get-value("eventEndTimeString").
+
+CASE v-act:
+    WHEN "Create" THEN DO:
+        ASSIGN
+			v-people-firstname = get-value("h-firstname")
+			v-people-midname = get-value("h-midname")
+			v-people-lastname = get-value("h-lastname")
+			v-people-prefix = get-value("h-prefix")
+			v-people-suffix = get-value("h-suffix")
+			v-people-gender = LOGICAL(get-value("h-gender"))
+			v-people-homephone = get-value("h-homephone")
+			v-people-workphone = get-value("h-workphone")
+			v-people-cellphone = get-value("h-cellphone")
+			v-people-fax = get-value("h-fax")
+			v-people-email = get-value("h-email")
+			v-people-email2 = get-value("h-email2")
+			v-people-DOB = IF get-value("h-dob") <> "" THEN DATE(INTEGER(ENTRY(2, get-value("h-dob"), "-")), INTEGER(ENTRY(3, get-value("h-dob"), "-")), INTEGER(ENTRY(1, get-value("h-dob"), "-"))) ELSE ?
+			v-people-prefname = get-value("h-prefname")
+			v-people-title = get-value("h-title").
+            
+        RUN VALUE(SEARCH("SUBpeop-ucU.r")) (
+            0,
+			v-people-firstname,
+			v-people-midname,
+			v-people-lastname,
+			v-people-prefix,
+			v-people-suffix,
+			"",
+			v-people-gender,
+			v-people-homephone,
+			v-people-workphone,
+			v-people-cellphone,
+			v-people-fax,
+			v-people-email,
+			v-people-email2,
+			0,
+			"",
+			v-people-DOB,
+			0,
+			v-people-prefname,
+			v-people-title,
+			OUTPUT v-people-id,
+			OUTPUT v-people-create,
+			OUTPUT v-people-update,
+			OUTPUT v-people-avail,
+			OUTPUT v-people-successful
+        ).
+    
+        IF v-people-successful = YES THEN DO:
+            {&OUT}
+                "<center><h1>Successfully created new person record! You will now be redirected back to whence you came.</h1><center>" SKIP
+                "<br/><br/>" SKIP
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                   "<div class='w3-center w3-col s12'>" SKIP
+                   "    <form action='event-maint-U.html'>" SKIP
+                   "        <input type='hidden' name='eventName' value=~"" h-event_name "~"/>" SKIP
+                   "        <input type='hidden' name='eventAddressID' value=~"" h-event_addr_id "~"/>" SKIP
+                   "        <input type='hidden' name='eventDescription' value=~"" h-event_desc "~"/>" SKIP
+                   "        <input type='hidden' name='eventSlogan' value=~"" h-event_slogan "~"/>" SKIP
+                   "        <input type='hidden' name='eventContact' value=~"" STRING(v-people-id) "~"/>" SKIP
+                   "        <input type='hidden' name='eventStartDate' value=~"" h-event_start_date "~"/>" SKIP
+                   "        <input type='hidden' name='eventEndDate' value=~"" h-event_end_date "~"/>" SKIP
+                   "        <input type='hidden' name='eventID' value=~"" h-event_ID "~"/>" SKIP
+                   "        <input type='hidden' name='eventColorTheme' value=~"" h-event_color_theme "~"/>" SKIP
+                   "        <input type='hidden' name='eventCategory' value=~"" h-event_category "~"/>" SKIP
+                   "        <input type='hidden' name='eventURL' value=~"" h-event_URL "~"/>" SKIP
+                   "        <input type='hidden' name='eventDressCode' value=~"" h-event_dress_code "~"/>" SKIP
+                   "        <input type='hidden' name='eventStartTimeString' value=~"" h-event-start-time-string "~"/>" SKIP
+                   "        <input type='hidden' name='eventEndTimeString' value=~"" h-event-end-time-string "~"/>" SKIP
+                   "        <input type='hidden' name='h-redirect' value='yes'/>" SKIP
+                   "        <input type='hidden' name='h-act' value=~"" redirect-act "~"/>" SKIP
+                   "        <button class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Continue</b></BUTTON>" SKIP
+                   "    </form>" SKIP
+                   "</div>" SKIP
+                "</div>" SKIP.
+        END.
+        ELSE DO:
+            {&OUT}
+                "<center><h1>Whoops! Something went wrong while creating that address.</h1></center>" SKIP
+                "<br/><br/>" SKIP
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                   "<div class='w3-center w3-col s12'>" SKIP
+                   "    <form action='event-maint-U.html'>" SKIP
+                   "        <button class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Continue</b></BUTTON>" SKIP
+                   "    </form>" SKIP
+                   "</div>" SKIP
+                "</div>" SKIP.
+        END.
+    END.
+    OTHERWISE DO:
+        {&OUT}
+        "<form>" SKIP
+        
+            "<input type='hidden' name='eventName' value=~"" h-event_name "~"/>" SKIP
+            "<input type='hidden' name='eventAddressID' value=~"" h-event_addr_id "~"/>" SKIP
+            "<input type='hidden' name='eventDescription' value=~"" h-event_desc "~"/>" SKIP
+            "<input type='hidden' name='eventSlogan' value=~"" h-event_slogan "~"/>" SKIP
+            "<input type='hidden' name='eventContact' value=~"" STRING(v-people-id) "~"/>" SKIP
+            "<input type='hidden' name='eventStartDate' value=~"" h-event_start_date "~"/>" SKIP
+            "<input type='hidden' name='eventEndDate' value=~"" h-event_end_date "~"/>" SKIP
+            "<input type='hidden' name='eventID' value=~"" h-event_ID "~"/>" SKIP
+            "<input type='hidden' name='eventColorTheme' value=~"" h-event_color_theme "~"/>" SKIP
+            "<input type='hidden' name='eventCategory' value=~"" h-event_category "~"/>" SKIP
+            "<input type='hidden' name='eventURL' value=~"" h-event_URL "~"/>" SKIP
+            "<input type='hidden' name='eventDressCode' value=~"" h-event_dress_code "~"/>" SKIP
+            "<input type='hidden' name='eventStartTimeString' value=~"" h-event-start-time-string "~"/>" SKIP
+            "<input type='hidden' name='eventEndTimeString' value=~"" h-event-end-time-string "~"/>" SKIP
+            "<input type='hidden' name='h-redirect' value='yes'/>" SKIP
+            "<input type='hidden' name='redirect-act' value=~"" redirect-act "~"/>" SKIP
+            
+            "<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>" SKIP
+                "<h2>Create a new person record</h2>" SKIP
+                "<div class='w3-padding-top'>" SKIP
+                    "<label>First Name</label>" SKIP
+                    "<input type='text' name='h-firstname' class='w3-border w3-round-large w3-select' required/>" SKIP
+                    "<label>Middle Name</label>" SKIP
+                    "<input type='text' name='h-midname' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Last Name</label>" SKIP
+                    "<input type='text' name='h-lastname' class='w3-border w3-round-large w3-select' required/>" SKIP
+                    "<label>Prefix (Mr., Mrs., etc.)</label>" SKIP
+                    "<input type='text' name='h-prefix' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Suffix (Sr., Jr., III, etc.)</label>" SKIP
+                    "<input type='text' name='h-suffix' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Preferred Name</label>" SKIP
+                    "<input type='text' name='h-prefname' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Title (CEO, Master of Potions, etc.)</label>" SKIP
+                    "<input type='text' name='h-title' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Gender</label>" SKIP
+                    "<select name='h-gender' class='w3-border w3-round-large w3-select'>" SKIP
+                    "   <option value='true'>Male</option>" SKIP
+                    "   <option value='false'>Female</option>" SKIP
+                    "</select>" SKIP
+                    "<label>Home Phone</label>" SKIP
+                    "<input type='text' name='h-homephone' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Work Phone</label>" SKIP
+                    "<input type='text' name='h-workphone' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Cell Phone</label>" SKIP
+                    "<input type='text' name='h-cellphone' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Fax</label>" SKIP
+                    "<input type='text' name='h-fax' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Email</label>" SKIP
+                    "<input type='text' name='h-email' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Secondary Email</label>" SKIP
+                    "<input type='text' name='h-email2' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Date of Birth</label>" SKIP
+                    "<input type='date' name='h-dob' class='w3-border w3-round-large w3-select'/>" SKIP
+                    
+                "</div>" SKIP
+                "<br>" SKIP
+                "</div>" SKIP
+                "<br>" SKIP
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                   "<div class='w3-center w3-col s12'>" SKIP
+                       "<button type='submit' name='this-act' value='Create' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Create</b></BUTTON>" SKIP
+                   "</div>" SKIP
+                "</div>" SKIP
+            "</div>" SKIP
+        "</form>" SKIP.
+    END.
+END.
+</script>
+</BODY>
+</BODY>

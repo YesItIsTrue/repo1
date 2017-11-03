@@ -373,7 +373,7 @@ IF act = "Display_Selected_Data" THEN DO:
 		        {&OUT}
 		          "<tr>"       
 		            "<td> <input type='checkbox' name='h-Pay' value='" recid(TK_mstr) "' autofocus /></td>" SKIP  
-		            "<Td nowrap>" "<a href='../../DataHub/rcode/TRH-history-R.r?h-act=1&h-low-serial=" 
+		            "<Td nowrap>" "<a href='TRH-history-R.r?h-act=1&h-low-serial="                                    /* CODEHAUL */ 
 		                                  TK_mstr.TK_ID "&h-low-seq=" TK_mstr.TK_test_seq 
 		                "&h-high-serial=" TK_mstr.TK_ID "&h-high-seq=" TK_mstr.TK_test_seq 
 		                "&whattorun=1.41&submit=Search'>"                                                             /* 1dot1 */ 
@@ -393,7 +393,7 @@ IF act = "Display_Selected_Data" THEN DO:
                      
                     IF AVAILABLE (people_mstr) THEN                                /* Patient look up */
                        {&OUT}
-                           "<td nowrap>" "<a href='../../DataHub/rcode/PATmainviewR.r?h-act=SELECTED&whattorun=3.11&h-peopleid=" 
+                           "<td nowrap>" "<a href='PATmainviewR.r?h-act=SELECTED&whattorun=3.11&h-peopleid="                /* CODEHAUL */ 
                            people_mstr.people_id  "'>" people_mstr.people_lastname ", " 
                            people_mstr.people_firstname "</a></TD>". 
                            
@@ -596,7 +596,7 @@ ELSE IF act = "UPDATE_by_boxes" THEN DO:                                        
 	        IF AVAILABLE (TK_mstr) THEN DO:
 	            
                 ASSIGN TK_mstr.TK_status           = "PROCESSED"
-                       TK_mstr.TK_modified_by      = USERID ("HHI")
+                       TK_mstr.TK_modified_by      = USERID("Modules")
                        TK_mstr.TK_modified_date    = TODAY
                        TK_mstr.TK_prog_name        = THIS-PROCEDURE:FILE-NAME.   
                         
@@ -798,7 +798,7 @@ ELSE IF act = "UPDATE_by_boxes" THEN DO:                                        
 
                 {&OUT}
                   "<tr>"       
-                    "<Td nowrap>" "<a href='../../DataHub/rcode/TRH-history-R.r?h-act=1&h-low-serial=" 
+                    "<Td nowrap>" "<a href='TRH-history-R.r?h-act=1&h-low-serial="                                      /* CODEHAUL */ 
                                           TK_mstr.TK_ID "&h-low-seq=" TK_mstr.TK_test_seq 
                         "&h-high-serial=" TK_mstr.TK_ID "&h-high-seq=" TK_mstr.TK_test_seq 
                         "&whattorun=1.41&submit=Search'>"                                                           /* 1dot1 */ 
@@ -818,7 +818,7 @@ ELSE IF act = "UPDATE_by_boxes" THEN DO:                                        
            
                      IF AVAILABLE (people_mstr) THEN                                /* Patient look up */
                        {&OUT}
-                           "<td nowrap>" "<a href='../../DataHub/rcode/PATmainviewR.r?h-act=SELECTED&whattorun=3.11&h-peopleid=" 
+                           "<td nowrap>" "<a href='PATmainviewR.r?h-act=SELECTED&whattorun=3.11&h-peopleid="                /* CODEHAUL */ 
                            people_mstr.people_id  "'>" people_mstr.people_lastname ", " 
                            people_mstr.people_firstname "</a></TD>". 
                        

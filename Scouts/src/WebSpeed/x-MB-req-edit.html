@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+    <title>MB Req Maintenance</title>
+    <meta NAME='VERSION' CONTENT='1.0'/>
+    <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+    <meta NAME='CREATE_DATE' CONTENT="09/Sep/2017"/>
+    <meta NAME='LAST_UPDATED' CONTENT="09/Sep/2017"/>   
+    
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    
+    <style>
+        .number-list {
+            width: 3%;
+        }
+        .requirement {
+            width: 100%;
+        }
+        .fa-cog {
+            padding-left: 5px;
+        }
+    </style>
+    
+    <script>
+        $(document).ready(function() {
+            var reqNum = 2;
+            var subReq
+            $(document).on('click', '.fa-cog', function() {
+			    var x = $(this).siblings(".req-actions");
+                if (!x.hasClass("w3-show")) {
+                    x.addClass("w3-show");
+                } else {
+                    x.removeClass("w3-show");
+                }
+			});
+			
+			$(document).on('click', '.add-req', function() {
+                console.log($(this));
+                var row = $(this).closest(".first-row");
+                $("#req-container").append(row.clone());
+            });
+            
+            $(document).on('click', '.add-sub', function() {
+                console.log($(this));
+                var row = $(this).closest(".first-row");
+                $("#req-container").append(row.clone());
+            });
+			
+			// Close the dropdown if the user clicks outside of it
+			window.onclick = function(e) {
+			  if (!e.target.matches('.fa-cog')) {
+			    var dropdown = $(".req-actions");
+			      if (dropdown.hasClass("w3-show")) {
+			        dropdown.removeClass('w3-show');
+			      }
+			  }
+			}
+        });
+</script>
+</head>
+
+<body class='w3-white'>
+<!--WSS 
+    DEFINE VARIABLE v-mb-id LIKE mb_mstr.mb_BSA_ID NO-UNDO.
+    DEFINE VARIABLE v-mb-name AS CHARACTER NO-UNDO.
+
+    ASSIGN v-mb-id = INTEGER(get-value("mbID")).
+    
+    FOR FIRST MB_mstr WHERE MB_BSA_ID = v-mb-id AND MB_deleted = ? NO-LOCK:
+        ASSIGN v-mb-name = MB_mstr.MB_name.
+    END. 
+-->
+    <header class='w3-container w3-dark-grey'>
+        <h1>`v-mb-name` Editing Page</h1> 
+    </header> 
+    <br><br> 
+        
+    <form>   
+        <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+            <h3>Emergency Preparedness Merit Badge Requirements</h3>
+            <div id="req-container">
+	            <div class="w3-row first-row">
+	                <div class="w3-col number-list">
+	                    <span class="req-number">1. </span>
+	                </div>
+	                <div class="w3-col s7">
+		                <input type="text" class="requirement w3-border w3-round-large"/>
+	                </div>
+	                <div class="w3-col s4">
+	                <i class="fa fa-cog" aria-hidden="true"></i>
+	                <div class="req-actions w3-dropdown-content w3-bar-block w3-border">
+					    <a class="w3-bar-item w3-button add-req">Add Req</a>
+					    <a class="w3-bar-item w3-button add-sub">Add Sub-req</a>
+					    <a class="w3-bar-item w3-button add-or">Add OR Group</a>
+					    <a class="w3-bar-item w3-button delete-req">Delete Req</a>
+	                </div>
+	                </div>
+	            </div>
+            </div>
+            <br/>
+        </div>
+    </form> 
+</body>
+</html>

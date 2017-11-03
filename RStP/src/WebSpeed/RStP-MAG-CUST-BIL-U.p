@@ -62,7 +62,11 @@
     
     Version 2.0 - Harold Luttrell - 24/May/16.
             Added code to set the genderhold logical from the SUB-UnString-Name.p program.
-            Identified by:  /* 2dot0 */                                                                    
+            Identified by:  /* 2dot0 */                                                      
+            
+    Version 2.1 - HAROLD LUTTRELL, JR. - 09/Oct/17
+            Modified to support the new directory structure and names in the CMC structure (Release 12).  Marked by 2dot1.
+                                      
   ----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
@@ -164,7 +168,7 @@ IF hold-area-940 <> "" THEN DO:                                                 
             
     IF AVAILABLE (addr_mstr) THEN         
         ASSIGN  addr_mstr.addr_type = "billed to"
-                addr_mstr.addr_modified_by  = USERID ("General")
+                addr_mstr.addr_modified_by  = USERID("Core")                                            /* 2dot1 */
                 addr_mstr.addr_modified_date = TODAY
                 addr_mstr.addr_prog_name  = THIS-PROCEDURE:FILE-NAME.
     
@@ -205,7 +209,7 @@ IF hold-area-940 <> "" THEN DO:                                                 
                     people_mstr.people_addr_id       = IF o-faddr-addrID    <> 0 THEN o-faddr-addrID   ELSE people_mstr.people_addr_id
                     people_mstr.people_second_addr_ID = 0
                     people_mstr.people_gender       = billing_genderhold-R-V            /* 2dot0 */
-                    people_mstr.people_modified_by  = USERID ("General")
+                    people_mstr.people_modified_by  = USERID("Core")                                        /* 2dot1 */
                     people_mstr.people_modified_date = TODAY
                     people_mstr.people_prog_name    = THIS-PROCEDURE:FILE-NAME. 
                 
@@ -258,11 +262,22 @@ IF hold-area-940 <> "" THEN DO:                                                 
                     people_mstr.people_addr_id       = IF o-faddr-addrID    <> 0 THEN o-faddr-addrID   ELSE people_mstr.people_addr_id
                     people_mstr.people_second_addr_ID = 0
                     people_mstr.people_gender         = billing_genderhold-R-V          /* 2dot0 */
-                    people_mstr.people_modified_by  = USERID ("General")
+                    people_mstr.people_modified_by  = USERID("Core")                                        /* 2dot1 */
                     people_mstr.people_modified_date = TODAY
                     people_mstr.people_prog_name    = THIS-PROCEDURE:FILE-NAME.                 
                             
     END.    /**  o-fpe-peopleID  = 0  **/  
+
+    RUN VALUE(SEARCH("SUBpal-ucU.r")) (
+        o-fpe-peopleID,
+        o-faddr-addrID,
+        "Primary",
+        "people_id",
+        NO,
+        "",
+        OUTPUT o-fpe-peopleID,
+        OUTPUT o-ucaddr-successful
+    ).
 
  /* after creating the people_mstr:  
         IF doctor_TCP_id-col-F > 0 then create a DOCTOR mstr   WITH people_id AND TCP CODE **/  
@@ -304,7 +319,7 @@ IF hold-area-940 <> "" THEN DO:                                                 
                     EXCLUSIVE-LOCK. 
             IF AVAILABLE (doctor_mstr) THEN DO:
             
-                ASSIGN  doctor_mstr.doctor_modified_by  = USERID ("HHI")
+                ASSIGN  doctor_mstr.doctor_modified_by  = USERID("Modules")                             /* 2dot1 */
                         doctor_mstr.doctor_modified_date = TODAY
                         doctor_mstr.doctor_prog_name = THIS-PROCEDURE:FILE-NAME. 
                 
@@ -356,16 +371,18 @@ IF  billing_firstname-col-S = "" AND                                            
                        
                 END.  /** people_mstr.people_email <> email-col-G **/ 
                 
-                ASSIGN  people_mstr.people_title        = billing_title_desc-R-V                
+                ASSIGN  people_mstr.people_title        = billing_title_desc-R-V 
                         people_mstr.people_prefname     = billing_prefname-R-V
 /*                        people_mstr.people_addr_id      = o-faddr-addrID*/
                         people_mstr.people_addr_id       = IF o-faddr-addrID    <> 0 THEN o-faddr-addrID   ELSE people_mstr.people_addr_id
+>>>>> /* We are now creating pal_list records here, but we need to continue setting the people_mstr.people_addr fields until the entire system is switched over to use the pal_list table exclusively */                                            
+                        
                         people_mstr.people_second_addr_ID = 0
                         people_mstr.people_gender       = billing_genderhold-R-V            /* 2dot0 */
-                        people_mstr.people_modified_by  = USERID ("General")
+                        people_mstr.people_modified_by  = USERID("Core")                            /* 2dot1 */
                         people_mstr.people_modified_date = TODAY
                         people_mstr.people_prog_name    = THIS-PROCEDURE:FILE-NAME. 
-                    
+ 
             END.  /**  IF AVAILABLE (people_mstr)  **/
        
         END.    /**  o-fpe-peopleID  > 0  **/  
@@ -413,9 +430,11 @@ IF  billing_firstname-col-S = "" AND                                            
                         people_mstr.people_prefname  = billing_prefname-R-V
 /*                        people_mstr.people_addr_id      = o-faddr-addrID*/
                         people_mstr.people_addr_id       = IF o-faddr-addrID    <> 0 THEN o-faddr-addrID   ELSE people_mstr.people_addr_id
+>>>>> /* We are now creating pal_list records here, but we need to continue setting the people_mstr.people_addr fields until the entire system is switched over to use the pal_list table exclusively */
+
                         people_mstr.people_second_addr_ID = 0
                         people_mstr.people_gender       = billing_genderhold-R-V            /* 2dot0 */
-                        people_mstr.people_modified_by  = USERID ("General")
+                        people_mstr.people_modified_by  = USERID("Core")                                    /* 2dot1 */
                         people_mstr.people_modified_date = TODAY
                         people_mstr.people_prog_name = THIS-PROCEDURE:FILE-NAME.                 
                                 
@@ -463,7 +482,7 @@ IF o-fcust-exist = NO THEN DO:
             EXCLUSIVE-LOCK.
             
     IF AVAILABLE (cust_mstr) THEN 
-        ASSIGN  cust_mstr.cust_modified_by      = USERID ("General")
+        ASSIGN  cust_mstr.cust_modified_by      = USERID("Core")                                    /* 2dot1 */
                 cust_mstr.cust_modified_date    = TODAY
                 cust_mstr.cust_prog_name        = THIS-PROCEDURE:FILE-NAME.
                 
@@ -520,7 +539,7 @@ IF  o-fshadc-ID  > 0 THEN DO:
     
         ASSIGN scust_shadow.scust_magento_id    = STRING(magento-id-BP) 
                scust_shadow.scust_doctor_ID     = INTEGER(dr_tcp_id_scust_dr_id_int-col-F)
-               scust_shadow.scust_modified_by   = USERID ("HHI")
+               scust_shadow.scust_modified_by   = USERID("Custom")                                                  /* 2dot1 */
                scust_shadow.scust_modified_date = TODAY
                scust_shadow.scust_prog_name     = THIS-PROCEDURE:FILE-NAME.  
             
