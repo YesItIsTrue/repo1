@@ -29,8 +29,8 @@
             // People Picker
             function formatPeopleResponse (data) {
                var display = data.text;
-               if (data.dob != undefined) {
-                    display += " " + data.dob;
+               if (data.username != undefined) {
+                    display += " (" + data.username + ")";
                }
                return display;
             }
@@ -41,12 +41,12 @@
             
             $("#h-user").select2({
                 ajax: {
-                    url: "AJAX-people-picker-R.r",
+                    url: "AJAX-emp-picker-R.r",
                     dataType: 'json',
                     delay: 250,
                     data: function (params) {
                       return {
-                        email: params.term, // search term
+                        name: params.term, // search term
                         page: params.page
                       };
                     },

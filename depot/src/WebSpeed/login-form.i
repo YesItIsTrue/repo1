@@ -37,7 +37,7 @@
     DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
     DEFINE VARIABLE v-username AS CHARACTER NO-UNDO.
     DEFINE VARIABLE v-password AS CHARACTER NO-UNDO.
-    DEFINE VARIABLE v-last-password-reset-date2 AS DATE. /* This is some voodoo with the cookies. Even though this v-last-password-reset-date is defined above, we can't reuse it here*/
+    DEFINE VARIABLE v-last-password-reset-date2 AS DATE. /* This is some voodoo with the cookies. Even though this v-last-password-reset-date is defined in the cookie, we can't reuse it here*/
     DEFINE VARIABLE v-user-id AS CHARACTER NO-UNDO.
     
     ASSIGN 
@@ -53,9 +53,7 @@
         IF v-password-warning = FALSE THEN DO:
             {&OUT}
                 "<script>" SKIP
-                "       (function() ~{" SKIP
-                "           window.location = '{1}';" SKIP
-                "       ~})();" SKIP
+                "   window.location = '{1}';" SKIP
                 "</script>" SKIP.
         END.
         ELSE DO:
@@ -128,7 +126,7 @@
             
     {&OUT}        
         "   </div>" SKIP
-        "   <form class='login-form' method=''post''>" SKIP
+        "   <form class='login-form' method='post'>" SKIP
         "      <div class='w3-row'>" SKIP
         "          <label>Username</label>" SKIP
         "          <input type='text' name='username' class='w3-border w3-round-large w3-select' required/>" SKIP         

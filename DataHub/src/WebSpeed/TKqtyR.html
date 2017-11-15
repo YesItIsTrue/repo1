@@ -39,7 +39,7 @@ CREATE WIDGET-POOL.
 /************************ body of code ***********************/
               
 
-		FOR EACH TK_mstr NO-LOCK:
+		FOR EACH TK_mstr WHERE TK_mstr.TK_deleted = ? NO-LOCK:
 		    
 			v-tk_stat = IF TK_mstr.TK_status = "" THEN "BLANK" ELSE TK_mstr.TK_status.
 			

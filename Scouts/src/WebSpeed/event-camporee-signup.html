@@ -9,9 +9,11 @@
     <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/>
     <link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/6.11.4/sweetalert2.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/6.11.4/sweetalert2.min.js"></script>
     <!--WSS
     PROCEDURE Output-Header:
-        {cookie-check-permissions.i}.
+/*        {cookie-check-permissions.i}.*/
     END PROCEDURE.
     -->
     <style>
@@ -51,9 +53,23 @@
                 }
             });
             
-            $("#menu-preference-form").submit(function(e) {
+            $("#submit-btn").click(function(e) {
                 if ($("input:checked").length !== 3) {
-                    return false;
+                    e.preventDefault();
+                    swal({
+					  title: 'Are you sure?',
+					  text: "You've opted to skip at least 1 meal! Is this correct?",
+					  type: 'warning',
+					  showCancelButton: true,
+					  confirmButtonColor: '#09873F',
+                      cancelButtonColor: '#d33',
+					  confirmButtonClass: 'w3-btn-block w3-round',
+                      cancelButtonClass: 'w3-btn-block w3-round',
+					  confirmButtonText: "Yep, that's correct!",
+					  cancelButtonText: "No! I want food!"
+					}).then(function () {
+					  $("#menu-preference-form").submit();
+					});
                 }
             });
         });
@@ -77,7 +93,7 @@
             v-breakfast-choice = html-encode(get-value("h-breakfast"))
             v-lunch-choice = html-encode(get-value("h-lunch")).
             
-        {registration.i}.
+/*        {registration.i}.*/
     -->
     <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/CMS-Scout_green.css">
     <div class="w3-row-padding">
@@ -144,7 +160,7 @@
 				<div class="meal-card w3-margin-bottom radio-group w3-col m10">
 				  <center><div class="w3-theme-dark w3-xlarge">Dinner</div></center>
 				  <div class="radio w3-card-4 choice-a">
-				      <input type="radio" name="h-dinner" val="dinner-a" hidden/>
+				      <input type="radio" name="h-dinner" value="dinner-a" hidden/>
 				      <div class="w3-ul w3-border w3-center">
 				        <h2>
 	   			             <b>Chicken Casserole<br/>Foil Dinner</b>
@@ -153,7 +169,7 @@
 				  </div>
 				  <div class="buffer">&nbsp;</div>
 				  <div class="radio w3-card-4 choice-b">
-				      <input type="radio" name="h-dinner" val="dinner-b" hidden/>
+				      <input type="radio" name="h-dinner" value="dinner-b" hidden/>
 		              <div class="w3-ul w3-border w3-center">
                         <h2>
                              <b>Sausage with Potatoes<br/>and Green Beans</b>
@@ -169,7 +185,7 @@
                 <div class="meal-card w3-margin-bottom radio-group w3-col m10">
                   <center><div class="w3-theme-dark w3-xlarge">Breakfast</div></center>
                   <div class="radio w3-card-4 choice-a">
-                      <input type="radio" name="h-breakfast" val="breakfast-a" hidden/>
+                      <input type="radio" name="h-breakfast" value="breakfast-a" hidden/>
                       <div class="w3-ul w3-border w3-center">
                         <h2>
                              <b>Breakfast<br/>Burritos</b>
@@ -178,7 +194,7 @@
                   </div>
                   <div class="buffer">&nbsp;</div>
                   <div class="radio w3-card-4 choice-b">
-                      <input type="radio" name="h-breakfast" val="breakfast-b" hidden/>
+                      <input type="radio" name="h-breakfast" value="breakfast-b" hidden/>
                       <div class="w3-ul w3-border w3-center">
                         <h2>
                              <b>Pancakes, Toast,<br/>and Bacon</b>
@@ -194,7 +210,7 @@
                 <div class="meal-card w3-margin-bottom radio-group w3-col m10">
                   <center><div class="w3-theme-dark w3-xlarge">Lunch</div></center>
                   <div class="radio w3-card-4 choice-a">
-                      <input type="radio" name="h-lunch" val="lunch-a" hidden/>
+                      <input type="radio" name="h-lunch" value="lunch-a" hidden/>
                       <div class="w3-ul w3-border w3-center">
                         <h2>
                              <b>Italian Subs<br/>with Chips</b>
@@ -203,7 +219,7 @@
                   </div>
                   <div class="buffer">&nbsp;</div>
                   <div class="radio w3-card-4 choice-b">
-                      <input type="radio" name="h-lunch" val="lunch-b" hidden/>
+                      <input type="radio" name="h-lunch" value="lunch-b" hidden/>
                       <div class="w3-ul w3-border w3-center">
                         <h2>
                              <b>Grilled Cheese<br/>and Tomato Bisque Soup</b>
@@ -216,7 +232,8 @@
             
             <center>
                 <br/>
-                <button type='submit' name='h-act' value='Signup' class='w3-btn-block w3-round' style='max-width:800px; height: 100px; color:white; background:#09873F;'><h1><b>Continue</b></h1></button>
+                <input type="hidden" name='h-act' value='Signup'/>
+                <button type='submit' id='submit-btn' class='w3-btn-block w3-round' style='max-width:800px; height: 100px; color:white; background:#09873F;'><h1><b>Continue</b></h1></button>
             </center>
 		</form>
 	<!--WSS

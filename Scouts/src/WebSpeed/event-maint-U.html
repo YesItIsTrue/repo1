@@ -28,6 +28,7 @@
 		.w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
 		.w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
 		.w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+		.w3-select {padding: 9px 9px !important}
     </style>
     
     <script>        
@@ -200,6 +201,7 @@ DEFINE VARIABLE v-event_color_theme LIKE event_mstr.event_color_theme NO-UNDO.
 DEFINE VARIABLE v-event_category LIKE event_mstr.event_category NO-UNDO.
 DEFINE VARIABLE v-event_URL LIKE event_mstr.event_URL NO-UNDO.
 DEFINE VARIABLE v-event_dress_code LIKE event_mstr.event_dress_code NO-UNDO. 
+DEFINE VARIABLE v-event_age_group LIKE event_mstr.event__char01 NO-UNDO.
 DEFINE VARIABLE v-success AS LOGICAL INITIAL NO NO-UNDO.
 DEFINE VARIABLE v-action AS CHARACTER NO-UNDO.
 
@@ -227,7 +229,8 @@ PROCEDURE GetEventHtmlParams:
 	    v-event_URL = get-value("eventURL")
 	    v-event_dress_code = get-value("eventDressCode")
 	    v-event-start-time-string = get-value("eventStartTimeString")
-	    v-event-end-time-string = get-value("eventEndTimeString").
+	    v-event-end-time-string = get-value("eventEndTimeString")
+	    v-event_age_group = get-value("eventAgeGroup").
 	    
 	    RUN HTMLifyProgressCode.
 END PROCEDURE.
@@ -237,7 +240,8 @@ PROCEDURE GetEventRecordData:
     v-event_ID, "", ?, ?,
     OUTPUT v-event_name, OUTPUT v-event_start_time, OUTPUT v-event_end_time, OUTPUT v-event_addr_id, OUTPUT v-event_desc,
     OUTPUT v-event_slogan, OUTPUT v-event_contact, OUTPUT v-event_start_date, OUTPUT v-event_end_date, OUTPUT v-event_ID,
-    OUTPUT v-event_color_theme, OUTPUT v-event_category, OUTPUT v-event_URL, OUTPUT v-event_dress_code, OUTPUT v-success
+    OUTPUT v-event_color_theme, OUTPUT v-event_category, OUTPUT v-event_URL, OUTPUT v-event_dress_code, OUTPUT v-event_age_group, 
+    OUTPUT v-success
     ).
     
     RUN HTMLifyProgressCode.
@@ -280,7 +284,8 @@ PROCEDURE EncodeData:
 		v-event_color_theme = html-encode(v-event_color_theme)
 		v-event_category = html-encode(v-event_category)
 		v-event_URL = html-encode(v-event_URL)
-		v-event_dress_code = html-encode(v-event_dress_code).
+		v-event_dress_code = html-encode(v-event_dress_code)
+		v-event_age_group = html-encode(v-event_age_group).
 END PROCEDURE.
 
 PROCEDURE ConvertTimeStamps:
@@ -365,6 +370,8 @@ CASE v-act:
                     "<input type='text' name='eventColorTheme' value=~"" v-event_color_theme "~" class='w3-border w3-round-large w3-select'/>" SKIP
                     "<label>Event Category</label>" SKIP
                     "<input type='text' name='eventCategory' value=~"" v-event_category "~" class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Event Age Group</label>" SKIP
+                    "<input type='text' name='eventAgeGroup' value=~"" v-event_age_group "~" class='w3-border w3-round-large w3-select'/>" SKIP
                     "<label>Event Website</label>" SKIP
                     "<input type='text' name='eventURL' value=~"" v-event_URL "~" class='w3-border w3-round-large w3-select'/>" SKIP
                     "<label>Dress Code</label>" SKIP
@@ -396,7 +403,8 @@ CASE v-act:
 	        v-event_URL = get-value("eventURL")
 	        v-event_dress_code = get-value("eventDressCode")
 	        v-event-start-time-string = get-value("eventStartTimeString")
-	        v-event-end-time-string = get-value("eventEndTimeString").
+	        v-event-end-time-string = get-value("eventEndTimeString")
+	        v-event_age_group = get-value("eventAgeGroup").
 	    
 	    RUN ConvertTimeStamps.
         
@@ -415,6 +423,7 @@ CASE v-act:
             v-event_category,
             v-event_URL,
             v-event_dress_code,
+            v-event_age_group,
             OUTPUT v-success,
             OUTPUT v-action,
             OUTPUT v-event_ID

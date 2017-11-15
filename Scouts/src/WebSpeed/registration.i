@@ -25,14 +25,20 @@
     
 DEFINE VARIABLE i-organization AS CHARACTER NO-UNDO.
 DEFINE VARIABLE i-group AS CHARACTER NO-UNDO.
+DEFINE VARIABLE i-regis-empid AS INTEGER NO-UNDO.
 
 ASSIGN
     i-organization = "Augusta Maine Stake"
     i-group = html-encode(get-value("h-group")).
+    
+RUN VALUE(SEARCH("session-get-user-id.r")) (
+    get-cookie("c-session-token"),
+    OUTPUT i-regis-empid
+).
 
-FIND usr_mstr WHERE usr_mstr.usr_people_ID = INTEGER(get-cookie("c-user-id")) AND usr_mstr.usr_deleted = ? NO-ERROR.
+FIND usr_mstr WHERE usr_mstr.usr_people_ID = i-regis-empid AND usr_mstr.usr_deleted = ? NO-ERROR.
 IF NOT AVAILABLE (usr_mstr) THEN DO:
-    {&OUT} "<script>window.location = 'https://google.com';</script>".
+/*    {&OUT} "<script>window.location = 'AMS-landing-R.r';</script>".*/
 END.
 
 {&OUT}
@@ -42,12 +48,12 @@ END.
 "    </a>" SKIP
 "    <div class='user-settings'>" SKIP
 "           <h3>" SKIP
-"               <span>Signed in as " usr_mstr.usr_name " &nbsp;</span>" SKIP
+/*"               <span>Signed in as " usr_mstr.usr_name " &nbsp;</span>" SKIP*/
 "               <form action='account-preferences.html' method='post' class='title-form'>" SKIP
 
 /*"                   <button type='submit' class='title-btn' title='Account Preferences'><i class='fa fa-cog' aria-hidden='true'></i></button>" SKIP*/
 "               </form>" SKIP
-"               <form action='cookie-logout.html' method='post' class='title-form'>" SKIP
+"               <form action='cookie-logout-html.r?redirect-location=AMS-landing-R.r' method='post' class='title-form'>" SKIP
 "                   <button type='submit' class='title-btn' title='Logout'><i class='fa fa-sign-out' aria-hidden='true'></i></button>" SKIP
 "               </form>" SKIP
 "           </h3>" SKIP

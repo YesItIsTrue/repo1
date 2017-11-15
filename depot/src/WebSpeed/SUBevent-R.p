@@ -32,7 +32,8 @@ DEFINE OUTPUT PARAMETER o-event_ID LIKE event_mstr.event_ID NO-UNDO.
 DEFINE OUTPUT PARAMETER o-event_color_theme LIKE event_mstr.event_color_theme NO-UNDO.
 DEFINE OUTPUT PARAMETER o-event_category LIKE event_mstr.event_category NO-UNDO.
 DEFINE OUTPUT PARAMETER o-event_URL LIKE event_mstr.event_URL NO-UNDO.
-DEFINE OUTPUT PARAMETER o-event_dress_code LIKE event_mstr.event_dress_code NO-UNDO. 
+DEFINE OUTPUT PARAMETER o-event_dress_code LIKE event_mstr.event_dress_code NO-UNDO.
+DEFINE OUTPUT PARAMETER o-event_age_group LIKE event_mstr.event__char01 NO-UNDO.
 DEFINE OUTPUT PARAMETER o-success AS LOGICAL INITIAL NO NO-UNDO.
 
 /* ********************  Preprocessor Definitions  ******************** */
@@ -61,5 +62,6 @@ IF AVAILABLE (event_mstr) THEN DO:
         o-event_category = event_mstr.event_category
         o-event_URL = event_mstr.event_URL
         o-event_dress_code = event_mstr.event_dress_code
+        o-event_age_group = event_mstr.event__char01
         o-success = TRUE.
 END.

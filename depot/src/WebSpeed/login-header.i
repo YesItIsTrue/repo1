@@ -32,6 +32,16 @@ PROCEDURE Output-Header:
     DEFINE VARIABLE i-session-token AS CHARACTER NO-UNDO.
     DEFINE VARIABLE i-empid AS INTEGER NO-UNDO.
     
+    set-cookie(
+        "c-ss-app",
+        "{2}",
+        ?,
+        ?,
+        "/",
+        ?,
+        ?
+    ).
+    
     RUN VALUE(SEARCH("session-get-user-id.r")) (
         get-cookie("c-session-token"),
         OUTPUT i-empid
@@ -41,7 +51,7 @@ PROCEDURE Output-Header:
     FIND session_det WHERE session_det.session_token = i-session-token NO-ERROR.
     IF i-session-token <> "" AND AVAILABLE(session_det) AND session_det.session_expiration > NOW THEN DO:
         RUN VALUE(SEARCH("cookie-redirect.r")) (
-            "app-portal.r"
+            "{1}"
         ).
     END.
 

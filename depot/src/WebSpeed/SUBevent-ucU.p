@@ -27,6 +27,7 @@ DEFINE INPUT PARAMETER i-event_color_theme LIKE event_mstr.event_color_theme NO-
 DEFINE INPUT PARAMETER i-event_category LIKE event_mstr.event_category NO-UNDO.
 DEFINE INPUT PARAMETER i-event_URL LIKE event_mstr.event_URL NO-UNDO.
 DEFINE INPUT PARAMETER i-event_dress_code LIKE event_mstr.event_dress_code NO-UNDO. 
+DEFINE INPUT PARAMETER i-event_age_group LIKE event_mstr.event__char01 NO-UNDO.
 
 DEFINE OUTPUT PARAMETER o-success AS LOGICAL INITIAL NO NO-UNDO.
 DEFINE OUTPUT PARAMETER o-action AS CHARACTER NO-UNDO.
@@ -55,6 +56,7 @@ IF AVAILABLE (event_mstr) THEN DO:
         event_mstr.event_category = IF i-event_category <> "" THEN i-event_category ELSE event_mstr.event_category
         event_mstr.event_URL = IF i-event_URL <> "" THEN i-event_URL ELSE event_mstr.event_URL
         event_mstr.event_dress_code = IF i-event_dress_code <> "" THEN i-event_dress_code ELSE event_mstr.event_dress_code
+        event_mstr.event__char01 = IF i-event_age_group <> "" THEN i-event_age_group ELSE event_mstr.event__char01
         event_mstr.event_modified_date = TODAY 
         event_mstr.event_modified_by = USERID("Modules")
         event_mstr.event_prog_name = THIS-PROCEDURE:FILENAME
@@ -79,6 +81,7 @@ ELSE DO:
             event_mstr.event_category = i-event_category
             event_mstr.event_URL = i-event_URL
             event_mstr.event_dress_code = i-event_dress_code
+            event_mstr.event__char01 = i-event_age_group
             event_mstr.event_create_date = TODAY 
             event_mstr.event_created_by = USERID("Modules")
             event_mstr.event_prog_name = THIS-PROCEDURE:FILENAME
