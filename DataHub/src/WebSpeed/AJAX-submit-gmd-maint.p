@@ -32,41 +32,54 @@ PROCEDURE createJson :
     jObj = NEW jsonObject().
     
     /* Begin logic */
-    DEFINE VARIABLE v-menu-item AS CHARACTER NO-UNDO.
-    DEFINE VARIABLE v-group-ids AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE v-menu-items AS CHARACTER NO-UNDO FORMAT "x(70)".
+    DEFINE VARIABLE v-group-ids AS CHARACTER NO-UNDO FORMAT "x(70)".
+    DEFINE VARIABLE v-update-type AS CHARACTER NO-UNDO FORMAT "x(70)".
     DEFINE VARIABLE v-menu_num LIKE menu_mstr.menu_num NO-UNDO.
     DEFINE VARIABLE v-menu_select LIKE menu_mstr.menu_select NO-UNDO.
     DEFINE VARIABLE i AS INTEGER NO-UNDO.
-    DEFINE VARIABLE v-success AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE j AS INTEGER NO-UNDO.
+    DEFINE VARIABLE v-success AS LOGICAL INITIAL YES NO-UNDO.
     
     ASSIGN
-        v-menu-item = html-encode(get-value("menuItem"))
-        v-group-ids = html-encode(get-value("groupIDs")).
+        v-menu-items = html-encode(get-value("menuIDs"))
+        v-group-ids = html-encode(get-value("groupIDs"))
+        v-update-type = html-encode(get-value("updateType")).
     
-    IF NUM-ENTRIES (v-menu-item) = 2 THEN DO:
-        ASSIGN     
-            v-menu_num = ENTRY(1, v-menu-item)
-            v-menu_select = INTEGER(ENTRY(2, v-menu-item)).
+    DO i = 1 TO NUM-ENTRIES(v-menu-items, ","):
+        IF NUM-ENTRIES(ENTRY(i, v-menu-items, ","), "~~") = 2 THEN DO:
+            ASSIGN     
+                v-menu_num = ENTRY(1, ENTRY(i, v-menu-items, ","), "~~")
+                v-menu_select = INTEGER(ENTRY(2, ENTRY(i, v-menu-items, ","), "~~")).
             
-        /* Clear old groups from the user */    
-        FOR EACH gmd_det WHERE gmd_det.gmd_menu_num = v-menu_num AND gmd_det.gmd_menu_select = v-menu_select:
-            DELETE gmd_det.
+            IF v-update-type <> "append" THEN DO:
+                /* Clear old groups from the menu item */    
+                FOR EACH gmd_det WHERE gmd_det.gmd_menu_num = v-menu_num AND gmd_det.gmd_menu_select = v-menu_select:
+                    DELETE gmd_det.
+                END.
+            END.
+            
+            /* Attach new groups to the user */
+            DO j = 1 TO NUM-ENTRIES (v-group-ids):
+                FIND gmd_det WHERE gmd_det.gmd_menu_num = v-menu_num AND gmd_det.gmd_menu_select = v-menu_select AND gmd_det.gmd_grp_id = ENTRY(j, v-group-ids) NO-ERROR.
+                IF NOT AVAILABLE (gmd_det) THEN  
+                    RUN VALUE(SEARCH("SUBgmd-ucU.r")) (
+                        v-menu_num,
+                        v-menu_select,
+                        ENTRY(j, v-group-ids),
+                        OUTPUT v-success
+                    ).
+            END. /* DO i = 1 TO NUM-ENTRIES (v-group-ids) */
+        END. /* IF NUM-ENTRIES (v-menu-items) = 2 */
+        ELSE DO:
+            DISPLAY "This value (in the HTML) should be x.x".
+            v-success = NO.
+            LEAVE.
         END.
-        
-        /* Attach new groups to the user */
-        DO i = 1 TO NUM-ENTRIES (v-group-ids):
-            RUN VALUE(SEARCH("SUBgmd-ucU.r")) (
-                v-menu_num,
-                v-menu_select,
-                ENTRY(i, v-group-ids),
-                OUTPUT v-success
-            ).
-        END. /* DO i = 1 TO NUM-ENTRIES (v-group-ids) */
-        
+    END. /* DO i = 1 TO NUM-ENTRIES(v-menu-items, ",") */
+    
+    IF v-success THEN 
         jObj:Add("success", TRUE).
-    END. /* IF NUM-ENTRIES (v-menu-item) = 2 */
-    ELSE
-        DISPLAY "Yo. There's an error with the value of the menu_item you are trying to update. This value (in the HTML) should be x,x".
     
     /* End logic */
  

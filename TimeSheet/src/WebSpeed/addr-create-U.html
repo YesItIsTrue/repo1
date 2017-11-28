@@ -1,0 +1,232 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Andrew Garver">
+    <TITLE>Address Maintenance</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="8/Sept/2017">
+    <META NAME='LAST_UPDATED' CONTENT="8/Sept/2017">   
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+    <style>
+        label {padding-top: 10px}
+        .w3-select {
+          margin: 5px 0px 10px 0px;
+          padding-left: 10px;
+        }
+        .w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
+        .w3-theme-background {color::#000 !important; background-color:#fff !important}
+        .w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
+        .w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+        .w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+    </style>
+    
+    <script>
+    function populateStateDropdown(event){
+            $.post("AJAX-populate-state-dropdown.r",
+            {
+                countryISO: $("[name='h-country']").val() ? $("[name='h-country']").val() : "USA" 
+            },
+            function(response, status){
+                $("[name='h-state']").children('option:not(:first)').remove();
+                $.each(response, function (key, value) {
+                    $("[name='h-state']").append("<option value='" + key + "'>" + value + "</option>");
+                });
+            });
+    }
+    
+    $(document).ready(function() {
+        populateStateDropdown();
+        $("[name='h-country']").change(() => populateStateDropdown(event));
+    });
+</script>
+</HEAD>
+<BODY class='w3-white'>
+<header class='w3-container w3-dark-grey'>
+<h1>Address Maintenance</h1>
+</header>
+<br><br>
+<script language='SpeedScript'>
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-addr-id          LIKE addr_mstr.addr_id        NO-UNDO.
+DEFINE VARIABLE v-addr-addr1       LIKE addr_mstr.addr_addr1     NO-UNDO.
+DEFINE VARIABLE v-addr-addr2       LIKE addr_mstr.addr_addr2     NO-UNDO.
+DEFINE VARIABLE v-addr-addr3       LIKE addr_mstr.addr_addr3     NO-UNDO.
+DEFINE VARIABLE v-addr-city        LIKE addr_mstr.addr_city      NO-UNDO.
+DEFINE VARIABLE v-addr-stateprov   LIKE addr_mstr.addr_stateprov NO-UNDO.
+DEFINE VARIABLE v-addr-zip         LIKE addr_mstr.addr_zip       NO-UNDO.
+DEFINE VARIABLE v-addr-country     LIKE addr_mstr.addr_country   NO-UNDO.
+DEFINE VARIABLE v-addr-type        LIKE addr_mstr.addr_type      NO-UNDO.
+
+DEFINE VARIABLE v-addr-create     AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE v-addr-update     AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE v-addr-avail      AS LOGICAL INITIAL YES          NO-UNDO.
+DEFINE VARIABLE v-addr-successful AS LOGICAL INITIAL NO           NO-UNDO.
+
+DEFINE VARIABLE redirect-act AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_name AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_addr_id AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_desc AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_slogan AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_contact AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_start_date AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_end_date AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_ID AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_color_theme AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_category AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_URL AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event_dress_code AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event-start-time-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE h-event-end-time-string AS CHARACTER NO-UNDO.
+
+ASSIGN
+    v-act = get-value("this-act")
+    redirect-act = get-value("redirect-act")
+    h-event_name = get-value("eventName")
+    h-event_addr_id = get-value("eventAddressID")
+    h-event_desc = get-value("eventDescription")
+    h-event_slogan = get-value("eventSlogan")
+    h-event_contact = get-value("eventContact")
+    h-event_start_date = get-value("eventStartDate")
+    h-event_end_date = get-value("eventEndDate")
+    h-event_ID = get-value("eventID")
+    h-event_color_theme = get-value("eventColorTheme")
+    h-event_category = get-value("eventCategory")
+    h-event_URL = get-value("eventURL")
+    h-event_dress_code = get-value("eventDressCode")
+    h-event-start-time-string = get-value("eventStartTimeString")
+    h-event-end-time-string = get-value("eventEndTimeString").
+
+CASE v-act:
+    WHEN "Create" THEN DO:
+        ASSIGN
+			v-addr-addr1 = get-value("h-addr1")
+			v-addr-addr2 = get-value("h-addr2")
+			v-addr-addr3 = get-value("h-addr3")
+			v-addr-city = get-value("h-city")
+			v-addr-stateprov = get-value("h-stateprov")
+			v-addr-zip = get-value("h-zip")
+			v-addr-country = get-value("h-country").
+			
+	    RUN VALUE(SEARCH("SUBaddr-ucU.r")) (
+		    0,
+			v-addr-addr1,
+			v-addr-addr2,
+			v-addr-addr3,
+			v-addr-city,
+			v-addr-stateprov,
+			v-addr-zip,
+			v-addr-country,
+			"Primary",
+			OUTPUT v-addr-id,
+			OUTPUT v-addr-create,
+			OUTPUT v-addr-update,
+			OUTPUT v-addr-avail,
+			OUTPUT v-addr-successful
+	    ).
+	
+	    IF v-addr-successful = YES THEN DO:
+	        {&OUT}
+                "<center><h1>Successfully created new address! You will now be redirected back to whence you came.</h1></center>" SKIP
+                "<br/><br/>" SKIP
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                   "<div class='w3-center w3-col s12'>" SKIP
+                   "    <form action='event-maint-U.html'>" SKIP
+                   "        <input type='hidden' name='eventName' value=~"" h-event_name "~"/>" SKIP
+				   "        <input type='hidden' name='eventAddressID' value=~"" STRING(v-addr-id) "~"/>" SKIP
+				   "        <input type='hidden' name='eventDescription' value=~"" h-event_desc "~"/>" SKIP
+				   "        <input type='hidden' name='eventSlogan' value=~"" h-event_slogan "~"/>" SKIP
+				   "        <input type='hidden' name='eventContact' value=~"" h-event_contact "~"/>" SKIP
+				   "        <input type='hidden' name='eventStartDate' value=~"" h-event_start_date "~"/>" SKIP
+				   "        <input type='hidden' name='eventEndDate' value=~"" h-event_end_date "~"/>" SKIP
+				   "        <input type='hidden' name='eventID' value=~"" h-event_ID "~"/>" SKIP
+				   "        <input type='hidden' name='eventColorTheme' value=~"" h-event_color_theme "~"/>" SKIP
+				   "        <input type='hidden' name='eventCategory' value=~"" h-event_category "~"/>" SKIP
+				   "        <input type='hidden' name='eventURL' value=~"" h-event_URL "~"/>" SKIP
+				   "        <input type='hidden' name='eventDressCode' value=~"" h-event_dress_code "~"/>" SKIP
+				   "        <input type='hidden' name='eventStartTimeString' value=~"" h-event-start-time-string "~"/>" SKIP
+				   "        <input type='hidden' name='eventEndTimeString' value=~"" h-event-end-time-string "~"/>" SKIP
+				   "        <input type='hidden' name='h-redirect' value='yes'/>" SKIP
+				   "        <input type='hidden' name='h-act' value=~"" redirect-act "~"/>" SKIP
+                   "        <button class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Continue</b></BUTTON>" SKIP
+                   "    </form>" SKIP
+                   "</div>" SKIP
+                "</div>" SKIP.
+	    END.
+	    ELSE DO:
+	        {&OUT}
+                "<center><h1>Whoops! Something went wrong while creating that address.</h1></center>" SKIP
+                "<br/><br/>" SKIP
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                   "<div class='w3-center w3-col s12'>" SKIP
+                   "    <form action='event-maint-U.html'>" SKIP
+                   "        <button class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Continue</b></BUTTON>" SKIP
+                   "    </form>" SKIP
+                   "</div>" SKIP
+                "</div>" SKIP.
+	    END.
+    END.
+    OTHERWISE DO:
+        {&OUT}
+        "<form>" SKIP
+            "<input type='hidden' name='eventName' value=~"" h-event_name "~"/>" SKIP
+            "<input type='hidden' name='eventAddressID' value=~"" STRING(v-addr-id) "~"/>" SKIP
+            "<input type='hidden' name='eventDescription' value=~"" h-event_desc "~"/>" SKIP
+            "<input type='hidden' name='eventSlogan' value=~"" h-event_slogan "~"/>" SKIP
+            "<input type='hidden' name='eventContact' value=~"" h-event_contact "~"/>" SKIP
+            "<input type='hidden' name='eventStartDate' value=~"" h-event_start_date "~"/>" SKIP
+            "<input type='hidden' name='eventEndDate' value=~"" h-event_end_date "~"/>" SKIP
+            "<input type='hidden' name='eventID' value=~"" h-event_ID "~"/>" SKIP
+            "<input type='hidden' name='eventColorTheme' value=~"" h-event_color_theme "~"/>" SKIP
+            "<input type='hidden' name='eventCategory' value=~"" h-event_category "~"/>" SKIP
+            "<input type='hidden' name='eventURL' value=~"" h-event_URL "~"/>" SKIP
+            "<input type='hidden' name='eventDressCode' value=~"" h-event_dress_code "~"/>" SKIP
+            "<input type='hidden' name='eventStartTimeString' value=~"" h-event-start-time-string "~"/>" SKIP
+            "<input type='hidden' name='eventEndTimeString' value=~"" h-event-end-time-string "~"/>" SKIP
+            "<input type='hidden' name='h-redirect' value='yes'/>" SKIP
+            "<input type='hidden' name='redirect-act' value=~"" redirect-act "~"/>" SKIP
+            "<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>" SKIP
+                "<h2>Create a new address</h2>" SKIP
+                "<div class='w3-padding-top'>" SKIP
+                    "<label>Address Line 1</label>" SKIP
+                    "<input type='text' name='h-addr1' class='w3-border w3-round-large w3-select' required/>" SKIP
+                    "<label>Address Line 2</label>" SKIP
+                    "<input type='text' name='h-addr2' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>Address Line 3</label>" SKIP
+                    "<input type='text' name='h-addr3' class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<label>City</label>" SKIP
+                    "<input type='text' name='h-city' class='w3-border w3-round-large w3-select' required/>" SKIP
+                    "<label>State</label>" SKIP
+                    "<select name='h-state' class='w3-border w3-round-large w3-select' required>" SKIP
+                    "   <option value=''>Select a state</option>" SKIP
+                    "</select>" SKIP
+                    "<label>Zipcode</label>" SKIP
+                    "<input type='text' name='h-zip' class='w3-border w3-round-large w3-select' required/>" SKIP
+                    "<label>Country</label>" SKIP
+                    "<select name='h-country' class='w3-border w3-round-large w3-select' required>" SKIP.
+                    FOR EACH country_mstr WHERE country_mstr.Country_Primary = TRUE AND country_mstr.country_deleted = ? NO-LOCK BY country_mstr.country_ISO:
+                        {&OUT} "<option value=~"" country_mstr.country_ISO "~""  IF country_mstr.country_ISO = "USA" THEN "selected" ELSE "" ">" country_mstr.country_display_name "</option>" SKIP.
+                    END.
+                    {&OUT}
+                    "</select>" SKIP
+                "</div>" SKIP
+                "<br>" SKIP
+                "</div>" SKIP
+                "<br>" SKIP
+                "<div class='w3-row-padding w3-margin'>" SKIP
+                   "<div class='w3-center w3-col s12'>" SKIP
+                       "<button type='submit' name='this-act' value='Create' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Create</b></BUTTON>" SKIP
+                   "</div>" SKIP
+                "</div>" SKIP
+            "</div>" SKIP
+        "</form>" SKIP.
+    END.
+END.
+</script>
+</BODY>
+</BODY>

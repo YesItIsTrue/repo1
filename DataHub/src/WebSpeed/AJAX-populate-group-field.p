@@ -54,10 +54,10 @@ PROCEDURE createJson :
             DEFINE VARIABLE v-menu_num LIKE menu_mstr.menu_num NO-UNDO.
             DEFINE VARIABLE v-menu_select LIKE menu_mstr.menu_select NO-UNDO.
             
-            IF NUM-ENTRIES (v-key) = 2 THEN DO:
+            IF NUM-ENTRIES (v-key, "~~") = 2 THEN DO:
                 ASSIGN 
-                    v-menu_num = ENTRY(1, v-key)
-                    v-menu_select = INTEGER(ENTRY(2, v-key)).
+                    v-menu_num = ENTRY(1, v-key, "~~")
+                    v-menu_select = INTEGER(ENTRY(2, v-key, "~~")).
                     
                 FOR EACH gmd_det WHERE gmd_det.gmd_menu_num = v-menu_num AND gmd_det.gmd_menu_select = v-menu_select NO-LOCK:
                     jObj = NEW jsonObject().
@@ -66,7 +66,7 @@ PROCEDURE createJson :
                 END.
             END. /* IF NUM-ENTRIES (v-key) = 2 */
             ELSE 
-                DISPLAY "Yo. There's an error with the value of the menu_item you are trying to update. This value (in the HTML) should be x,x".
+                DISPLAY "This value (in the HTML) should be x.x".
         END.
     END. /* CASE */
     /* End logic */

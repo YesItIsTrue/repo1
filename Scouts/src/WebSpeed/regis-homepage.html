@@ -23,89 +23,45 @@
         <!--WSS
         {registration.i}.
         
-        DEFINE VARIABLE v-people-id LIKE people_mstr.people_id NO-UNDO.
-
-        ASSIGN
-            v-people-id = INTEGER(get-cookie("c-user-id")).
+        /* 
+	        OpenEdge was giving me crap about including registered-events.i twice in this file because it thought that this caused a variable in the .i to 
+	        be defined twice. This was, in fact, not the case because the two includes were separated by distinct IF cases that could never both evaluate
+	        to true. OpenEdge's compiler intelligence aside, wrapping the include in a procedure causes the variables inside the .i to be scoped to the 
+	        procedure. This means that after the include is copied into the parent file, the variables will fall out of scope, allowing the next procedure
+	        call to define the same variables wihtout conflict.
+        */
+        PROCEDURE IncludeComponent:
+            {registered-events.i}.
+        END PROCEDURE.
 	    -->
 	    
-	    <!-- Registered Events -->
-        <div class='w3-card-4 w3-content w3-white' style='max-width:1100px;'>
-            <header class='w3-container w3-theme-dark'>
-                <h3>Registered Events</h3>
-            </header>
-           <ul class='w3-ul'> 
-        <!--WSS
-            DEFINE VARIABLE v-num-registered-events AS INTEGER INITIAL 0 NO-UNDO.
-             
-            FOR EACH regis_mstr WHERE regis_mstr.regis_people_id = v-people-id AND regis_mstr.regis_deleted = ?,
-            EACH sched_mstr WHERE sched_mstr.sched_class_ID = regis_mstr.regis_class_ID AND sched_mstr.sched_deleted = ?,
-            EACH event_mstr WHERE event_mstr.event_ID = sched_mstr.sched_event_ID AND event_mstr.event_start_date >= TODAY AND event_mstr.event_deleted = ? NO-LOCK 
-            BREAK BY YEAR(event_mstr.event_start_date) BY event_mstr.event_start_date BY event_mstr.event_name BY event_mstr.event_ID:
-                IF FIRST-OF (YEAR(event_mstr.event_start_date)) THEN DO:
-        --> 
-                <li class='w3-padding w3-white w3-theme' style='border-bottom: 1px solid #ddd !important;'>
-                    <span class='w3-margin-right w3-large'>
-                        <center>`YEAR(event_mstr.event_start_date)`</center> 
-                    </span>
-                </li>
-        <!--WSS
-                END. /* IF FIRST-OF (YEAR(event_mstr.event_start_date)) */
-                IF FIRST-OF (event_mstr.event_ID) THEN DO:
-                    v-num-registered-events = v-num-registered-events + 1.
-                    IF event_mstr.event_URL <> "" THEN DO:  
-        -->
-                <a href="event-flyer-preview.html?h-event_ID=`event_mstr.event_id`" style='text-decoration:none;'>
-                    <li class='w3-padding-16 w3-white w3-hover-theme' style='border-bottom: 1px solid #ddd !important;'>
-                        <span class='w3-large'> `event_mstr.event_name`  ( `event_mstr.event_start_date` )</span>
-                    </li>
-                </a>
-        <!--WSS
-                    END. /* IF event_mstr.event_URL <> "" */
-                END. /* IF FIRST-OF (event_mstr.event_ID) */
-            END.  /** of 4ea. event_mstr **/
-            
-            IF v-num-registered-events = 0 THEN DO:
-        -->
-                <li class='w3-padding-16 w3-white w3-hover-theme' style='border-bottom: 1px solid #ddd !important;'>
-                    <span class='w3-large'>You haven't registered for any events yet!</span>
-                </li>
-        <!--WSS
-            END.
-        -->
-           </ul>
-        </div>
-        <br/><br/>
+	    <!--WSS
+	    DEFINE VARIABLE v-people-id AS INTEGER NO-UNDO.
 	    
-	    <!-- Upcoming Events -->
-	    <div class='w3-card-4 w3-content w3-white' style='max-width:1100px;'>
-            <header class='w3-container w3-theme-dark'>
-                <h3>Register for Upcoming Events</h3>
-            </header>
-           <ul class='w3-ul'> 
-        <!--WSS
-            FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND 
-            event_mstr.event_deleted = ? NO-LOCK 
-            BREAK BY YEAR(event_mstr.event_start_date) BY event_mstr.event_start_date BY event_mstr.event_name:
-                IF FIRST-OF (YEAR(event_mstr.event_start_date)) THEN DO:
-        --> 
-				<li class='w3-padding w3-white w3-theme' style='border-bottom: 1px solid #ddd !important;'>
-				    <span class='w3-margin-right w3-large'>
-				        <center>`YEAR(event_mstr.event_start_date)`</center> 
-				    </span>
-				</li>
-        <!--WSS
-                END. /* IF FIRST-OF (YEAR(event_mstr.event_start_date)) */
+	    RUN VALUE(SEARCH("session-get-user-id.r")) (
+		    get-cookie("c-session-token"),
+		    OUTPUT v-people-id
+		).
+		-->
+		  
+		<!--WSS
+        FIND gud_det WHERE gud_det.gud_people_ID = v-people-id AND gud_det.gud_grp_id = "RegisUser" NO-ERROR.
+        IF AVAILABLE (gud_det) THEN DO:
         -->
-                <a href="event-flyer-preview.html?h-event_ID=`event_mstr.event_id`" style='text-decoration:none;'>
-                    <li class='w3-padding-16 w3-white w3-hover-theme' style='border-bottom: 1px solid #ddd !important;'>
-                        <span class='w3-large'> `event_mstr.event_name`  ( `event_mstr.event_start_date` )</span>
-                    </li>
-                </a>
+        
+            <!-- Registered Events -->
+            <div class='w3-card-4 w3-content w3-white' style='max-width:1100px;'>
+                <!--WSS RUN IncludeComponent. -->
+            </div>
+            <br/><br/>
+            
+            <!-- Upcoming Events -->
+            <div class='w3-card-4 w3-content w3-white' style='max-width:1100px;'>
+                <!--WSS {upcoming-events.i}. -->
+            </div>
+            
         <!--WSS
-            END.  /** of 4ea. event_mstr **/
-        -->
-	       </ul>
-	    </div>
+        END.
+		-->
     </body>
 </html>

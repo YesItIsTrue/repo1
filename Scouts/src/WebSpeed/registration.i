@@ -25,7 +25,7 @@
     
 DEFINE VARIABLE i-organization AS CHARACTER NO-UNDO.
 DEFINE VARIABLE i-group AS CHARACTER NO-UNDO.
-DEFINE VARIABLE i-regis-empid AS INTEGER NO-UNDO.
+DEFINE VARIABLE i-regis-people-id AS INTEGER NO-UNDO.
 
 ASSIGN
     i-organization = "Augusta Maine Stake"
@@ -33,29 +33,42 @@ ASSIGN
     
 RUN VALUE(SEARCH("session-get-user-id.r")) (
     get-cookie("c-session-token"),
-    OUTPUT i-regis-empid
+    OUTPUT i-regis-people-id
 ).
 
-FIND usr_mstr WHERE usr_mstr.usr_people_ID = i-regis-empid AND usr_mstr.usr_deleted = ? NO-ERROR.
+FIND usr_mstr WHERE usr_mstr.usr_people_ID = i-regis-people-id AND usr_mstr.usr_deleted = ? NO-ERROR.
 IF NOT AVAILABLE (usr_mstr) THEN DO:
-/*    {&OUT} "<script>window.location = 'AMS-landing-R.r';</script>".*/
+    {&OUT} "<script>window.location = 'AMS-landing-R.r';</script>".
 END.
 
 {&OUT}
-"<header class='w3-container w3-theme-dark' style='margin-bottom: 2%'>" SKIP
-"    <a href='regis-homepage.html'>" SKIP
-"       <h3 class='menu-title'>" i-organization " " i-group "Activities</h3>" SKIP
+"<div class='w3-bar w3-theme-dark'>" SKIP
+"    <a class='nav-item' href='regis-homepage.html'>" SKIP
+"       <div class='menu-title nav-item w3-bar-item'>" i-organization " " i-group "Activities</div>" SKIP
 "    </a>" SKIP
-"    <div class='user-settings'>" SKIP
-"           <h3>" SKIP
-/*"               <span>Signed in as " usr_mstr.usr_name " &nbsp;</span>" SKIP*/
-"               <form action='account-preferences.html' method='post' class='title-form'>" SKIP
+"   <div class='w3-right nav-item'>" SKIP
+"       <div class='w3-dropdown-hover w3-bar-item w3-padding-0 w3-hover-theme'>" SKIP
+"          <button class='dropbtn'>"
+"              <p class='nav-line-1'>Hello,</p>" SKIP
+"              <span class='nav-line-2'>" usr_mstr.usr_name "</span>" SKIP 
+"          </button>" SKIP
+"          <div class='w3-dropdown-content nav-dropdown w3-bar-block w3-card-4'>" SKIP
+"               <a href='profile-page.html' class='w3-bar-item w3-button w3-hover-theme'><i class='fa fa-user dropdown-icon' aria-hidden='true'></i>Preferences</a>" SKIP
+"               <a href='cookie-logout-html.r?redirect-location=AMS-landing-R.r' class='w3-bar-item w3-button w3-hover-theme'><i class='fa fa-sign-out dropdown-icon' aria-hidden='true'></i>Logout</a>" SKIP
+"          </div>" SKIP
+"       </div>" SKIP.
 
-/*"                   <button type='submit' class='title-btn' title='Account Preferences'><i class='fa fa-cog' aria-hidden='true'></i></button>" SKIP*/
-"               </form>" SKIP
-"               <form action='cookie-logout-html.r?redirect-location=AMS-landing-R.r' method='post' class='title-form'>" SKIP
-"                   <button type='submit' class='title-btn' title='Logout'><i class='fa fa-sign-out' aria-hidden='true'></i></button>" SKIP
-"               </form>" SKIP
-"           </h3>" SKIP
-"    </div>" SKIP
-"</header>" SKIP.
+FIND FIRST gud_det WHERE gud_det.gud_people_ID = i-regis-people-id AND gud_det.gud_grp_id = "RegisAdmin" NO-ERROR.
+IF AVAILABLE (gud_det) THEN
+{&OUT}
+"       <a href='regis-admin-portal.r' class='w3-bar-item w3-button nav-single w3-hover-theme-accent'>Administration</a>" SKIP.
+
+FIND FIRST gud_det WHERE gud_det.gud_people_ID = i-regis-people-id AND gud_det.gud_grp_id = "RegisEmp" NO-ERROR.
+IF AVAILABLE (gud_det) THEN
+{&OUT}
+"       <a href='regis-emp-portal.r' class='w3-bar-item w3-button nav-single w3-hover-theme-accent'>Counselor Portal</a>" SKIP.
+
+{&OUT}
+"   </div>" SKIP
+"</div>" SKIP
+"<br/><br/>" SKIP.

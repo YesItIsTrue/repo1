@@ -123,7 +123,7 @@ PROCEDURE Output-Header:
         ELSE DO:
             ASSIGN v-invalid-creds-error = TRUE.
         END.
-    END.  
+    END. /* IF get-value('act') = "Login" */
 END PROCEDURE.
 
 PROCEDURE Login:

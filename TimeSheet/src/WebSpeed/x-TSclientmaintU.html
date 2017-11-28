@@ -1,0 +1,1125 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Client Maintenance</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="01/Jan/16">
+    <META NAME="MODIFIED_DATE" CONTENT="01/Jan/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{TSvert-menu.i}.
+  /*------------------------------------------------------------------
+    File:           TSclientmaintU.html
+    Description:    Client Maintenance Screen
+    Created:        Jacob Luttrell
+    Version History:
+        1.0 - Created by Jacob Luttrell on 01/Jan/16.
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE clientid        LIKE Client_Mstr.Client_people_ID       NO-UNDO.
+DEFINE VARIABLE clientabbv      LIKE Client_Mstr.Client_abbv            NO-UNDO.
+DEFINE VARIABLE price-adj       LIKE Client_Mstr.Client_price_adj       NO-UNDO.
+DEFINE VARIABLE zone            LIKE Client_Mstr.Client_zone            NO-UNDO.
+DEFINE VARIABLE lds             LIKE Client_Mstr.Client_LDS             NO-UNDO.
+DEFINE VARIABLE spec-disc       LIKE Client_Mstr.Client_spec_disc       NO-UNDO.
+DEFINE VARIABLE spec-disc-notes LIKE Client_Mstr.Client_spec_disc_notes NO-UNDO.
+DEFINE VARIABLE translation     LIKE Client_Mstr.Client_trans_def       NO-UNDO.
+DEFINE VARIABLE profit-margin   LIKE Client_Mstr.Client_def_profit_margin NO-UNDO.
+
+DEFINE VARIABLE firstname       LIKE people_mstr.people_firstname       NO-UNDO.
+DEFINE VARIABLE lastname        LIKE people_mstr.people_lastname        NO-UNDO.
+DEFINE VARIABLE company         LIKE people_mstr.people_company         NO-UNDO.
+DEFINE VARIABLE gender          LIKE people_mstr.people_gender          NO-UNDO. 
+DEFINE VARIABLE homephone       LIKE people_mstr.people_homephone       NO-UNDO.
+DEFINE VARIABLE cellphone       LIKE people_mstr.people_cellphone       NO-UNDO.
+DEFINE VARIABLE workphone       LIKE people_mstr.people_workphone       NO-UNDO.
+DEFINE VARIABLE workemail       LIKE people_mstr.people_email           NO-UNDO.
+DEFINE VARIABLE otheremail      LIKE people_mstr.people_email2          NO-UNDO.   
+
+DEFINE VARIABLE addr1           LIKE addr_mstr.addr_addr1               NO-UNDO.
+DEFINE VARIABLE addr2           LIKE addr_mstr.addr_addr2               NO-UNDO.
+DEFINE VARIABLE addr3           LIKE addr_mstr.addr_addr3               NO-UNDO.
+DEFINE VARIABLE city            LIKE addr_mstr.addr_city                NO-UNDO.
+DEFINE VARIABLE state           LIKE addr_mstr.addr_stateprov           NO-UNDO.
+DEFINE VARIABLE zip             LIKE addr_mstr.addr_zip                 NO-UNDO.
+DEFINE VARIABLE cntry           LIKE addr_mstr.addr_country             NO-UNDO.
+DEFINE VARIABLE addrid          LIKE addr_mstr.addr_id                  NO-UNDO.
+
+DEFINE VARIABLE act             AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO                   NO-UNDO.
+
+DEFINE VARIABLE disp-start      AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE startdate       LIKE Client_Mstr.Client_start_date      NO-UNDO.
+DEFINE VARIABLE disp-end        AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE enddate         LIKE Client_Mstr.Client_end_date        NO-UNDO.
+
+DEFINE VARIABLE addrline      AS CHARACTER                              NO-UNDO.   
+DEFINE VARIABLE x             AS INTEGER                                NO-UNDO.
+DEFINE VARIABLE isdisabled    AS CHARACTER                              NO-UNDO.
+
+DEFINE VARIABLE clientname    AS CHARACTER                              NO-UNDO.
+DEFINE VARIABLE lastnamehold  AS CHARACTER                              NO-UNDO.
+DEFINE VARIABLE progname      AS CHARACTER                              NO-UNDO.
+
+DEFINE VARIABLE error-count   AS INTEGER                                NO-UNDO.
+
+DEFINE VARIABLE o-create      AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE o-update      AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE o-avail       AS LOGICAL                                NO-UNDO. 
+DEFINE VARIABLE o-successful  AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE o-error       AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE o-emph-action AS CHARACTER                              NO-UNDO.
+DEFINE VARIABLE o-fpat-ran    AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE o-addrid      AS INTEGER                                NO-UNDO.
+DEFINE VARIABLE o-clientid    AS INTEGER                                NO-UNDO.
+
+DEFINE VARIABLE ADDRpickP-peopid AS INTEGER                               NO-UNDO.                  
+DEFINE VARIABLE ADDRpickP-addrid AS INTEGER                               NO-UNDO.
+DEFINE VARIABLE pass-act       AS CHARACTER                             NO-UNDO.
+
+/*DEFINE VARIABLE PEOPpickP-char1 AS CHARACTER                            NO-UNDO.*/
+/*DEFINE VARIABLE PEOPpickP-char2 AS CHARACTER                            NO-UNDO.*/
+/*DEFINE VARIABLE PEOPpickP-int1  AS INTEGER                              NO-UNDO.*/
+/*DEFINE VARIABLE PEOPpickP-int2  AS INTEGER                              NO-UNDO.*/
+
+DEFINE BUFFER contact_buff FOR people_mstr. 
+
+ASSIGN 
+    clientid        = INTEGER(html-encode(get-value("h-clientid")))
+    clientabbv      = html-encode(get-value("h-clientabbv"))
+    price-adj       = DECIMAL(html-encode(get-value("h-price-adj")))
+    zone            = INTEGER(html-encode(get-value("h-zone")))
+    profit-margin   = DECIMAL(html-encode(get-value("h-profit-margin")))
+    lds             = IF html-encode(get-value("h-lds")) = "yes" THEN 
+                        YES 
+                            ELSE 
+                                NO
+    translation     = html-encode(get-value("h-translation"))
+    spec-disc       = DECIMAL(html-encode(get-value("h-spec-disc")))
+    spec-disc-notes = html-encode(get-value("h-spec-disc-notes"))
+    homephone   = html-encode(get-value("h-homephone"))
+    cellphone   = html-encode(get-value("h-cellphone"))
+    workphone   = html-encode(get-value("h-workphone"))
+    workemail   = html-encode(get-value("h-workemail"))
+    otheremail  = html-encode(get-value("h-otheremail"))
+    company     = html-encode(get-value("h-company"))
+    gender      = IF html-encode(get-value("h-gender")) = "YES" THEN 
+                    YES 
+                        ELSE 
+                            NO    
+    firstname = html-encode(get-value("h-firstname"))
+    lastname  = html-encode(get-value("h-lastname"))
+    
+    addr1   = html-encode(get-value("h-addr1"))
+    addr2   = html-encode(get-value("h-addr2"))
+    addr3   = html-encode(get-value("h-addr3"))
+    city    = html-encode(get-value("h-city"))
+    state   = html-encode(get-value("h-state"))
+    cntry   = html-encode(get-value("h-cntry"))
+    addrid  = INTEGER(html-encode(get-value("h-addrid")))
+      
+    ADDRpickP-peopid  = INTEGER(html-encode(get-value("h-pp-passBack-peopid")))             
+    ADDRpickP-addrid  = INTEGER(html-encode(get-value("h-pp-passBack-addrid")))
+/*    PEOPpickP-char1 = get-value("h-PEOP-passBack-character1")    */
+/*	PEOPpickP-char2 = get-value("h-PEOP-passBack-character2")       */
+/*	PEOPpickP-int1  = INTEGER(get-value("h-PEOP-passBack-integer1"))*/
+/*	PEOPpickP-int2  = INTEGER(get-value("h-PEOP-passBack-integer2"))*/
+    
+    act           = html-encode(get-value("h-act"))
+    lastnamehold  = html-encode(get-value("h-lastnamehold"))
+    disp-start    = html-encode(get-value("html5-start"))
+    disp-end      = html-encode(get-value("html5-end"))
+    progname      = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1)
+    .
+    
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    disp-start,                                                               
+    OUTPUT startdate                                                             
+    ).                                                                          
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                   
+    disp-end,                                                                 
+    OUTPUT enddate                                                               
+    ).                                          
+
+
+
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL".    
+
+IF act = "NEW" THEN
+    ASSIGN 
+        clientid    = 0
+        clientabbv  = ""
+        act = "MAINTENANCE".
+
+IF act = "REMOVE" THEN DO: 
+    
+    error-count = 0.
+        
+    FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid EXCLUSIVE-LOCK.
+    IF AVAILABLE (Client_Mstr) THEN DO: 
+         ASSIGN
+            clientabbv = Client_Mstr.Client_abbv.
+        
+        DELETE Client_Mstr.
+    END.    
+    ELSE 
+        error-count = error-count + 1.
+        
+    FIND people_mstr WHERE people_mstr.people_id = clientid EXCLUSIVE-LOCK.
+    IF AVAILABLE (people_mstr) THEN 
+        DELETE people_mstr.
+    ELSE 
+        error-count = error-count + 1.
+   
+    IF addrid > 0 THEN DO:      
+	    FIND addr_mstr WHERE addr_mstr.addr_id = addrid EXCLUSIVE-LOCK.
+	    IF AVAILABLE (addr_mstr) THEN
+	        DELETE addr_mstr.
+	    ELSE 
+            error-count = error-count + 1.
+    END.
+
+    IF error-count = 0 THEN     
+	    {&OUT}                                  
+	        "<div class='row'>" skip
+	        "   <div class='grid_2'></div>" skip
+	        "       <div class='grid_8'>" skip 
+	        "           <Center><h2>Client " clientabbv " has been deleted.</h2></center>" SKIP
+	        "       </div>" skip
+	        "   </div class='grid_2'></div>" SKIP
+	        "</div>" skip.
+    ELSE 
+        {&OUT} 
+           "<div class='row'>" skip
+            "   <div class='grid_2'></div>" skip
+            "       <div class='grid_8'>" skip 
+            "           <Center><h2>There was an error when deleting client. Client not deleted.</h2></center>" SKIP
+            "       </div>" skip
+            "   </div class='grid_2'></div>" SKIP
+            "</div>" skip. 
+               
+    ASSIGN 
+        act = "INITIAL"
+        clientid = 0
+        addrid = 0.   
+END. /* REMOVE */   
+
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO: 
+        {&OUT}
+            "<form>" SKIP
+            "<div class='row'>" skip 
+            "   <div class='grid_3'></div>" skip
+            "       <div class='grid_6'>" skip                    
+            "               <div class='table_col'>" skip
+            "                   <table>" skip
+            "                       <tr>" skip
+            "                           <th colspan='2'>Client Maintenance</th>" skip
+            "                       </tr>" skip                          
+            "                       </tr>" skip                          
+            "                           <td>Select a Client</td>" skip
+            "                           <td class='req'><select name='h-clientid'>" skip.
+    
+        FOR EACH Client_Mstr  WHERE                  
+                 Client_Mstr.Client_deleted = ? NO-LOCK:  
+            
+            
+            ASSIGN 
+                clientid = Client_Mstr.Client_people_ID
+                clientabbv = Client_Mstr.Client_abbv. 
+        
+          {&OUT}
+              "<option value='" clientid "' >" clientabbv "</option>" SKIP.
+        
+        END.  /** of 4ea. client_mstr **/
+
+        {&OUT}
+            "                           </SELECT></td>" SKIP       
+            "                       </tr>" skip     
+            "                   </table>" skip
+            "               </div>" skip                 
+            "       </div>" skip
+            "   </div class='grid_3'></div>" skip
+            "</div>" skip 
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='MAINTENANCE' class='btn'>Submit</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='NEW' class='btn'>New Client</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.   
+    END. /* INITIAL */    
+
+    WHEN "MAINTENANCE" THEN DO:        
+                
+        IF  ADDRpickP-peopid > 0 THEN DO:                    
+            ASSIGN  
+                clientid = ADDRpickP-peopid
+                addrid   = ADDRpickP-addrid.
+        
+            FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid AND
+                                   Client_Mstr.Client_deleted = ?
+                                   NO-LOCK NO-ERROR.
+            
+            IF AVAILABLE (Client_Mstr) THEN 
+                ASSIGN 
+                    clientabbv = Client_Mstr.Client_abbv.
+            
+        END.        
+        
+	         
+        
+        IF clientid > 0 THEN DO:
+            FIND people_mstr WHERE people_mstr.people_id = clientid
+                NO-LOCK NO-ERROR.
+            IF AVAILABLE (people_mstr) THEN  
+            ASSIGN                
+                firstname  = people_mstr.people_firstname
+                lastname   = people_mstr.people_lastname
+                clientname = IF firstname <> "" THEN lastname + ", " + firstname ELSE lastname 
+                homephone  = people_mstr.people_homephone
+                cellphone  = people_mstr.people_cellphone
+                workphone  = people_mstr.people_workphone
+                workemail  = people_mstr.people_email
+                otheremail = people_mstr.people_email2
+                company    = people_mstr.people_company
+                gender     = people_mstr.people_gender
+                addrid     = IF addrid > 0 THEN addrid ELSE people_mstr.people_addr_id
+                .
+        END. /* if empid > 0 */     
+                                                                                                                                                IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 1: Find First people_mstr <BR>" SKIP
+                                                                                                                                                        "firstname = " firstname "<BR>" SKIP
+                                                                                                                                                        "lastname = " lastname "<BR>" SKIP
+                                                                                                                                                        "people_id = " clientid "<BR>" SKIP
+                                                                                                                                                        "homephone = " homephone "<BR>" SKIP
+                                                                                                                                                        "cellphone = " cellphone "<BR>" SKIP
+                                                                                                                                                        "workphone = " workphone "<BR>" SKIP
+                                                                                                                                                        "workemail = " workemail "<BR>" SKIP
+                                                                                                                                                        "otheremail = " otheremail "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                END.    
+        FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid AND 
+                               Client_Mstr.Client_deleted   = ?
+                            NO-LOCK NO-ERROR. 
+            
+         IF AVAILABLE (Client_Mstr) THEN DO:
+         
+            ASSIGN  
+                clientabbv      = Client_Mstr.Client_abbv    
+				price-adj       = Client_Mstr.Client_price_adj       
+				zone            = Client_Mstr.Client_zone            
+				lds             = Client_Mstr.Client_LDS             
+				spec-disc       = Client_Mstr.Client_spec_disc       
+				spec-disc-notes = Client_Mstr.Client_spec_disc_notes
+				startdate       = Client_Mstr.Client_start_date
+				enddate         = Client_Mstr.Client_end_date
+				translation     = Client_Mstr.Client_trans_def
+				profit-margin   = Client_Mstr.Client_def_profit_margin. 
+		
+		 IF profit-margin = 0 THEN DO: 
+		      FIND TSC_ctrl WHERE TSC_ctrl.TSC_def_profit_margin <> 0 NO-LOCK NO-ERROR.
+		      
+		      IF AVAILABLE (TSC_ctrl) THEN 
+		      ASSIGN 
+		          profit-margin = TSC_ctrl.TSC_def_profit_margin.
+		 END. /* if profit-margin = 0 */		
+		 RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                              
+            startdate,                                                                             
+            OUTPUT disp-start                                                                        
+            ). 
+                   
+         RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                              
+            enddate,                                                                             
+            OUTPUT disp-end                                                                        
+            ).         
+/*                                                                                                                                                IF itmessage = YES THEN DO:                   */
+/*                                                                                                                                                    {&OUT}                                    */
+/*                                                                                                                                                        "ITmessage 2: Find Emp_Mstr <BR>" SKIP*/
+/*                                                                                                                                                        "empid = " empid "<BR>" SKIP          */
+/*                                                                                                                                                        "empadmin = " empadmin "<BR>" SKIP    */
+/*                                                                                                                                                        "emppayrate = " emppayrate "<BR>" SKIP*/
+/*                                                                                                                                                        "<BR></BR>" SKIP.                     */
+/*                                                                                                                                                END.                                          */
+         {&OUT}
+            "<form>" SKIP
+            "<div class='row'>" skip
+            "   <div class='grid_2'></div>" skip
+            "       <div class='grid_8'>" skip          
+            "               <div class='table_2col'>" skip
+            "                   <table>" skip
+            "                       <tr>" skip
+            "                           <th colspan='4'>Client Maintenance</th>" skip
+            "                       </tr>" skip                              
+            "                       <tr>" skip
+            "                           <td>Abbreviated Name</td>" skip
+            "                           <td><input type='text' name='h-clientabbv' value='" clientabbv "' /></td>" skip
+            "                           <td>Client Full Name</td>" skip
+            "                           <td><a href='PEOPmaintU.r"                                  /* CODEHAUL */ 
+                                              "?h-people_id=" clientid                                             
+                                              "&h-act=EDIT"
+                                              "&whattorun=35.99' >" clientname "</a></td>" skip             
+            "                       </tr>" skip                                
+            "                       <tr>" skip
+            "                           <td>LDS?</td>" SKIP.
+            
+            IF lds = YES THEN 
+                {&OUT}
+            "                           <td><input type='radio' value='Yes' name='h-lds' checked />YES <input type='radio' value='No' name='h-lds' />NO</td>" skip.
+            ELSE
+                {&OUT}
+            "                           <td><input type='radio' value='Yes' name='h-lds' />YES <input type='radio' value='No' name='h-lds' checked />NO</td>" skip. 
+            
+            {&OUT} 
+            "                           <td>Zone</td>" skip
+            "                           <td><input type='number' name='h-zone' value='" zone "'></td>" skip
+            "                       </tr>" SKIP
+            "                       <tr>" skip
+            "                           <td>Special Discount</td>" skip            
+            "                           <TD>" SKIP 
+            "                               <input type='number' name='h-spec-disc' value='" spec-disc "' />" SKIP     
+            "                           </TD>" SKIP
+            "                           <td>Translation Default</td>" skip.            
+                            
+            IF translation = "" OR translation = "Translated" THEN 
+                {&OUT}
+            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated' checked>Translated"
+            "                           <BR><input type='radio' name='h-translation' value='Full'>Full" skip                              
+            "                           <br><input type='radio' name='h-translation' value='Bare'>Bare</td>" SKIP.
+            ELSE IF translation = "Full" THEN 
+                {&OUT}
+            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated'>Translated"
+            "                           <BR><input type='radio' name='h-translation' value='Full'checked>Full" skip                              
+            "                           <br><input type='radio' name='h-translation' value='Bare'>Bare</td>" SKIP.
+            ELSE IF translation = "Bare" THEN 
+                 {&OUT}
+            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated'>Translated"
+            "                           <BR><input type='radio' name='h-translation' value='Full'>Full" skip                              
+            "                           <br><input type='radio' name='h-translation' value='Bare' checked>Bare</td>" SKIP.
+                
+          {&OUT}          
+            "                       </tr>" skip 
+            "                       <tr>" skip                        
+            "                           <td>Special Discount Notes</TD>" SKIP
+            "                           <td colspan='3'>" SKIP
+            "                               <textarea rows=4 cols=50 name='h-spec-disc-notes' >" spec-disc-notes "</textarea>" SKIP
+            "                           </td>" SKIP
+            "                       </tr>" skip 
+            "                       <tr>" SKIP
+            "                           <td>Start Date</td>" skip
+            "                           <td><input type='date' name='html5-start' value='" disp-start "' /></td>" skip
+            "                           <td>End Date</td>" skip
+            "                           <td><input type='date' name='html5-end' value='" disp-end "' /></td>" skip            
+            "                       </tr>" skip   
+            "                       <tr>" skip
+            "                           <td>Price Adjustment</td>" SKIP
+            "                           <td><input type='number' name='h-price-adj' value='" price-adj "' /></td>" SKIP
+            "                           <td>Default Profit Margin</td>" SKIP
+            "                           <td><input type='number' name='h-profit-margin' value='" profit-margin "' />%</td>" SKIP 
+            "                       </tr>" skip   
+            "                       <tr>" skip                       
+            "                           <td>Gender</td>" SKIP.
+            
+            IF gender = ? THEN 
+                 {&OUT}
+            "                           <td colspan='3'><input type='radio' value='Yes' name='h-gender' />Male <input type='radio' value='No' name='h-gender' />Female</td>" skip. 
+            ELSE IF gender = YES THEN 
+                {&OUT}
+            "                           <td colspan='3'><input type='radio' value='Yes' name='h-gender' checked />Male <input type='radio' value='No' name='h-gender' />Female</td>" skip.
+            ELSE IF gender = NO THEN 
+                {&OUT}
+            "                           <td colspan='3'><input type='radio' value='Yes' name='h-gender' />Male <input type='radio' value='No' name='h-gender' checked />Female</td>" skip.
+           
+            
+            {&OUT} 
+            "                       </tr>" SKIP.            
+            
+            FIND addr_mstr WHERE addr_mstr.addr_id = addrid NO-LOCK NO-ERROR.
+            
+                 IF AVAILABLE (addr_mstr) THEN 
+                     ASSIGN 
+                         addrline = addr_mstr.addr_addr1 + " " + addr_mstr.addr_addr2 + " " + addr_mstr.addr_addr3 + " " + addr_mstr.addr_city + " " + addr_mstr.addr_stateprov + ", " + addr_mstr.addr_zip + " " + addr_mstr.addr_country
+                         pass-act = "SEARCH".
+                 ELSE 
+                     ASSIGN 
+                         addrline = "Click here to add an address."
+                         pass-act = "INITIAL".  
+                               
+                     {&OUT}
+            
+            "                       <tr>" skip
+            "                           <td>Address</td>" skip
+            "                           <td colspan='3'><a href='ADDRpickP.r"               /* CODEHAUL */ 
+                                             "?h-prevproc=TSclientmaintU.r"               /* Calling Procedure */
+                                             "&h-act=MAINTENANCE"                         /* Calling Procedure's Act */                              
+                                             "&h-pp-passBack-peopid=" clientid            /* Calling Procedure's people id to pass back. */          
+                                             "&h-pp-passBack-addrid=" addrid              /* Calling Procedure's address id to pass back. */         
+/*                                             "&h-pp-passBack-char1="                      /* Calling Procedure's Character data to pass back. */*/
+/*                                             "&h-pp-passBack-char2="                      /* Calling Procedure's Character data to pass back. */*/
+/*                                             "&h-pp-passBack-int1="                       /* Calling Procedure's Integer data to pass back. */  */
+/*                                             "&h-pp-passBack-int2="                       /* Calling Procedure's Integer data to pass back. */  */
+                                             "&h-addr-act=" pass-act 
+                                             "&whattorun=" whatshouldrun " '>"
+                                              addrline "</a></td>" SKIP 
+            "                       </tr>" SKIP
+             "                       <tr>" skip
+            "                           <td>Company</td>" skip
+            "                           <td><input type='text' name='h-company' value='" company "' /></td>" skip            
+            "                           <td>Home phone</td>" skip
+            "                           <td><input type='text' name='h-homephone' placeholder='xxx-xxx-xxxx' value='" homephone "' /></td>" skip 
+            "                       </tr>" skip 
+            "                       <tr>" skip
+            "                           <td>Work phone</td>" skip
+            "                           <td><input type='text' name='h-workphone' placeholder='xxx-xxx-xxxx' value='" workphone "' /></td>" skip 
+            "                           <td>Cell phone</td>" skip
+            "                           <td><input type='text' name='h-cellphone' placeholder='xxx-xxx-xxxx' value='" cellphone "' /></td>" skip
+            "                       </tr>" skip  
+            "                       <tr>" skip
+            "                           <td>Business Email</td>" skip
+            "                           <td><input type='email' name='h-workemail' value='" workemail "' /></td>" skip 
+            "                           <td>Other Email</td>" skip
+            "                           <td><input type='email' name='h-otheremail' value='" otheremail "' /></td>" skip
+            "                       </tr>" skip                 
+            "                   </table>" skip
+            "               </div>" skip                 
+            "       </div>" skip
+            "   </div class='grid_2'></div>" skip
+            "</div>" skip  
+	        "<BR>" SKIP    
+            "<div class='row'>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "   <input type='hidden' name='h-clientid'  value='" clientid "' />" SKIP
+            "   <input type='hidden' name='h-addrid'  value='" addrid "' />" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn'>Update Client</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='DELETE' class='btn'>Delete Client</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "</div>" SKIP
+	        "</form>" SKIP.               
+        END. /* if avail Emp_Mstr */
+        
+        ELSE DO: 
+            {&OUT}
+            "<form>" SKIP
+            "<div class='row'>" skip
+            "   <div class='grid_2'></div>" skip
+            "       <div class='grid_8'>" skip         
+            "               <div class='table_2col'>" skip
+            "                   <table>" skip
+            "                       <tr>" skip
+            "                           <th colspan='4'>Create Client Record</th>" skip
+            "                       </tr>" skip                           
+            "                       <tr>" skip
+            "                           <td>Client Abbreviated Name</td>" skip
+            "                           <td colspan='3' class='REQ'><input type='text' value='" clientabbv "' name='h-clientabbv' REQUIRED /></td>" skip
+            "                       </tr>" skip                                  
+            "                       <tr>" skip 
+            "                           <td>Client Last Name</td>" skip
+            "                           <td><input type='text' name='h-lastname' value='" lastname "'></td>" skip
+            "                           <td>Client First Name</td>" skip
+            "                           <td><input type='text' name='h-firstname' value='" firstname "'></td>" skip            
+            "                       </tr>" skip                                  
+            "                       <tr>" skip
+            "                           <td colspan='4'><center>- OR -</center></td>" SKIP
+            "                       </tr>" SKIP
+            "                       <tr>" skip            
+            "                           <td>Company Full Name</td>" skip
+            "                           <td colspan='3'><input type='text' name='h-lastnamehold' value='" lastnamehold "'></td>" skip
+            "                       </tr>" skip                                                      
+            "                   </table>" skip
+            "               </div>" skip                 
+            "       </div>" skip
+            "   </div class='grid_2'></div>" skip
+            "</div>" skip      
+            "<BR>" SKIP    
+	        "<div class='row'>" SKIP
+	        "   <div class='grid_2'> </DIV>" SKIP
+	        "   <input type='hidden' name='h-clientid'  value='" clientid "' />" SKIP
+	        "   <input type='hidden' name='h-addrid'  value='" addrid "' />" SKIP
+	        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+	        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='CREATE' class='btn'>Create Client</BUTTON></div>" SKIP
+	        "   <div class='grid_1'> </DIV>" SKIP
+	        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Restart Search</BUTTON></div>" SKIP
+	        "   <div class='grid_1'> </DIV>" SKIP
+	        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+	        "   <div class='grid_2'> </DIV>" SKIP
+	        "</div>" SKIP
+	        "</form>" SKIP.        
+        END. /* else do */
+    END. /* MAINTENANCE */
+    WHEN "CREATE" THEN DO: 
+                                                                                                                                             IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage .5: UPDATE <BR>" SKIP
+                                                                                                                                                        "clientid = " clientid "<BR>" SKIP
+                                                                                                                                                        "abbv = " clientabbv "<BR>" SKIP
+                                                                                                                                                        "firstname = " firstname "<BR>" SKIP
+                                                                                                                                                        "lastname = " lastname "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END.    
+        IF lastname = "" AND lastnamehold <> "" THEN
+            ASSIGN 
+                lastname = lastnamehold.          
+                                                                                                                                                 IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 1: UPDATE <BR>" SKIP
+                                                                                                                                                        "clientid = " clientid "<BR>" SKIP
+                                                                                                                                                        "abbv = " clientabbv "<BR>" SKIP
+                                                                                                                                                        "firstname = " firstname "<BR>" SKIP
+                                                                                                                                                        "lastname = " lastname "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END.              
+        RUN VALUE(SEARCH("SUBpeop-findR.r")) (
+	        "",                     /*people_mstr.people_prefix   */
+	        firstname,              /*people_mstr.people_firstname*/
+	        "",                     /*people_mstr.people_midname  */
+	        lastname,               /*people_mstr.people_lastname */
+	        "",                     /*people_mstr.people_suffix   */
+	        
+	         OUTPUT o-clientid,             
+	         OUTPUT o-addrid,         
+	         OUTPUT o-error,                    
+	         OUTPUT o-fpat-ran                        
+	        ).
+                                                                                                                                                 IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 2: UPDATE <BR>" SKIP
+                                                                                                                                                        "clientid = " clientid "<BR>" SKIP
+                                                                                                                                                        "abbv = " clientabbv "<BR>" SKIP
+                                                                                                                                                        "firstname = " firstname "<BR>" SKIP
+                                                                                                                                                        "lastname = " lastname "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END.                                                                                                             
+        IF o-clientid > 0 THEN 
+            ASSIGN 
+                clientid = o-clientid.
+                                                                                                                                                 IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 3: UPDATE <BR>" SKIP
+                                                                                                                                                        "clientid = " clientid "<BR>" SKIP
+                                                                                                                                                        "abbv = " clientabbv "<BR>" SKIP
+                                                                                                                                                        "firstname = " firstname "<BR>" SKIP
+                                                                                                                                                        "lastname = " lastname "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END.             
+        RUN VALUE(SEARCH("SUBpeop-ucU.r")) (
+            clientid,               /*people_mstr.people_id       */
+            html-encode(firstname),              /*people_mstr.people_firstname*/
+            "",                     /*people_mstr.people_midname  */
+            html-encode(lastname),               /*people_mstr.people_lastname */
+            "",                     /*people_mstr.people_prefix   */
+            "",                     /*people_mstr.people_suffix   */ 
+            "",                     /*people_mstr.people_company  */
+            ?,                      /*people_mstr.people_gender   */
+            "",                     /*people_mstr.people_homephone*/
+            "",                     /*people_mstr.people_workphone*/
+            "",                     /*people_mstr.people_cellphone*/
+            "",                     /*people_mstr.people_fax      */
+            "",                     /*people_mstr.people_email    */
+            "",                     /*people_mstr.people_email2   */
+            o-addrid,               /*people_mstr.people_addr_id  */
+            "",                     /*people_mstr.people_contact  */
+            ?,                      /*people_mstr.people_DOB      */
+            "",                     /*people_mstr.people_second_addr_ID   */ 
+            "",                     /*people_mstr.people_prefname         */ 
+            "",                     /*people_mstr.people_title            */
+            OUTPUT clientid,
+            OUTPUT o-create, 
+            OUTPUT o-update,
+            OUTPUT o-avail,
+            OUTPUT o-successful
+            ).       
+                                                                                           IF itmessage = YES AND o-successful = NO THEN 
+	                                                                                           {&OUT}
+	                                                                                               "<P>SUBpeop-ucU.r Failed.</P>" SKIP. 
+                                                                                                                                                 IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 4: UPDATE <BR>" SKIP
+                                                                                                                                                        "clientid = " clientid "<BR>" SKIP
+                                                                                                                                                        "abbv = " clientabbv "<BR>" SKIP
+                                                                                                                                                        "firstname = " firstname "<BR>" SKIP
+                                                                                                                                                        "lastname = " lastname "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END.     	                                                                                                      
+         RUN VALUE(SEARCH("SUBclient-ucU.r")) (    
+            clientid,               /*Client_Mstr.Client_people_ID      */
+            html-encode(clientabbv),             /*Client_Mstr.Client_abbv           */
+            0,                      /*Client_Mstr.Client_price_adj      */
+            0,                      /*Client_Mstr.Client_zone           */
+            ?,                      /*Client_Mstr.Client_LDS            */
+            0,                      /*Client_Mstr.Client_spec_disc      */
+            "",                     /*Client_Mstr.Client_spec_disc_notes*/
+            ?,                      /*Client_Mstr.Client_start_date     */
+            ?,                      /*Client_Mstr.Client_end_date       */
+            translation,            /*Client_Mstr.Client_trans_def      */
+/*            progname,               /*Client_Mstr.Client_prog_name      */*/
+            0,                      /*Client_Mstr.Client_def_profit_margin */
+
+            OUTPUT clientid,         
+            OUTPUT o-create,                  
+            OUTPUT o-update,                   
+            OUTPUT o-avail,                  
+            OUTPUT o-successful,
+            OUTPUT o-error
+            ).                 
+                                                                                            IF itmessage = YES AND o-successful = NO THEN 
+	                                                                                           {&OUT}
+	                                                                                               "<P>SUBclient-ucU.r Failed.</P>" SKIP. 
+                                                                                                                                                 IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 5: UPDATE <BR>" SKIP
+                                                                                                                                                        "clientid = " clientid "<BR>" SKIP
+                                                                                                                                                        "abbv = " clientabbv "<BR>" SKIP
+                                                                                                                                                        "firstname = " firstname "<BR>" SKIP
+                                                                                                                                                        "lastname = " lastname "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END.     	                                                                                                        
+        RUN VALUE(SEARCH("SUBcust-ucU.r")) (
+            clientid,               /*people_mstr.people_id       */
+            "",                     /*cust_mstr.cust_card_nbr     */
+            0,                      /*cust_mstr.cust_card_seccode */
+            "",                     /*cust_mstr.cust_card_type    */
+            0,                      /*cust_mstr.cust_card_expmonth*/
+            0,                      /*cust_mstr.cust_card_expyear */
+            
+            OUTPUT clientid,         
+            OUTPUT o-create,            
+            OUTPUT o-update,            
+            OUTPUT o-error,             
+            OUTPUT o-successful
+            ).                
+                                                                                                                                                 IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 6: UPDATE <BR>" SKIP
+                                                                                                                                                        "clientid = " clientid "<BR>" SKIP
+                                                                                                                                                        "abbv = " clientabbv "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END.             
+        FIND people_mstr WHERE people_mstr.people_id = clientid NO-LOCK NO-ERROR.
+        
+            IF AVAILABLE (people_mstr) THEN 
+                ASSIGN                
+	                firstname  = people_mstr.people_firstname
+	                lastname   = people_mstr.people_lastname
+	                clientname = IF firstname <> "" THEN lastname + ", " + firstname ELSE lastname.
+                                                                                                                                                IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 7: UPDATE <BR>" SKIP
+                                                                                                                                                        "clientid = " clientid "<BR>" SKIP
+                                                                                                                                                        "abbv = " clientabbv "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END.                           
+         FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid NO-LOCK NO-ERROR.
+         
+            IF AVAILABLE (Client_Mstr) THEN 
+                ASSIGN 
+                    clientabbv = Client_Mstr.client_abbv.   
+                                                                                                                                                IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 8: UPDATE <BR>" SKIP
+                                                                                                                                                        "clientid = " clientid "<BR>" SKIP
+                                                                                                                                                        "abbv = " clientabbv "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                         END.  
+        IF lastname = clientname THEN 
+            ASSIGN 
+                lastname = "".
+                                                                                                                                                                             
+         {&OUT}
+            "<form>" SKIP
+            "<div class='row'>" skip
+            "   <div class='grid_2'></div>" skip
+            "       <div class='grid_8'>" skip         
+            "               <div class='table_2col'>" skip
+            "                   <table>" skip
+            "                       <tr>" skip
+            "                           <th colspan='4'>Client Created</th>" skip
+            "                       </tr>" skip    
+                          
+            "                       <tr>" skip
+            "                           <td>Client Abbreviated Name</td>" skip
+            "                           <td colspan='3'>" clientabbv "</td>" skip
+            "                       </tr>" skip                                  
+            "                       <tr>" skip 
+            "                           <td>Client Last Name</td>" skip
+            "                           <td>" lastname "</td>" skip
+            "                           <td>Client First Name</td>" skip
+            "                           <td>" firstname "</td>" skip            
+            "                       </tr>" skip                                  
+            "                       <tr>" skip            
+            "                           <td>Company Full Name</td>" skip
+            "                           <td colspan='3'>" clientname "</td>" skip
+            "                       </tr>" skip                                                      
+            "                   </table>" skip
+            "               </div>" skip                 
+            "       </div>" skip
+            "   </div class='grid_2'></div>" skip
+            "</div>" skip      
+            "<BR>" SKIP               
+            "<div class='row'>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "   <input type='hidden' name='h-clientid'  value='" clientid "' />" SKIP
+            "   <input type='hidden' name='h-addrid'  value='" addrid "' />" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='MAINTENANCE' class='btn'>Update Client</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='DELETE' class='btn'>Delete Client</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.    
+        
+    END. /* CREATE */
+    WHEN "DELETE" THEN DO:
+    
+        FIND Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (Proj_Mstr) THEN 
+            {&OUT}
+            "<div class='row'>" skip
+            "   <div class='grid_2'></div>" skip
+            "       <div class='grid_8'>" skip 
+            "           <Center><h2>Projects are still assigned to " clientabbv ".<BR>" skip
+                                "Please delete all corresponding projects before deleting this client.</h2></center>" SKIP
+            "       </div>" skip
+            "   </div class='grid_2'></div>" SKIP
+            "</div>" skip 
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP 
+            "   <input type='hidden' name='h-clientid'  value='" clientid "' />" SKIP
+            "   <input type='hidden' name='h-addrid'  value='" addrid "' />" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Update Another Client</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+        
+        ELSE 
+            {&OUT}
+            "<div class='row'>" skip
+            "   <div class='grid_2'></div>" skip
+            "       <div class='grid_8'>" skip 
+            "           <Center><h2>Are you Sure you want to delete " clientabbv "?</h2></center>" SKIP
+            "       </div>" skip
+            "   </div class='grid_2'></div>" SKIP
+            "</div>" skip 
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP 
+            "   <input type='hidden' name='h-clientid'  value='" clientid "' />" SKIP
+            "   <input type='hidden' name='h-addrid'  value='" addrid "' />" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='REMOVE' class='btn'>YES</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='MAINTENANCE' class='btn'>NO</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* DELETE */  
+    WHEN "UPDATE" THEN DO: 
+                                                                                                                                                 IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 3: UPDATE <BR>" SKIP
+                                                                                                                                                        "clientid = " clientid "<BR>" SKIP
+                                                                                                                                                        "abbv = " clientabbv "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END.                                                                                                                                                                                                          
+        RUN VALUE(SEARCH("SUBpeop-ucU.r")) (
+            clientid,               /*people_mstr.people_id       */
+            firstname,              /*people_mstr.people_firstname*/
+            "",                     /*people_mstr.people_midname  */
+            lastname,               /*people_mstr.people_lastname */
+            "",                     /*people_mstr.people_prefix   */
+            "",                     /*people_mstr.people_suffix   */ 
+            company,                /*people_mstr.people_company  */
+            gender,                 /*people_mstr.people_gender   */
+            homephone,              /*people_mstr.people_homephone*/
+            workphone,              /*people_mstr.people_workphone*/
+            cellphone,              /*people_mstr.people_cellphone*/
+            "",                     /*people_mstr.people_fax      */
+            workemail,              /*people_mstr.people_email    */
+            otheremail,             /*people_mstr.people_email2   */
+            addrid,                 /*people_mstr.people_addr_id  */
+            "",                     /*people_mstr.people_contact  */
+            ?,                      /*people_mstr.people_DOB      */
+            "",                     /*people_mstr.people_second_addr_ID   */
+            "",                     /*people_mstr.people_prefname         */                    /* 1dot1 */                  
+            "",                     /*people_mstr.people_title            */
+            OUTPUT clientid,
+            OUTPUT o-create, 
+            OUTPUT o-update,
+            OUTPUT o-avail,
+            OUTPUT o-successful
+            ).          
+                                                                                           IF itmessage = YES AND o-successful = NO THEN 
+                                                                                           {&OUT}
+                                                                                               "<P>SUBpeop-ucU.r Failed.</P>" SKIP.
+        RUN VALUE(SEARCH("SUBclient-ucU.r")) (    
+			clientid,				/*Client_Mstr.Client_people_ID      */
+			clientabbv,			    /*Client_Mstr.Client_abbv           */
+			price-adj, 			    /*Client_Mstr.Client_price_adj      */
+			zone,					/*Client_Mstr.Client_zone           */
+			lds,					/*Client_Mstr.Client_LDS            */
+			spec-disc,				/*Client_Mstr.Client_spec_disc      */
+			spec-disc-notes,		/*Client_Mstr.Client_spec_disc_notes*/
+			startdate,				/*Client_Mstr.Client_start_date     */
+			enddate,				/*Client_Mstr.Client_end_date       */
+			translation,            /*Client_Mstr.Client_trans_def      */
+/*			progname,		   		/*Client_Mstr.Client_prog_name      */*/
+            profit-margin,          /*Client_Mstr.Client_def_profit_margin */
+
+            OUTPUT clientid,         
+            OUTPUT o-create,                  
+            OUTPUT o-update,                   
+            OUTPUT o-avail,                  
+            OUTPUT o-successful,
+            OUTPUT o-error
+            ).                 
+                                                                                           IF itmessage = YES AND o-successful = NO THEN 
+                                                                                           {&OUT}
+                                                                                               "<P>SUBclient-ucU.r Failed.</P>" SKIP.  
+                                                                                                                                         
+        RUN VALUE(SEARCH("SUBcust-ucU.r")) (
+            clientid,               /*people_mstr.people_id       */
+            "",                     /*cust_mstr.cust_card_nbr     */
+            0,                      /*cust_mstr.cust_card_seccode */
+            "",                     /*cust_mstr.cust_card_type    */
+            0,                      /*cust_mstr.cust_card_expmonth*/
+            0,                      /*cust_mstr.cust_card_expyear */
+            
+            OUTPUT clientid,         
+            OUTPUT o-create,            
+            OUTPUT o-update,            
+            OUTPUT o-error,             
+            OUTPUT o-successful
+            ). 
+
+                                                                                                                                                IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 5: Run Values <BR>" SKIP
+                                                                                                                                                        "firstname = " firstname "<BR>" SKIP
+                                                                                                                                                        "lastname = " lastname "<BR>" SKIP
+                                                                                                                                                        "empid = " clientid "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END.                                                                                                       
+
+        
+        FIND FIRST people_mstr WHERE people_mstr.people_id = clientid AND 
+                                    people_mstr.people_deleted = ?
+                                    NO-LOCK NO-ERROR.
+         
+            IF AVAILABLE (people_mstr) THEN 
+                ASSIGN                
+                    firstname  = people_mstr.people_firstname
+                    lastname   = people_mstr.people_lastname
+                    clientname = IF firstname <> "" THEN lastname + ", " + firstname ELSE lastname. 
+                                  
+        FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = people_mstr.people_id AND 
+                                    Client_Mstr.Client_deleted = ?
+                                    NO-LOCK NO-ERROR.              
+            
+        IF AVAILABLE (Client_Mstr) THEN DO:                                                                 
+         
+         {&OUT}
+            "<div class='row'>" skip
+            "   <div class='grid_2'></div>" skip
+            "       <div class='grid_8'>" skip          
+            "               <div class='table_2col'>" skip
+            "                   <table>" skip
+            "                       <tr>" skip
+            "                           <th colspan='4'>Client Maintenance</th>" skip
+            "                       </tr>" skip    
+                          
+            "                       <tr>" skip
+            "                           <td>Client Abbreviated Name</td>" skip
+            "                           <td>" Client_Mstr.Client_abbv "</td>" skip
+            "                           <td>Client Full Name</td>" skip
+            "                           <td colspan='3'>" clientname "</td>" skip 
+            "                       </tr>" skip                                
+            "                       <tr>" skip
+            "                           <td>LDS?</td>" SKIP.
+            
+            IF lds = YES THEN 
+                {&OUT}
+            "                           <td><input type='radio' value='Yes' name='h-lds' checked disabled />Yes <input type='radio' value='No' name='h-lds' disabled />NO</td>" skip.
+            ELSE
+                {&OUT}
+            "                           <td><input type='radio' value='Yes' name='h-lds' disabled />Yes <input type='radio' value='No' name='h-lds' checked disabled />NO</td>" skip. 
+            
+            {&OUT} 
+            "                           <td>Zone</td>" skip
+            "                           <td>" zone FORMAT "->>>,>>>,>>9.99" "</td>" skip
+            "                       </tr>" SKIP
+            "                       <tr>" skip
+            "                           <td>Special Discount</td>" skip            
+            "                           <TD>" spec-disc FORMAT "$->>>,>>>,>>9.99" "</TD>" SKIP
+            "                           <td>Translation Default</td>" skip.            
+                            
+            IF translation = "" OR translation = "Translated" THEN 
+                {&OUT}
+            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated' checked>Translated"
+            "                           <BR><input type='radio' name='h-translation' value='Full'>Full" skip                              
+            "                           <br><input type='radio' name='h-translation' value='Bare'>Bare</td>" SKIP.
+            ELSE IF translation = "Full" THEN 
+                {&OUT}
+            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated'>Translated"
+            "                           <BR><input type='radio' name='h-translation' value='Full'checked>Full" skip                              
+            "                           <br><input type='radio' name='h-translation' value='Bare'>Bare</td>" SKIP.
+            ELSE IF translation = "Bare" THEN 
+                 {&OUT}
+            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated'>Translated"
+            "                           <BR><input type='radio' name='h-translation' value='Full'>Full" skip                              
+            "                           <br><input type='radio' name='h-translation' value='Bare' checked>Bare</td>" SKIP.
+                
+          {&OUT}          
+            "                       </tr>" skip           
+            "                       <tr>" skip           
+            "                           <td>Special Discount Notes</TD>" SKIP
+            "                           <td colspan='3'>" SKIP
+            "                               <textarea rows=4 cols=50 name='h-spec-disc-notes' readonly >" spec-disc-notes "</textarea>" SKIP
+            "                           </td>" SKIP
+            "                       </tr>" skip 
+            "                       <tr>" SKIP
+            "                           <td>Start Date</td>" skip
+            "                           <td>" startdate "</td>" skip
+            "                           <td>End Date</td>" skip
+            "                           <td>" enddate "</td>" skip            
+            "                       </tr>" skip   
+            "                       <tr>" skip
+            "                           <td>Price Adjustment</td>" SKIP
+            "                           <td>" price-adj FORMAT "->>>,>>>,>>9.99" "</td>" SKIP 
+            "                           <td>Default Profit Margin</td>" SKIP
+            "                           <td>" profit-margin FORMAT "->>>,>>>,>>9.99" "%</td>" SKIP
+            "                       </tr>" skip   
+            "                       <tr>" skip            
+            "                           <td>Gender</td>" SKIP.
+            
+            IF gender = ? THEN 
+                 {&OUT}
+            "                           <td colspan='3'><input type='radio' value='Yes' name='h-gender' />Male <input type='radio' value='No' name='h-gender' />Female</td>" skip. 
+            ELSE IF gender = YES THEN 
+                {&OUT}
+            "                           <td colspan='3'><input type='radio' value='Yes' name='h-gender' checked />Male <input type='radio' value='No' name='h-gender' />Female</td>" skip.
+            ELSE IF gender = NO THEN 
+                {&OUT}
+            "                           <td colspan='3'><input type='radio' value='Yes' name='h-gender' />Male <input type='radio' value='No' name='h-gender' checked />Female</td>" skip. 
+            
+            {&OUT} 
+            "                       </tr>" SKIP
+            "                       <tr>" skip
+            "                           <td>Address</td>" SKIP.            
+            
+            FIND addr_mstr WHERE addr_mstr.addr_id = addrid NO-LOCK NO-ERROR.
+            
+                 IF AVAILABLE (addr_mstr) THEN DO: 
+                     ASSIGN 
+                         addrline = addr_mstr.addr_addr1 + " " + addr_mstr.addr_addr2 + " " + addr_mstr.addr_addr3 + " " + addr_mstr.addr_city + " " + addr_mstr.addr_stateprov + ", " + addr_mstr.addr_zip + " " + addr_mstr.addr_country.
+                                                       
+                     {&OUT}
+            
+            
+            "                           <td colspan='3'>" addrline "</td>" SKIP.
+                                              
+                 END. /* if avail addr_mstr */
+                 ELSE DO: 
+                     ASSIGN 
+                         addrline = "Click here to add an address.".  
+                               
+                     {&OUT}             
+            "                           <td colspan='3'><a href='ADDRpickP.r"               /* CODEHAUL */ 
+                                             "?h-prevproc=TSclientmaintU.r"               /* Calling Procedure */
+                                             "&h-act=MAINTENANCE"                         /* Calling Procedure's Act */                              
+                                             "&h-pp-passBack-peopid=" clientid            /* Calling Procedure's people id to pass back. */          
+                                             "&h-pp-passBack-addrid=" addrid              /* Calling Procedure's address id to pass back. */         
+/*                                             "&h-pp-passBack-char1="                      /* Calling Procedure's Character data to pass back. */*/
+/*                                             "&h-pp-passBack-char2="                      /* Calling Procedure's Character data to pass back. */*/
+/*                                             "&h-pp-passBack-int1="                       /* Calling Procedure's Integer data to pass back. */  */
+/*                                             "&h-pp-passBack-int2="                       /* Calling Procedure's Integer data to pass back. */  */
+                                             "&h-addr-act=" pass-act 
+                                             "&whattorun=" whatshouldrun " '>"
+                                              addrline "</a</td>" SKIP.  
+                
+                END. /* else not avail addr_mstr */
+                               
+                     {&OUT}           
+            "                       </tr>" SKIP
+             "                       <tr>" skip
+            "                           <td>Company</td>" skip
+            "                           <td>" company "</td>" skip            
+            "                           <td>Home phone</td>" skip
+            "                           <td>" homephone "</td>" skip 
+            "                       </tr>" skip 
+            "                       <tr>" skip
+            "                           <td>Work phone</td>" skip
+            "                           <td>" workphone "</td>" skip 
+            "                           <td>Cell phone</td>" skip
+            "                           <td>" cellphone "</td>" skip
+            "                       </tr>" skip  
+            "                       <tr>" skip
+            "                           <td>Business Email</td>" skip
+            "                           <td>" workemail "</td>" skip 
+            "                           <td>Other Email</td>" skip
+            "                           <td>" otheremail "</td>" skip
+            "                       </tr>" skip                 
+            "                   </table>" skip
+            "               </div>" skip                 
+            "       </div>" skip
+            "   </div class='grid_2'></div>" skip
+            "</div>" skip     
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Update Another Client</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.     
+        
+        END. /* if avail Emp_Mstr */
+             
+    END. /* UPDATE */     
+    
+END CASE.         
+</SCRIPT>
+</BODY>
+</HTML>

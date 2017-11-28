@@ -1,0 +1,841 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Individual Test Kit Results</TITLE>
+
+<META NAME="AUTHOR" CONTENT="Trae Luttrell">
+<META name="VERSION" content="2.4">
+<META name="COPYRIGHT" content="Solsource">
+<META name="CREATE_DATE" content="24/Dec/14">
+<META NAME="LAST_UPDATED" CONTENT="12/Feb/15">
+
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+<SCRIPT LANGUAGE="SpeedScript">
+   
+CREATE WIDGET-POOL.
+
+/*/******* this is an identical copy of DDI's colors *******/*/
+/*                                                           */
+/*.leftToRightGradient{                                      */
+/*  width: 40%;                                              */
+/*  background:                                              */
+/*    linear-gradient(to right,                              */
+/*    rgba(204,255,204,.9) 32%, /** green end */             */
+/*    rgba(255,255,204,.8) 32%, /** yellow start */          */
+/*    rgba(255,255,204,.8) 66%, /** yellow end */            */
+/*    rgba(255,191,191,.9) 66%); /* red start */             */
+/*}                                                          */
+/*                                                           */
+/*.centerGradient{                                           */
+/*  width: 40%;                                              */
+/*  background: linear-gradient(to right,                    */
+/*    rgba(255,191,191,.9) 15%,     /** red end **/          */
+/*    rgba(255,255,204,.8) 15%,     /** yellow start **/     */
+/*    rgba(255,255,204,.8) 30%,     /** yellow end **/       */
+/*    rgba(204,255,204,.9) 30%,     /** green start **/      */
+/*    rgba(204,255,204,.9) 45%,     /** green end **/        */
+/*    rgba(255,255,255,.9) 45%,     /** white start **/      */
+/*    rgba(255,255,255,.9) 55%,     /** white end **/        */
+/*    rgba(204,255,204,.9) 55%,     /** green start **/      */
+/*    rgba(204,255,204,.9) 70%,     /** green end **/        */
+/*    rgba(255,255,204,.8) 70%,     /** yellow start **/     */
+/*    rgba(255,255,204,.8) 85%,     /** yellow end **/       */
+/*    rgba(255,191,191,.9) 85%);    /** red start **/        */
+/*}                                                          */
+
+</SCRIPT>
+<style TYPE="text/css">
+
+@media print {
+    .full-page-print { 
+	  width:100%; 
+	  height:100%;
+	  page-break-after:auto;
+	}
+	
+	.grid_1 {
+	  display: none;
+	}
+	
+	.grid_10 {
+      width: 100% !important;
+    }
+    
+    td, th, h2 {
+      font-size: 150% !important;
+    }
+    
+    a {
+      font-size: 115% !important;
+    }
+}
+
+/****** this is how Trae thinks the colors ought to be, more or less. *******/
+
+.leftToRightGradient{
+  width: 40%;
+  background: 
+    linear-gradient(to right, 
+    rgba(102,204,102,.9) 32%, /** green end */
+    rgba(255,255,102,.8) 32%, /** yellow start */
+    rgba(255,255,102,.8) 66%, /** yellow end */
+    rgba(255,153,153,.9) 66%); /* red start */
+}
+
+.centerGradient{
+  width: 40%;
+  background: linear-gradient(to right, 
+    rgba(255,153,153,.9) 15%,     /** red end **/
+    rgba(255,255,102,.8) 15%,     /** yellow start **/
+    rgba(255,255,102,.8) 30%,     /** yellow end **/
+    rgba(102,204,102,.9) 30%,     /** green start **/
+    rgba(102,204,102,.9) 45%,     /** green end **/
+    rgba(255,255,255,.9) 45%,     /** white start **/
+    rgba(255,255,255,.9) 55%,     /** white end **/
+    rgba(102,204,102,.9) 55%,     /** green start **/
+    rgba(102,204,102,.9) 70%,     /** green end **/
+    rgba(255,255,102,.8) 70%,     /** yellow start **/
+    rgba(255,255,102,.8) 85%,     /** yellow end **/
+    rgba(255,153,153,.9) 85%);    /** red start **/
+}
+
+.bar{
+  width:0px;
+  height:12px;
+  background:black;
+  border-radius:10px;
+  animation-name: stretch;
+  -webkit-animation-name: stretch;  
+    animation-duration: 1.5s;   
+  -webkit-animation-duration: 1.5s;
+    animation-timing-function: ease-out;    
+    -webkit-animation-timing-function: ease-out;    
+    transform-origin: 0% 0%;
+    -ms-transform-origin: 0% 0%;
+    -webkit-transform-origin: 0% 0%;
+} 
+
+/** 
+For the center bars, treat 50% as the maximum width for the centerToLeft bar, 
+and 52% as the maximum width for the centerToRight bar. This is because in 
+order to have the centerToRight bar start more centered, the bar needs to 
+start slightly less than halfway.
+**/
+
+ .centerToRight{ 
+  /** Having the margin-left at 48% looks more centered than 50% **/
+  margin-left:48%;
+  width:0px;
+  height:12px;
+  background:black;
+  border-radius:10px;
+  animation-name: stretch;
+  -webkit-animation-name: stretch;  
+    animation-duration: 1.5s;   
+  -webkit-animation-duration: 1.5s;
+    animation-timing-function: ease-out;    
+    -webkit-animation-timing-function: ease-out;    
+    transform-origin: 0% 0%;
+    -ms-transform-origin: 0% 0%;
+    -webkit-transform-origin: 0% 0%;
+}
+.centerToLeft{
+  margin-right:50%;
+  float:right;
+  width: 0px;
+  height:12px;
+  background:black;
+  border-radius:10px;
+    animation-name: stretch;
+    -webkit-animation-name: stretch;    
+    animation-duration: 1.5s;   
+    -webkit-animation-duration: 1.5s;
+    animation-timing-function: ease-out;    
+    -webkit-animation-timing-function: ease-out;    
+    transform-origin: 100% 0%;
+    -ms-transform-origin: 100% 0%;
+    -webkit-transform-origin: 100% 0%; 
+} 
+
+/** Animation keyframes **/
+@keyframes stretch {
+    0% {transform: scaleX(0.3);}
+    60% {transform: scaleX(1);}         
+    80% {transform: scaleX(0.98);}
+    100% {transform: scaleX(1);}                            
+}
+@-webkit-keyframes stretch {
+    0% {-webkit-transform: scaleX(0.3);}
+    60% {-webkit-transform: scaleX(1);}
+    80% {-webkit-transform: scaleX(0.98);}
+    100% {-webkit-transform: scaleX(1);}        
+}
+
+</style>
+
+</HEAD>
+
+<BODY class='inside'>
+
+<SCRIPT LANGUAGE="SpeedScript">
+
+{../depot/src/WebSpeed/menuname.i}.
+  
+/***************************  Variables  ******************************/
+
+DEFINE TEMP-TABLE tkr-2 
+    FIELD tkr-item      LIKE TKR_det.TKR_item
+    FIELD tkr-resval    LIKE TKR_det.TKR_lab_resval
+    FIELD tkr-result    LIKE TKR_det.TKR_lab_result
+    FIELD tkr-uom       LIKE TKR_det.TKR_ref_uom 
+    FIELD trr-order     LIKE trr_det.trr_order 
+    FIELD suppl-name    LIKE suppl_list.suppl_name
+    FIELD suppl-id      LIKE suppl_list.suppl_id 
+    FIELD tld-item-id   LIKE tld_det.tld_item_ID
+    FIELD tl-section    LIKE tl_mstr.tl_section_desc INITIAL "OTHER"
+    FIELD tl-order      LIKE tl_mstr.tl_order
+    FIELD tld-id        LIKE tld_det.tld_sect_id
+    FIELD TK-testtype   LIKE TK_mstr.tk_test_type
+    FIELD tld-order     LIKE tld_det.tld_order
+    FIELD trr-dose-from LIKE trr_det.trr_dosage_from                        /* 2dot4 */
+    FIELD trr-dose-to   LIKE trr_det.trr_dosage_to                          /* 2dot4 */
+    FIELD trr-eff-start LIKE trr_det.trr_start_eff                          /* 2dot4 */
+    FIELD trr-eff-end   LIKE trr_det.trr_end_eff                            /* 2dot4 */
+    FIELD trr-uom       LIKE trr_det.trr_uom
+    FIELD trr-notes     LIKE trr_det.trr_notes
+    FIELD marker-desc   LIKE marker_list.marker_desc
+    FIELD tkr-minusSD   LIKE TKR_det.tkr_minusSD
+    FIELD tkr-meanSD    LIKE TKR_det.tkr_meanSD
+    FIELD tkr-plusSD    LIKE TKR_det.tkr_plusSD
+    FIELD tld-bar-type  LIKE tld_det.tld_bar_type 
+    FIELD tally         AS INTEGER
+    FIELD found         AS LOGICAL INITIAL NO                                                      
+    INDEX item-idx      AS PRIMARY UNIQUE tkr-item 
+    .
+ 
+DEFINE BUFFER tkr-2-buff FOR tkr-2.
+    
+/********  Database Variables  **********/
+
+DEFINE VARIABLE v-TK_id         LIKE TK_mstr.TK_ID                          NO-UNDO.
+DEFINE VARIABLE v-testtype      LIKE tl_mstr.tl_testtype                    NO-UNDO.
+DEFINE VARIABLE v-TK_test_seq   LIKE TK_mstr.tk_test_seq  INITIAL 1         NO-UNDO.
+
+DEFINE VARIABLE themath AS DECIMAL FORMAT "->>9.9" NO-UNDO.
+
+/*******  Adminstrator Variables  *******/
+
+DEFINE VARIABLE v-itmessage     AS LOGICAL  INITIAL NO      NO-UNDO.
+DEFINE VARIABLE v-itmessage-math AS LOGICAL INITIAL NO      NO-UNDO.
+DEFINE VARIABLE v-act0           AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE act             AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE v-start_holder  AS CHARACTER INITIAL ""     NO-UNDO.
+DEFINE VARIABLE v-end_holder    AS CHARACTER INITIAL ""     NO-UNDO.
+DEFINE VARIABLE v-green         AS CHARACTER                NO-UNDO.
+DEFINE VARIABLE x               AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE y               AS INTEGER                  NO-UNDO.
+DEFINE VARIABLE v-found         AS LOGICAL                  NO-UNDO.
+DEFINE VARIABLE v-inside-trr4ea AS LOGICAL                  NO-UNDO.
+DEFINE VARIABLE v-inside-trr4ea-p3 AS LOGICAL                NO-UNDO.
+
+DEFINE VARIABLE found-mult      AS INTEGER                  NO-UNDO.
+
+DEFINE VARIABLE make-export-data AS LOG INITIAL NO NO-UNDO.
+
+/***************************  Prologue  *******************************/
+
+/*********  HTML Get-Values  ***********/
+ASSIGN 
+    v-tk_id         = get-value("h-tk_id")
+    v-testtype      = get-value("h-testtype")
+    v-tk_test_seq   = IF get-value("h-tk_test_seq") = "" THEN 
+                            1
+                      ELSE 
+                            INTEGER (get-value("h-tk_test_seq"))
+                                
+    v-act0           = get-value("h-act").
+
+IF v-act0 = "" THEN 
+    ASSIGN 
+        v-act0 = "User".  
+
+/*********************  "Validations" Act  *****************************/
+
+/****************  Main Program - Act - "User" Input  ******************/
+
+IF v-act0 = "User" THEN DO:
+    
+    IF act = "" THEN 
+    act = "INITIAL".
+/*        END CASE.*/
+
+   {&OUT}
+        "<div class='row'>"
+        "<div class='grid_3'></div>"
+        "<div class='grid_6'>"
+                                                                                          SKIP
+        "   <div class='table_col'>"                                                                        SKIP
+        "       <form>"                                                                                     SKIP
+        "           <table>"                                                                                SKIP
+        "               <tr>"                                                                               SKIP
+        "                   <th colspan=2> Enter Test Kit ID</th>"                                          SKIP
+        "               </tr>"                                                                              SKIP
+        "               <tr>"                                                                               SKIP
+        "                   <td>Test Kit ID</td>"                                                           SKIP
+        "                   <td><input type=text name='h-tk_id' value='" v-tk_id "'></td>"                  SKIP
+        "               </tr>"                                                                              SKIP
+        "           </table>                                                              "                 SKIP
+        "</div>"                                                                                            SKIP
+        "</div><!--class='grid_6'-->"                                                                       SKIP
+        "<div class='3'></div>"                                                                             SKIP        
+         /* 2dot4 --> */ 
+        "</div>"
+        "<BR>" SKIP 
+       "<div class='row'>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "       <input type='hidden' name='whattorun' value='" whatshouldrun "'>"                           SKIP        
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Report' class='btn'>Submit</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+        "   <div class='grid_3'> </DIV>" SKIP
+        "</div>" SKIP
+        "   </FORM>                                                                       "                 SKIP.
+        
+END. /*** v-act0 0 ***/
+
+/***********************  Display - "Report"  ************************/
+IF v-act0 = "Report" THEN DO:
+    
+    FIND FIRST TK_mstr WHERE TK_mstr.TK_ID = v-tk_id AND 
+/*        TK_mstr.TK_test_seq = v-tk_test_seq AND*/
+        TK_mstr.TK_deleted = ?
+            NO-LOCK NO-ERROR.
+    
+    IF AVAILABLE TK_mstr THEN DO:
+
+        {&OUT}
+            "<CENTER>                                                 " SKIP
+            "   <h2>" TK_mstr.TK_ID "</h2>" SKIP
+/*            " - " TK_mstr.TK_test_seq "</h2>  " SKIP*/
+            .    
+    
+        FOR EACH tl_mstr WHERE 
+                 tl_mstr.tl_testtype = TK_mstr.tk_test_type AND 
+                 tl_mstr.tl_deleted = ? 
+                 NO-LOCK,
+            EACH tld_det WHERE 
+                tld_det.tld_sect_id = tl_mstr.tl_sect_id AND 
+                tld_det.tld_deleted = ?
+                NO-LOCK,
+            FIRST marker_list WHERE 
+                marker_list.marker_ID = tld_det.tld_item_ID AND 
+                marker_list.marker_deleted = ?
+                NO-LOCK:       
+                     
+                                                                                IF v-itmessage = YES THEN
+                                                                                    {&OUT}
+                                                                                         "<H3>Inside 4ea. tl_mstr, etc.</H3>" SKIP
+                                                                                         "<OL>" SKIP
+                                                                                         "<LI>tl_test_type = " tl_testtype "</LI>" SKIP
+                                                                                         "<LI>tl_sect_id = " tl_sect_id "</LI>" skip 
+                                                                                         "<LI>tl_section_desc = " tl_section_desc "</LI>" SKIP
+/*                                                                                         "<LI>tld_item_id = " tld_item_id "</LI>" SKIP*/
+/*                                                                                         "<LI>tld_item_name = " tld_item_name "</LI>" SKIP*/
+                                                                                         "<LI>marker_item = " marker_item "</LI>" SKIP
+                                                                                         "<OL>" SKIP.
+                FIND tkr-2 WHERE 
+                    tkr-2.tkr-item = marker_list.marker_item              /* 2dot4 */
+                    EXCLUSIVE-LOCK NO-ERROR.
+                
+                IF NOT AVAILABLE (tkr-2) THEN DO:
+                
+                    CREATE tkr-2.
+                    
+                    ASSIGN 
+                        tkr-2.tkr-item = marker_list.marker_item.           /* 2dot4 */  
+                    
+                END.
+                
+                ASSIGN 
+                     tkr-2.TK-testtype   = TK_mstr.tk_test_type          /* 2dot4 */          
+                     tkr-2.tl-section    = tl_mstr.tl_section_desc
+                     tkr-2.tl-order      = tl_mstr.tl_order
+                     tkr-2.tld-id        = tld_det.tld_sect_id
+                     tkr-2.tld-order     = tld_det.tld_order
+                     tkr-2.tld-item-id   = tld_det.tld_item_id
+                     tkr-2.tld-bar-type  = tld_det.tld_bar_type                                                    
+                     tkr-2.marker-desc   = marker_list.marker_desc
+                     tkr-2.found         = YES
+                     .
+
+            END. 
+            
+        FOR EACH TKR_det WHERE 
+                TKR_det.TKR_ID          = TK_mstr.TK_ID AND 
+                TKR_det.TKR_deleted     = ?
+                NO-LOCK,
+            FIRST marker_list WHERE marker_list.marker_item = TKR_det.TKR_item NO-LOCK 
+            BREAK 
+                BY TKR_det.TKR_ID 
+                BY TKR_det.TKR_item:
+                    
+            FIND tkr-2 WHERE 
+                    tkr-2.tkr-item = TKR_det.TKR_item
+                    EXCLUSIVE-LOCK NO-ERROR.
+                
+                IF NOT AVAILABLE (tkr-2) THEN DO:
+                
+                    CREATE tkr-2.
+                    
+                    ASSIGN 
+                        tkr-2.tkr-item = TKR_det.TKR_item.
+                    
+                END.
+               
+            ASSIGN 
+                tkr-2.tkr-item      = TKR_det.TKR_item
+                tkr-2.tkr-resval    = TKR_det.tkr_lab_resval
+                tkr-2.tkr-result    = IF TKR_det.TKR_lab_result = "" THEN 
+                                            STRING(TKR_det.TKR_lab_resval) + " " + (TKR_det.tkr_ref_uom)    /** used to have a comma in it **/
+                                      ELSE 
+                                            TKR_det.TKR_lab_result                           
+                tkr-2.tkr-minusSD   = TKR_det.tkr_minusSD
+                tkr-2.tkr-meanSD    = TKR_det.tkr_meanSD
+                tkr-2.tkr-plusSD    = TKR_det.tkr_plusSD
+                .
+																	            IF v-itmessage = YES THEN               
+															                        {&OUT}
+															                            "TK_mstr.tk_test_type = " TK_mstr.tk_test_type "." SKIP.
+       
+        END. /***  4ea tkr_det  ***/
+    
+    /*******************************   Start "Page 1"   ****************************************************************/
+        
+        IF make-export-data = YES THEN 
+            OUTPUT TO "C:\progress\wrk\what-the-tkr-2.txt".
+                
+        FOR EACH tkr-2 NO-LOCK BREAK 
+            BY tkr-2.found DESCENDING                                           /* show Y before N */
+            BY tkr-2.tl-order 
+            BY tkr-2.tld-order: 
+                
+                                                                                IF v-itmessage = YES THEN 
+                                                                                    MESSAGE "inside 4ea tkr-2".
+                                                                                    
+            IF make-export-data = NO THEN DO:
+                
+                IF found = YES THEN DO: 
+                    
+                    IF FIRST-OF (tkr-2.tl-order) THEN DO:
+                    
+                        x = 0.
+                              
+                        {&OUT}                      
+                        "<div class='row full-page-print'>"             SKIP
+                        "<div class='grid_1'></div>"    SKIP
+                        "<div class='grid_10'>"         SKIP
+                        "   <div class='table_report fixed_table'>" SKIP
+                        "       <table>"                SKIP
+                        "           <thead>"            SKIP
+                        "               <tr>"           SKIP
+                        "                   <th colspan=3>" tkr-2.tl-section "</th>" SKIP
+                        "               </tr>"          SKIP                                                        
+                        "           <tr>"               SKIP        
+                        "               <td>Item Name</td>" SKIP
+                        "               <td>Result</td>" SKIP 
+                        "               <td>Graph</td>"  SKIP
+                        "           </TR>" SKIP
+                        "           </thead>" SKIP.  
+                        
+                    END. /*** first-of tkr-tl-order ***/
+
+                    {&OUT} 
+                        "           <tr>" SKIP 
+                        "               <td><a href=~"TLitemmaintU.r?h-testtype=" tkr-2.tk-testtype  
+                        "&h-sectid=" tkr-2.tld-id 
+                        "&h-sectdesc=" tkr-2.tl-section 
+                        "&h-itemid=" tkr-2.tld-item-id  
+                        "&h-act=FIND ITEM&whattorun=4.8&Submit=FIND ITEM~">" tkr-2.marker-desc "</a> ".
+                             
+                    IF tkr-result = "< dl" THEN 
+                        {&OUT}
+                            "<TD> &lt; dl</TD>" SKIP.
+                    ELSE 
+                        {&OUT}       
+                            "<td>" tkr-2.tkr-result " </td> " SKIP.
+                                                            
+                    IF tkr-2.tkr-minusSD <> "NULL" AND 
+                        tkr-2.tkr-minusSD <> "< dl" AND 
+                        tkr-2.tkr-minusSD <> "NONE" THEN
+	                    
+	                    ASSIGN 
+	                        themath = ABS((DECIMAL(tkr-2.tkr-minusSD) / (DECIMAL(tkr-2.tkr-plusSD) - DECIMAL(tkr-2.tkr-meanSD))) * 100).
+
+                    IF tkr-2.tld-bar-type = "bar" THEN DO:
+                        
+                        IF tkr-2.tkr-minusSD = "null"  OR 
+                            tkr-2.tkr-minusSD = "< dl" OR 
+                            tkr-2.tkr-minusSD = "NONE" THEN 
+                                {&OUT} "<td class='leftToRightGradient'></td></tr>" SKIP.
+                            
+                        ELSE 
+                            {&OUT} "<td class='leftToRightGradient'><div class='bar' style=~"width:" 
+                                themath "%;~"></DIV></td></tr>" SKIP.
+                               
+                    END. /* of "bar" type */
+                    
+                    ELSE IF tkr-2.tld-bar-type = "centerBar" THEN DO:
+                         
+                        IF tkr-2.tkr-minusSD = "null" OR 
+                                tkr-2.tkr-minusSD = "< dl" OR 
+                                tkr-2.tkr-minusSD = "NONE" THEN
+                            {&OUT} "<td class='centerGradient'></td></tr>" SKIP.
+                        
+                        ELSE DO: 
+                                
+	                        IF DECIMAL(tkr-2.tkr-minusSD) < 0 THEN 
+	                            {&OUT} "<td class='centerGradient'><div class='centerToLeft' style=~"width:" 
+	                                themath "%;~"></div></td></tr>" SKIP.
+	                            
+	                        IF DECIMAL(tkr-2.tkr-minusSD) > 0 THEN 
+	                            {&OUT} "<td class='centerGradient'><div class='centerToRight' style=~"width:" 
+	                                themath "%;~"></div></td></tr>" SKIP.
+                        
+                        END.  /** of else do -- tkr-minusSD <> NULL OR "< dl" or "NONE" **/
+                        
+                    END. /* of "centerBar" type */
+                    
+                    ELSE IF tkr-2.tld-bar-type = "" THEN DO: 
+                    
+                        {&OUT}    
+                            "<td><center><b>Unknown</b></center></td></tr>" SKIP.
+                    
+                    END.  /** of else if bar-type = "" **/
+                    
+                    ELSE 
+                        {&OUT}
+                            "<TD> </TD>" SKIP
+                            "</TR>" SKIP.
+                       
+                    IF LAST-OF (tkr-2.tl-order) THEN DO:
+                        
+                        DISPLAY "inside last of tl-order = " tl-order.
+                        
+                        {&OUT}
+                            "        </table>" SKIP
+                            "    </div>" SKIP
+                            "</div><div class='grid_1'></div></div>" SKIP
+                            "<br/>" SKIP.
+                       
+                    END. /** of Last-of tl-order **/
+                       
+                END.  /** of if found = yes **/
+     
+                ELSE IF found = NO THEN DO:
+                                  
+                    IF first-of(found) THEN  
+                        {&OUT}
+                            ""
+                            "<div class='row'><div class='grid_1'></div>" SKIP
+                            "<div class='grid_10'>"  
+                            "   <div class='table_report fixed_table'>" SKIP
+                            "       <table>" SKIP
+                            "           <thead>" SKIP
+                            "               <tr>" SKIP
+                            "                   <th colspan=2>Unassigned</th>" SKIP
+                            "               </tr>" SKIP                                                    
+                            "               <tr>" SKIP        
+                            "                   <td>Item Name</td>" SKIP
+                            "                   <td>Results</td>" SKIP
+                            "               </TR>" SKIP
+                            "           </thead>" SKIP.
+                            
+                    {&OUT} 
+                        "           <tr>" SKIP
+                        "               <td>" tkr-2.tkr-item "</td>" SKIP
+                        "               <td>" tkr-2.tkr-result "</td>" SKIP
+                        "           </tr>".
+                    
+                    IF LAST-OF(found) THEN 
+                        {&OUT}
+                            "</table></div>" SKIP
+                            "</div><div class='grid_1'></div></div>".    
+
+                END. /* If v-found = no */      
+      
+            END.  /** of if make-export-data = no **/
+            
+            IF make-export-data = YES THEN 
+                EXPORT DELIMITER ";" tkr-2. 
+      
+        END. /*** of 4ea tkr-2 ***/
+                
+        IF make-export-data = YES THEN                
+            OUTPUT CLOSE.
+            
+    /************************    START "PAGE 2"   ***************************************************************************/
+
+        {&OUT}
+            "<br/><br/>   <h2>Supplement Details</h2>  <br/>".
+
+        IF make-export-data = YES THEN
+            OUTPUT TO "C:\progress\wrk\what-the-tkr-2.txt".
+            
+        FOR EACH tkr-2 NO-LOCK BREAK
+            BY tkr-2.found DESCENDING                                           /* show Y before N */
+            BY tkr-2.tl-order
+            BY tkr-2.tld-order
+/*            BY tkr-2.trr-order */
+/*            BY tkr-2.suppl-name*/
+            BY tkr-2.tkr-item:
+
+																                IF v-itmessage = YES THEN
+																                    MESSAGE "inside 2nd 4ea tkr-2".
+																
+            IF make-export-data = NO THEN DO:
+
+/*	            IF found = YES THEN DO:*/
+	
+		            IF FIRST-OF (tkr-2.tl-order) THEN DO:
+           
+		                {&OUT}		
+		                "<div class='row'><div class='grid_1'></div>" SKIP
+                        "<div class='grid_10'>"
+		                "   <div class='table_report fixed_table'>"     SKIP
+		                "       <table>"                    SKIP
+		                "           <thead>"                SKIP
+		                "               <tr>"               SKIP
+		                "                   <th colspan=7>" tkr-2.tl-section "</th>" SKIP
+		                "               </tr>"    SKIP
+		                "           <tr>"         SKIP
+		                "               <td>Item Name</td>" SKIP
+		                "               <td>Result</td>"    SKIP
+		                "               <td class='inner'>" SKIP
+                        "                   <table><tr>"    SKIP 
+                        "                       <th>Supplement</td>"  SKIP   
+                        "                       <th>From Dosage</td>" SKIP              /* 2dot4 */
+                        "                       <th>To Dosage</td>"   SKIP              /* 2dot4 */    
+                        "                       <th>UOM</td>"         SKIP
+		                "                       <th>Notes</td>"       SKIP
+                        "                   </tr></table>"            SKIP
+                        "               </td>" SKIP
+		                "           </TR>" SKIP
+		                "           </thead>" SKIP
+                        "           <tbody>" SKIP.
+		
+		            END. /*** first-of tkr-tl-order ***/
+		
+                    {&OUT}    
+                        "           <tr>" SKIP
+                        "               <td> " tkr-2.tkr-item "</td>" SKIP
+                        "               <td> " tkr-2.tkr-result "</td>" SKIP
+                         "               <td class='inner'>" SKIP
+                        "                   <table>"    SKIP.
+                    
+                    ASSIGN y = y + 1
+                           x = x + 1 
+                           v-inside-trr4ea = NO.
+                    
+                    IF x MODULO 2 = 0 THEN 
+                        ASSIGN v-green = " class='green' ".
+                        
+                        ELSE ASSIGN v-green = "".
+    
+                                                                                    /* 4/13/15 4:53 - it wasn't populating the tkr-2.tk_test_type field up top      
+                                                                                    {&OUT} " |tkr-2.tk-testtype = " tkr-2.TK-testtype*/
+                                                                                    /*                        " tkr-2.tld-item-id = " tkr-2.tld-item-id.   */
+                    
+    
+                    FOR EACH trr_det WHERE 
+                            trr_det.trr_testtype    = tkr-2.TK-testtype AND
+                            trr_det.trr_item_ID     = tkr-2.tld-item-id AND 
+                            trr_det.trr_start_range <= tkr-2.tkr-resval AND 
+                            trr_det.trr_end_range   >= tkr-2.tkr-resval AND
+                            ((trr_det.trr_start_eff >= tkr-2.trr-eff-start) OR  /* 2dot4 */
+                            (trr_det.trr_start_eff   = ?)) AND                  /* 2dot4 */
+                            ((trr_det.trr_end_eff   <= tkr-2.trr-eff-end) OR    /* 2dot4 */
+                            (trr_det.trr_end_eff     = ?)) AND                  /* 2dot4 */
+                            trr_det.trr_deleted = ? NO-LOCK,
+                         FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_id NO-LOCK            
+                             BREAK BY trr_det.trr_order BY trr_det.trr_start_range BY suppl_list.suppl_name :
+                    
+                        {&OUT}  
+                            "   <tr>" SKIP
+/*                            "       <td" v-green ">" trr_det.trr_start_range.*/
+/*                        IF trr_det.trr_end_range = 0 THEN {&OUT} " +".       */ /***this is to double check the result vs recomendation ****/
+/*                                                                             */
+/*                        ELSE {&OUT} " - " trr_det.trr_end_range  SKIP.       */
+/*                              */
+/*                        {&OUT}*/
+/*                            "       </td>"*/
+                            "       <td " v-green " >" suppl_list.suppl_name "</td>" SKIP
+/*                        "       <td " v-green " >" trr_det.trr_dosage "</td>" SKIP*/
+                        "       <td " v-green " >" trr_det.trr_dosage_from "</td>" SKIP             /* 2dot4 */
+                        "       <td " v-green " >" trr_det.trr_dosage_to "</td>" SKIP               /* 2dot4 */
+                            "       <td " v-green " >" trr_det.trr_uom "</td>" SKIP
+                            "       <td " v-green " >" trr_det.trr_notes "</td>" SKIP
+                            "   </tr>" SKIP.
+                    
+                        ASSIGN v-inside-trr4ea = YES.
+                        
+                    END. /*** 4ea trr_det ***/  
+                    
+                    IF v-inside-trr4ea = NO THEN  /*** this is the "if the trr_det 4ea returns empty ***/
+                        {&OUT} " <tr><td " v-green " ></td><td " v-green " ></td><td " v-green " ></td><td " v-green " ></td><td " v-green " ></td></tr> ".   /* 2dot4 */   
+		
+                    {&OUT} "        </table></td></tr>" SKIP.
+        
+		            IF LAST-OF (tkr-2.tl-order) THEN DO:
+		               {&OUT}
+                           "        </tbody>" SKIP
+		                   "        </table>" SKIP
+		                   "    </div>" SKIP
+                           "</div><div class='grid_1'></div></div>" SKIP
+		                   "<br>" SKIP.
+                           
+                       ASSIGN x = 0
+                              y = 0 .
+	
+                    END. /** of last-of tkr-2.tl-order **/
+
+                IF LAST-OF (tkr-2.found) THEN 
+                    
+                    {&OUT}
+                        "</table></div></div></div><br/>" SKIP.
+
+            END.  /** of if make-export-data = no **/
+
+            IF make-export-data = YES THEN
+                EXPORT DELIMITER ";" tkr-2.
+                
+        END. /*** of 4ea tkr-2 ***/  
+              
+ /********************************************** PAGE 3 ********************************************************/
+ 
+        {&OUT}
+            "<br/><br/>" SKIP "<h2>Suppliments and their Supports</h2><!--------------------### PAGE 3 ###------------------>" SKIP "<br/>".
+            
+        IF make-export-data = YES THEN
+            OUTPUT TO "C:\progress\wrk\what-the-tkr-2.txt".
+            
+        IF make-export-data = NO THEN DO:
+            
+            {&OUT}      
+                "<div class='row'><div class='grid_1'></div>" SKIP
+                "<div class='grid_10'>"
+                "   <div class='table_report fixed_table'>"     SKIP
+                "       <table>"                    SKIP
+                "           <thead>"                SKIP
+                "               <tr>"               SKIP
+                "                   <th colspan=6>Reasons for Each Supplement</th>" SKIP
+                "               </tr>"    SKIP
+                "           <tr>"         SKIP
+                "               <td>Supplement</td>" SKIP
+                "                       <td>From Dosage</td>" SKIP          /* 2dot4 */
+                "                       <td>To Dosage</td>"   SKIP          /* 2dot4 */
+                "               <td>UOM</td>"    SKIP
+                "               <td class='inner' style='width:30%;'>" SKIP
+                "                   <table><tr>"    SKIP 
+                "                       <th>Item Name</td>"  SKIP   
+                "                       <th>Result</td>"      SKIP
+                "                   </tr></table>"            SKIP
+                "               </td>" SKIP
+                "           </TR>" SKIP
+                "           </thead>" SKIP
+                "           <tbody>" SKIP.
+            
+            FOR EACH tkr-2 NO-LOCK, 
+            EACH trr_det WHERE 
+                trr_det.trr_testtype    = tkr-2.TK-testtype AND
+                trr_det.trr_item_ID     = tkr-2.tld-item-id AND 
+                trr_det.trr_start_range <= tkr-2.tkr-resval AND 
+                trr_det.trr_end_range   >= tkr-2.tkr-resval AND 
+                ((trr_det.trr_start_eff >= tkr-2.trr-eff-start) OR  /* 2dot4 */
+                (trr_det.trr_start_eff   = ?)) AND                  /* 2dot4 */
+                ((trr_det.trr_end_eff   <= tkr-2.trr-eff-end) OR    /* 2dot4 */
+                (trr_det.trr_end_eff     = ?)) AND                  /* 2dot4 */
+                trr_det.trr_deleted = ? NO-LOCK,
+             FIRST suppl_list WHERE suppl_list.suppl_id = trr_det.trr_suppl_id NO-LOCK            
+                 BREAK BY suppl_list.suppl_name BY tkr-2.tkr-item:
+    
+                    IF FIRST-OF (suppl_list.suppl_name) THEN DO:
+           
+                    x = x + 1.
+                    
+                    IF x MODULO 2 = 0 THEN 
+                        ASSIGN v-green = " class='green' ".
+                        
+                        ELSE ASSIGN v-green = "".
+           
+                    {&OUT}    
+                        "           <tr>" SKIP
+                        "               <td> " suppl_list.suppl_name "</td>"    SKIP
+/*                        "       <td " v-green " >" trr_det.trr_dosage "</td>" SKIP*/
+                        "       <td " v-green " >" trr_det.trr_dosage_from "</td>" SKIP             /* 2dot4 */
+                        "       <td " v-green " >" trr_det.trr_dosage_to "</td>" SKIP               /* 2dot4 */
+                        "               <td> " trr_det.trr_uom "</td>"          SKIP
+                        "               <td class='inner' style='width:30%;'>" SKIP
+                        "                   <table>"    SKIP.    
+        
+                    END. /*** first-of tkr-tl-order ***/
+                 
+                     {&OUT}  
+                        "   <tr>" SKIP
+                        "       <td " v-green " >" tkr-2.tkr-item "</td>" SKIP
+                        "       <td " v-green " >" tkr-2.tkr-result "</td>" SKIP
+                        "   </tr>" SKIP.      
+        
+                    IF LAST-OF (suppl_list.suppl_name) THEN DO:
+                       
+                        {&OUT}
+                            "        </table></td>" SKIP  
+                            "</tr>".  
+
+                    END. /** of last-of suppl_list.suppl_name **/ 
+                    
+                              
+
+                END.  /** of if make-export-data = no **/
+
+            IF make-export-data = YES THEN
+                EXPORT DELIMITER ";" tkr-2.
+
+        END. /*** of 4ea tkr-2 ***/
+        
+        {&OUT}
+                           "        </tbody>" SKIP
+                           "        </table>" SKIP
+                           "    </div>" SKIP
+                           "</div><div class='grid_1'></div></div>" SKIP
+                           "<br>" SKIP.  
+                                
+        IF make-export-data = YES THEN                
+            OUTPUT CLOSE.        
+                        
+/***************** END OF PAGE 3 ****************/             
+        
+        {&OUT}
+            
+            "   <table>" SKIP
+            "       <tr>" SKIP
+            "           <td colspan=3>End of Report</td>" SKIP
+            "       </tr>" SKIP
+            "   </table>" SKIP
+            "<br>" SKIP
+            "<form>" SKIP
+            "   <input type='hidden' name='h-act' value='User' />" SKIP
+            "   <input type='submit' name='submit' value='Search Again' />" SKIP
+            "</form>"
+            "</div><div class='grid_1'></div></div>".
+                       
+    END. /*** if avail tk_mstr ***/
+    
+    ELSE {&OUT}
+        "<center><h3>Sorry that Test Kit does not exist anymore.</h3><br>
+        <form><button name='h-act' value='User'>Search Again</button></FORM></center>".
+     
+END. /*** v-act0 1 ***/
+</SCRIPT>
+</BODY>
+</HTML>

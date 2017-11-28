@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+    <title>Bulk Group Maint</title>
+    <meta NAME='VERSION' CONTENT='1.0'/>
+    <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+    <meta NAME='CREATE_DATE' CONTENT="02/Nov/2017"/>
+    <meta NAME='LAST_UPDATED' CONTENT="02/Nov/2017"/>   
+    
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/depot/src/HTMLContent/stylesheets/custom-select2.css"/>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    
+    <style>
+        label {
+            font-size: 18px;
+        }
+    </style>
+    
+    <script>
+        $(document).ready(function() {
+            $("#h-menu-items").select2();
+            $("#h-groups").select2();
+            
+            $("#overwrite-checkbox").click(function() {
+                $("#append-explanation").hide();
+                $("#overwrite-explanation").show();
+            });
+            
+            $("#append-checkbox").click(function() {
+                $("#overwrite-explanation").hide();
+                $("#append-explanation").show();
+            });
+            
+            // Handle form submission
+            $("form").submit(function(e) {
+                e.preventDefault();
+                
+                let menuIDs = "";
+                $("#h-menu-items").val().forEach(function(item) {
+                    menuIDs += menuIDs === "" ? item : ("," + item);
+                });
+                
+                let groupIDs = "";
+                if ($("#h-groups").val()) {
+	                $("#h-groups").val().forEach(function(item) {
+	                    groupIDs += groupIDs === "" ? item : ("," + item);
+	                });
+                }
+                
+                $.post("AJAX-submit-gmd-maint.r",
+                {
+                    menuIDs: menuIDs,
+                    groupIDs: groupIDs,
+                    updateType: $("[name='h-update-type']:checked").val() 
+                },
+                function(data, success) {
+                    if (data.success) {
+                        swal("Success!", "Menu groups were updated", "success");
+                        $("#h-menu-items").val([]).trigger("change");
+                        $("#h-groups").val([]).trigger("change");
+                    }
+                    else {
+                        swal("Whoops!", "Something went wrong while updating those groups. Please try again later.", "error");
+                    }
+                });
+            });
+        });
+    </script>
+    
+</head>
+
+<body class='w3-white'>
+    <header class='w3-container w3-dark-grey'>
+        <h1>Menu-item Groups Bulk Maintenance Page</h1> 
+    </header> 
+    <br><br> 
+        
+        <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+            <form method="post">
+                <h3>Menu-item Groups</h3>
+                <label>Menu-items</label>
+                <select name='h-menu-items' id='h-menu-items' class='w3-border w3-round-large w3-select w3-margin-bottom' multiple="multiple" required>
+                    <option value=""></option>
+                    <!--WSS
+                    FOR EACH menu_mstr WHERE menu_mstr.menu_deleted = ? NO-LOCK:
+                    -->
+                    <option value="`menu_mstr.menu_num '~~' menu_mstr.menu_select`">`menu_mstr.menu_num + '.' + STRING(menu_mstr.menu_select) + ' ' + menu_mstr.menu_title`</option>
+                    <!--WSS
+                    END.
+                    -->
+                </select>
+                <br/><br/>
+                <label>Groups</label>
+                <select name='h-groups' id='h-groups' class='w3-border w3-round-large w3-select w3-margin-bottom' multiple="multiple">
+                    <!--WSS
+                    FOR EACH grp_mstr WHERE grp_mstr.grp_deleted = ? NO-LOCK:
+                    -->
+                    <option value="`grp_mstr.grp_ID`">`grp_mstr.grp_ID`</option>
+                    <!--WSS
+                    END.
+                    -->
+                </select>
+                <br/><br/>
+                <input type="radio" id="append-checkbox" name="h-update-type" value="append" checked="true"/><span><label for="append-checkbox"> Append</label></span>
+                &nbsp;&nbsp;
+                <input type="radio" id="overwrite-checkbox" name="h-update-type" value="overwrite"/><span><label for="overwrite-checkbox"> Overwrite</label></span>
+                <br/>
+                <p id="append-explanation">Menu-items will keep their current groups and newly selected groups will be added to them</p>
+                <p id="overwrite-explanation" hidden>Groups will be removed from all selected menu-items and replaced by the newly selected groups</p>
+                <br/><br/><br/>
+                <div class="w3-row">
+                    <center><button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Update Groups</b></BUTTON></center>
+                </div>
+            </form>
+        </div>
+        <br/>
+</body>
+</html>

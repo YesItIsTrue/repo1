@@ -1,0 +1,300 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//Ddiv HTML//EN">
+
+<html>
+<head>
+    <title>Menu Maintenance</title>
+    <meta NAME="AUTHOR" CONTENT="Andrew Garver">
+    <meta NAME="VERSION" CONTENT="1.0">
+    <meta NAME="COPYRIGHT" CONTENT="Solsource">
+    <meta NAME="CREATE_DATE" CONTENT="16/Nov/17">
+    <meta NAME="LAST_UPDATED" CONTENT="16/Nov/17">    
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.maskedinput/1.4.1/jquery.maskedinput.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    <style>
+        .w3-content {
+            max-width: 90% !important;
+        }
+        .stalker-button {
+            position: fixed;
+		    right: 3%;
+		    bottom: 8%;
+		    background: blue;
+		    color: white;
+		    opacity: .5;
+		    width: 40px;
+		    text-align: center;
+		    height: 40px;
+		    line-height: 40px;
+		    cursor: pointer;
+        }
+    </style>
+    <script>
+        $(document).ready(function() {
+            $("#menu-container").on("change", "input", function() {
+                $(this).closest(".row").find("button").show();
+            });
+            
+            $("#menu-container").on("keyup", "input", function(e) {
+                if (e.which === 13)
+                    $(this).closest(".row").find("button.save-row").click();
+            });
+            
+            $("#menu-container").on("click", ".save-row", function() {
+                var row = $(this).closest(".row");
+                var menuID = row.attr("id");
+                var menuNum = row.find("input").eq(0).val();
+                var menuSelect = row.find("input").eq(1).val();
+                var menuTitle = row.find("input").eq(2).val();
+                var menuExprog = row.find("input").eq(3).val();
+                var menuModule = row.find("input").eq(4).val();
+                var menuIcon = row.find("input").eq(5).val();
+                var menuHidden = row.find("input").eq(6).prop("checked") ? "true" : "false";
+                
+                $.post("AJAX-update-menu-record.r",
+                {
+                    menuID: menuID,
+                    menuNum: menuNum,
+                    menuSelect: menuSelect,
+                    menuTitle: menuTitle,
+                    menuExprog: menuExprog,
+                    menuModule: menuModule,
+                    menuIcon: menuIcon,
+                    menuHidden: menuHidden
+                },
+                function(data, success) {
+                    if (data.success) {
+                        row.find(".save-row").hide();
+                        row.attr("id", menuNum + "~" + menuSelect);
+                    }
+                    else {
+                        if (data.error)
+                            swal("Whoops!", data.error, "error");
+                        else
+                            swal("Whoops!", "Something went wrong while updating the " + menuID.replace("~", ".") + " menu item. Please try again later.", "error");
+                    }
+                });
+            });
+            
+            $("#menu-container").on("click", ".delete-row", function() {
+                var row = $(this).closest(".row");
+                var menuID = row.attr("id");
+                
+                swal({
+				    title: "Are you sure?",
+				    text: "Do you really want to delete menu item " + menuID.replace("~", ".") + "?",
+				    icon: "warning",
+				    buttons: true,
+				    dangerMode: true,
+				})
+				.then((willDelete) => {
+				    if (willDelete) {
+				        $.post("AJAX-update-menu-record.r",
+                        {
+                            menuID: menuID,
+                            deleteMenuRecord: "yes"
+                        },
+                        function(data, success) {
+                            if (data.success) {
+                                row.remove();
+                            }
+                            else {
+                                if (data.error)
+                                    swal("Whoops!", data.error, "error");
+                                else
+                                    swal("Whoops!", "Something went wrong while deleting the " + menuID.replace("~", ".") + " menu item. Please try again later.", "error");
+                            }
+                        });
+				    }
+				});
+            });
+            
+            
+            $(".stalker-button").click(function() {
+                $("html, body").animate({ scrollTop: $(document).height() }, "slow");
+            });
+            
+            document.onscroll = function() {
+			    if (window.innerHeight + window.scrollY > document.body.clientHeight) {
+			        $(".stalker-button").fadeOut();
+			    }
+			    else {
+			        $(".stalker-button").fadeIn();
+			    }
+			}
+            
+            $("#menu-container").on("click", "button.create-record", function() {
+                var row = $(this).closest(".row");
+                var menuID = row.attr("id");
+                var menuNum = row.find("input").eq(0).val();
+                var menuSelect = row.find("input").eq(1).val();
+                var menuTitle = row.find("input").eq(2).val();
+                var menuExprog = row.find("input").eq(3).val();
+                var menuModule = row.find("input").eq(4).val();
+                var menuIcon = row.find("input").eq(5).val();
+                var menuHidden = row.find("input").eq(6).prop("checked") ? "true" : "false";
+                
+                $.post("AJAX-update-menu-record.r",
+                {
+                    menuNum: menuNum,
+                    menuSelect: menuSelect,
+                    menuTitle: menuTitle,
+                    menuExprog: menuExprog,
+                    menuModule: menuModule,
+                    menuIcon: menuIcon,
+                    menuHidden: menuHidden,
+                    createMenuRecord: "true"
+                },
+                function(data, success) {
+                    if (data.success) {
+                        var newRecord = $(".menu-record").last().clone();
+                        var dirtyCheckbox = newRecord.find("input").eq(6);
+                        newRecord.attr("id", menuNum + "~" + menuSelect);
+                        newRecord.find("input").eq(0).val(menuNum);
+                        newRecord.find("input").eq(1).val(menuSelect);
+                        newRecord.find("input").eq(2).val(menuTitle);
+                        newRecord.find("input").eq(3).val(menuExprog);
+                        newRecord.find("input").eq(4).val(menuModule);
+                        newRecord.find("input").eq(5).val(menuIcon);
+                        newRecord.find("input").eq(6).closest(".toggle").remove();
+                        newRecord.find("div.dirty-checkbox-container").append(dirtyCheckbox.prop("checked", menuHidden));
+                        
+                        $(".menu-record").last().after(newRecord);
+                        $(".dirty-checkbox").last().bootstrapToggle(menuHidden === "true" ? "on" : "off");
+                        row.find("input").val("");
+                    }
+                    else {
+                        if (data.error)
+                            swal("Whoops!", data.error, "error");
+                        else
+                            swal("Whoops!", "Something went wrong while creating your new " + menuNum + "." + menuSelect + " menu item. Please try again later.", "error");
+                    }
+                });
+            });
+        });
+    </script>
+    <!--WSS
+    PROCEDURE Output-Header:
+        /* {cookie-check-permissions.i "TSlogin.r"}. */
+    END PROCEDURE.
+    -->
+</head>
+	<header class='w3-container w3-dark-grey'>
+        <h1 class="w3-margin-left">Menu Master McFatFinger</h1>
+    </header>
+    <br/>
+    <div class="stalker-button">
+        <i class="fa fa-long-arrow-down" aria-hidden="true"></i>
+    </div>
+    
+    <div id="menu-container" class="w3-content w3-margin-bottom">
+        <div class="row">
+            <div class="col-md-1">menu_num</div>
+            <div class="col-md-1">menu_select</div>
+            <div class="col-md-2">menu_title</div>
+            <div class="col-md-3">menu_exprog</div>
+            <div class="col-md-1">menu_module</div>
+            <div class="col-md-2">menu__char01</div>
+            <div class="col-md-1">menu_hidden</div>
+        </div>
+    <!--WSS
+    FOR EACH menu_mstr NO-LOCK BREAK BY menu_mstr.menu_num BY menu_mstr.menu_select:
+    -->
+        <div class='row menu-record' id='`menu_mstr.menu_num "~~" menu_mstr.menu_select`'>
+            <div class="col-md-1">
+                <input type="text" value="`menu_mstr.menu_num`" class="form-control" onkeyup="$(this).change()"/>
+            </div>
+            <div class="col-md-1">
+                <input type="number" value="`menu_mstr.menu_select`" class="form-control" onkeyup="$(this).change()"/>
+            </div>
+            <div class="col-md-2">
+                <input type="text" value="`menu_mstr.menu_title`" class="form-control" onkeyup="$(this).change()"/>
+            </div>
+            <div class="col-md-3">
+                <input type="text" value="`menu_mstr.menu_exprog`" class="form-control" onkeyup="$(this).change()"/>
+            </div>
+            <div class="col-md-1">
+                <input type="text" value="`menu_mstr.menu_module`" class="form-control" onkeyup="$(this).change()"/>
+            </div>
+            <div class="col-md-2">
+                <input type="text" value="`menu_mstr.menu__char01`" class="form-control" onkeyup="$(this).change()"/>
+            </div>
+            <div class="col-md-1 dirty-checkbox-container">
+                <!--WSS 
+                IF menu_mstr.menu_hidden = true THEN DO: 
+                --> 
+                    <input type="checkbox" 
+                        class="dirty-checkbox" 
+	                    data-onstyle="danger" 
+	                    data-on="<i class='fa fa-eye-slash' aria-hidden='true'></i>" 
+	                    data-off="<i class='fa fa-eye' aria-hidden='true'></i>" 
+	                    data-toggle="toggle"
+	                    checked
+                    />
+                <!--WSS 
+                END.
+                ELSE DO:
+                -->
+                    <input type="checkbox"
+                        class="dirty-checkbox" 
+	                    data-onstyle="danger" 
+	                    data-on="<i class='fa fa-eye-slash' aria-hidden='true'></i>" 
+	                    data-off="<i class='fa fa-eye' aria-hidden='true'></i>" 
+	                    data-toggle="toggle"
+                    />
+                <!--WSS
+                END.
+                -->
+                
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="save-row" hidden><i class="fa fa-floppy-o" aria-hidden="true"></i></button>
+                <button type="button" class="delete-row"><i class="fa fa-trash" aria-hidden="true"></i></button>
+            </div>
+        </div>
+    <!--WSS
+    END.
+    -->
+        </br></br>
+        <div class='row' id='new-record'>
+            <div class="col-md-1">
+                <input type="text" placeholder="menu_num" class="form-control"/>
+            </div>
+            <div class="col-md-1">
+                <input type="number" placeholder="menu_select" class="form-control"/>
+            </div>
+            <div class="col-md-2">
+                <input type="text" placeholder="menu_title" class="form-control"/>
+            </div>
+            <div class="col-md-3">
+                <input type="text" placeholder="menu_exprog" class="form-control"/>
+            </div>
+            <div class="col-md-1">
+                <input type="text" placeholder="menu_module" class="form-control"/>
+            </div>
+            <div class="col-md-2">
+                <input type="text" placeholder="menu__char01" class="form-control"/>
+            </div>
+            <div class="col-md-1">
+                <input type="checkbox" 
+                    data-onstyle="danger" 
+                    data-on="<i class='fa fa-eye-slash' aria-hidden='true'></i>" 
+                    data-off="<i class='fa fa-eye' aria-hidden='true'></i>" 
+                    data-toggle="toggle"
+                    />
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="create-record">Create Record</button>
+            </div>
+        </div>
+    </div>
+<body>
+    
+</body>
+</html>

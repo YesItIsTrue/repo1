@@ -1,0 +1,121 @@
+<!doctype html public "-//ietf//dtd html//en">
+<html>
+    <head>
+        <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+        <title>Registration Report</title>
+        <meta NAME='VERSION' CONTENT='1.0'/>
+        <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+        <meta NAME='CREATE_DATE' CONTENT="6/Nov/2017"/>
+        <meta NAME='LAST_UPDATED' CONTENT="6/Nov/2017"/>   
+        <meta name="viewport" content="width=device-width, initial-scale=1"/> 
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
+        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css"/>
+        <script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+        <!--WSS
+		PROCEDURE Output-Header:
+/*		    {cookie-check-permissions.i "AMS-landing-R.r"}.*/
+		END PROCEDURE.
+         -->
+    </head>
+    <body class='w3-light-grey'>
+        <!--WSS
+        {registration.i}.
+	        
+        DEFINE VARIABLE v-event_ID AS INTEGER NO-UNDO.
+        DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+        
+        DEFINE TEMP-TABLE hashmap
+            FIELD answer AS CHARACTER
+            FIELD quest AS CHARACTER 
+            FIELD num AS INTEGER.
+            
+        ASSIGN 
+            v-act = html-encode(get-value("h-act"))
+            v-event_ID = INTEGER(html-encode(get-value("h-event_ID"))).
+	            
+        IF v-act = "Display" THEN DO:
+            FIND event_mstr WHERE event_mstr.event_ID = v-event_ID NO-ERROR.
+		    -->
+		    
+		    <div class='w3-card-4 w3-content w3-white' style='max-width:1100px;'>
+	            <header class='w3-container w3-theme-dark'>
+	               <!--WSS IF AVAILABLE (event_mstr) THEN  -->
+	                   <h3>Tallied Answers for `event_mstr.event_name`</h3>
+	               <!--WSS ELSE DO:  -->
+	                   <h3>Tallied Answers for unknown event</h3>
+	               <!--WSS END.  --> 
+	            </header>
+	            <div class="w3-padding">
+				    <!--WSS 
+					    FOR EACH dcq_mstr WHERE dcq_mstr.dcq_event_ID = v-event_ID NO-LOCK, 
+					    EACH dca_det WHERE dca_det.dca_event_ID = dcq_mstr.dcq_event_ID AND dca_det.dca_question = dcq_mstr.dcq_question NO-LOCK 
+					    BREAK BY dca_det.dca_answer_value BY dcq_mstr.dcq_question:
+	                        FIND hashmap WHERE hashmap.quest = dcq_mstr.dcq_question AND hashmap.answer = dca_det.dca_answer_value NO-ERROR.
+	                        IF NOT AVAILABLE (hashmap) THEN DO:
+	                            CREATE hashmap.
+	                            ASSIGN 
+	                                hashmap.quest = dcq_mstr.dcq_question
+	                                hashmap.answer = dca_det.dca_answer_value
+	                                hashmap.num = 1.
+	                        END.
+	                        ELSE DO:
+	                            ASSIGN 
+	                                hashmap.num = hashmap.num + 1.
+	                        END.
+	                    END.
+	                    
+	                    FOR EACH hashmap NO-LOCK BREAK BY hashmap.quest BY hashmap.answer:
+	                        IF FIRST-OF (hashmap.quest) THEN DO:
+	                -->
+	                    <div class="w3-row">
+		                    <h3>`hashmap.quest`</h3>
+		                </div>
+	                <!--WSS
+	                        END.
+	                -->
+	                    <div class="w3-row">
+	                        <h4 class="w3-col m6">`hashmap.answer`: </h4>
+	                        <h4 class="w3-col m6">`hashmap.num`</h4>
+	                    </div>
+	                <!--WSS
+	                    END.
+				    -->
+			    </div>
+		   </div>
+	    <!--WSS
+	       END. /* IF v-act = "Display" */
+	       ELSE DO:
+	    -->
+	       <form>
+            <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+                <h2>Event Selection</h2>
+                <p>Choose an event to see tallied answers</p>
+                <p class='w3-padding-left w3-padding-right w3-padding-top'>
+                <label>Event Name</label>
+                <select name='h-event_ID' class='w3-border w3-round-large w3-select custom-select' required>.
+        <!--WSS
+                     FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND event_mstr.event_deleted = ? NO-LOCK BY event_mstr.event_start_date:
+                         {&OUT} "<option value='" event_mstr.event_id "'>" event_mstr.event_name "</option>".
+                     END.
+        -->
+                </select>
+                </p>
+                <br>
+                </div>
+                <br>
+                <div class='w3-row-padding w3-margin'>
+                   <div class='w3-center w3-col s12'>
+                       <button type='submit' name='h-act' value='Display' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>View Answers</b></BUTTON>
+                   </div>
+                </div>
+            </div>
+        </form>
+        <!--WSS
+        END.
+        -->
+    </body>
+</html>

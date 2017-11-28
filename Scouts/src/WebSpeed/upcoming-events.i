@@ -20,13 +20,12 @@
 
 /* ***************************  Main Block  *************************** */
 {&OUT}
-    "<div class='w3-card-4 w3-content w3-white' style='height: 100%'>" SKIP
-    "    <header class='w3-container w3-theme-dark' style='height: 48px'>" SKIP
-    "        <h3>{1}</h3>" SKIP
-    "    </header>" SKIP.
+    "<header class='w3-container w3-theme-dark'>" SKIP
+    "   <h3>Upcoming Events</h3>" SKIP
+    "</header>" SKIP.
 
     {&OUT}
-        "   <ul class='w3-ul' style='overflow: auto; height: calc(100% - 48px)'>" SKIP.
+        "   <ul class='w3-ul' style='overflow: auto;'>" SKIP.
            
 FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND 
         event_mstr.event_deleted = ? NO-LOCK 
@@ -60,5 +59,4 @@ FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND
 END.  /** of 4ea. event_mstr **/
 
 {&OUT}
-    "   </UL>" SKIP
-    "</div>     <!-- end of div --- upcoming events -->" SKIP (1)
+    "   </UL>" SKIP.

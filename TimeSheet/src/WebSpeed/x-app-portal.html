@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <title>Application Portal</title>
+    <meta NAME="AUTHOR" CONTENT="Andrew Garver">
+    <meta NAME="VERSION" CONTENT="1.0">
+    <meta NAME="COPYRIGHT" CONTENT="Solsource">
+    <meta NAME="CREATE_DATE" CONTENT="27/Oct/17">
+    <meta NAME="LAST_UPDATED" CONTENT="27/Oct/17">    
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/timesheet.css">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<style>
+	#reports-content {
+	  margin-top: 10%;
+	}
+	#maint-content {
+	  margin-top: 10%;
+	  min-height: 100%;
+	}
+	</style>
+    <!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
+</head>
+
+<body class='w3-theme-light'>
+    <!--WSS
+    DEFINE VARIABLE empid AS INTEGER NO-UNDO.
+    
+    RUN VALUE(SEARCH("session-get-user-id.r")) (
+        get-cookie("c-session-token"),
+        OUTPUT empid
+    ).
+    -->
+    <!-- Icon Bar (Sidebar - hidden on small screens) -->
+    <div id="side-nav" class="col-md-1">
+		<nav class="w3-sidebar w3-bar-block w3-small w3-hide-small w3-center w3-theme">
+		  <!-- Avatar image in top left corner -->
+		  <img src="/depot/src/HTMLContent/images/Solsource/Solsource_Logo_V_RGB_Sm.jpg" style="width:100%">
+		  <a href="#" class="w3-bar-item w3-button w3-padding-large w3-hover-theme-accent top-nav-btn">
+		    <i class="fa fa-home w3-xxlarge"></i>
+		    <p>HOME</p>
+		  </a>
+		  <a href="#reports" class="w3-bar-item w3-button w3-padding-large w3-hover-theme-accent">
+		    <i class="fa fa-list w3-xxlarge"></i>
+		    <p>REPORTS</p>
+		  </a>
+		  <a href="#maintenance" class="w3-bar-item w3-button w3-padding-large w3-hover-theme-accent">
+		    <i class="fa fa-wrench w3-xxlarge"></i>
+		    <p>MAINT</p>
+		  </a>
+         <a href='cookie-logout-html.r?redirect-location=TSlogin.r' class='w3-bar-item w3-button w3-padding-large w3-hover-theme-accent logout-btn'> 
+           <i class='fa fa-sign-out w3-xxlarge'></i> 
+           <p>LOGOUT</p> 
+         </a>
+		</nav>
+		
+		<!-- Navbar on small screens (Hidden on medium and large screens) -->
+	    <div class="w3-top w3-hide-large w3-hide-medium" id="myNavbar">
+		    <div class="w3-bar w3-theme w3-center top-menu">
+		        <a href="#" class="w3-bar-item w3-button" style="width:25% !important">HOME</a>
+		        <a href="#reports" class="w3-bar-item w3-button" style="width:25% !important">REPORTS</a>
+		        <a href="#maintenance" class="w3-bar-item w3-button" style="width:25% !important">MAINT</a>
+		        <a href="cookie-logout-html.r?redirect-location=TSlogin.r" class="w3-bar-item w3-button" style="width:25% !important">LOGOUT</a>
+		    </div>
+	    </div>
+	</div>
+	
+	<!-- Page Content -->
+	<div id="page-content" class="col-md-11">
+		<div class="w3-padding-large">
+		  
+            <div id="home-content" class="page-component">
+                <div class="section-header"><i class="fa fa-check"></i> Log your time</div>
+                <div class="row">
+                    <!--WSS
+                    FOR EACH menu_mstr WHERE menu_mstr.menu_num = "8" AND menu_mstr.menu__char01 = "action" AND menu_mstr.menu_hidden = FALSE,
+                    EACH gud_det WHERE gud_det.gud_people_ID = empid,
+                    FIRST gmd_det WHERE gmd_det.gmd_menu_num = menu_mstr.menu_num AND gmd_det.gmd_menu_select = menu_mstr.menu_select AND gmd_det.gmd_grp_id = gud_det.gud_grp_id NO-LOCK
+                    BREAK BY menu_mstr.menu_title BY menu_mstr.menu_select:
+                        IF FIRST-OF (menu_mstr.menu_select) THEN DO:
+                    -->
+					    <a href='`menu_mstr.menu_exprog`'> 
+					       <div class='col-md-4'> 
+					           <div class='w3-container w3-card-4 w3-white w3-hover-theme w3-round w3-content col-md-12'> 
+					               <div class='component-card'> 
+					                   <div class='icon'><i class='`menu_mstr.menu__char02`'></i></div> 
+					                   <h1>`menu_mstr.menu_title`</h1> 
+					               </div> 
+					           </div> 
+					       </div> 
+					    </a>
+					<!--WSS
+					    END. /* IF FIRST (menu_mstr.menu_select) */
+                    END. /* menu item w/ group auth 4ea */
+                    -->
+                </div>
+		      
+            </div>
+		  
+            <div id="reports-content" class="page-component">
+                <div class="section-header" id="reports"><i class="fa fa-list"></i> Reports</div>
+                
+                <div class="row">
+	               <ul class="w3-ul w3-card-4 w3-white w3-xxlarge">
+	               <!--WSS
+                   FOR EACH menu_mstr WHERE menu_mstr.menu_num = "8" AND menu_mstr.menu__char01 = "report" AND menu_mstr.menu_hidden = FALSE,
+                   EACH gud_det WHERE gud_det.gud_people_ID = empid,
+                   FIRST gmd_det WHERE gmd_det.gmd_menu_num = menu_mstr.menu_num AND gmd_det.gmd_menu_select = menu_mstr.menu_select AND gmd_det.gmd_grp_id = gud_det.gud_grp_id NO-LOCK
+                   BREAK BY menu_mstr.menu_title BY menu_mstr.menu_select:
+                       IF FIRST-OF (menu_mstr.menu_select) THEN DO:
+                   -->
+                       <a href="`menu_exprog`"><li class="w3-hover-theme">`menu_title`<span class='w3-margin w3-right w3-xlarge'><i class='fa fa-angle-double-right'></i></span></li></a>
+                   <!--WSS
+                       END. /* IF FIRST (menu_mstr.menu_select) */
+                   END.
+                   -->
+	               </ul>
+                </div>
+                    
+		  </div>
+		  
+		  <div id="maint-content" class="page-component">
+		      <div class="section-header" id="maintenance"><i class="fa fa-wrench"></i> Maintenance</div>
+              
+              <div class="row">
+                  <ul class="w3-ul w3-card-4 w3-white w3-xxlarge">
+				  <!--WSS
+                  FOR EACH menu_mstr WHERE menu_mstr.menu_num = "8" AND menu_mstr.menu__char01 = "maint" AND menu_mstr.menu_hidden = FALSE,
+                  EACH gud_det WHERE gud_det.gud_people_ID = empid,
+                  FIRST gmd_det WHERE gmd_det.gmd_menu_num = menu_mstr.menu_num AND gmd_det.gmd_menu_select = menu_mstr.menu_select AND gmd_det.gmd_grp_id = gud_det.gud_grp_id NO-LOCK
+                  BREAK BY menu_mstr.menu_title BY menu_mstr.menu_select:
+                      IF FIRST-OF (menu_mstr.menu_select) THEN DO:
+                  -->
+                      <a href="`menu_exprog`"><li class="w3-hover-theme">`menu_title`<span class='w3-margin w3-right w3-xlarge'><i class='fa fa-angle-double-right'></i></span></li></a>
+                  <!--WSS
+                      END. /* IF FIRST (menu_mstr.menu_select) */
+                  END.
+                  -->
+				  </ul>
+              </div>
+              
+		  </div>
+		
+		</div>
+    </div>
+</body>
+</html>

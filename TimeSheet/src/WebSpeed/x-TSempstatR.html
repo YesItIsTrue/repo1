@@ -1,0 +1,238 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Personal Status Log</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="07/Jan/16">
+    <META NAME="MODIFIED_DATE" CONTENT="07/Jan/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL.
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
+</HEAD>
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript">
+{TSvert-menu.i}.
+  /*------------------------------------------------------------------
+    File:           TSstatR.html
+    Description:    Time Sheet Report
+    Created:        Jacob Luttrell
+    Version History:
+        1.0 - Created by Jacob Luttrell on 07/Jan/16.
+        Need to come back and touch this up to work with logins see 
+        commented out variables and TSentryU.
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE empid        LIKE Hours_Mstr.Hours_employee_ID NO-UNDO.
+/*DEFINE VARIABLE empid        AS INTEGER                        NO-UNDO.*/
+DEFINE VARIABLE empname      AS CHARACTER                      NO-UNDO.
+
+DEFINE VARIABLE raw-week    AS CHARACTER                       NO-UNDO.
+DEFINE VARIABLE yr          AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE week        AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE days        AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE jan1        AS DATE                            NO-UNDO.
+DEFINE VARIABLE mondate     AS DATE                            NO-UNDO.
+DEFINE VARIABLE tuesdate    AS DATE                            NO-UNDO.
+DEFINE VARIABLE weddate     AS DATE                            NO-UNDO.
+DEFINE VARIABLE thursdate   AS DATE                            NO-UNDO.
+DEFINE VARIABLE fridate     AS DATE                            NO-UNDO.
+DEFINE VARIABLE satdate     AS DATE                            NO-UNDO.
+DEFINE VARIABLE sundate     AS DATE                            NO-UNDO.
+DEFINE VARIABLE disp-wkdate AS CHARACTER                       NO-UNDO.
+DEFINE VARIABLE dayadj      AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE itdate      AS INTEGER                         NO-UNDO.
+DEFINE VARIABLE dateind     AS CHARACTER                       NO-UNDO.
+     
+DEFINE VARIABLE disp-date    AS CHARACTER                      NO-UNDO.
+
+DEFINE VARIABLE act           AS CHARACTER                     NO-UNDO.
+DEFINE VARIABLE itmessage     AS LOGICAL INITIAL NO            NO-UNDO.
+
+ASSIGN 
+    raw-week    = html-encode(get-value("html5-week"))
+    act         = html-encode(get-value("h-act"))
+    .
+    
+IF get-value("h-empid") <> "" THEN
+    empid = INTEGER(html-encode(get-value("h-empid"))).
+ELSE
+    RUN VALUE(SEARCH("session-get-user-id.r")) (
+        get-cookie("c-session-token"),
+        OUTPUT empid
+    ).
+
+        FIND people_mstr WHERE people_mstr.people_id = empid AND
+                               people_mstr.people_deleted = ?
+                               NO-LOCK NO-ERROR.
+
+            ASSIGN
+                empname = people_mstr.people_lastname + ", " + people_mstr.people_firstname.
+    
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL".    
+
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_2col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Employee: " empname " - Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Select a Week</td>" skip
+            "           <td><input type='week' name='html5-week' value='" raw-week "' required/></td>" skip
+            "       </tr>" SKIP(1)
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        
+        ASSIGN
+            yr = INTEGER(SUBSTRING(raw-week,1,4))
+            week = INTEGER(SUBSTRING(raw-week,INDEX(raw-week,"-w") + 2,2))
+            jan1 = DATE(1, 1, yr).
+            
+        IF WEEKDAY(jan1) > 5 THEN
+           ASSIGN 
+            itdate = WEEKDAY(jan1)
+            dateind = "First"       
+            days = (week * 7) + (2 - WEEKDAY(jan1)).
+        ELSE 
+           ASSIGN
+             itdate = WEEKDAY(jan1) 
+             dateind = "Second"      
+             days = (week * 7) - (5 + WEEKDAY(jan1)).  
+        
+        ASSIGN 
+            mondate = jan1 + days
+            tuesdate = mondate + 1
+            weddate = mondate + 2
+            thursdate = mondate + 3
+            fridate = mondate + 4
+            satdate = mondate + 5
+            sundate = mondate + 6.
+        
+        
+                                                                                                                                IF itmessage = YES THEN 
+                                                                                                                                {&out}
+                                                                                                                                "raw-week = " raw-week "<br>" skip
+                                                                                                                                "yr = " yr "<BR>" SKIP
+                                                                                                                                "week = " week "<BR>" SKIP
+                                                                                                                                "jan1 = " jan1 "<BR>" SKIP
+                                                                                                                                "days = " days "<BR>" SKIP
+                                                                                                                                "mondate = " mondate "<BR>" SKIP
+                                                                                                                                "itdate = " itdate "<br>" SKIP
+                                                                                                                                "dateind = " dateind "<br>" SKIP.        
+        {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan=5>Employee: " empname " - Status Log: Monday " mondate " - Sunday " sundate "</TH>" SKIP    /* thead, tr, th makes the silver bar */
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD>Date</TD>" SKIP
+            "                <TD>Time</TD>" SKIP          /* thead, tr, td makes the blue bar */
+            "                <TD>Client</TD>" SKIP
+            "                <TD>Project</TD>" SKIP
+            "                <TD>Description</TD>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1).
+            
+        FOR EACH Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = empid AND
+                                  Hours_Mstr.Hours_date >= mondate AND 
+                                  Hours_Mstr.Hours_date <= sundate AND
+                                   Hours_Mstr.Hours_deleted = ? NO-LOCK,          
+            EACH Client_Mstr WHERE Client_Mstr.Client_people_ID = Hours_Mstr.Hours_client_ID AND                                   
+                                   Client_Mstr.Client_deleted = ? NO-LOCK              
+                               BY Hours_Mstr.Hours_date:
+                
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                              
+                Hours_Mstr.Hours_date,                                                                             
+                OUTPUT disp-date                                                                        
+                ).      
+                
+            {&OUT}
+                "       <TR>" SKIP
+                "           <TD><a href='TSentryU.r"                            /* CODEHAUL */ 
+                                    "?h-empid=" empid
+                                    "&h-clientid=" Hours_Mstr.Hours_client_ID
+                                    "&h-projname=" Hours_Mstr.Hours_project_name
+                                    "&html5-date=" disp-date
+                                    "&h-act=TIME"
+                                    "&whattorun=8.1"
+                "                   '>" Hours_Mstr.Hours_date "</a></td>" SKIP
+                "           <TD>" Hours_Mstr.Hours_amount "</TD>" SKIP
+                "           <TD>" Client_Mstr.Client_abbv "</TD>" SKIP
+                "           <TD>" Hours_Mstr.Hours_project_name "</TD>" SKIP
+                "           <TD><textarea rows='5' cols='125' readonly >" Hours_Mstr.Hours_description "</textarea></TD>" SKIP
+                "       </TR>" SKIP. 
+        
+        END. /* 4ea. people, emp, emph */   
+        {&OUT}          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN=5>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+
+END CASE.         
+        
+         
+</SCRIPT>
+</BODY>
+</HTML>
+</SCRIPT>
+</BODY>
+</HTML>

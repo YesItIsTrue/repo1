@@ -14,18 +14,7 @@
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-	<style>
-	#reports-content {
-	  margin-top: 10%;
-	}
-	#maint-content {
-	  margin-top: 10%;
-	  min-height: 100%;
-	}
-	.page-component {
-	  margin-bottom: 90px;
-	}
-	</style>
+	
     <!--WSS
     PROCEDURE Output-Header:
         {cookie-check-permissions.i "TSlogin.r"}.
@@ -37,16 +26,6 @@
     <!--WSS
     DEFINE VARIABLE empid AS INTEGER NO-UNDO.
     DEFINE VARIABLE v-menu-number AS INTEGER INITIAL 0 NO-UNDO.
-    DEFINE VARIABLE v-num-items AS INTEGER INITIAL 0 NO-UNDO.
-    DEFINE VARIABLE v-items AS CHARACTER INITIAL "" NO-UNDO.
-    DEFINE VARIABLE i AS INTEGER NO-UNDO.
-    
-    DEFINE BUFFER menu_mstr2 FOR menu_mstr.
-    DEFINE BUFFER menu_mstr3 FOR menu_mstr.
-    DEFINE BUFFER gud_det2 FOR gud_det.
-    DEFINE BUFFER gmd_det2 FOR gmd_det.
-    DEFINE BUFFER gud_det3 FOR gud_det.
-    DEFINE BUFFER gmd_det3 FOR gmd_det.
     
     RUN VALUE(SEARCH("session-get-user-id.r")) (
         get-cookie("c-session-token"),
@@ -105,87 +84,7 @@
 	
 	<!-- Page Content -->
 	<div id="page-content" class="col-md-11">
-		<div class="w3-padding-large">
-		
-            <!--WSS
-            DEFINE VARIABLE v-section-number AS INTEGER INITIAL 0 NO-UNDO.
-            FOR EACH menu_mstr WHERE menu_mstr.menu_hidden = FALSE AND menu_mstr.menu_num = "8" NO-LOCK,
-            EACH gud_det WHERE gud_det.gud_people_ID = empid NO-LOCK,
-            FIRST gmd_det WHERE gmd_det.gmd_menu_num = menu_mstr.menu_num AND gmd_det.gmd_menu_select = menu_mstr.menu_select AND gmd_det.gmd_grp_id = gud_det.gud_grp_id NO-LOCK
-            BREAK BY menu_mstr.menu_num BY menu_mstr.menu_select:
-                IF FIRST-OF (menu_mstr.menu_select) THEN DO:
-                v-section-number = v-section-number + 1.
-            -->
-            <div id="section-`v-section-number`" class="page-component">
-                <div class="section-header"><i class="`menu_mstr.menu__char01`"></i> `menu_mstr.menu_title`</div>
-                <div class="row">
-            <!--WSS
-	                ASSIGN 
-                        v-items = ""
-    	                v-num-items = 0.
-	                FOR EACH menu_mstr2 WHERE menu_mstr2.menu_num = (menu_mstr.menu_num + "." + STRING(menu_mstr.menu_select)) AND menu_mstr2.menu_hidden = FALSE NO-LOCK,
-	                EACH gud_det2 WHERE gud_det2.gud_people_ID = empid NO-LOCK,
-                    FIRST gmd_det2 WHERE gmd_det2.gmd_menu_num = menu_mstr2.menu_num AND gmd_det2.gmd_menu_select = menu_mstr2.menu_select AND gmd_det2.gmd_grp_id = gud_det2.gud_grp_id NO-LOCK
-                    BREAK BY menu_mstr2.menu_select:
-                        IF FIRST-OF (menu_mstr2.menu_select) THEN DO:
-		                    ASSIGN 
-		                        v-num-items = v-num-items + 1
-		                        v-items = IF v-items <> "" THEN "," + (menu_mstr.menu_num + "." + STRING(menu_mstr.menu_select)) ELSE (menu_mstr.menu_num + "." + STRING(menu_mstr.menu_select)).
-	                    END. /* IF FIRST-OF (menu_mstr2.menu_select) */
-	                END. /* FOR EACH menu_mstr2 */
-	                
-	                IF v-num-items > 6 THEN DO:
-            -->
-                    <ul class="w3-ul w3-card-4 w3-white w3-xxlarge">
-            <!--WSS
-	                    DO i = 1 TO NUM-ENTRIES(v-items):
-	                        FOR EACH menu_mstr3 WHERE menu_mstr3.menu_num = ENTRY(i, v-items) AND menu_mstr3.menu_hidden = FALSE NO-LOCK,
-	                        EACH gud_det3 WHERE gud_det3.gud_people_ID = empid NO-LOCK,
-		                    FIRST gmd_det3 WHERE gmd_det3.gmd_menu_num = menu_mstr3.menu_num AND gmd_det3.gmd_menu_select = menu_mstr3.menu_select AND gmd_det3.gmd_grp_id = gud_det3.gud_grp_id NO-LOCK
-		                    BREAK BY menu_mstr3.menu_title BY menu_mstr3.menu_select:
-		                        IF FIRST-OF (menu_mstr3.menu_select) THEN DO:
-            -->
-                        <a href="`menu_mstr3.menu_exprog`"><li class="w3-hover-theme">`menu_mstr3.menu_title`<span class='w3-margin w3-right w3-xlarge'><i class='fa fa-angle-double-right'></i></span></li></a>
-            <!--WSS
-                                END. /* IF FIRST-OF (menu_mstr.menu_select) */
-	                        END. /* FOR EACH menu_mstr3 */
-	                    END. /* DO i = 1 TO NUM-ENTRIES(v-items) */
-            -->
-                    </ul>
-            <!--WSS
-	                END. /* IF v-num-items > 6 */
-	                ELSE DO:
-	                    DO i = 1 TO NUM-ENTRIES(v-items):
-	                        FOR EACH menu_mstr3 WHERE menu_mstr3.menu_num = ENTRY(i, v-items) AND menu_mstr3.menu_hidden = FALSE NO-LOCK,
-	                        EACH gud_det3 WHERE gud_det3.gud_people_ID = empid NO-LOCK,
-                            FIRST gmd_det3 WHERE gmd_det3.gmd_menu_num = menu_mstr3.menu_num AND gmd_det3.gmd_menu_select = menu_mstr3.menu_select AND gmd_det3.gmd_grp_id = gud_det3.gud_grp_id NO-LOCK
-                            BREAK BY menu_mstr3.menu_title BY menu_mstr3.menu_select:
-                                IF FIRST-OF (menu_mstr3.menu_select) THEN DO:
-            -->
-                    <a href='`menu_mstr3.menu_exprog`'> 
-                       <div class='col-md-4'> 
-                           <div class='w3-container w3-card-4 w3-white w3-hover-theme w3-round w3-content col-md-12'> 
-                               <div class='component-card'> 
-                                   <div class='icon'><i class='`menu_mstr3.menu__char01`'></i></div> 
-                                   <h1>`menu_mstr3.menu_title`</h1> 
-                               </div> 
-                           </div> 
-                       </div> 
-                    </a>
-            <!--WSS
-                                END. /* IF FIRST-OF (menu_mstr3.menu_select) */
-	                        END. /* FOR EACH menu_mstr3 */                    
-	                    END. /* DO i = 1 TO NUM-ENTRIES(v-items) */
-	                END.
-            -->
-                </div>
-            </div>
-            <!--WSS
-                END. /* IF FIRST-OF (menu_mstr.menu_select) */
-            END. /* FOR EACH menu_mstr */
-            -->
-		
-		</div>
+		<!--WSS {template-clean.i "8"}  -->
     </div>
 </body>
 </html>

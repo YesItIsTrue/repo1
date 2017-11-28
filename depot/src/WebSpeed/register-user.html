@@ -1,0 +1,398 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Andrew Garver">
+    <TITLE>Registration</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="8/Sept/2017">
+    <META NAME='LAST_UPDATED' CONTENT="8/Sept/2017">   
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.maskedinput/1.4.1/jquery.maskedinput.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel='stylesheet' href='/depot/src/HTMLContent/stylesheets/registration.css'>
+    <style>
+		@media only screen and (max-width: 600px) {
+		    .full-height-col { 
+		        display: block !important;
+		        width: 100% !important;
+		    }
+		}
+        label {padding-top: 10px}
+        .w3-select {
+            margin: 5px 0px 10px 0px;
+            padding-left: 10px;
+        }
+        .error-msg {
+            color: red;
+            margin: 0px !important;
+        }
+        .icon-color {
+            color: #4CAF50;
+        }
+        .full-length-col {
+            position: relative;
+        }
+        .submit-button-container {
+            position: absolute;
+            bottom: 0px;
+            padding-right: 16px;
+            padding-bottom: 26px;
+        }
+        .submit-button {
+            height: 80px;
+        }
+        .full-height-col {
+            display: table-cell;
+            width: 50%;
+            padding: 16px;
+        }
+        .w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
+        .w3-theme-background {color::#000 !important; background-color:#fff !important}
+        .w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
+        .w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+        .w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
+    </style>
+    
+    <script>
+        $(document).ready(function() {
+            $("[type='date']").mask("9999-99-99",{placeholder:"yyyy-mm-dd"});
+        
+            $("#registration-form").submit(function(e) {
+                if ($("[name='h-password']").val() != $("#confirm-password").val() || 
+                    $("#confirm-email").val() != $("[name='h-email']").val() || 
+                    $(".error-msg:visible").length > 0) {
+                    e.preventDefault();
+                }
+            });
+        
+            $("[name='h-username']").blur(function() {
+                if ($("[name='h-username']").val().length > 0) {
+	                $.post("AJAX-check-username.r",
+	                {
+	                    username: $("[name='h-username']").val()
+	                },
+	                function(response, success) {
+	                    if (response.success) {
+	                        $("#username-error").hide();
+	                        $("#username-valid").show();
+	                    }
+	                    else {
+	                        $("#username-valid").hide();
+	                        $("#username-error").show();
+	                    }
+	                });
+                }
+                else {
+                    $("#username-valid").hide();
+                    $("#username-error").hide();
+                }
+            });
+            
+            $("[name='h-password']").blur(function() {
+                if ($(this).val().length > 0) {
+	                if ($(this).val().length < 7) {
+	                    $("#password-valid").hide();
+	                    $("#password-error").show();
+	                }
+	                else {
+	                    $("#password-error").hide();
+	                    $("#password-valid").show();
+	                }
+                }
+                else {
+                    $("#password-error").hide();
+                    $("#password-valid").hide();
+                }
+            });
+            
+            $("#confirm-password").blur(function() {
+                if ($(this).val().length > 0) {
+	                if ($(this).val() == $("[name='h-password']").val()) {
+	                    $("#confirm-password-error").hide();
+	                    $("#confirm-password-valid").show();
+	                }
+	                else {
+	                    $("#confirm-password-valid").hide();
+	                    $("#confirm-password-error").show();
+	                }
+	            }
+	            else {
+                    $("#confirm-password-error").hide();
+                    $("#confirm-password-valid").hide();
+	            }
+            });
+            
+            //$("[name='h-email']").blur(function() {
+            //    if ($("[name='h-email']").val().length > 0) {
+            //        $.post("AJAX-check-email-availability.r",
+            //        {
+            //            email: $("[name='h-email']").val()
+            //        },
+            //        function(response, success) {
+            //        console.log(response.success);
+            //            if (response.success) {
+            //                $("#email-taken-error").hide();
+            //            }
+            //            else {
+            //                $("#email-taken-error").show();
+            //            }
+            //        });
+            //    }
+            //    else {
+            //        $("#email-taken-error").hide();
+            //    }
+            //});
+            
+            $("#confirm-email").blur(function() {
+                if ($(this).val().length > 0) {
+                    if ($(this).val() == $("[name='h-email']").val()) {
+                        $("#email-error").hide();
+                    }
+                    else {
+                        $("#email-error").show();
+                    }
+                }
+                else {
+                    $("#email-error").hide();
+                }
+            });
+        });
+    </script>
+</HEAD>
+<BODY class='w3-white'>
+<!--WSS
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-people-id        LIKE people_mstr.people_id          NO-UNDO.
+DEFINE VARIABLE v-people-prefix    LIKE people_mstr.people_prefix      NO-UNDO.
+DEFINE VARIABLE v-people-firstname LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE v-people-midname   LIKE people_mstr.people_midname     NO-UNDO.
+DEFINE VARIABLE v-people-lastname  LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-people-suffix    LIKE people_mstr.people_suffix      NO-UNDO.
+DEFINE VARIABLE v-people-gender    LIKE people_mstr.people_gender      NO-UNDO.
+DEFINE VARIABLE v-people-homephone LIKE people_mstr.people_homephone   NO-UNDO.
+DEFINE VARIABLE v-people-cellphone LIKE people_mstr.people_cellphone   NO-UNDO.
+DEFINE VARIABLE v-people-fax       LIKE people_mstr.people_fax         NO-UNDO.
+DEFINE VARIABLE v-people-email     LIKE people_mstr.people_email       NO-UNDO.
+DEFINE VARIABLE v-people-DOB       LIKE people_mstr.people_DOB         NO-UNDO.
+DEFINE VARIABLE v-people-prefname  LIKE people_mstr.people_prefname    NO-UNDO.
+DEFINE VARIABLE v-username         LIKE usr_mstr.usr_name              NO-UNDO.
+DEFINE VARIABLE v-password         LIKE usr_mstr.usr_password          NO-UNDO.
+DEFINE VARIABLE v-unit             LIKE speop_shadow.speop_ward        NO-UNDO.
+DEFINE VARIABLE v-Tsize            LIKE speop_shadow.speop_Tsize       NO-UNDO.
+
+DEFINE VARIABLE v-people-create AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-people-update AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-people-avail AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-successful AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-error AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-garbage AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE v-calling-page AS CHARACTER NO-UNDO.
+
+ASSIGN 
+    v-act = html-encode(get-value("h-act"))
+    v-calling-page = html-encode(get-value("h-calling-page")).
+    
+IF v-act = "Submit" THEN DO:
+    ASSIGN
+        v-people-prefix = html-encode(get-value("h-prefix")) 
+	    v-people-firstname = html-encode(get-value("h-firstname"))
+	    v-people-midname = html-encode(get-value("h-midname"))
+	    v-people-lastname = html-encode(get-value("h-lastname"))
+	    v-people-suffix = html-encode(get-value("h-suffix"))
+	    v-people-gender = LOGICAL(html-encode(get-value("h-gender")))
+	    v-people-homephone = html-encode(get-value("h-homephone"))
+	    v-people-cellphone = html-encode(get-value("h-cellphone"))
+	    v-people-email = html-encode(get-value("h-email"))
+	    v-people-DOB = IF html-encode(get-value("h-dob")) <> "" THEN DATE(INTEGER(ENTRY(2, html-encode(get-value("h-dob")), "-")), INTEGER(ENTRY(3, html-encode(get-value("h-dob")), "-")), INTEGER(ENTRY(1, html-encode(get-value("h-dob")), "-"))) ELSE ?
+	    v-people-prefname = html-encode(get-value("h-prefname"))
+	    v-username = html-encode(get-value("h-username"))
+	    v-password = html-encode(get-value("h-password"))
+	    v-unit = html-encode(get-value("h-unit"))
+	    v-Tsize = html-encode(get-value("h-Tsize")).
+	    
+	RUN VALUE(SEARCH("SUBpeop-datefindR.r")) (
+        v-people-prefix,
+		v-people-firstname,
+		v-people-midname,
+		v-people-lastname,
+		v-people-suffix,
+		v-people-DOB,
+		OUTPUT v-people-id,
+		OUTPUT v-garbage,
+		OUTPUT v-error,
+		OUTPUT v-successful
+	).
+	
+	/* If there was an error, set people-id to 0 for redundancy */
+	IF v-error = YES THEN ASSIGN v-people-id = 0.
+
+	RUN VALUE(SEARCH("SUBpeop-ucU.r")) (
+	    v-people-id,
+		v-people-firstname,
+		v-people-midname,
+		v-people-lastname,
+		v-people-prefix,
+		v-people-suffix,
+		"",
+        v-people-gender,
+		v-people-homephone,
+		"",
+		v-people-cellphone,
+		"",
+		v-people-email,
+		"",
+		0,
+		"",
+		v-people-DOB,
+		0,
+		v-people-prefname,
+		"",
+		OUTPUT v-people-id,
+		OUTPUT v-people-create,
+		OUTPUT v-people-update,
+		OUTPUT v-people-avail,
+		OUTPUT v-successful
+	).
+	
+	RUN VALUE(SEARCH("SUBspeop-ucU.r")) (
+	   v-people-id,
+	   v-Tsize,
+       v-unit,
+       OUTPUT v-error
+	).
+	
+	IF v-people-id <> 0 THEN DO:
+	    
+		RUN VALUE(SEARCH("SUBusr-ucU.r")) (
+		    v-username,
+			v-password,
+			v-people-id,
+			TODAY,
+			NO,
+			YES,
+			OUTPUT v-successful
+		).
+		
+		IF v-successful THEN DO:
+	        FOR EACH grp_mstr WHERE grp_mstr.grp_type = "default":
+	            RUN VALUE(SEARCH("SUBgud-ucU.r")) (
+	                v-people-id,
+	                grp_mstr.grp_ID,
+	                OUTPUT v-successful
+	            ).
+	        END.
+		END.
+		
+	END.
+	
+	IF v-successful = YES THEN DO:
+	    -->
+	    <header class='w3-container w3-theme-dark'>
+            <h1>Account Created</h1>
+        </header>
+        <br><br>
+        <form action='`get-cookie("c-ss-app")`' method='post'>
+            <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+                <center>
+                <h1>Success!</h1>
+                <h3>Your account has been successfully created. You may now log in with your new username and password.</h3>
+                </center>
+                <br>
+            </div>
+            <br>
+            <div class='w3-row-padding w3-margin'>
+                <div class='w3-center'>
+                    <button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Ok</b></button>
+                </div>
+            </div>
+        </form>
+	    <!--WSS
+	END. /* IF v-successful = YES */
+	ELSE DO:
+	    -->
+	    <header class='w3-container w3-theme-dark'>
+            <h1>Error</h1>
+        </header>
+        <br><br>
+        <form action='`get-cookie("c-ss-app")`' method='post'>
+            <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+                <center>
+                <h1>Whoops!</h1>
+                <h3>Something has gone terribly wrong. Please contact customer support.</h3>
+                </center>
+                <br>
+            </div>
+            <br>
+            <div class='w3-row-padding w3-margin'>
+                <div class='w3-center'>
+                    <button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Ok</b></button>
+                </div>
+            </div>
+        </form>
+        <!--WSS   
+	END.
+END. /* IF v-act = "Submit" */
+ELSE DO:
+  -->
+<header class='w3-container w3-theme-dark'>
+    <h1>Registration</h1>
+</header>
+<br><br>
+<form id="registration-form" method="post">
+	<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1200px; display:table;'>
+	    <div class='full-height-col'>
+	        <h3 class="w3-padding-left"><b>Personal Info</b></h3>
+	        <label>First Name *</label>
+	        <input type='text' name='h-firstname' class='w3-border w3-round-large w3-select' required/>
+	        <label>Last Name *</label>
+	        <input type='text' name='h-lastname' class='w3-border w3-round-large w3-select' required/>
+	        <label>Date of Birth *</label>
+               <input type='date' name='h-dob' class='w3-border w3-round-large w3-select' required/>
+               <label>Email *</label>
+               <input type='email' name='h-email' class='w3-border w3-round-large w3-select' required/>
+               <!-- <span id='email-taken-error' class="error-msg" style="position: relative; bottom: 5px;" hidden>That email is already taken!<br/></span>  -->
+               <label>Confirm Email *</label>
+               <input type='email' id='confirm-email' class='w3-border w3-round-large w3-select' required/>
+               <span id='email-error' class="error-msg" style="position: relative" hidden>Emails don't match</span>
+               <label>Home Phone</label>
+               <input type='text' name='h-homephone' class='w3-border w3-round-large w3-select'/>
+               <label>Cell Phone</label>
+               <input type='text' name='h-cellphone' class='w3-border w3-round-large w3-select'/>
+               <label>Gender</label>
+               <select name='h-gender' class='w3-border w3-round-large w3-select'>
+                  <option value='true'>Male</option>
+                  <option value='false'>Female</option>
+               </select>
+	    </div>
+	    <div class='full-height-col' style="position:relative">
+            <h3 class="w3-padding-left"><b>Login Info</b></h3>
+            <label>Username *</label>
+            <br/>
+            <input type='text' name='h-username' class='w3-border w3-round-large w3-select login-input' required/>
+            <p id='username-error' class="error-msg" hidden>That username is already taken!</p>
+            <br/>
+            <label>Password *</label>
+            <br/>
+            <input type='password' name='h-password' class='w3-border w3-round-large w3-select login-input' required/>
+            <p id='password-error' class="error-msg" hidden>Password must be at least 8 characters</p>
+            <br/>
+            <label>Confirm Password *</label>
+            <br/>
+            <input type='password' id='confirm-password' class='w3-border w3-round-large w3-select login-input' required/>
+            <p id='confirm-password-error' class="error-msg" hidden>Passwords do not match</p>
+            <br/>
+            <p>* denotes a required field</p>
+            <br/><br/>
+            <div class='w3-center w3-col s12 submit-button-container'>
+	            <button type='submit' name='h-act' value='Submit' class='w3-btn-block w3-green w3-round submit-button'><b>Sign me up!</b></BUTTON>
+	        </div>
+	    </div>
+	</div>
+</form>
+<!--WSS End. -->
+</BODY>
+</HTML>

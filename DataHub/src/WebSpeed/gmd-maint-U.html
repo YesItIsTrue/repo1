@@ -58,7 +58,7 @@
                 
                 $.post("AJAX-submit-gmd-maint.r",
                 {
-                    menuItem: $("#h-menu-item").val(),
+                    menuIDs: $("#h-menu-item").val(),
                     groupIDs: groupIDs 
                 },
                 function(data, success) {
@@ -92,7 +92,7 @@
                     <!--WSS
                     FOR EACH menu_mstr WHERE menu_mstr.menu_deleted = ? NO-LOCK:
                     -->
-                    <option value="`menu_mstr.menu_num + ',' menu_mstr.menu_select`">`menu_mstr.menu_num + '.' + STRING(menu_mstr.menu_select) + ' ' + menu_mstr.menu_title`</option>
+                    <option value="`menu_mstr.menu_num '~~' menu_mstr.menu_select`">`menu_mstr.menu_num + '.' + STRING(menu_mstr.menu_select) + ' ' + menu_mstr.menu_title`</option>
                     <!--WSS
                     END.
                     -->
