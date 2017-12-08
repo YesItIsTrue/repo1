@@ -7,14 +7,8 @@
     <META NAME="COPYRIGHT" CONTENT="Solsource">
     <META NAME="CREATE_DATE" CONTENT="07/Jan/16">
     <META NAME="MODIFIED_DATE" CONTENT="07/Jan/16">
-    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/timesheet.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css"/>
-    <script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/autosize@4.0.0/dist/autosize.min.js"></script>
+    <!--WSS {external-dependencies.i} -->
+    
 	<script>
 	   $(document).ready(function() {
 	       $("#status-log-table").DataTable({
@@ -99,20 +93,22 @@ CASE act:
     WHEN "INITIAL" THEN DO:  
 --> 
         
-            <h2>Select a week for which to see your hours logged</h2>
+            <h2 class='page-title'>Select a week for which to see your hours logged</h2>
             <form>
-                <div class="form-content w3-card-4 w3-white">
-                    <div class="row">
-                        <div class="col-md-3"></div>
-                        <div class="col-md-6">
-                            <label>Work Week</label>
-                            <input type="week" name="html5-week" class="form-control" required/>
-                        </div>
-                        <div class="col-md-3"></div>
-                    </div>
-                    <br/>
-                    <center><button type='submit' name='h-act' value='SEARCH' class='btn w3-theme-dark'>Search</button></center>
-                </div>
+                <div class='w3-content'>
+	                <div class="form-content w3-card-4 w3-white">
+	                    <div class="row">
+	                        <div class="col-md-2"></div>
+	                        <div class="col-md-8">
+	                            <label>Work Week</label>
+	                            <input type="week" name="html5-week" class="form-control" required/>
+	                        </div>
+	                        <div class="col-md-2"></div>
+	                    </div>
+	                    <br/>
+	                    <center><button type='submit' name='h-act' value='SEARCH' class='btn w3-theme-dark'>Search</button></center>
+	                </div>
+	            </div>
             </form>
             
 <!--WSS     
@@ -146,66 +142,67 @@ CASE act:
 
 -->
 
-        <div class='row'> 
-            <center>
-                <h2>`empname` - Status Log</h2> 
-                <h2>Monday  `mondate`  - Sunday  `sundate`</h2>
-            </center> 
-        </div> 
+        <h2 class='page-title'>
+        `empname` - Status Log
+        <br/>
+        Monday  `mondate`  - Sunday  `sundate`
+        </h2> 
 
-        <div class='form-content w3-card-4 w3-white' style='padding-right:16px; padding-left:16px; overflow:auto;'>
-            <div class='table_report'> 
-	            <table id="status-log-table" class="stripe"> 
-	                <thead> 
-	                    <tr> 
-	                        <td>Date</td> 
-	                        <td>Time</td>
-	                        <td>Client</td> 
-	                        <td>Project</td> 
-	                        <td>Description</td> 
-	                    </tr> 
-	                </thead>
-            
-<!--WSS            
-        FOR EACH Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = empid AND
-                                  Hours_Mstr.Hours_date >= mondate AND 
-                                  Hours_Mstr.Hours_date <= sundate AND
-                                   Hours_Mstr.Hours_deleted = ? NO-LOCK,          
-            EACH Client_Mstr WHERE Client_Mstr.Client_people_ID = Hours_Mstr.Hours_client_ID AND                                   
-                                   Client_Mstr.Client_deleted = ? NO-LOCK              
-                               BY Hours_Mstr.Hours_date:
-                
-            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                              
-                Hours_Mstr.Hours_date,                                                                             
-                OUTPUT disp-date                                                                        
-                ).      
-                
-            RUN VALUE(SEARCH("html-decode.r")) (
-                Hours_Mstr.Hours_description,
-                OUTPUT decoded-desc
-            ).
--->
-
-					<tr> 
-					    <td>
-					       <a href='TSentryU.r?h-act=Update&h-clientid=`Hours_Mstr.Hours_client_ID`&h-projname=`Hours_Mstr.Hours_project_name`&html5-date=`disp-date`&html5-week=`raw-week`&h-calling-prog=TSempstatR'>`Hours_Mstr.Hours_date`</a>
-					    </td> 
-					    <td>`Hours_Mstr.Hours_amount`</td> 
-					    <td>`Client_Mstr.Client_abbv`</td> 
-					    <td>`Hours_Mstr.Hours_project_name`</td> 
-					    <td><textarea rows='1' cols='60' style="resize:none;" readonly>`decoded-desc`</textarea></td> 
-					</tr>
-        
-<!--WSS
-        END. /* 4ea. people, emp, emph */
--->
-			    </table> 
-			    <br/>
-	            <form action='TSempstatR.r' style='margin-bottom:0px'>
-	                <center><button type='submit' name='h-act' value='INITIAL' class='btn w3-theme-dark'>Search Again</button></center>
-	            </form>
-			</div>  
-        </div>   
+        <div class='w3-content'>
+	        <div class='form-content w3-card-4 w3-white' style='padding-right:16px; padding-left:16px; overflow:auto;'>
+	            <div class='table_report'> 
+		            <table id="status-log-table" class="stripe"> 
+		                <thead> 
+		                    <tr> 
+		                        <td>Date</td> 
+		                        <td>Time</td>
+		                        <td>Client</td> 
+		                        <td>Project</td> 
+		                        <td>Description</td> 
+		                    </tr> 
+		                </thead>
+	            
+	<!--WSS            
+	        FOR EACH Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = empid AND
+	                                  Hours_Mstr.Hours_date >= mondate AND 
+	                                  Hours_Mstr.Hours_date <= sundate AND
+	                                   Hours_Mstr.Hours_deleted = ? NO-LOCK,          
+	            EACH Client_Mstr WHERE Client_Mstr.Client_people_ID = Hours_Mstr.Hours_client_ID AND                                   
+	                                   Client_Mstr.Client_deleted = ? NO-LOCK              
+	                               BY Hours_Mstr.Hours_date:
+	                
+	            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                              
+	                Hours_Mstr.Hours_date,                                                                             
+	                OUTPUT disp-date                                                                        
+	                ).      
+	                
+	            RUN VALUE(SEARCH("html-decode.r")) (
+	                Hours_Mstr.Hours_description,
+	                OUTPUT decoded-desc
+	            ).
+	-->
+	
+						<tr> 
+						    <td>
+						       <a href='TSentryU.r?h-act=Update&h-clientid=`Hours_Mstr.Hours_client_ID`&h-projname=`Hours_Mstr.Hours_project_name`&html5-date=`disp-date`&html5-week=`raw-week`&h-calling-prog=TSempstatR'>`Hours_Mstr.Hours_date`</a>
+						    </td> 
+						    <td>`Hours_Mstr.Hours_amount`</td> 
+						    <td>`Client_Mstr.Client_abbv`</td> 
+						    <td>`Hours_Mstr.Hours_project_name`</td> 
+						    <td><textarea rows='1' cols='60' style="resize:none;" readonly>`decoded-desc`</textarea></td> 
+						</tr>
+	        
+	<!--WSS
+	        END. /* 4ea. people, emp, emph */
+	-->
+				    </table> 
+				    <br/>
+		            <form action='TSempstatR.r' style='margin-bottom:0px'>
+		                <center><button type='submit' name='h-act' value='INITIAL' class='btn w3-theme-dark'>Search Again</button></center>
+		            </form>
+				</div>  
+	        </div>  
+	    </div> 
             
 <!--WSS
     END. /* SEARCH */

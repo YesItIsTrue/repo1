@@ -132,7 +132,8 @@ IF what_drive_letter = "C" THEN DO:
             USERID("MODULES")       = "Harold.Luttrell"  OR  
             USERID("CUSTOM")    = "Harold.Luttrell"  THEN  
                 ASSIGN 
-                    emailaddr = "-r harold.luttrell@mysolsource.com".
+/*                    emailaddr = "-r harold.luttrell@mysolsource.com".*/
+                    emailaddr = "-r harold.luttrell@att.net".
             
     ELSE IF USERID("CORE")          = "Trae.Luttrell"  OR  
             USERID("MODULES")       = "Trae.Luttrell"  OR

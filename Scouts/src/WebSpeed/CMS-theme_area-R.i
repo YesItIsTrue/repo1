@@ -41,7 +41,7 @@ END.  /** of if v-event_id = blank **/
 
 ELSE DO:
 
-    FIND event_mstr WHERE event_mstr.event_id = v-event_ID AND
+    FIND event_mstr WHERE event_mstr.event_id = v-event_ID AND 
         event_mstr.event_deleted = ? NO-LOCK NO-ERROR.
 
     IF AVAILABLE (event_mstr) THEN DO:

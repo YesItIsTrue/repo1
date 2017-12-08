@@ -1,6 +1,6 @@
-/*------------------------------------------------------------------------
+/*------------------------------------------------------------------------ 
     File        : HL7-Load-People.p
-    Purpose     : Load/Update the General.people_mstr from XML data. 
+    Purpose     : Load/Update the people_mstr from XML data. 
 
     Description : 
 
@@ -9,20 +9,22 @@
     
     Revision History:        
     -----------------
-    1.0 - written by Harold LUTTRELL on & off since Jan/17.  Original version.  
-          
+    1.0 - written by Harold LUTTRELL on & off since Jan/17.  
+          Original version.  
+           
   ----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
   
 {XML_TT_People_Data.i}.         /*  XML Extraction People Data to Load into Progress. */      
 {XML_TT_PeopID_Basic_Data.i}.   /* XML Extraction People ID ONLY to be used in the XML-SUB- programs.p. */
+{Logs_Rpts_Paths_Folders.i}.    /* Logs/Reports folder path. */ 
 
 {E-Mail_definations.i}.  
 
-DEFINE INPUT PARAMETER  i-flab-ID               LIKE HHI.lab_mstr.lab_ID            NO-UNDO.
+DEFINE INPUT PARAMETER  i-flab-ID               LIKE lab_mstr.lab_ID                NO-UNDO.
 DEFINE INPUT PARAMETER  i-Admin-Update-OverRyde AS LOGICAL  INITIAL NO              NO-UNDO.
-DEFINE OUTPUT PARAMETER o-people-id             LIKE General.people_mstr.people_id  NO-UNDO. 
+DEFINE OUTPUT PARAMETER o-people-id             LIKE people_mstr.people_id          NO-UNDO. 
 DEFINE OUTPUT PARAMETER o-people-load-error     AS LOGICAL INITIAL NO               NO-UNDO.
 DEFINE OUTPUT PARAMETER o-people-error-message  AS CHARACTER FORMAT "x(200)"        NO-UNDO.
 
@@ -79,9 +81,10 @@ DEFINE VARIABLE did-full-name-already-print AS LOGICAL INITIAL NO       NO-UNDO.
 DEFINE VARIABLE data-info           AS CHARACTER FORMAT "x(10)"         NO-UNDO.
 DEFINE VARIABLE h-desc              AS CHARACTER FORMAT "X(60)"         NO-UNDO.
 DEFINE VARIABLE o-discrepy-error    AS LOGICAL INITIAL NO               NO-UNDO.
-DEFINE VARIABLE o-peopdiscrep_ID   LIKE General.people_mstr.people_id  NO-UNDO.   
+DEFINE VARIABLE o-peopdiscrep_ID   LIKE people_mstr.people_id  NO-UNDO.   
 DEFINE VARIABLE Full-Name           AS CHARACTER FORMAT "X(60)"         NO-UNDO.
 DEFINE VARIABLE op_text             AS CHARACTER FORMAT "x(60)"         NO-UNDO. 
+/*DEFINE VARIABLE hold-Logs-folder    AS CHARACTER                        NO-UNDO.*/
 
 DEFINE VARIABLE ITdisplay           AS LOGICAL INITIAL YES              NO-UNDO. 
 
@@ -89,10 +92,15 @@ DEFINE VARIABLE ITdisplay           AS LOGICAL INITIAL YES              NO-UNDO.
  
 DEFINE VARIABLE drive_letter AS CHARACTER FORMAT "x(01)" NO-UNDO.              
 ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1).                 
-   
+
+FIND Logs_Rpts_Paths_Folders WHERE TT-Logs-Rpts-Seq_Nbr_only = 1 NO-LOCK NO-ERROR. 
+
+/*ASSIGN hold-Logs-folder = drive_letter + TT-Logs-Rpts-Path-Folder + "People-Load-Rpt.txt".*/
 DEFINE STREAM outwardPM.
-DEFINE VARIABLE loadRpt AS CHARACTER 
-    INITIAL "C:\PROGRESS\WRK\People-Load-Rpt.txt" NO-UNDO.
+/*    INITIAL "C:\PROGRESS\WRK\People-Load-Rpt.txt" NO-UNDO.*/
+/*OUTPUT STREAM outwardPM TO value(loadRpt) PAGED.*/
+DEFINE VARIABLE loadRpt AS CHARACTER NO-UNDO. 
+ASSIGN loadRPT = TT-Logs-Rpts-Path-Folder + "People-Load-Rpt.txt".
 OUTPUT STREAM outwardPM TO value(loadRpt) PAGED.
 
 PUT STREAM outwardPM
@@ -198,7 +206,8 @@ FOR EACH XML_TT_People_Data EXCLUSIVE-LOCK BREAK BY TT-People-Seq-Nbr:
             IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
                 ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag    = "ERROR"
                         XML_TT_PeopID_Basic_Data.TT_PeopID_TK_ID         = "Major Error"
-                        XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "". 
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = ""
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "Major Error - 1st or last name or DOB is blank.".  
                                            
             NEXT Main_loop.
             
@@ -264,7 +273,8 @@ FOR EACH XML_TT_People_Data EXCLUSIVE-LOCK BREAK BY TT-People-Seq-Nbr:
             IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
                 ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag    = "ERROR"
                         XML_TT_PeopID_Basic_Data.TT_PeopID_TK_ID         = "bad gender"
-                        XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "". 
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = ""
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "Minor Error - gender is not = to Male or Female.". 
                                                       
             NEXT Main_loop.
                
@@ -329,7 +339,8 @@ FOR EACH XML_TT_People_Data EXCLUSIVE-LOCK BREAK BY TT-People-Seq-Nbr:
             IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
                 ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag    = "ERROR"
                         XML_TT_PeopID_Basic_Data.TT_PeopID_TK_ID         = "DOB incorrect"
-                        XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "". 
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = ""
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "DOB incorrectly formatted or greater then TODAYs Date.  Input NOT loaded.". 
                                                                    
             NEXT Main_loop.
                                                       
@@ -387,7 +398,8 @@ FOR EACH XML_TT_People_Data EXCLUSIVE-LOCK BREAK BY TT-People-Seq-Nbr:
             IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
                 ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag    = "ERROR"
                         XML_TT_PeopID_Basic_Data.TT_PeopID_TK_ID         = "DOB Blank"
-                        XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "". 
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = ""
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "DOB is BLANK.  Input NOT loaded.".  
                                                                          
             NEXT Main_loop.   
                                                              
@@ -439,12 +451,12 @@ FOR EACH XML_TT_People_Data EXCLUSIVE-LOCK BREAK BY TT-People-Seq-Nbr:
                   
         IF AVAILABLE (people_mstr) THEN DO: 
             
-/* NOTE 1 of 2: as of today (05/18/2017) when Doug adds the People_SSN column in the General.people_mstr in the 
+/* NOTE 1 of 2: as of today (05/18/2017) when Doug adds the People_SSN column in the people_mstr in the 
     next DB/Table update and gen, change the people__char01 to the correct column name for the SSN.
     Also, when this change is done, we need a one time pgm to  move the SSN from the people__char01 to the
     correct table column SSN name.   See NOTE 2 in the lower code. */
      
-                ASSIGN General.people_mstr.people__char01 = XML_TT_People_Data.TT-people_SSN. 
+                ASSIGN people_mstr.people__char01 = XML_TT_People_Data.TT-people_SSN. 
             
             IF  did-full-name-already-print = NO THEN DO:    
                 ASSIGN  data-info = "PERSON:"
@@ -493,7 +505,7 @@ FOR EACH XML_TT_People_Data EXCLUSIVE-LOCK BREAK BY TT-People-Seq-Nbr:
                 XML_TT_People_Data.TT-people_workphone      <> people_mstr.people_workphone  OR 
                 XML_TT_People_Data.TT-people_prefname       <> people_mstr.people_prefname   OR 
 /*                XML_TT_People_Data.TT-people_SSN            <> people_mstr.people_SSN        OR*/
-                XML_TT_People_Data.TT-people_SSN            <> General.people_mstr.people__char01 
+                XML_TT_People_Data.TT-people_SSN            <> people_mstr.people__char01 
 
 /* Need to un-comment any of the following people data compares when DDI starts passing the inputs. */
 /* Also, the following people data has to be coded in the MAIN pgm: XMP-DB-Updates.p to allow then into the system. */
@@ -577,7 +589,8 @@ FOR EACH XML_TT_People_Data EXCLUSIVE-LOCK BREAK BY TT-People-Seq-Nbr:
                      IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
                          ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag    = "ERROR"
                                  XML_TT_PeopID_Basic_Data.TT_PeopID_TK_ID         = "discrepancy"
-                                 XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "D_people". 
+                                 XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "D_people"
+                                 XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "XML input data is not equal to people_mstr data.".   
                 
                      NEXT Main_loop.
                                
@@ -609,7 +622,8 @@ FOR EACH XML_TT_People_Data EXCLUSIVE-LOCK BREAK BY TT-People-Seq-Nbr:
                     "",                     /* contact */
                     h-DOB,
                     0,                      /* second_addr_ID */ 
-                    XML_TT_People_Data.TT-people_prefname,     /* prefname */                                                         
+                    XML_TT_People_Data.TT-people_prefname,     /* prefname */
+                    XML_TT_People_Data.TT-people_title,        /* Title */                                                      
                     OUTPUT o-people-id,    
                     OUTPUT o-ucpeople-create,
                     OUTPUT o-ucpeople-update,
@@ -675,24 +689,25 @@ FOR EACH XML_TT_People_Data EXCLUSIVE-LOCK BREAK BY TT-People-Seq-Nbr:
              IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
                  ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag    = "ERROR"
                          XML_TT_PeopID_Basic_Data.TT_PeopID_TK_ID         = "P-Mstr not Avail"
-                         XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "D_people". 
+                         XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "D_people"
+                         XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "Major Error - People_mstr NOT avaiable.". 
                         
             NEXT Main_loop.  
         
         END.  /* IF o-ucpeople-avail = NO */
     
-        FIND General.people_mstr            
-                WHERE   General.people_mstr.people_id       = o-people-id AND 
-                        General.people_mstr.people_deleted  = ?   
+        FIND people_mstr            
+                WHERE   people_mstr.people_id       = o-people-id AND 
+                        people_mstr.people_deleted  = ?   
             EXCLUSIVE-LOCK NO-ERROR. 
 
-/* NOTE 2 of 2: as of today (05/18/2017) when Doug adds the People_SSN column in the General.people_mstr in the 
+/* NOTE 2 of 2: as of today (05/18/2017) when Doug adds the People_SSN column in the people_mstr in the 
     next DB/Table update and gen, change the people__char01 to the correct column name for the SSN.
     Also, when this change is done, we need a one time pgm to  move the SSN from the people__char01 to the
-    correct table column SSN name: General.people_mstr.people_SSN ?????? . */
+    correct table column SSN name: people_mstr.people_SSN ?????? . */
     
-        IF AVAILABLE (General.people_mstr) THEN    
-                ASSIGN General.people_mstr.people__char01 = XML_TT_People_Data.TT-people_SSN. 
+        IF AVAILABLE (people_mstr) THEN    
+                ASSIGN people_mstr.people__char01 = XML_TT_People_Data.TT-people_SSN. 
            
         IF  o-ucpeople-create = YES THEN DO:
        

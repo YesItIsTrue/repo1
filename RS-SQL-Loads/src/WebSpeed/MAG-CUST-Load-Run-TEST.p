@@ -56,8 +56,8 @@ DEFINE VARIABLE x            AS INTEGER NO-UNDO.
 /* ********************  Preprocessor Definitions  ******************** */
 
 ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1).
-
-/*{UTIL-set_propath-HHI_TEST-U.i}.  						/* 2dot1 */*/
+/*                                                   */
+{UTIL-set_propath-HHI_TEST-U.i}.  						/* 2dot1 */
    
 /*DO x = 1 TO NUM-ENTRIES(PROPATH):           */                                /* 1dot3 */
 /*    PUT UNFORMATTED  ENTRY(x,PROPATH)  SKIP.*/                                /* 1dot3 */
@@ -94,7 +94,7 @@ PUT UNFORMATTED "1 of 4. : magentoconnection.exe" SKIP(1).
 OS-COMMAND SILENT 
     VALUE(SEARCH(cmdname))   
     VALUE(cmdparam).  
-     
+    
 PUT UNFORMATTED "/**************************************************************" SKIP
                 " *                                                             " SKIP
                 " * Step 2 of 4 - Remove Tilde Characters from input data.      " SKIP
@@ -133,6 +133,6 @@ PUT UNFORMATTED "/**************************************************************
                 " *                                                             " SKIP
                 " **************************************************************/" SKIP(1).
 
-/*PROPATH = ORIGPROPATH.                                                                        /* 2dot1 */*/
+PROPATH = ORIGPROPATH.                                                                        /* 2dot1 */
 
 /*  End of program. */

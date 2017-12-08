@@ -75,7 +75,6 @@ PROCEDURE createJson :
     
     FIND Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid AND Proj_Mstr.Proj_name = projname NO-LOCK NO-ERROR.
         IF AVAILABLE (Proj_Mstr) THEN DO:  
-            DISPLAY "I am running this thing.".                                                                               
             RUN VALUE(SEARCH("SUBhours-ucU.r")) (
                 amount,                 /*Hours_Mstr.Hours_amount      */ 
                 clientid,               /*Hours_Mstr.Hours_client_ID   */
@@ -93,7 +92,7 @@ PROCEDURE createJson :
                 IF old-hours-date <> ? THEN old-hours-date ELSE hours-date,
                 ?,
                 ?,
-                
+
                 OUTPUT o-success        
                 ).
                 

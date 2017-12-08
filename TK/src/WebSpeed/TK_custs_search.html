@@ -3,10 +3,10 @@
 <HEAD>
 
 <META NAME="AUTHOR" CONTENT="Mark Jacobs">
-    <META NAME="VERSION" CONTENT="1.31">
+    <META NAME="VERSION" CONTENT="1.5">
     <META NAME="COPYRIGHT" CONTENT="Solsource">
     <META NAME="CREATE_DATE" CONTENT="08/May/14">
-    <META NAME="LAST_UPDATED" CONTENT="04/Apr/16">
+    <META NAME="LAST_UPDATED" CONTENT="23/Oct/17">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
  
 <TITLE>Customer Search</TITLE>
@@ -21,18 +21,20 @@
  * Revision History:    
  * ---------------------
  *
- * 1.1 - Made it possible to retrieve records without an address associated to it.
- *     - Commented out unnecessary lookups now that the input field have been reduced to three; last name, first name, customer ID.
- *     - Added BREAK BY people_lastname BY people_firstname.
- *     - Combined first name and last name in result field and in search criteria
- *     - Added a ton of SKIPS.
- * 1.2 - written by Mark Jacobs on 02/Oct/15. Added in the code snippets for grid_* div, code snippets for Buttons,  META tags updated. Marked with 1dot2 
- *       <a href edited to <A HREF=’../../projectname/rcode/blahblahblah.html’> not marked.
- * 1.3 - Written by Jacob Luttrell on 21/Feb/16.  Added in display sub procedures for v11.1 release. Marked by 1dot3.
+ * 1.1  - Made it possible to retrieve records without an address associated to it.
+ *          > Commented out unnecessary lookups now that the input field have been reduced to three; last name, first name, customer ID.
+ *          > Added BREAK BY people_lastname BY people_firstname.
+ *          > Combined first name and last name in result field and in search criteria
+ *          > Added a ton of SKIPS.
+ * 1.2  - written by Mark Jacobs on 02/Oct/15. Added in the code snippets for grid_* div, code snippets for Buttons,  
+ *          META tags updated. Marked with 1dot2. 
+ *          <a href edited to <A HREF=’../../projectname/rcode/blahblahblah.html’> not marked.
+ * 1.3  - Written by Jacob Luttrell on 21/Feb/16.  Added in display sub procedures for v11.1 release. Marked by 1dot3.
  * 1.31 - written by DOUG LUTTRELL on 04/Apr/16.  Modified to have the run's running *.r code instead of *.p code.  Marked by 131.
- * 1.4 - written by DOUG LUTTRELL on 03/Oct/17.  Change the hyperlinks to use
- *          single rcode pathing in the PROPATH, in conjunction with change
- *          to Release 12 (CMC structure.  Marked by 1dot4.
+ * 1.4  - written by DOUG LUTTRELL on 03/Oct/17.  Change the hyperlinks to use single rcode pathing in the PROPATH, in conjunction 
+ *          with the change to Release 12 (CMC structure.  Marked by 1dot4.
+ *  1.5 - written by DOUG LUTTRELL on 23/Oct/17.  This is generating craploads of errors in the logs because of the 
+ *          improper use of logicals.  Fixing that, also putting in proper html-encode commands.  Not marked.
  *   
  *-------------------------------------------------------------------- */
 
@@ -43,7 +45,7 @@
 
 <SCRIPT LANGUAGE="SpeedScript">  
 
-{../depot/src/WebSpeed/menuname.i}. 
+{../depot/src/WebSpeed/menuname.i}.  
 
     DEFINE VARIABLE f-cust-id LIKE cust_mstr.cust_id  NO-UNDO.
     DEFINE VARIABLE t-cust-id LIKE cust_mstr.cust_id  NO-UNDO.    
@@ -97,34 +99,40 @@
 /*----------------------------------------------------------------------------------------------*/
 
     ASSIGN
-        whattorun       =   get-value ("whattorun")
-        f-cust-id       =   INTEGER (get-value ("f-cust"))
-        t-cust-id       =   INTEGER (get-value ("t-cust"))
-        f-fname         =   get-value ("ffname")
-        t-fname         =   get-value ("tfname")
-        f-mname         =   get-value ("fmname")
-        t-mname         =   get-value ("tmname")
-        f-lname         =   get-value ("flname")
-        t-lname         =   get-value ("tlname")
-        addr1           =   get-value ("address1")
-        addr2           =   get-value ("adderss2")
-        f-city          =   get-value ("f-ci")
-        t-city          =   get-value ("t-ci")
-        f-state         =   get-value ("f-st")
-        t-state         =   get-value ("t-st")
-        f-zip           =   get-value ("f-zi")
-        t-zip           =   get-value ("t-zi")
-        f-county        =   get-value ("f-cou")
-        t-county        =   get-value ("t-cou")
+        whattorun       =   html-encode(get-value ("whattorun"))
+        f-cust-id       =   INTEGER (html-encode(get-value ("f-cust")))
+        t-cust-id       =   INTEGER (html-encode(get-value ("t-cust")))
+        f-fname         =   html-encode(get-value ("ffname"))
+        t-fname         =   html-encode(get-value ("tfname"))
+        f-mname         =   html-encode(get-value ("fmname"))
+        t-mname         =   html-encode(get-value ("tmname"))
+        f-lname         =   html-encode(get-value ("flname"))
+        t-lname         =   html-encode(get-value ("tlname"))
+        addr1           =   html-encode(get-value ("address1"))
+        addr2           =   html-encode(get-value ("adderss2"))
+        f-city          =   html-encode(get-value ("f-ci"))
+        t-city          =   html-encode(get-value ("t-ci"))
+        f-state         =   html-encode(get-value ("f-st"))
+        t-state         =   html-encode(get-value ("t-st"))
+        f-zip           =   html-encode(get-value ("f-zi"))
+        t-zip           =   html-encode(get-value ("t-zi"))
+        f-county        =   html-encode(get-value ("f-cou"))
+        t-county        =   html-encode(get-value ("t-cou"))
        
-        email           =   get-value ("e-mail")
-        prof            =   LOGICAL (get-value ("profal"))
-        non-prof        =   LOGICAL (get-value("non-profal"))
-        fdate           =   DATE (get-value("f-cdate"))
-        tdate           =   DATE (get-value("t-cdate"))
-        fmoddate        =   DATE (get-value("f-update"))
-        tmoddate        =   DATE (get-value("t-update"))
-        h-phone           =   get-value ("phon").
+        email           =   html-encode(get-value ("e-mail"))
+        prof            =   IF html-encode(get-value("profal")) = "YES"  THEN 
+                                YES
+                            ELSE 
+                                ?
+        non-prof        =   IF html-encode(get-value("non-profal")) = "YES" THEN 
+                                YES
+                            ELSE 
+                                ?
+        fdate           =   DATE (html-encode(get-value("f-cdate")))
+        tdate           =   DATE (html-encode(get-value("t-cdate")))
+        fmoddate        =   DATE (html-encode(get-value("f-update")))
+        tmoddate        =   DATE (html-encode(get-value("t-update")))
+        h-phone         =   html-encode(get-value ("phon")).
         
         IF prof = TRUE AND non-prof = FALSE THEN
             ASSIGN
@@ -172,21 +180,8 @@
                {&OUT}
            "     <th>&nbsp;</TH>" skip.
            
-/*             IF f-mname > "" THEN                                                   */
-/*            {&OUT}                                                                  */
-/*                "<th align='center'><SPAN style='COLOR: #0000FF;'>" f-mname "</th>".*/
-/*                    ELSE                                                            */
-/*                    {&OUT}                                                          */
-/*                        "<th>" "&nbsp;" "</th>".                                     */
-                       
- /*            IF f-fname > "" THEN
-            {&OUT}
-                "<th align='center'><SPAN style='COLOR: #0000FF;'>" f-fname "</th>".
-                    ELSE
-                    {&OUT}
-                        "<th>" "&nbsp;" "</th>". 
-  */      
        /*---------------------------------------------------------------------------------------------------------------------------------------*/                   
+
 	           {&OUT}	       
 	       "     <th>&nbsp;</th>" skip.   /********************** Placeholders in From row  **/
 	          
@@ -226,21 +221,7 @@
 	          
 	       "     <th>&nbsp;</th>" skip
 	       "     <th>&nbsp;</th>" skip.   /********************** Placeholders in from row  **/
-	     
-        /*
-             IF fdate <> ? THEN
-            {&OUT}
-                "<th align='center'><SPAN style='COLOR: #0000FF;'>" fdate "</th>".
-                    ELSE
-                    {&OUT}
-                        "<th>" "&nbsp;" "</th>".
-              IF fmoddate > ? THEN
-            {&OUT}
-                "<th align='center'><SPAN style='COLOR: #0000FF;'>" fmoddate "</th>".
-                    ELSE
-                    {&OUT}
-                        "<th>" "&nbsp;" "</th>".
-         */               
+	                
            IF both-prof = "bothck" THEN
                {&OUT}
            "     <th>Pro-Customer</th>" skip.
@@ -248,13 +229,11 @@
                {&OUT}
            "     <th>&nbsp;</th>" skip.
             
-</SCRIPT>      
-	         </tr>
-	         <tr>
-	             <th> To</th>
-       
- <SCRIPT LANGUAGE="SpeedScript"> 
- 
+           {&OUT}
+	           "    </TR>" SKIP
+	           "    <TR>" SKIP
+	           "        <TH> TO </TH>" SKIP.
+           
            IF t-cust-id > 0 THEN
                {&OUT}
            "     <th>" t-cust-id "</th>" skip.
@@ -262,6 +241,7 @@
                {&OUT}
            "     <th>&nbsp;</th>" skip.
         /*-----------------------------------------------------------------------------------*/                
+
            IF t-lname > "" OR 
               t-fname > "" THEN
                {&OUT}
@@ -269,138 +249,95 @@
                     ELSE
                {&OUT}
            "     <th>&nbsp;</th>" skip.
-        /*                
-            IF t-mname > "" THEN
-            {&OUT}
-                "<th align='center'><SPAN style='COLOR: #0000FF;'>" t-mname "</th>".
-                    ELSE
-                    {&OUT}
-                        "<th>" "&nbsp;" "</th>".
-                      
-             IF t-lname > "" THEN
-            {&OUT}
-                "<th align='center'><SPAN style='COLOR: #0000FF;'>" t-lname "</th>".
-                    ELSE
-                    {&OUT}
-                        "<th>" "&nbsp;" "</th>".
-                        
-           */  
+
        /*-----------------------------------------------------------------------------------*/             
-           IF addr1> "" THEN
-               {&OUT}
-           "     <th>" addr1 "</th>" skip.
-                    ELSE
-               {&OUT}
-           "     <th>&nbsp;</th>".
-       
-        /*     IF addr2 > "" THEN
+
+        {&OUT}
+            "   <TH>" addr1 "</TH>" SKIP
+            "   <TH>" t-city "</TH>" SKIP
+            "   <TH>" t-state "</TH>" SKIP
+            "   <TH>" t-zip "</TH>" SKIP 
+            "   <TH>" t-county "</TH>" SKIP
+            "   <TH>" email "</TH>" SKIP
+            "   <TH>" h-phone "</TH>" SKIP.
+
+/*           IF addr1> "" THEN                   */
+/*               {&OUT}                          */
+/*           "     <th>" addr1 "</th>" skip.     */
+/*                    ELSE                       */
+/*               {&OUT}                          */
+/*           "     <th>&nbsp;</th>".             */
+/*                                               */
+/*           IF t-city > "" THEN                 */
+/*               {&OUT}                          */
+/*           "     <th>" t-city "</th>" skip.    */
+/*                    ELSE                       */
+/*                    {&OUT}                     */
+/*                        "<th>&nbsp;</th>".     */
+/*                                               */
+/*           IF t-state > "" THEN                */
+/*               {&OUT}                          */
+/*           "     <th>" t-state "</th>" skip.   */
+/*                    ELSE                       */
+/*               {&OUT}                          */
+/*           "     <th>&nbsp;</th>".             */
+/*           IF t-zip > "" THEN                  */
+/*               {&OUT}                          */
+/*           "     <th>" t-zip " </th>" skip.    */
+/*                    ELSE                       */
+/*               {&OUT}                          */
+/*           "     <th>&nbsp;</th>" skip.        */
+/*           IF t-county > "" THEN               */
+/*               {&OUT}                          */
+/*           "     <th>" t-county "</th>" skip.  */
+/*                    ELSE                       */
+/*                    {&OUT}                     */
+/*                        "<th>&nbsp;</th>" skip.*/
+/*                                               */
+/*           IF email > "" THEN                  */
+/*               {&OUT}                          */
+/*           "     <th>" email "</th>" skip.     */
+/*                    ELSE                       */
+/*               {&OUT}                          */
+/*           "     <th>&nbsp;</th>" skip.        */
+/*           IF h-phone > "" THEN                */
+/*               {&OUT}                          */
+/*           "     <th>" h-phone "</th>" skip.   */
+/*                    ELSE                       */
+/*               {&OUT}                          */
+/*           "     <th>&nbsp;</th>" skip.        */
+
+
+        IF both-prof = "bothck" THEN
             {&OUT}
-                "<th align='center'><SPAN style='COLOR: #0000FF;'>" addr2 "</th>".
-                    ELSE
-                    {&OUT}
-                        "<th>" "&nbsp;" "</th>".
-        */                
-           IF t-city > "" THEN
-               {&OUT}
-           "     <th>" t-city "</th>" skip.
-                    ELSE
-                    {&OUT}
-                        "<th>&nbsp;</th>".
-           IF t-state > "" THEN
-               {&OUT}
-           "     <th>" t-state "</th>" skip.
-                    ELSE
-               {&OUT}
-           "     <th>&nbsp;</th>".
-           IF t-zip > "" THEN
-               {&OUT}
-           "     <th>" t-zip " </th>" skip.
-                    ELSE
-               {&OUT}
-           "     <th>&nbsp;</th>" skip.
-           IF t-county > "" THEN
-               {&OUT}
-           "     <th>" t-county "</th>" skip.
-                    ELSE
-                    {&OUT}
-                        "<th>&nbsp;</th>" skip.
-                        
-          /*   IF t-prov > "" THEN
+                "     <th>" "Nonprofessional" "</th>" skip.
+        ELSE IF prof = TRUE THEN
             {&OUT}
-                "<th align='center'><SPAN style='COLOR: #0000FF;'>" t-prov "</th>".
-                    ELSE
-                    {&OUT}
-                        "<th>" "&nbsp;" "</th>".
-           */ 
-           
-           IF email > "" THEN
-               {&OUT}
-           "     <th>" email "</th>" skip.
-                    ELSE
-               {&OUT}
-           "     <th>&nbsp;</th>" skip.
-           IF h-phone > "" THEN
-               {&OUT}
-           "     <th>" h-phone "</th>" skip.
-                    ELSE
-               {&OUT}
-           "     <th>&nbsp;</th>" skip.
-         /*                             
-               IF tdate <> ? THEN
+                "     <th>" "Pro-Customer" "</th>" skip.
+        ELSE IF non-prof = FALSE THEN
             {&OUT}
-                "<th align='center'><SPAN style='COLOR: #0000FF;'>" tdate "</th>".
-                    ELSE
-                    {&OUT}
-                        "<th>" "&nbsp;" "</th>".
-               IF tmoddate > ? THEN
+                "     <th>" "Nonprofessional" "</th>" skip.  
+        ELSE      
             {&OUT}
-                "<th align='center'><SPAN style='COLOR: #0000FF;'>" tmoddate "</th>".
-                    ELSE
-                    {&OUT}
-                        "<th>" "&nbsp;" "</th>".
-          */              
-           IF both-prof = "bothck" THEN
-               {&OUT}
-           "     <th>" "Nonprofessional" "</th>" skip.
-                    ELSE            
-           IF prof = TRUE THEN
-               {&OUT}
-           "     <th>" "Pro-Customer" "</th>" skip.
-                    ELSE
-           IF non-prof = FALSE THEN
-               {&OUT}
-           "     <th>" "Nonprofessional" "</th>" skip.  
-                    ELSE      
-               {&OUT}
-           "     <th>&nbsp;</th>" skip.
- 
- 
- </SCRIPT>   
- 
-            
-             </tr>
-	         <tr>
-	             <th></td>
-	             <th>Customer Number</th>
-	             <th>Customer Name</th>
-	       <!--  <th>Middle Name</th> 
-	             <th>Last Name</th>-->
-	             <th>Address 1</th>
-	       <!--  <th>Address 2</th> -->
-	             <th>City</th>
-	             <th>State</th>
-	             <th>Zip</th>
-	             <th>Country</th>            
-	             <th>Email Address</th>
-	             <th>Phone</th>
-	       <!--  <th>Date Created</th> -->
-	       <!--  <th>Last Modified</th> -->
-	             <th>Professional Customer</th>
-	         </tr>
-            
-         </thead>
-            
- <SCRIPT LANGUAGE="SpeedScript">  
+                "     <th>&nbsp;</th>" skip.
+                              
+
+        {&OUT}
+            "</TR>" SKIP
+            "<TR>" SKIP
+            "   <TH></TH>" SKIP
+            "   <th>Customer Number</th>" SKIP
+            "   <th>Customer Name</th>" SKIP
+            "   <th>Address 1</th>" SKIP
+            "   <th>City</th>" SKIP
+            "   <th>State</th>" SKIP
+            "   <th>Zip</th>" SKIP
+            "   <th>Country</th>" SKIP
+            "   <th>Email Address</th>" SKIP
+            "   <th>Phone</th>" SKIP
+            "   <th>Professional Customer</th>" SKIP
+            "</tr>" SKIP
+            "</THEAD>" SKIP(1).
       
 	    FOR EACH cust_mstr WHERE
 	       cust_mstr.cust_deleted = ? AND 
@@ -408,84 +345,20 @@
 	         f-cust-id = 0) AND
 	         (cust_id <= t-cust-id OR
 	         t-cust-id = 0)) NO-LOCK, 
-/*	         AND                                  */
-/*	                                               */
-/*	        ((cust_modified_date >= fmoddate OR   */
-/*             fmoddate = ?) AND                 */
-/*             (cust_modified_date <= tmoddate OR*/
-/*             tmoddate = ?))AND                 */
-/*                                               */
-/*            ((cust_create_date >= fdate OR     */
-/*             fdate = ?) AND                    */
-/*             (cust_create_date <= tdate OR     */
-/*             tdate = ?)) ,                     */
-  
-	        
 	     EACH people_mstr WHERE      
 	          people_id = cust_id AND
 	          people_mstr.people_deleted = ? AND
 	        ((people_firstname >= f-fname OR 
 	         f-fname = "") AND
 	         (people_firstname <= t-fname OR
-	          t-fname = "")) AND
-	          
-/*	        ((people_midname >= f-mname OR*/
-/*	         f-mname = "") AND	           */
-/*	         (people_midname <= t-mname OR*/
-/*	          f-mname = ""))AND           */
-	          
+	          t-fname = "")) AND          
 	        ((people_lastname >= f-lname OR
 	         f-lname = "")  AND
 	         (people_lastname <= t-lname OR
 	          t-lname = ""))NO-LOCK,
-/*	          AND                             */
-/*	                                           */
-/*	        (people_email = email OR          */
-/*             email = "") AND               */
-/*                                           */
-/*            ((people_homephone = h-phone OR*/
-/*             h-phone = "")) NO-LOCK,       */
-         
-	   
-/*	     EACH addr_mstr WHERE          */
-/*	       addr_id = people_addr_id and*/
-/*	       addr_mstr.addr_deleted = ?  */
-/*	       and	                           */
-/*	        (addr_addr1 >= addr1 OR       */
-/*	         addr1 = "") AND              */
-/*	                                       */
-/*	        (addr_addr2 >= addr2 OR       */
-/*	         addr2 = "") AND              */
-/*	                                       */
-/*	        ((addr_city >= f-city OR      */
-/*	         f-city = "") AND             */
-/*	        (addr_city <= t-city OR       */
-/*             t-city = "")) AND         */
-/*                                       */
-/*	        ((addr_stateprov >= f-state OR*/
-/*	         f-state = "") AND            */
-/*	         (addr_stateprov <= t-state OR*/
-/*             t-state = "")) AND        */
-/*                                       */
-/*	        ((addr_zip >= f-zip OR        */
-/*	         f-zip = "") AND              */
-/*	         (addr_zip <= t-zip OR        */
-/*             t-zip = "")) AND          */
-/*                                       */
-/*	        ((addr_country >= f-county OR */
-/*	         f-county = "") AND           */
-/*	         (addr_country <= t-county OR */
-/*             t-county = ""))           */
-/*              NO-LOCK,*/
-             
 	     EACH scust_shadow WHERE	        
 	       scust_id = cust_id AND
-	       scust_shadow.scust_deleted = ?
-/*	        and                       */
-/*	        (scust_prof = prof OR     */
-/*	         prof = ?) AND            */
-/*	         (scust_prof = non-prof OR*/
-/*	         non-prof = ?)            */	         
+	       scust_shadow.scust_deleted = ?         
 	          NO-LOCK BREAK BY people_lastname BY people_firstname:
 	              
 		              ASSIGN
@@ -587,17 +460,8 @@
 "       </TR>" SKIP
 "   </TFOOT>" SKIP
 "   </TABLE>" SKIP
-"</DIV>                 <!-- end of table_report -->" SKIP(1).
-
-</SCRIPT>
-<!--  
-                        <tr><td align='center'colspan="17"><SPAN style="COLOR: #0000FF;"><i><b>End of Report</span></b></i></td></tr>                      
-                         
-        </TABLE>
-  -->      
-</div>
-<SCRIPT LANGUAGE="SpeedScript">     
-{&OUT}     
+"</DIV>                 <!-- end of table_report -->" SKIP(1)
+"</DIV>" SKIP(1)
     "</DIV>         <!-- end of grid_12 -->" SKIP                          /* 1dot2 */
     "</DIV>     <!-- end of row -->" SKIP
     

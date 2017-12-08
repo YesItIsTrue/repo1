@@ -1,269 +1,100 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <HTML>
 <HEAD>
-<META NAME="AUTHOR" CONTENT="Andrew Garver"/>
-<TITLE>Login</TITLE>
-<META NAME='VERSION' CONTENT='1.0'/>
-<META NAME='COPYRIGHT' CONTENT='Solsource'/>
-<META NAME='CREATE_DATE' CONTENT="21/Sep/2017"/>
-<META NAME='LAST_UPDATED' CONTENT="21/Sep/2017"/>   
-<meta name="viewport" content="width=device-width, initial-scale=1"/> 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
-<link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
-<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
-<link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css"/>
+<META NAME="AUTHOR" CONTENT="Andrew Garver">
+<TITLE>WebSpeed Script</TITLE>
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
 <style>
-    .error-msg {color: red;}
-    .w3-select {
-        margin: 5px 0px 10px 0px;
-        padding-left: 10px;
-	}
-	.center-buttons {text-align: center}
-	.w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
-	.w3-theme-background {color::#000 !important; background-color:#fff !important}
-	.w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
-	.w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
-	.w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
-	body {
-	   background-image: url("/depot/src/HTMLContent/backgrounds/greyzz.png");
-	}
+    .centered-btn {
+        margin: auto;
+    }
+    
+    .full-input {
+        width: 100%
+    }
+    
+    .title-font {
+        text-align: center;
+        font-size: 160%;
+    }
 </style>
 <SCRIPT LANGUAGE="SpeedScript">
-/* HTTP headers make things a bit wonky when developing in Progress. The code you see on this page
- * is not the code that actually gets compiled into the .r. This is the Human Readable format; clicking on
- * the Generated ABL tab will show you something closer to what is actually getting compiled. Because
- * of how Progress compiles code, we have to place our variable declarations a bit differently than you might be
- * used to. First, v-invalid-creds-error is declared before the WIDGET-POOL. This is to allow it to be modified by the Output-Header
- * Procedure and later referenced in the HTML body. Next we have the username and password variable declared in the 
- * Output-Header procedure since these variables are only to be used as part of the logic in the HTTP Header. Finally,
- * we declare the rest of the variables in the body of our HTML page. These variables, defined in the body of the HTML page,
- * actually aren't defined until after the HTTP Header is finished processing, so any variables defined there that are needed
- * by the Output-Header procedure will cause errors. Additionally, ASSIGN statements, even if placed before the HTML body, will
- * not run until after the Output-Header procedure, so we need to place the ASSIGN statement for the username and
- * password inside the OutPut-Header instead of outside of it.*/
-DEFINE VARIABLE v-invalid-creds-error AS LOGICAL INITIAL NO NO-UNDO.
-DEFINE VARIABLE v-user-locked-error AS LOGICAL INITIAL NO NO-UNDO.
-DEFINE VARIABLE v-password-expired-error AS LOGICAL INITIAL NO NO-UNDO.
-DEFINE VARIABLE v-password-warning AS LOGICAL INITIAL NO NO-UNDO.
-DEFINE VARIABLE v-login-success AS LOGICAL INITIAL NO NO-UNDO.
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
 CREATE WIDGET-POOL.
-    
-PROCEDURE Output-Header:
-    DEFINE VARIABLE username AS CHARACTER NO-UNDO.
-    DEFINE VARIABLE password AS CHARACTER NO-UNDO.
-
-    ASSIGN 
-        username = get-value('username')
-        password = get-value('password').
-    
-    IF get-value('act') = "Login" THEN DO:
-        /* Check the user's credentials */
-        FIND usr_mstr WHERE usr_mstr.usr_name = username AND usr_mstr.usr_password = ENCODE(password) AND usr_deleted = ? NO-ERROR.
-        
-        /* If the credentials are good, set the user id and navigate to the menu */
-        IF AVAILABLE (usr_mstr) THEN DO:
-            IF usr_mstr.usr_locked = FALSE THEN DO:
-                FIND FIRST sec_ctrl WHERE sec_ctrl.sec_deleted = ? NO-ERROR.
-                IF NOT AVAILABLE (sec_ctrl) THEN DO:
-			        RUN SetUserCookie.
-			        RUN SetGroupsCookie.
-			        v-login-success = TRUE.
-		        END. /* if not available (sec_ctrl) */
-		        ELSE DO:
-		            IF sec_ctrl.sec_password_exp <> ? THEN DO:
-                        DEFINE VARIABLE v-last-password-reset-date AS DATE NO-UNDO.
-                        DEFINE VARIABLE v-password-expiry-date AS DATE NO-UNDO.
-                        DEFINE VARIABLE v-password-grace-date AS DATE NO-UNDO.
-                        DEFINE VARIABLE v-password-warning-date AS DATE NO-UNDO.
-                        
-                        ASSIGN 
-                            v-last-password-reset-date = IF usr_mstr.usr_password_reset <> ? THEN usr_mstr.usr_password_reset ELSE usr_mstr.usr_create_date.
-                            
-                        IF v-last-password-reset-date <> ? THEN DO:
-                            ASSIGN 
-	                            v-password-expiry-date = ADD-INTERVAL(v-last-password-reset-date, sec_ctrl.sec_password_exp, "days")
-	                            v-password-grace-date = ADD-INTERVAL(v-password-expiry-date, sec_ctrl.sec_password_grace, "days")
-	                            v-password-warning-date = ADD-INTERVAL(v-password-expiry-date, -(sec_ctrl.sec_password_warn), "days").
-	                            
-	                        IF v-password-expiry-date > TODAY THEN DO:
-	                            IF v-password-warning-date <= TODAY THEN
-	                                v-password-warning = TRUE.
-	                            
-	                            RUN SetUserCookie.
-                                RUN SetGroupsCookie.
-                                v-login-success = TRUE.
-	                        END. /* v-password-expiry-date > today */
-	                        ELSE DO:
-	                            v-password-expired-error = TRUE.
-	                            IF v-password-grace-date < TODAY THEN DO:
-	                                ASSIGN
-	                                    usr_mstr.usr_locked = TRUE 
-	                                    usr_mstr.usr_modified_date = TODAY 
-	                                    usr_mstr.usr_modified_by = USERID("Core")
-	                                    usr_mstr.usr_prog_name = THIS-PROCEDURE:FILE-NAME
-	                                    v-user-locked-error = TRUE.
-	                            END. /* if v-password-grace-date > TODAY */
-	                        END.
-                        END. /* if v-last-password-reset-date <> ? */
-                        ELSE DO:
-                            v-password-expired-error = TRUE.
-                        END.
-		            END. /* if sec_ctrl.sec_password_exp <> ? */
-		            ELSE DO:
-		                RUN SetUserCookie.
-	                    RUN SetGroupsCookie.
-	                    v-login-success = TRUE.
-		            END.
-		        END.
-	        END. /* if usr_locked = false */
-	        ELSE DO:
-	            ASSIGN v-user-locked-error = TRUE.
-	        END.
-        END. /* if available (usr_mstr) */
-        ELSE DO:
-            ASSIGN v-invalid-creds-error = TRUE.
-        END.
-    END.  
-END PROCEDURE.
-
-PROCEDURE SetGroupsCookie:
-    DEFINE VARIABLE v-group-ids AS CHARACTER NO-UNDO.
-    FOR EACH gud_det WHERE gud_det.gud_people_ID = usr_mstr.usr_people_ID AND gud_det.gud_deleted = ? NO-LOCK:
-        ASSIGN v-group-ids = v-group-ids + IF v-group-ids <> "" THEN "," + gud_det.gud_grp_id ELSE gud_det.gud_grp_id. 
-    END.
-    IF v-group-ids <> "" THEN DO:
-	    FIND FIRST sec_ctrl WHERE sec_ctrl.sec_deleted = ? NO-ERROR.
-	    IF AVAILABLE (sec_ctrl) THEN
-	        set-cookie("groups", v-group-ids, ADD-INTERVAL(TODAY, sec_ctrl.sec_cookie_exp, "days"), sec_ctrl.sec_cookie_time, "/", ?, ?).
-	    ELSE
-	        set-cookie("groups", v-group-ids, ?, ?, "/", ?, ?).
-    END.
-END PROCEDURE.
-
-PROCEDURE SetUserCookie:
-    FIND FIRST sec_ctrl WHERE sec_ctrl.sec_deleted = ? NO-ERROR.
-    IF AVAILABLE (sec_ctrl) THEN 
-        set-cookie("user-id", STRING(usr_mstr.usr_people_ID), ADD-INTERVAL(TODAY, sec_ctrl.sec_cookie_exp, "days"), sec_ctrl.sec_cookie_time, "/", ?, ?).
-    ELSE
-        set-cookie("user-id", STRING(usr_mstr.usr_people_ID), ?, ?, "/", ?, ?).
-END PROCEDURE.
 </SCRIPT>
 </HEAD>
 
-<BODY >
-<!--WSS
+<BODY style='background-color: #F2F2F2'>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    File: menu-login.html
+    Description: Logs a user into the Solsource application menu.
+    Created: Aug 2, 2017
+  -------------------------------------------------------------------*/
 DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
 DEFINE VARIABLE v-username AS CHARACTER NO-UNDO.
 DEFINE VARIABLE v-password AS CHARACTER NO-UNDO.
-DEFINE VARIABLE v-last-password-reset-date2 AS DATE. /* This is some voodoo with the cookies. Even though this v-last-password-reset-date is defined above, we can't reuse it here*/
+
 DEFINE VARIABLE v-user-id AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-is-admin AS CHARACTER NO-UNDO.
 
 ASSIGN 
     v-act = get-value('act')
     v-username = get-value('username')
     v-password = get-value('password').
     
-FIND usr_mstr WHERE usr_mstr.usr_name = v-username AND usr_mstr.usr_password = ENCODE(v-password) AND usr_deleted = ? NO-ERROR.
-IF AVAILABLE (usr_mstr) THEN
-	ASSIGN v-user-id = STRING(usr_mstr.usr_people_ID).
+IF v-act = "LOGIN" THEN DO:
+    /* Check the user's credentials */
+
+    /* If the credentials are good, set the user id and navigate to the menu */
+    ASSIGN 
+        v-user-id = STRING(112964)
+        v-is-admin = "yes".
+        
+    {&OUT} "<meta http-equiv='refresh' content='0; url=menuDEV.html?h-empid=" v-user-id "&c-usr=" v-user-id "&h-admin=" v-is-admin "'>".
     
-IF v-login-success = TRUE THEN DO:
-    IF v-password-warning = FALSE THEN DO:
-	    RUN menuDEV.html.
-	    QUIT.
-    END.
-    ELSE DO:
--->
-    <script>
-        $(document).ready(function() {
-            $("#warning-modal").show();
-            $("#no-reset-btn").click(function() {
-                window.location = "menuDev.html";
-            });
-        });
-    </script>
-    <div id="warning-modal" class="w3-modal">
-	  <div class="w3-modal-content w3-card-4 w3-animate-top">
-	      <div class="w3-container">
-	        <center>
-	           <h2>Warning!</h2>
-	           <h4>Your password will expire soon. Please reset it when you get the chance.</h4>
-	        </center>
-	        <form action="password-reset-form" method="post">
-                <input type="hidden" name="h-user-id" value="`v-user-id`"/>
-                <div class='center-buttons'>
-                    <button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:250px;'>I'll reset it now</button>
-                    <button id='no-reset-btn' type='button' class='w3-btn-block w3-dark-grey w3-round' style='max-width:250px;'>Continue without resetting</button>
-                </div>
-           </form>
-	      </div>
-	  </div>
-	</div>
-<!--WSS
-    END.
-END.
-ELSE IF v-password-expired-error = TRUE AND v-user-locked-error = FALSE THEN DO:
--->
-    <script>
-        $(document).ready(function() {
-            $("#expired-modal").show();
-        });
-    </script>
-    <div id="expired-modal" class="w3-modal">
-      <div class="w3-modal-content w3-card-4 w3-animate-top">
-          <div class="w3-container">
-            <center>
-                <h2>Password Expired</h2>
-                <p>Your password has expired. In order to continue, please update it.</p>
-            </center>
-            <form action="password-reset-form" method="post">
-                <input type="hidden" name="h-user-id" value="`v-user-id`"/>
-                <div class='center-buttons'>
-                    <button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:250px;'>Ok</button>
-                </div>
-            </form>
-          </div>
-      </div>
-    </div>
-<!--WSS
+    /* If the credentials are not good, display an error message and wait for new credentials */
+    
+    
 END.
 
 {&OUT}
-    "<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px; margin-top: 10%;'>" SKIP
-    "   <div class='w3-center'>" skip
-    "       <div id='company-logo'>" SKIP
-    "           <img class='w3-margin-top w3-image' src='/depot/src/HTMLContent/images/Solsource/Solsource_Logo_Md_Transparent.png' alt='Company Logo'>" skip
-    "       </div>" SKIP.
-     
-IF v-invalid-creds-error = YES THEN 
-    {&OUT}
-    "       <p class='error-msg'>Either your username or password is incorrect. Please try again.</p>" SKIP.
-IF v-user-locked-error = YES THEN 
-    {&OUT}
-    "       <p class='error-msg'>Your account has been locked. Please contact your administrator to gain access.</p>" SKIP.          
-        
-{&OUT}        
-    "   </div>" skip
-	"   <form class='login-form' method='post'>" SKIP
-	"      <div class='w3-row'>" skip
-	"          <label>Username</label>" skip
-	"          <input type='text' name='username' class='w3-border w3-round-large w3-select' required/>" skip         
-	"          <label>Password</label>" skip
-    "          <input type='password' name='password' class='w3-border w3-round-large w3-select' required/>" skip
-	"      </div>" skip 
-	"      <div class='w3-row-padding w3-margin'>" SKIP
-    "          <div class='w3-center w3-col s12'>" SKIP
-    "              <button type='submit' name='act' value='Login' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Login</b></button>" SKIP
-    "              <br/><br/>" SKIP
-    "              <a href='register-user.html'>Create an account</a>" SKIP
-/*    "              <a href='forgot-password-page.html'>Forgot your password?</a>" SKIP*/
-    "          </div>" SKIP
-    "      </div>" SKIP
-	"   </form>" SKIP
-	"</div>" SKIP. 
+    "<div class='title-font' style='margin-top: 10%'>" skip
+        "<img src='https://avatars0.githubusercontent.com/u/20520537?v=4&s=460' alt='Company Logo' height='75' width='75'>" skip
+        "<h1 class='title-font'>Solsource</h1>" skip
+    "</div>" skip
+    
+	"<form class='login-form'>" SKIP
+	"<div class='row'>" skip
+	"   <div class='grid_3'></div>" skip
+	"       <div class='grid_6'>" skip                    
+	"               <div class='table_2col'>" skip
+	"                   <table>" skip
+	"                       <tr>" skip
+	"                           <th colspan='4'>Login</th>" skip
+	"                       </tr>" skip                          
+	"                       <tr>" skip
+	"                           <td>Username</td>" skip
+	"                           <td><input type='text' name='username' class='full-input'/></td>" skip         
+	"                       </tr>" skip
+	"                       <tr>" skip   
+	"                           <td>Password</td>" skip
+    "                           <td><input type='text' name='password' class='full-input'/></td>" skip
+    "                       </tr>" skip     
+	"                   </table>" skip
+	"               </div>" skip                 
+	"       </div>" skip
+	"   </div class='grid_3'></div>" skip
+	"</div>" skip 
+	"<BR>" SKIP
+	"<div class='row'>" SKIP
+	"   <div class='centered-btn'><BUTTON type='submit' name='act' value='LOGIN' class='btn'>Log in</BUTTON></div>" SKIP
+	"</div>" SKIP
+	"</form>" SKIP. 
 
-  -->
+</SCRIPT>
 </BODY>
 </HTML>

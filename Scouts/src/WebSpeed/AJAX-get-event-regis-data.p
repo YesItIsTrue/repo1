@@ -19,7 +19,7 @@
 
 
 /* ***************************  Main Block  *************************** */
-USING progress.json.objectmodel.*.
+USING progress.json.objectmodel.*. 
  
 CREATE WIDGET-POOL.
 DEF VAR cOut AS LONGCHAR.

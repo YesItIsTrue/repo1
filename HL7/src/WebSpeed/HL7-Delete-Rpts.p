@@ -18,13 +18,21 @@
 
 ROUTINE-LEVEL ON ERROR UNDO, THROW.
 
-DEFINE VARIABLE OS-stat             AS INTEGER          NO-UNDO.
-DEFINE VARIABLE c-nbr-deleted       AS INTEGER          NO-UNDO.
+{Logs_Rpts_Paths_Folders.i}.    /* Logs/Reports folder path. */
+
+DEFINE VARIABLE OS-stat                 AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE c-nbr-deleted           AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE hold-HL7-Rptslist-value AS CHARACTER FORMAT "x(100)"    NO-UNDO.
 
 /* ********************  Preprocessor Definitions  ******************** */
+
+FIND Logs_Rpts_Paths_Folders WHERE TT-Logs-Rpts-Seq_Nbr_only = 1 NO-LOCK NO-ERROR. 
+
 DEFINE STREAM DeleteRpts.
-DEFINE VARIABLE loadRpt AS CHARACTER 
-    INITIAL "C:\PROGRESS\WRK\HL7_Delete-Rpts-log.txt" NO-UNDO.
+/*DEFINE VARIABLE loadRpt AS CHARACTER                          */
+/*    INITIAL "C:\PROGRESS\WRK\HL7_Delete-Rpts-log.txt" NO-UNDO.*/
+DEFINE VARIABLE loadRpt AS CHARACTER NO-UNDO. 
+ASSIGN loadRPT = TT-Logs-Rpts-Path-Folder + "HL7_Delete-Rpts-log.txt".  
 OUTPUT STREAM DeleteRpts TO value(loadRpt) APPEND. 
 
 PUT STREAM DeleteRpts 
@@ -37,16 +45,19 @@ PUT STREAM DeleteRpts
 PUT STREAM DeleteRpts  "======================================" SKIP.
 PUT STREAM DeleteRpts  "*****   Begin HL7 Delete Rpts    *****" SKIP(1).
 
-OS-COMMAND  SILENT    
-            VALUE ("DEL " + "C:\Progress\WRK\" + "HL7-Rptslist.txt").
+OS-COMMAND  SILENT 
+            VALUE ("DEL " + TT-Logs-Rpts-Path-Folder + "HL7-Rptslist.txt").   
+/*            VALUE ("DEL " + "C:\Progress\WRK\" + "HL7-Rptslist.txt").*/
             
 ASSIGN OS-stat = OS-ERROR. 
 
 IF  OS-stat NE 0 THEN    PUT STREAM DeleteRpts   "OS-ERROR DEL = " OS-stat SKIP.
      
 OS-COMMAND  SILENT   
-            VALUE ("DIR " + "C:\Progress\WRK\HL7-Load-Rpts-*.txt" + " >> C:\Progress\WRK\" + "HL7-Rptslist.txt").
-            
+            VALUE ("DIR " + TT-Logs-Rpts-Path-Folder + "HL7-Load-Rpts-*.txt" + " >> " + TT-Logs-Rpts-Path-Folder + "HL7-Rptslist.txt").
+/*            VALUE ("DIR " + "C:\Progress\WRK\HL7-Load-Rpts-*.txt" + " >> C:\Progress\WRK\" + "HL7-Rptslist.txt").*/
+/*            VALUE ("DIR " + TT-Logs-Rpts-Path-Folder + "HL7-Load-Rpts-*.txt") >> (TT-Logs-Rpts-Path-Folder + "HL7-Rptslist.txt").*/
+                        
 ASSIGN OS-stat = OS-ERROR.
 
 IF  OS-stat <> 0 THEN   PUT STREAM DeleteRpts   "OS-ERROR DEL = " OS-stat SKIP.
@@ -59,7 +70,10 @@ DEFINE  TEMP-TABLE rptslist_data
         FIELD IP_Field-5  AS CHARACTER FORMAT "x(80)"
             INDEX temp-data         AS PRIMARY UNIQUE IP_Field-5. 
                      
-INPUT FROM "C:\Progress\WRK\HL7-Rptslist.txt". 
+/*INPUT FROM "C:\Progress\WRK\HL7-Rptslist.txt".*/
+ASSIGN hold-HL7-Rptslist-value = STRING(TT-Logs-Rpts-Path-Folder + "HL7-Rptslist.txt").  
+/*PUT UNFORMATTED "hold-HL7-Rptslist-value =" + hold-HL7-Rptslist-value SKIP.*/
+INPUT FROM VALUE(SEARCH(hold-HL7-Rptslist-value)).
          
 REPEAT:  
     CREATE   rptslist_data.   
@@ -89,8 +103,8 @@ FOR EACH rptslist_data  WHERE IP_Field-1 <> "" NO-LOCK :
         PUT STREAM DeleteRpts   "  " IP_Field-5 FORMAT "x(60)" SKIP.
         
         OS-COMMAND  SILENT    
-            VALUE ("DEL " + "C:\Progress\WRK\" + TRIM(IP_Field-5) ).
-            
+/*            VALUE ("DEL " + "C:\Progress\WRK\" + TRIM(IP_Field-5) ).*/
+             VALUE ("DEL " + TT-Logs-Rpts-Path-Folder + TRIM(IP_Field-5) ).            
         ASSIGN OS-stat = OS-ERROR. 
     
         IF  OS-stat <> 0 THEN   PUT STREAM DeleteRpts   "OS-ERROR DEL = " INTEGER(OS-stat)  " File: "  IP_Field-5 FORMAT "x(60)" SKIP.

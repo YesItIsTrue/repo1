@@ -1,7 +1,7 @@
-
+ 
 /*------------------------------------------------------------------------
     File        : HL7-Load-TK-Mstr.p
-    Purpose     : Load/Update the HHI.TK_mstr from XML data. 
+    Purpose     : Load/Update the TK_mstr from XML data. 
 
     Description : 
 
@@ -19,15 +19,16 @@
 {XML_TT_TK_Mstr_Data.i}.        /*  XML Extraction TK Master Data to Load into Progress. */ 
 {XML_TT_People_Data.i}.         /*  XML Extraction People Data to Load into Progress. */      
 {XML_TT_PeopID_Basic_Data.i}.   /* XML Extraction People ID ONLY to be used in the XML-SUB- programs.p. */ 
+{Logs_Rpts_Paths_Folders.i}.    /* Logs/Reports folder path. */ 
 
 {E-Mail_definations.i}.
 
-DEFINE INPUT PARAMETER  i-people-id             LIKE General.people_mstr.people_id      NO-UNDO.
-DEFINE INPUT PARAMETER  i-Admin-Update-OverRyde AS LOGICAL  INITIAL NO                  NO-UNDO.
-DEFINE OUTPUT PARAMETER o-TK-Mstr-id            LIKE HHI.TK_mstr.TK_ID                  NO-UNDO.
-DEFINE OUTPUT PARAMETER o-Lab_Sample_ID         LIKE HHI.TK_mstr.TK_lab_sample_ID       NO-UNDO.
-DEFINE OUTPUT PARAMETER o-TK-Mstr-load-error    AS LOGICAL INITIAL NO                   NO-UNDO.
-DEFINE OUTPUT PARAMETER o-TK-Mstr-error-message AS CHARACTER  FORMAT "x(200)"           NO-UNDO.
+DEFINE INPUT PARAMETER  i-people-id             LIKE people_mstr.people_id          NO-UNDO.
+DEFINE INPUT PARAMETER  i-Admin-Update-OverRyde AS LOGICAL  INITIAL NO              NO-UNDO.
+DEFINE OUTPUT PARAMETER o-TK-Mstr-id            LIKE TK_mstr.TK_ID                  NO-UNDO.
+DEFINE OUTPUT PARAMETER o-Lab_Sample_ID         LIKE TK_mstr.TK_lab_sample_ID       NO-UNDO.
+DEFINE OUTPUT PARAMETER o-TK-Mstr-load-error    AS LOGICAL INITIAL NO               NO-UNDO.
+DEFINE OUTPUT PARAMETER o-TK-Mstr-error-message AS CHARACTER  FORMAT "x(200)"       NO-UNDO.
 
 /* ***  TK_mstr update output info.                                      *** */
 DEFINE VARIABLE  o-uctkm-id              LIKE TK_mstr.TK_id              NO-UNDO.
@@ -71,7 +72,7 @@ DEFINE VARIABLE xy1                             AS INTEGER    INITIAL 0         
 DEFINE VARIABLE Action-Msg                      AS CHARACTER FORMAT "x(80)"     NO-UNDO. 
 DEFINE VARIABLE h-TK-Mstr-error-message         AS CHARACTER                    NO-UNDO. 
 DEFINE VARIABLE Temp-PeopID_B-Seq-Nbr           AS INTEGER  INITIAL 0           NO-UNDO. 
-DEFINE VARIABLE i-flab-id                       LIKE HHI.lab_mstr.lab_ID        NO-UNDO.
+DEFINE VARIABLE i-flab-id                       LIKE lab_mstr.lab_ID            NO-UNDO.
 DEFINE VARIABLE h-tk-id             LIKE XML_TT_TK_Mstr_Data.TT-TK_Mstr_TK_ID   NO-UNDO.
 DEFINE VARIABLE h-tk-id-seq         LIKE XML_TT_TK_Mstr_Data.TT-TK_Mstr_TK_ID_Seq NO-UNDO.
 
@@ -79,12 +80,16 @@ DEFINE VARIABLE ITdisplay                       AS LOGICAL INITIAL YES          
 
 /* ********************  Preprocessor Definitions  ******************** */
  
-DEFINE VARIABLE drive_letter AS CHARACTER FORMAT "x(01)" NO-UNDO.              
+DEFINE VARIABLE drive_letter AS CHARACTER FORMAT "x(01)"                        NO-UNDO.              
 ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1).                 
+
+FIND Logs_Rpts_Paths_Folders WHERE TT-Logs-Rpts-Seq_Nbr_only = 1 NO-LOCK NO-ERROR. 
    
 DEFINE STREAM outwardTKM.
-DEFINE VARIABLE loadRpt AS CHARACTER 
-    INITIAL "C:\PROGRESS\WRK\TestKits-Load-Rpt.txt" NO-UNDO.
+/*DEFINE VARIABLE loadRpt AS CHARACTER                                                    */
+/*    INITIAL "C:\PROGRESS\WRK\TestKits-Load-Rpt.txt"                             NO-UNDO.*/
+DEFINE VARIABLE loadRpt AS CHARACTER NO-UNDO. 
+ASSIGN loadRPT = TT-Logs-Rpts-Path-Folder + "TestKits-Load-Rpt.txt".
 OUTPUT STREAM outwardTKM TO value(loadRpt) PAGED.
 
 PUT STREAM outwardTKM
@@ -134,9 +139,9 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
                 XML_TT_PeopID_Basic_Data.TT_PeopID_lab_sample_ID        = XML_TT_TK_Mstr_Data.TT-TK_Mstr_tk_lab_sample_ID
                 XML_TT_PeopID_Basic_Data.TT_PeopID_lab_sample_ID_Seq    = XML_TT_TK_Mstr_Data.TT-TK_Mstr_tk_lab_sample_ID_Seq.
         
-    FIND General.people_mstr 
-                WHERE   General.people_mstr.people_id       = i-people-id AND
-                        General.people_mstr.people_deleted  = ?
+    FIND people_mstr 
+                WHERE   people_mstr.people_id       = i-people-id AND
+                        people_mstr.people_deleted  = ?
            NO-LOCK NO-ERROR. 
 
     ASSIGN  o-TK-Mstr-id                                = XML_TT_TK_Mstr_Data.TT-TK_Mstr_TK_ID.
@@ -205,24 +210,25 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
             ASSIGN Major_Error_kount = (Major_Error_kount + 1). 
             
             IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN  
-                ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR".             
+                ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR"
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc  = "TK-ID or Lab-Sample-ID is blank or Seq Nbrs are zero (0).".             
                             
             NEXT Main_loop.
             
     END.  /* IF TK-ID or Lab-Sample-ID is blank or 0 */ 
 
 /*  Begin of the Validation of the Test-Kit-ID prefix 
-        to see if it exists in the HHI.Test_mstr table. */
+        to see if it exists in the Test_mstr table. */
         
     ASSIGN TK-ID-len = (INDEX(TT-TK_Mstr_TK_ID, "-", 1) - 1).  
     
-    FIND FIRST HHI.test_mstr WHERE test_type = SUBSTRING(TT-TK_Mstr_TK_ID, 1, TK-ID-len) 
+    FIND FIRST test_mstr WHERE test_type = SUBSTRING(TT-TK_Mstr_TK_ID, 1, TK-ID-len) 
                    NO-LOCK NO-ERROR.
                    
-    IF  NOT AVAILABLE (HHI.test_mstr) THEN DO:
+    IF  NOT AVAILABLE (test_mstr) THEN DO:
         
         ASSIGN  data-info  = "PERSON:"
-                h-desc     = "TK_ID Prefix not found in HHI.test_mstr."
+                h-desc     = "TK_ID Prefix not found in test_mstr."
                 Full-Name  = XML_TT_People_Data.TT-people_firstname + " " +
                              XML_TT_People_Data.TT-people_midname   + " " +
                              XML_TT_People_Data.TT-people_lastname  +
@@ -257,7 +263,7 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
 
             ASSIGN h-TK-Mstr-error-message = 
                                    " \n "
-                                 + " TK_ID Prefix not found in HHI.test_mstr " 
+                                 + " TK_ID Prefix not found in test_mstr " 
                                  + " in program: " 
                                  + THIS-PROCEDURE:FILE-NAME + "."
                                  + " \n " + " "
@@ -268,33 +274,34 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
             ASSIGN TK-ID-PREFIX-not-found_kount = (TK-ID-PREFIX-not-found_kount + 1).
                         
             IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN  
-                ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR".             
+                ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR"
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc  = "TK_ID Prefix not found in test_mstr.".               
  
             NEXT Main_loop.  
               
-    END.  /* IF NOT AVAILABLE (HHI.test_mstr) */
+    END.  /* IF NOT AVAILABLE (test_mstr) */
 
-/*get the HHI.test_mstr test_type value and the test_family value. */
+/*get the test_mstr test_type value and the test_family value. */
     
-    ASSIGN  XML_TT_TK_Mstr_Data.TT-TK_Mstr_TK_test_type     = HHI.test_mstr.test_type   
-            XML_TT_PeopID_Basic_Data.TT-test-family         = HHI.test_mstr.test_family
-            XML_TT_PeopID_Basic_Data.TT-test-type           = HHI.test_mstr.test_type.   
+    ASSIGN  XML_TT_TK_Mstr_Data.TT-TK_Mstr_TK_test_type     = test_mstr.test_type   
+            XML_TT_PeopID_Basic_Data.TT-test-family         = test_mstr.test_family
+            XML_TT_PeopID_Basic_Data.TT-test-type           = test_mstr.test_type.   
  
-/*  End of the Validation of the Test-Kit-ID prefix to see if it exists in the HHI.Test_mstr table. */     
+/*  End of the Validation of the Test-Kit-ID prefix to see if it exists in the Test_mstr table. */     
 
 /* See if the Test Kit NBR exists or not. */    
-/* If found, validate the input people_Id number is equal to HHI.TK_mstr.TK_patient_ID else ERROR.
+/* If found, validate the input people_Id number is equal to TK_mstr.TK_patient_ID else ERROR.
              validate the TK_status is in SOLD or SHIPPED Status else ERROR. */ 
  
-    FIND FIRST HHI.TK_mstr WHERE HHI.TK_mstr.TK_ID         = TT-TK_Mstr_TK_ID AND
-                                 HHI.TK_mstr.TK_test_seq   = TT-TK_Mstr_TK_ID_Seq AND 
-                                 HHI.TK_mstr.TK_deleted    = ?                          
+    FIND FIRST TK_mstr WHERE TK_mstr.TK_ID         = TT-TK_Mstr_TK_ID AND
+                                 TK_mstr.TK_test_seq   = TT-TK_Mstr_TK_ID_Seq AND 
+                                 TK_mstr.TK_deleted    = ?                          
                  NO-LOCK NO-ERROR.
 
-    IF  NOT AVAILABLE (HHI.TK_mstr) THEN DO:                  
+    IF  NOT AVAILABLE (TK_mstr) THEN DO:                  
                         
             ASSIGN  data-info  = "PERSON:"
-                    h-desc     = "TK_ID Nbr not found in HHI.TK_mstr."
+                    h-desc     = "TK_ID Nbr not found in TK_mstr."
                     Full-Name  = XML_TT_People_Data.TT-people_firstname + " " +
                                  XML_TT_People_Data.TT-people_midname   + " " +
                                  XML_TT_People_Data.TT-people_lastname  +
@@ -323,7 +330,7 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
 
             ASSIGN h-TK-Mstr-error-message = 
                                    "  \n " 
-                                 + " TK_ID Nbr not found in the HHI.TK_mstr " 
+                                 + " TK_ID Nbr not found in the TK_mstr " 
                                  + " in program: " 
                                  + "  \n " 
                                  + THIS-PROCEDURE:FILE-NAME + "."
@@ -335,17 +342,18 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
             ASSIGN TK-ID-NOT-found_kount = (TK-ID-NOT-found_kount + 1).
                         
             IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN  
-                ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR".             
+                ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR"
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc  = "TK_ID Nbr not found in TK_mstr.".             
  
             NEXT Main_loop.
 
-    END.  /*  IF NOT AVAILABLE (HHI.test_mstr)  */
+    END.  /*  IF NOT AVAILABLE (test_mstr)  */
 
-    IF  AVAILABLE (HHI.TK_mstr) THEN DO: 
+    IF  AVAILABLE (TK_mstr) THEN DO: 
                
-        IF  HHI.TK_mstr.TK_patient_ID > 0               THEN DO:
+        IF  TK_mstr.TK_patient_ID > 0               THEN DO:
             
-            IF  HHI.TK_mstr.TK_patient_ID <> i-people-id  THEN DO:   
+            IF  TK_mstr.TK_patient_ID <> i-people-id  THEN DO:   
         
             ASSIGN  data-info  = "PERSON:"
                     h-desc     = "Input TK_ID Nbr has already been issued to someone else.  Rejected."
@@ -376,7 +384,7 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
                     Action-Msg       AT 25 SKIP.
             
             Info-Msg[2]  = "      : " + TT-TK_Mstr_TK_ID  + " / " + STRING(TT-TK_Mstr_TK_ID_Seq) +
-                                    "  belongs to person: " +  STRING(HHI.TK_mstr.TK_patient_ID) + ". ".
+                                    "  belongs to person: " +  STRING(TK_mstr.TK_patient_ID) + ". ".
             
             PUT STREAM outwardTKM
                     Info-msg[2]     AT 25 SKIP(1).
@@ -395,24 +403,25 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
             ASSIGN TK-ID-issued_to_someelse_kount = (TK-ID-issued_to_someelse_kount + 1).
                    
             IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN
-                ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR".
+                ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR"
+                        XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc  = "Input TK_ID Nbr has already been issued to someone else.  Rejected.". 
  
             NEXT Main_loop.
                                       
-        	END. /* IF  HHI.TK_mstr.TK_patient_ID <> i-people-id  */
+        	END. /* IF  TK_mstr.TK_patient_ID <> i-people-id  */
         	
-        END. /* IF  HHI.TK_mstr.TK_patient_ID > 0 */
+        END. /* IF  TK_mstr.TK_patient_ID > 0 */
 
 /*  input Test Kit must have a status of "SOLD" or "SHIPPED" to be updated, unless
     the input admin update overryde option is set to YES! */
             
-        IF  (HHI.TK_mstr.TK_status   = "SOLD"       OR   
-             HHI.TK_mstr.TK_status   = "SHIPPED")   OR 
+        IF  (TK_mstr.TK_status   = "SOLD"       OR   
+             TK_mstr.TK_status   = "SHIPPED")   OR 
             (i-Admin-Update-OverRyde = YES)         THEN  
                 cont-1 = 1.
         ELSE DO:                                                            
                 ASSIGN  data-info  = "PERSON:"
-                        h-desc     = "TK_ID not in SOLD or SHIPPED Status for updating in HHI.TK_mstr."
+                        h-desc     = "TK_ID not in SOLD or SHIPPED Status for updating in TK_mstr."
                         Full-Name  = TT-people_firstname + " " + TT-people_lastname +
                                      "    DOB: " + TT-people_month  + "/" +
                                                    TT-people_day + "/" +
@@ -439,7 +448,7 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
                         Action-Msg       AT 25 SKIP.
     
                 ASSIGN h-TK-Mstr-error-message = 
-                                       " TK_ID not in SOLD or SHIPPED Status for updating in HHI.TK_mstr "
+                                       " TK_ID not in SOLD or SHIPPED Status for updating in TK_mstr "
                                      +  " \n " 
                                      + "  in program: "
                                      +  " \n "  
@@ -451,13 +460,14 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
                 ASSIGN TK-ID-BAD-Status_kount = (TK-ID-BAD-Status_kount + 1).
                             
                 IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN  
-                    ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR".             
+                    ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR"
+                            XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc  = "TK_ID not in SOLD or SHIPPED Status for updating in TK_mstr.".              
      
                 NEXT Main_loop.
     
-        END.  /*  ELSE DO:  [HHI.TK_mstr.TK_status   = "SOLD" or "SHIPPED"] */
+        END.  /*  ELSE DO:  [TK_mstr.TK_status   = "SOLD" or "SHIPPED"] */
                
-    END. /* IF AVAILABLE (HHI.TK_mstr)  */
+    END. /* IF AVAILABLE (TK_mstr)  */
     
 /* End to See if the Test Kit NBR exists or not. */ 
 
@@ -535,7 +545,9 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
         ASSIGN coll_begin_Invalid_kount = (coll_begin_Invalid_kount + 1). 
                          
         IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN  
-            ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR".             
+            ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag           = "ERROR"
+                    XML_TT_PeopID_Basic_Data.TT-PeopID_TK_Mstr_coll_beg_dte = ?
+                    XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc  = "Test Kit coll_begin date value is invalid.".              
                                                
     END.  /* IF ERROR-STATUS:ERROR OR ERROR-STATUS:NUM-MESSAGES > 0  */
     ELSE 
@@ -610,7 +622,9 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
         ASSIGN coll_end_Invalid_kount = (coll_end_Invalid_kount + 1). 
             
         IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN  
-            ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR".             
+            ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag           = "ERROR"
+                    XML_TT_PeopID_Basic_Data.TT-PeopID_TK_Mstr_coll_end_dte = ?
+                    XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc  = "Test Kit coll_end date value is invalid.".             
                                                        
     END.  /* IF ERROR-STATUS:ERROR OR ERROR-STATUS:NUM-MESSAGES > 0  */
     ELSE 
@@ -704,11 +718,12 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
                             TK_mstr.TK_deleted  = ?
                  NO-LOCK NO-ERROR.
         
-        IF  AVAILABLE (HHI.TK_mstr)                 AND 
+        IF  AVAILABLE (TK_mstr)                     AND 
             AVAILABLE (XML_TT_PeopID_Basic_Data)    THEN
-                ASSIGN XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag           = HHI.TK_mstr.TK_status.
+                ASSIGN XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = TK_mstr.TK_status.
         ELSE 
-                ASSIGN XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag           = "ERROR".
+                ASSIGN XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR"
+                       XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc  = "Tk_mstr not found during OverRyde option.".
                       
         IF  o-uctkm-update              = YES AND 
             o-uctkm-successful          = YES AND 
@@ -755,8 +770,9 @@ FOR EACH XML_TT_TK_Mstr_Data EXCLUSIVE-LOCK BREAK BY TT-TK_mstr-Seq-Nbr:
             
         ELSE DO: 
             
-            ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag           = "ERROR"
-                    no-update = NO.  
+            ASSIGN  XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Flag  = "ERROR"
+                    no-update = NO
+                    XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc  = "Unexpected Error during the OverRyde option.".  
                     
             IF ITdisplay = YES   THEN
                 DISPLAY "Prog: SUB-TK_mstr-Load: :Error from SUBtkmstr-ucU.r." SKIP
@@ -811,11 +827,11 @@ PUT STREAM outwardTKM SKIP(1)
 
     "Errors:" SKIP 
     Major_Error_kount FORMAT ">,>>9"                "  :TK-ID or Lab-Sample-ID is blank or Seq Nbrs are zeros (0)." SKIP 
-    TK-ID-NOT-found_kount FORMAT ">,>>9"            "  :TK_ID Nbr not found in HHI.TK_mstr." SKIP 
+    TK-ID-NOT-found_kount FORMAT ">,>>9"            "  :TK_ID Nbr not found in TK_mstr." SKIP 
     TK-ID-issued_to_someelse_kount FORMAT ">,>>9"   "  :Input TK_ID Nbr has already been issued to someone else.  Rejected." SKIP 
     " " SKIP   
-    TK-ID-BAD-Status_kount FORMAT ">,>>9"           "  :TK_ID Nbr not in SOLD or SHIPPED Status for updating in HHI.TK_mstr." SKIP
-    TK-ID-PREFIX-not-found_kount FORMAT ">,>>9"     "  :TK_ID Prefix not found in HHI.test_mstr." SKIP 
+    TK-ID-BAD-Status_kount FORMAT ">,>>9"           "  :TK_ID Nbr not in SOLD or SHIPPED Status for updating in TK_mstr." SKIP
+    TK-ID-PREFIX-not-found_kount FORMAT ">,>>9"     "  :TK_ID Prefix not found in test_mstr." SKIP 
     " " SKIP 
     coll_begin_Invalid_kount FORMAT ">,>>9"         "  :Test Kit Collected Begin Date value is invalid." SKIP
     coll_end_Invalid_kount FORMAT ">,>>9"           "  :Test Kit Collected End Date value is invalid." SKIP(2).

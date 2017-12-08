@@ -65,6 +65,10 @@ DEFINE VARIABLE v-environment AS CHARACTER NO-UNDO.
 DEFINE VARIABLE v-usr-fullname AS CHARACTER NO-UNDO.
 DEFINE VARIABLE v-user-id AS CHARACTER INITIAL 0 NO-UNDO.
 
+DEFINE VARIABLE ITshowmsg AS LOG INITIAL NO NO-UNDO.
+DEFINE VARIABLE localpathing AS LOG INITIAL NO NO-UNDO.    /* change to NO before putting on server */
+
+
 ASSIGN v-user-id = get-value('c-usr').
 
 v-environment = "DEV".          /** for the DEV environment **/     
@@ -127,8 +131,7 @@ ELSE IF v-environment = "PROD" THEN
 {&OUT}
     "</div>" SKIP(1).
     
-DEFINE VARIABLE ITshowmsg AS LOG INITIAL NO NO-UNDO.
-DEFINE VARIABLE localpathing AS LOG INITIAL NO NO-UNDO.    /* change to NO before putting on server */
+
 
 																										IF ITshowmsg = YES THEN 
 																										    {&OUT} "<P>Begin</P>".

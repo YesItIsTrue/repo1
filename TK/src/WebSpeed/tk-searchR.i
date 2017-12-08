@@ -22,7 +22,9 @@
             to not specify specific directories but to depend on the 
             PROPATH settings.  This is in accordance with the directory
             changes of Release 12 (CMC structure).  Not marked.
- 
+ 1.21 - written by DOUG LUTTRELL on 20/Oct/17.  Something still not correct
+            with logicals down through this program tree.  Hyperlinks
+            may be wonky too.  Not marked.
         
   ----------------------------------------------------------------------*/
 
@@ -38,12 +40,19 @@
       {&OUT}
        "<tr>"       
             "<td></td>" SKIP   
-            "<td nowrap>" "<a href=~"TRH-history-R.r?h-low-serial=" TK_ID  "&h-high-serial=" Tk_ID "&h-low-seq=" TK_test_seq "&h-high-seq=" TK_test_seq "&whattorun=1.41&h-act=1~">" TK_ID "</a> / " TK_test_seq  " </td>" SKIP
-            "<td>" Tk_test_type "</td>" SKIP            
-      /*      "<td>" TK_test_seq "</td>" SKIP      */ 
+            "<td nowrap>" 
+                "<a href='TRH-history-R.r?h-low-serial=" TK_ID  
+                "&h-high-serial=" Tk_ID 
+                "&h-low-seq=" TK_test_seq 
+                "&h-high-seq=" TK_test_seq 
+                "&whattorun=1.41&h-act=1'>" TK_ID 
+                "</a> / " TK_test_seq  
+            " </td>" SKIP
+            "<td>" TK_mstr.Tk_test_type "</td>" SKIP            
+      /*    "<td>" TK_mstr.TK_test_seq "</td>" SKIP      */ 
             "<td>" TK_mstr.TK_lab_sample_ID  " / " TK_mstr.TK_lab_seq  " </td>"    /* 2dot3 */
-            "<td>" Tk_create_date "</td>"  SKIP    /** Commented out on 1/6/15... Uncommented out on 2/17/15 **/
-            "<td>" TK_modified_date "</td>" SKIP.  /** Commented out on 2/17/15** Uncommented out 2/17/15 **/    
+            "<td>" TK_mstr.Tk_create_date "</td>"  SKIP    /** Commented out on 1/6/15... Uncommented out on 2/17/15 **/
+            "<td>" TK_mstr.TK_modified_date "</td>" SKIP.  /** Commented out on 2/17/15** Uncommented out 2/17/15 **/    
             
                 IF TK_mstr.TK_domestic = ? THEN  /*** Domestic IF Block ***/
       {&OUT} 
@@ -64,22 +73,35 @@
             "<td>" "</td>" SKIP.
                 ELSE
       {&OUT}
-            "<td>"TK_mstr.TK_cust_paid "</td>" SKIP.       
+            "<td>" TK_mstr.TK_cust_paid "</td>" SKIP.       
       {&OUT}        
             "<td>" Tk_status "</td>" SKIP. 
             
-             IF AVAILABLE (peop-pat-buf) THEN DO:                         /* Patient look up */
-      {&OUT}
-            "<td nowrap><a href=~"PATmainviewR.r?h-act=SELECTED&h-peopleid=" peop-pat-buf.people_id "&whattorun=3.11 "~" > " peop-pat-buf.people_lastname ", " peop-pat-buf.people_firstname "</a></TD>" SKIP . 
+      IF AVAILABLE (peop-pat-buf) THEN DO:                         /* Patient look up */
+             
+        {&OUT}
+            "<td nowrap>"
+            "<a href='PATmainviewR.r?h-act=SELECTED" 
+            url-field("h-peopleid",STRING(peop-pat-buf.people_ID),?)
+            url-field("whattorun","3.11",?) "' >" 
+
+/*                                                                */
+/*            "<a href='PATmainviewR.r?h-act=SELECTED&h-peopleid="*/
+/*            peop-pat-buf.people_id                              */
+/*            "&whattorun=3.11 "' > "                             */
+
+            peop-pat-buf.people_lastname ", " 
+            peop-pat-buf.people_firstname 
+            "</a></TD>" SKIP . 
             
-            END.  /* IF AVAILABLE (peop-pat-buf) THEN DO:  */
+        END.  /* IF AVAILABLE (peop-pat-buf) */
             
-            ELSE
+        ELSE
             
-      {&OUT} 
-            "<td></td>" SKIP.  
+            {&OUT} 
+                "<td></td>" SKIP.  
   
-             IF AVAILABLE (peop-cust-buf) THEN DO:                     /* Customer look up */
+        IF AVAILABLE (peop-cust-buf) THEN DO:                     /* Customer look up */
              
              
            /*     FIND peop-cust-buf WHERE peop-cust-buf.people_id = cust_mstr.cust_id NO-LOCK NO-ERROR.         

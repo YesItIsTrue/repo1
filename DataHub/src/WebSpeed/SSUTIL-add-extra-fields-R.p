@@ -1,6 +1,6 @@
 /***********************************************************************
  *
- *  SSUTIL-add-extra-fields-R.p - DOUG LUTTRELL - Version 1.11
+ *  SSUTIL-add-extra-fields-R.p - DOUG LUTTRELL - Version 1.12
  *
  *  ------------------------------------------------------------------
  *
@@ -24,6 +24,9 @@
  *          to the default output location.  It now defaults to the 
  *          C:\progress\wrk\DFs directory.  Also changed the size of the
  *          _prog_name field.  Marked by 111.
+ *  1.12 - written by DOUG LUTTRELL on 13/Nov/17.  Added in the index
+ *          for the deleted field.  No other automated indeces.  Marked
+ *          by 112.
  *
  ************************************************************************/
  
@@ -369,6 +372,19 @@ FOR EACH _file WHERE _file-number >= 1 AND _file-number < 32000 and
         "ORDER " highfield SKIP(2).       
     
    
+   /** begin 112 **/
+   
+    /*********************************************************
+     *  Add indeces here
+     *********************************************************/
+          
+    PUT STREAM outward UNFORMATTED
+        "ADD INDEX ~"" tablpref "-del-idx~" ON ~"" _file-name "~"" SKIP
+        "AREA ~"Schema Area~"" SKIP
+        "INDEX-FIELD ~"" tablpref "_deleted~" ASCENDING" SKIP(2).    
+   
+    /** end of 112 **/
+    
 END.  /** OF 4ea. _file **/
 
 PUT STREAM outward UNFORMATTED

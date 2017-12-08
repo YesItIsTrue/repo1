@@ -2,7 +2,7 @@
 <HTML>
 <HEAD> 
 
-<TITLE>TestKit CD Create/Burn Update</TITLE>
+<TITLE>TestKit Email Update</TITLE>
 
 <META NAME="AUTHOR" CONTENT="Harold luttrell, Sr.">
     <META NAME="VERSION" CONTENT="1.7">
@@ -174,7 +174,7 @@ DEFINE VARIABLE v-trhfound              AS LOG INITIAL NO           NO-UNDO. /* 
 {../depot/src/WebSpeed/Statuslist.i}.                                           /* 1dot7 */
 
 /*DEFINE VARIABLE statlist AS CHARACTER                                                                                                                                       /* 1dot5 */*/
-/*    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,COMPLETE,PAID_BY_CUST,VEND_PAID,DELETED,VOID" NO-UNDO.   /* 1dot5 */*/
+/*    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,EMAILED,COMPLETE,PAID_BY_CUST,VEND_PAID,DELETED,VOID" NO-UNDO.   /* 1dot5 */*/
  
 /*DEFINE VARIABLE status-list                AS CHARACTER               NO-UNDO.                  */
 /*/*  lookup(tk_status,status-list) > 0 :  means did find IT   or = 0 :  means did NOT find it  */*/
@@ -262,7 +262,7 @@ IF act = "Display_Selected_Data" THEN DO:                                       
         {&OUT}
             "</Tr>"  SKIP
             "<Tr>"  SKIP
-            "   <Td>Check to Burn</Td>"  SKIP
+            "   <Td>Check to Email</Td>"  SKIP
             "   <Td>Testkit ID / Seq</Td>"  SKIP
             "   <Td>Patient</Td>"  SKIP          
             "   <Td>Type</Td>"  SKIP                                                            
@@ -287,7 +287,7 @@ IF act = "Display_Selected_Data" THEN DO:                                       
 
                     (test_mstr.test_family = "MPA" AND
                     LOOKUP(TK_status,statlist) >= LOOKUP("PROCESSED",statlist) AND       /* 1dot51 */
-                    LOOKUP(TK_status,statlist) < LOOKUP("BURNED",statlist)) AND   /* 1dot5 */
+                    LOOKUP(TK_status,statlist) < LOOKUP("EMAILED",statlist)) AND   /* 1dot5 */
 
                     ((TK_mstr.Tk_ID >= f-kitid OR
                       f-kitid = "") AND
@@ -498,7 +498,7 @@ ELSE IF act = "UPDATE_by_boxes" THEN DO:                                        
 	       
 	        IF AVAILABLE (TK_mstr) THEN DO:
 	            
-                ASSIGN  TK_mstr.TK_status           = "BURNED"
+                ASSIGN  TK_mstr.TK_status           = "EMAILED"
                         TK_mstr.TK_modified_by      = USERID("Modules")
                         TK_mstr.TK_modified_date    = TODAY
                         TK_mstr.TK_prog_name        = THIS-PROCEDURE:FILE-NAME.   /* 1dot7 */
@@ -519,7 +519,7 @@ ELSE IF act = "UPDATE_by_boxes" THEN DO:                                        
                  OUTPUT v-trhid,                                                /* 1dot7 */
                  OUTPUT v-trhfound).                                            /* 1dot7 */
 	        
-	/*  CREATE a hist FOR the BURNED Testkit.......... USING entered date  */ 
+	/*  CREATE a hist FOR the EMAILED Testkit.......... USING entered date  */ 
 	        RUN VALUE(SEARCH("SUBtrh-ucU.r"))
 		            (v-trhid,                        /**  i-ctrh-id   **/
 		             TK_mstr.TK_test_type,       /**  i-ctrh-item **/
@@ -628,7 +628,7 @@ ELSE IF act = "UPDATE_by_boxes" THEN DO:                                        
 
         {&OUT}   
             "<tfoot>" SKIP
-            "<tr><td colspan=8>Testkits checked as burned =  " updated-kount " Records.  </td></tr>" 
+            "<tr><td colspan=8>Testkits checked as emailed =  " updated-kount " Records.  </td></tr>" 
             "<tr><td colspan=8><SPAN style='COLOR: #0000FF;'><i><b>End of Updated Report</span></b></i></td></tr>" 
             "</tfoot>" SKIP
             "</TABLE>"
@@ -672,7 +672,7 @@ IF act = "Enter_Selections" OR
        "<TABLE>"  SKIP    
        "   <THEAD>"  SKIP
        "       <TR>"  SKIP
-       "           <TH colspan=4 style='text-align:center;'>Select  Testkit  to  be  Burned</TH>"  SKIP                                             
+       "           <TH colspan=4 style='text-align:center;'>Select  Testkit  to  be  Emailed</TH>"  SKIP                                             
        "       </TR>"  SKIP
        "   </THEAD>"  SKIP
        "   <TR>"  SKIP            

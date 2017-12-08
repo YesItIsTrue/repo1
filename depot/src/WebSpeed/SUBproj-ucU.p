@@ -28,30 +28,23 @@ DEFINE INPUT PARAMETER i-ucproj-esttotal        LIKE Proj_Mstr.Proj_est_total   
 DEFINE INPUT PARAMETER i-ucproj-currtotal       LIKE Proj_Mstr.Proj_curr_total          NO-UNDO.
 DEFINE INPUT PARAMETER i-ucproj-esthours        LIKE Proj_Mstr.Proj_est_hours           NO-UNDO.
 DEFINE INPUT PARAMETER i-ucproj-currhours       LIKE Proj_Mstr.Proj_curr_hours          NO-UNDO.
-/*DEFINE INPUT PARAMETER i-ucproj-progname        LIKE Proj_Mstr.Proj_prog_name           NO-UNDO.*/
+DEFINE INPUT PARAMETER i-ucproj-adminonly       LIKE Proj_Mstr.Proj_admin_only          NO-UNDO.
+DEFINE INPUT PARAMETER i-ucproj-sortorder       LIKE Proj_Mstr.Proj_sort                NO-UNDO.
 
 DEFINE OUTPUT PARAMETER o-ucproj-clientid       LIKE Proj_Mstr.Proj_client_ID           NO-UNDO.
 DEFINE OUTPUT PARAMETER o-ucproj-name           LIKE Proj_Mstr.Proj_name                NO-UNDO.
+DEFINE OUTPUT PARAMETER o-ucproj-start-date     AS CHARACTER INITIAL NO                   NO-UNDO.
 DEFINE OUTPUT PARAMETER o-ucproj-create         AS LOGICAL INITIAL NO                   NO-UNDO.
 DEFINE OUTPUT PARAMETER o-ucproj-update         AS LOGICAL INITIAL NO                   NO-UNDO.
 DEFINE OUTPUT PARAMETER o-ucproj-avail          AS LOGICAL INITIAL YES                  NO-UNDO.
 DEFINE OUTPUT PARAMETER o-ucproj-successful     AS LOGICAL INITIAL NO                   NO-UNDO. 
-DEFINE OUTPUT PARAMETER o-ucproj-error          AS LOGICAL INITIAL NO                   NO-UNDO.
 
 /* ***************************  Main Block  *************************** */
 
 mainblock: 
 DO TRANSACTION:
 
-    IF i-ucproj-clientid = 0 THEN 
-    DO:
-        ASSIGN 
-            o-ucproj-error = YES.
-        LEAVE mainblock.
-    END. 
-    
-    ELSE 
-    DO:
+    IF i-ucproj-clientid <> 0 THEN DO:
         
         FIND FIRST Proj_Mstr WHERE
             Proj_Mstr.Proj_client_ID = i-ucproj-clientid AND
@@ -69,7 +62,6 @@ DO TRANSACTION:
                 Proj_Mstr.Proj_modified_by       = USERID("Modules")                    
                 o-ucproj-clientid                = Proj_Mstr.Proj_client_ID
                 o-ucproj-name                    = Proj_Mstr.Proj_name 
-/*                Proj_Mstr.Proj_prog_name         = i-ucproj-progname*/
                 .
                                                 
         END. /*** of IF AVAIL THEN DO: ***/
@@ -90,23 +82,29 @@ DO TRANSACTION:
                 Proj_Mstr.Proj_modified_by   = USERID("Modules")                 
                 o-ucproj-clientid            = Proj_Mstr.Proj_client_ID
                 o-ucproj-name                = Proj_Mstr.Proj_name 
-/*                Proj_Mstr.Proj_prog_name     = i-ucproj-progname*/
                 .
                 
         END. /*** of not avail ELSE DO ***/
         
         /*** this is to allow blank inputs ***/
-        ASSIGN                
-            Proj_Mstr.Proj_price_adj        = IF i-ucproj-priceadj       <> 0  THEN i-ucproj-priceadj       ELSE Proj_Mstr.Proj_price_adj 
+        ASSIGN
+            Proj_Mstr.Proj_price_adj        = IF i-ucproj-priceadj       <> 0  THEN i-ucproj-priceadj       ELSE Proj_Mstr.Proj_price_adj
             Proj_Mstr.Proj_price_adj_dollar = IF i-ucproj-priceadjdollar <> 0  THEN i-ucproj-priceadjdollar ELSE Proj_Mstr.Proj_price_adj_dollar
             Proj_Mstr.Proj_start_date       = IF i-ucproj-startdate      <> ?  THEN i-ucproj-startdate      ELSE Proj_Mstr.Proj_start_date
-            Proj_Mstr.Proj_end_date         = IF i-ucproj-enddate        <> ?  THEN i-ucproj-enddate        ELSE Proj_Mstr.Proj_end_date  
-            Proj_Mstr.Proj_est_total        = IF i-ucproj-esttotal       <> 0  THEN i-ucproj-esttotal       ELSE Proj_Mstr.Proj_est_total                 
+            Proj_Mstr.Proj_end_date         = IF i-ucproj-enddate        <> ?  THEN i-ucproj-enddate        ELSE Proj_Mstr.Proj_end_date
+            Proj_Mstr.Proj_est_total        = IF i-ucproj-esttotal       <> 0  THEN i-ucproj-esttotal       ELSE Proj_Mstr.Proj_est_total
             Proj_Mstr.Proj_curr_total       = IF i-ucproj-currtotal      <> 0  THEN i-ucproj-currtotal      ELSE Proj_Mstr.Proj_curr_total
             Proj_Mstr.Proj_est_hours        = IF i-ucproj-esthours       <> 0  THEN i-ucproj-esthours       ELSE Proj_Mstr.Proj_est_hours
             Proj_Mstr.Proj_curr_hours       = IF i-ucproj-currhours      <> 0  THEN i-ucproj-currhours      ELSE Proj_Mstr.Proj_curr_hours
+            Proj_Mstr.Proj_admin_only       = IF i-ucproj-adminonly      <> ?  THEN i-ucproj-adminonly      ELSE Proj_Mstr.Proj_admin_only
+            Proj_Mstr.Proj_sort             = IF i-ucproj-sortorder      <> 0  THEN i-ucproj-sortorder      ELSE Proj_Mstr.Proj_sort
             Proj_Mstr.Proj_prog_name        = SOURCE-PROCEDURE:FILE-NAME                                                                                /* 1dot1 */
             .
+            
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                   
+            Proj_Mstr.Proj_start_date,                                                                 
+            OUTPUT o-ucproj-start-date                                                               
+        ).  
             
     END. /*** of the no id ELSE DO***/  
 

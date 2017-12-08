@@ -27,7 +27,7 @@
 ROUTINE-LEVEL ON ERROR UNDO, THROW.
 
 DEFINE VARIABLE statlist AS CHARACTER 
-    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,COMPLETE,PAID_BY_CUST,VEND_PAID,DELETED,VOID" NO-UNDO.
+    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,EMAILED,COMPLETE,PAID_BY_CUST,VEND_PAID,DELETED,VOID" NO-UNDO.
 DEFINE VARIABLE firstdate AS DATE NO-UNDO.
 DEFINE VARIABLE v-trhid         LIKE trh_hist.trh_id            NO-UNDO.
 DEFINE VARIABLE v-trhfound      AS LOGICAL                      NO-UNDO. 
@@ -494,7 +494,7 @@ FOR EACH TK_mstr :
     IF datelist[LOOKUP("COMPLETE",statlist)] = ? THEN DO:                           /** force to be COMPLETE **/
     
         IF y >= lookup("COLLECTED",statlist) AND 
-            y <= lookup("BURNED",statlist) AND 
+            y <= lookup("EMAILED",statlist) AND 
             datelist[y] <= v-completedate THEN DO:
                     
             ASSIGN 
@@ -538,7 +538,7 @@ FOR EACH TK_mstr :
             END.  /** of find trh_hist failed -- don't make extra records if they already exist **/    
             /************ End of 1dot1 ***************/ 
             
-        END.  /** of if collected < y < burned and date < 12/01/14 **/
+        END.  /** of if collected < y < EMAILed and date < 12/01/14 **/
         
     END.  /** of if datelist for complete = ? **/     
                                                                                 
@@ -611,7 +611,7 @@ FOR EACH TK_mstr :
             END.  /** of find trh_hist failed -- don't make extra records if they already exist **/    
             /************ End of 1dot1 ***************/
             
-        END.  /** of if collected < y < burned and date < v-labpaiddate **/
+        END.  /** of if collected < y < EMAILed and date < v-labpaiddate **/
             
     END.  /** of if tk_lab_paid = ? **/
                   
@@ -671,7 +671,7 @@ FOR EACH TK_mstr :
             END.  /** of find trh_hist failed -- don't make extra records if they already exist **/    
             /************ End of 1dot1 ***************/                     
  
-        END.  /** of if collected < y < burned and date < 12/01/14 **/
+        END.  /** of if collected < y < EMAILed and date < 12/01/14 **/
         
 /*        ELSE                              */
 /*            ASSIGN                        */

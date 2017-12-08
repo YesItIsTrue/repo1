@@ -38,6 +38,14 @@
  *          date field using external procedure for importing into progress database. Marked by 2dot2. 
  * 2.3 - Written by jacob Luttrell on 17/Mar/16. Marked by 2dot3. Added StatusListDropDown.i. 
  * 2.31 - Written by Jacob Luttrell on 25/Aug/16.  Reordered first name last name. unmarked.
+ *
+ * 2.4 - written by DOUG LUTTRELL on 20/Oct/17.  There is some sort of problem with this program (or it's
+ *          children) that seems to be causing at least 1 error per millisecond to happen in the logs
+ *          which is overloading the system.  Looks like I'm finally going to have to do something
+ *          about this program.  *SIGH*  Something is certainly wrong with the logicals.  They are
+ *          generating errors in the black box just by starting the program.  The errors are showing up
+ *          in the Agent log.  Marked by 2dot4.
+ *
  *-------------------------------------------------------------------- */
              
 
@@ -46,19 +54,19 @@
     DEFINE VARIABLE f-lab-id LIKE TK_mstr.TK_lab_ID NO-UNDO.     /* 1dot2 */
     DEFINE VARIABLE t-lab-id LIKE TK_mstr.TK_lab_ID NO-UNDO.     /* 1dot2 */
     
-    DEFINE VARIABLE f-typ LIKE test_type NO-UNDO.
-    DEFINE VARIABLE t-typ LIKE test_typ  NO-UNDO.     
-    DEFINE VARIABLE creatby LIKE Tk_created_by NO-UNDO.
-    DEFINE VARIABLE f-kitid LIKE Tk_ID  NO-UNDO.
-    DEFINE VARIABLE t-kitid LIKE Tk_ID NO-UNDO.   
+    DEFINE VARIABLE f-typ LIKE test_mstr.test_type NO-UNDO.
+    DEFINE VARIABLE t-typ LIKE test_mstr.test_type  NO-UNDO.     
+    DEFINE VARIABLE creatby LIKE TK_mstr.Tk_created_by NO-UNDO.
+    DEFINE VARIABLE f-kitid LIKE TK_mstr.Tk_ID  NO-UNDO.
+    DEFINE VARIABLE t-kitid LIKE TK_mstr.Tk_ID NO-UNDO.   
     
     DEFINE VARIABLE fsdate    AS DATE  NO-UNDO.                
     DEFINE VARIABLE tsdate    AS DATE NO-UNDO.                   
-    DEFINE VARIABLE f-fname LIKE people_firstname NO-UNDO.
-    DEFINE VARIABLE t-fname LIKE people_firstname  NO-UNDO.
-    DEFINE VARIABLE f-lname LIKE people_lastname  NO-UNDO.
-    DEFINE VARIABLE t-lname LIKE people_lastname  NO-UNDO.
-    DEFINE VARIABLE tk LIKE tk_id  NO-UNDO.
+    DEFINE VARIABLE f-fname LIKE people_mstr.people_firstname NO-UNDO.
+    DEFINE VARIABLE t-fname LIKE people_mstr.people_firstname  NO-UNDO.
+    DEFINE VARIABLE f-lname LIKE people_mstr.people_lastname  NO-UNDO.
+    DEFINE VARIABLE t-lname LIKE people_mstr.people_lastname  NO-UNDO.
+    DEFINE VARIABLE tk LIKE TK_mstr.tk_id  NO-UNDO.
     DEFINE VARIABLE cust-id AS INTEGER NO-UNDO. 
              
     /*-----------------------------------------------------------------    2dot2 */
@@ -135,19 +143,39 @@
        creatby     =   get-value ("by")
        
        
-              
-       dom         =   LOGICAL (get-value ("domestic"))
-       inter       =   LOGICAL (get-value ("inter-al"))
-              
-       prof        =   LOGICAL (get-value ("profal"))
-       non-prof    =   LOGICAL (get-value ("non-profal"))       
-     
-       paid        =   LOGICAL (get-value ("is-paid"))                                
-       notpaid     =   LOGICAL (get-value ("not-paid"))     
-     
+              /*** begin 2dot4 ***/
+       dom         =   IF get-value("domestic") = "YES" THEN                    
+                            YES
+                       ELSE 
+                            ?
+       inter       =   IF get-value("inter-al") = "YES" THEN             
+                            YES
+                       ELSE 
+                            ?
+       prof        =   IF get-value("profal") = "YES" THEN 
+                            YES
+                       ELSE 
+                            ? 
+       non-prof    =   IF get-value("non-profal") = "YES" THEN 
+                            YES
+                       ELSE 
+                            ?
+       paid        =   IF get-value("is-paid") = "YES" THEN 
+                            YES
+                       ELSE 
+                            ?                               
+       notpaid     =   IF get-value("not-paid") = "YES" THEN 
+                            YES 
+                       ELSE 
+                            ?      
+                        /**** end of 2dot4 ****/
+                        
        tk-status   =   get-value ("h-tk-status") 
        
-       search-crit =   LOGICAL (get-value ("h-search-crit"))
+       search-crit =   IF get-value ("h-search-crit") = "NO" THEN               /* 2dot4 */ 
+                            NO
+                       ELSE 
+                            YES
        
        f-test-seq  =   INTEGER (get-value("h-f-test-seq"))  /* added 1/8/15 */
        t-test-seq  =   INTEGER (get-value("h-t-test-seq")) 
@@ -176,14 +204,6 @@
                             "checked"
                             ELSE
                              ""  .  
-                             
-/*    IF  fdate <> "" THEN                  */
-/*    RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))*/
-/*    (fdate, OUTPUT prog-fdate).           */
-/*                                          */
-/*    IF  tdate <> "" THEN                  */
-/*    RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))*/
-/*    (tdate, OUTPUT prog-tdate).           */
                              
                                                                                         
 </SCRIPT>
@@ -258,29 +278,6 @@
 		            <tr>            
 		                <td>From Testkit ID</td><td><input type="text" name="from-id" value="`f-kitid`" autofocus></td>
 		                <td>To</td><td><input type="text" name="to-id" value="`t-kitid`"></td> </tr> 
-<!-- --------------------------------------------------------- --
-<tr>
-                         <td>From Testkit Seq</td>  <!-- added 1/8/15 */  
-<SCRIPT LANGUAGE="SpeedScript">
-                IF f-test-seq = 0 THEN
-                {&OUT}
-                    "<td><align='left'><input type='text' name='h-f-test-seq' value='' ></td>".
-                    ELSE                  
-</SCRIPT>            
-                         <td><input type="text" name="h-f-test-seq" value="`f-test-seq`" ></td> 
-  
-                       
-                         <td>To</td><td> 
-<SCRIPT LANGUAGE="SpeedScript"> 
-                IF t-test-seq = 0 THEN
-                {&out}
-                    "<input type='text' name='h-t-test-seq' value='' ></td></tr>".
-                    ELSE                            
-</SCRIPT>                            
-                         <input type="text" name="h-t-test-seq" value="`t-test-seq`" ></td></tr>                
-
-
--- ---------------------------------------------------------- -->		                
                          
 		            <tr>
 		                <td>From Created Date</td>
@@ -360,21 +357,6 @@
                                        
                                        {../depot/src/WebSpeed/StatusListDropDown.i}.                /* 2dot3 */
                                                                                
-                                              
-/*                                              "<option value='CREATED'>CREATED</option>" SKIP        */
-/*                                              "<option value='IN_STOCK'>IN_STOCK</option>" SKIP      */
-/*                                              "<option value='SOLD'>SOLD</option>" SKIP              */
-/*                                              "<option value='SHIPPED'>SHIPPED</option>" SKIP        */
-/*                                              "<option value='COLLECTED'>COLLECTED</option>" SKIP    */
-/*                                              "<option value='LAB_RCVD'>LAB_RCVD</option>" SKIP      */
-/*                                              "<option value='LAB_PROCESS'>LAB_PROCESS</option>" SKIP*/
-/*                                              "<option value='HHI_RCVD'>HHI_RCVD</option>" SKIP      */
-/*                                              "<option value='LOADED'>LOADED</option>" SKIP          */
-/*                                              "<option value='PROCESSED'>PROCESSED</option>" SKIP    */
-/*                                              "<option value='PRINTED'>PRINTED</option>" SKIP        */
-/*                                              "<option value='BURNED'>BURNED</option>" SKIP          */
-/*                                              "<option value='COMPLETE'>COMPLETE</option>" SKIP      */
-/*                                              "<option value='VOID'>VOID</option>" SKIP              */
                                        {&OUT}        
                                               "</select></td> " SKIP.
                                       END.
@@ -387,20 +369,6 @@
                                             
                                              {../depot/src/WebSpeed/StatusListDropDown.i}.          /* 2dot3 */
                                                                             
-/*                                              "<option value='CREATED'>CREATED</option>" SKIP        */
-/*                                              "<option value='IN_STOCK'>IN_STOCK</option>" SKIP      */
-/*                                              "<option value='SOLD'>SOLD</option>" SKIP              */
-/*                                              "<option value='SHIPPED'>SHIPPED</option>" SKIP        */
-/*                                              "<option value='COLLECTED'>COLLECTE</option>" SKIP     */
-/*                                              "<option value='LAB_RCVD'>LAB_RCVD</option>" SKIP      */
-/*                                              "<option value='LAB_PROCESS'>LAB_PROCESS</option>" SKIP*/
-/*                                              "<option value='HHI_RCVD'>HHI_RCVD</option>" SKIP      */
-/*                                              "<option value='LOADED'>LOADED</option>" SKIP          */
-/*                                              "<option value='PROCESSED'>PROCESSED</option>" SKIP    */
-/*                                              "<option value='PRINTED'>PRINTED</option>" SKIP        */
-/*                                              "<option value='BURNED'>BURNED</option>" SKIP          */
-/*                                              "<option value='COMPLETE'>COMPLETE</option>" SKIP      */
-/*                                              "<option value='VOID'>VOID</option>" SKIP              */
                                          {&OUT}      
                                               "</select></td>"SKIP.
                                         END.      
@@ -483,21 +451,6 @@
 			"<BR>" SKIP.   
    
           
-/*        {&OUT}*/
-/*            "<form   method='post'> <!-- ACTION='TK_TKKitinquI.r'' --> <!-- ** Resets search criteria to a blank form** -->" SKIP     */
-/*            "<div class='row'>" SKIP                                                                                                  */
-/*            "   <div class='grid_5'> </DIV>" SKIP                                                                                     */
-/*            "   <div class='grid_2'><button type='submit' name='new' value='ITEM_SELECTED' class='btn'>New Search</BUTTON></div>" SKIP*/
-/*            "   <div class='grid_5'> </DIV>" SKIP                                                                                     */
-/*            "</div>" SKIP                                                                                                             */
-/*            "<BR>" SKIP                                                                                                               */
-/*            "<input type='hidden' name='whattorun' value=1.2>" SKIP                                                                   */
-/*            "<br></b><input type='submit'  value='New Search'>" SKIP                                                                  */
-/*            "</form>" SKIP                                                                                                            */
-/*            "</div>" SKIP                                                                                                             */
-/*            "<div class='grid_1'></div>" SKIP.                                                                                        */
-
-   
                                                                                    
              
 </SCRIPT>  

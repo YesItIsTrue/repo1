@@ -29,6 +29,7 @@
  *       written by Mark Jacobs on 05/Oct/15. Added in the code snippets for grid_* div, code snippets for Buttons and
  *       META tags updated.
  *       Marked by 1dot4.
+ * DEBUG - written by Andrew Garver on 30/Nov/17. Attempting to find program that is unlinking addresses from their people_mstr records
  *
  *-------------------------------------------------------------------- */
 
@@ -53,6 +54,9 @@
 DEFINE VARIABLE codetorun       AS CHARACTER                        NO-UNDO.    /* 1dot2 */  
 DEFINE VARIABLE depotcode       AS CHARACTER                        NO-UNDO.    /* 1dot2 */
 DEFINE VARIABLE drive_letter    AS CHARACTER                        NO-UNDO.    /* 1dot2 */
+
+DEFINE STREAM findzero.                                             /* DEBUG */  
+OUTPUT STREAM findzero TO "C:\PROGRESS\WRK\Address-Killer-Log.txt". /* DEBUG */
          
 ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1).                /* 1dot2 */
 
@@ -644,9 +648,12 @@ ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1).                
 																		                        "<br>this is o-addr-success--" o-addr-success "</P>". 
 																		                        
 		                     END.    /* IF addr1 <> "" THEN DO:  */ 																                        
-		                              
+		                     
 						     FIND addr_mstr WHERE addr_mstr.addr_id = o-addr-id NO-LOCK NO-ERROR.                    
 							 IF AVAILABLE (addr_mstr) THEN DO:              
+							     
+							     IF o-addr-id = 0 THEN                                                                                   
+                                     PUT STREAM findzero "TK_custupdateU is setting people_addr_id to zero on line 662." SKIP.     /* DEBUG */
 			                  
 				                 ASSIGN
 					                   addr1                      = addr_mstr.addr_addr1 

@@ -49,7 +49,7 @@
 "               <option value='LOADED' >LOADED</option>" SKIP
 "               <option value='PROCESSED' >PROCESSED (HHI Processed)</option>" SKIP
 "               <option value='PRINTED' >PRINTED</option>" SKIP
-"               <option value='BURNED' >BURNED</option>" SKIP
+"               <option value='EMAILED' >EMAILED</option>" SKIP
 "               <option value='COMPLETE' >COMPLETE</option>" SKIP
 "               <option value='PAID_BY_CUST' >PAID_BY_CUST</option>" SKIP
 "               <option value='VEND_PAID' >VEND_PAID</option>" SKIP

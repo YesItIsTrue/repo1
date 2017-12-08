@@ -44,7 +44,7 @@ PROCEDURE createJson :
         project-name = html-encode(get-value("projectID"))
         html-date = html-encode(get-value("date")).
         
-    IF get-value("empid") <> "" THEN
+    IF get-value("empID") <> "" THEN
         employee-id = INTEGER(html-encode(get-value("empid"))).
     ELSE
         RUN VALUE(SEARCH("session-get-user-id.r")) (
@@ -56,7 +56,7 @@ PROCEDURE createJson :
         html-date,
         OUTPUT prog-date
     ).
-    
+    DISPLAY employee-id prog-date client-id project-name. 
     FOR FIRST Hours_Mstr WHERE Hours_Mstr.Hours_date = prog-date AND Hours_Mstr.Hours_employee_ID = employee-id AND 
     Hours_Mstr.Hours_client_ID = client-id AND Hours_Mstr.Hours_project_name = project-name AND 
     Hours_Mstr.Hours_deleted = ? NO-LOCK:

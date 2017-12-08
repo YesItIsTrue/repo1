@@ -32,7 +32,7 @@ CREATE WIDGET-POOL.
     
     DEFINE VARIABLE ITmessage   AS CHARACTER INITIAL "NO" NO-UNDO.
     DEFINE VARIABLE statlist    AS CHARACTER 
-        INITIAL "DELETED,CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,VOID,COMPLETE,VEND_PAID,BLANK" NO-UNDO.
+        INITIAL "DELETED,CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,EMAILED,VOID,COMPLETE,VEND_PAID,BLANK" NO-UNDO.
     DEFINE VARIABLE quant-count AS INTEGER EXTENT 18 NO-UNDO.
     DEFINE VARIABLE v-TK_stat   LIKE TK_mstr.TK_status NO-UNDO.
 
@@ -198,7 +198,7 @@ CREATE WIDGET-POOL.
       </div>
       <div class='grid_2'>
         <div class='box'>
-          <div class='box_title_red'>Burned</div>
+          <div class='box_title_red'>Emailed</div>
           <div class='box_info'>" quant-count[13] "</div>
         </div>
       </div>

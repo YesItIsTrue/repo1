@@ -10,7 +10,8 @@
     
     Revision History:        
     -----------------
-    1.0 - written by Harold LUTTRELL on 14/Jan/17.  Original version.  
+    1.0 - written by Harold LUTTRELL on 14/Jan/17.  Original version.
+    DEBUG - written by Andrew Garver on 30/Nov/17. Attempting to find program that is unlinking addresses from their people_mstr records
           
   ----------------------------------------------------------------------*/
 
@@ -90,6 +91,10 @@ DEFINE VARIABLE drive_letter AS CHARACTER FORMAT "x(01)" NO-UNDO.
 ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1). 
    
 DEFINE STREAM outwardAM.
+
+DEFINE STREAM findzero.                                             /* DEBUG */  
+OUTPUT STREAM findzero TO "C:\PROGRESS\WRK\Address-Killer-Log.txt". /* DEBUG */
+
 DEFINE VARIABLE loadRpt AS CHARACTER 
     INITIAL "C:\PROGRESS\WRK\Address-Load-Rpt.txt" NO-UNDO.
 OUTPUT STREAM outwardAM TO value(loadRpt) PAGED.
@@ -468,7 +473,7 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                  OUTPUT o-ucaddr-avail, 
                  OUTPUT o-ucaddr-successful).
                                        
-            ASSIGN  o-addr-id = o-ucaddr-id. 
+            ASSIGN  o-addr-id = o-ucaddr-id.
               
 /* Update the pal_list table with the new addr-id. */
 
@@ -528,6 +533,9 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                              OUTPUT o-update,
                              OUTPUT o-avail,
                              OUTPUT o-successful).
+                
+                IF o-addr-id = 0 THEN                                                                                   
+                    PUT STREAM findzero "HL7-Load-People-Address is setting people_addr_id to zero on line 541." SKIP.     /* DEBUG */
                 
                  ASSIGN  General.people_mstr.people_second_addr_ID   = General.people_mstr.people_addr_id
                          General.people_mstr.people_addr_id = o-addr-id
@@ -648,6 +656,9 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                         ASSIGN XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "D_both". 
                     ELSE 
                         XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "D_Addr".  
+                                                   
+                    IF o-addrdescrip_ID = 0 THEN                                                                                   
+                        PUT STREAM findzero "HL7-Load-People-Address is setting people_addr_id to zero on line 665." SKIP.     /* DEBUG */                                                   
                                                    
                     ASSIGN  
                         General.people_mstr.people_second_addr_ID   = General.people_mstr.people_addr_id 

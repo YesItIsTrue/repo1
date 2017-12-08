@@ -53,8 +53,6 @@ DO TRANSACTION:
          
         IF AVAILABLE (Hours_Mstr) THEN DO:
         
-            DISPLAY "found it".
-        
             IF i-old-clientid <> i-clientid OR 
                i-old-projname <> i-projname OR
                i-old-time <> i-time OR 
@@ -79,8 +77,6 @@ DO TRANSACTION:
         END. /*** of IF AVAIL THEN DO: ***/
         ELSE DO:
             
-            DISPLAY "didn't find it".
-            
             CREATE Hours_Mstr.
             
             ASSIGN
@@ -88,7 +84,7 @@ DO TRANSACTION:
                 Hours_Mstr.Hours_client_ID      = i-clientid
                 Hours_Mstr.Hours_project_name   = i-projname
                 Hours_Mstr.Hours_date           = i-date
-                o-success            = YES
+                o-success                       = YES
                 Hours_Mstr.Hours_create_date    = TODAY
                 Hours_Mstr.Hours_created_by     = USERID("Modules")                    
                 Hours_Mstr.Hours_modified_date  = TODAY

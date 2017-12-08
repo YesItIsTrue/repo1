@@ -131,16 +131,16 @@ RUN VALUE(SEARCH("session-get-user-id.r")) (
                         IF FIRST-OF (menu_mstr3.menu_select) THEN DO:
     
                             {&OUT}
-                            "<a href='" menu_mstr3.menu_exprog "'> " SKIP
-                            "    <div class='col-md-4'>" SKIP
+                            "<div class='col-md-4'>" SKIP
+                            "    <a href='" menu_mstr3.menu_exprog "'> " SKIP
                             "         <div class='w3-container w3-card-4 w3-white w3-hover-theme w3-round w3-content col-md-12'> " SKIP
                             "             <div class='component-card'> " SKIP
                             "                 <div class='icon'><i class='" menu_mstr3.menu__char01 "'></i></div> " SKIP
                             "              <h1>" menu_mstr3.menu_title "</h1> " SKIP
                             "             </div> " SKIP
                             "       </div> " SKIP
-                            "   </div> " SKIP
-                            "</a>" SKIP.
+                            "    </a>" SKIP
+                            "</div> " SKIP.
 
     
                         END. /* IF FIRST-OF (menu_mstr3.menu_select) */

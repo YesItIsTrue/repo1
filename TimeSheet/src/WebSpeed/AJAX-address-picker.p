@@ -51,7 +51,7 @@ PROCEDURE createJson :
     END.
     
     jObj = NEW jsonObject().
-    jObj:add("id", "0").
+    jObj:add("id", "-1").
     jObj:add("text", "New Address").
     jObjArray:add(jObj).
         

@@ -14,61 +14,77 @@
     Version     : 1.0
     Notes       : Original code.
                 
+    Version     : 1.1
+                : By Harold, Sr.  10/03/2017.
+                : Changed the USERID's database names to the CMC database names.
+                : Identified by /* 1dot1 */
+                
   ----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
 
 ROUTINE-LEVEL ON ERROR UNDO, THROW.
 
-DEFINE INPUT PARAMETER i-ctrh-id        LIKE trh_hist.trh_id        NO-UNDO.
-DEFINE INPUT PARAMETER i-ctrh-item      LIKE trh_hist.trh_item      NO-UNDO.
-DEFINE INPUT PARAMETER i-ctrh-action    LIKE trh_hist.trh_action    NO-UNDO.
+DEFINE INPUT PARAMETER i-Admin-Update-OverRyde AS LOGICAL  INITIAL NO   NO-UNDO.
+DEFINE INPUT PARAMETER i-testtype       LIKE trh_hist.trh_item      NO-UNDO.
+DEFINE INPUT PARAMETER i-tkstat         LIKE trh_hist.trh_action    NO-UNDO.
 DEFINE INPUT PARAMETER i-ctrh-qty       LIKE trh_hist.trh_qty       NO-UNDO.
-DEFINE INPUT PARAMETER i-ctrh-serial    LIKE trh_hist.trh_serial    NO-UNDO.
-DEFINE INPUT PARAMETER i-ctrh-sequence  LIKE trh_hist.trh_sequence  NO-UNDO.
+DEFINE INPUT PARAMETER i-tk_id          LIKE trh_hist.trh_serial    NO-UNDO.
+DEFINE INPUT PARAMETER i-tk_test_seq    LIKE trh_hist.trh_sequence  NO-UNDO.
 DEFINE INPUT PARAMETER i-ctrh-date      LIKE trh_hist.trh_create_date     NO-UNDO.
 DEFINE INPUT PARAMETER i-mtrh-date      LIKE trh_hist.trh_modified_date   NO-UNDO.
-DEFINE INPUT PARAMETER i-ctrh-trh-date  LIKE trh_hist.trh_date      NO-UNDO.
+DEFINE INPUT PARAMETER i-trh-date       LIKE trh_hist.trh_date      NO-UNDO.
 DEFINE INPUT PARAMETER i-trh_people_id  LIKE trh_hist.trh_people_id NO-UNDO.
 
 DEFINE OUTPUT PARAMETER o-ctrh-id       LIKE trh_hist.trh_id        NO-UNDO.
-DEFINE OUTPUT PARAMETER o-ctrh-error    AS LOGICAL INITIAL YES      NO-UNDO.
+DEFINE OUTPUT PARAMETER o-ctrh-error    AS LOGICAL INITIAL NO       NO-UNDO.
 
 /* ***************************  Main Block  *************************** */
 
 maineblock: 
 DO TRANSACTION:
 
-    IF i-ctrh-id = 0 THEN 
-    DO:
-    
+    FIND FIRST  trh_hist WHERE 
+                trh_hist.trh_serial   = i-tk_id         AND         /* TK_ID */
+                trh_hist.trh_sequence = i-tk_test_seq   AND         /* TK_test_seq */
+                trh_hist.trh_action   = i-tkstat        AND         /* TK_status */
+                trh_hist.trh_item     = i-testtype      AND         /* Like TK_ID prefix, not test_family */
+                trh_hist.trh_deleted  = ?                       
+                    EXCLUSIVE-LOCK NO-ERROR.  
+
+    IF  NOT AVAILABLE (trh_hist) THEN DO: 
+        
         CREATE trh_hist.
-    
-        ASSIGN 
-            trh_hist.trh_id             = NEXT-VALUE (seq-trh)
-            trh_hist.trh_item           = i-ctrh-item               /* type */
-            trh_hist.trh_action         = i-ctrh-action             /* tk-status */
-            trh_hist.trh_qty            = i-ctrh-qty                /* 1 */  
-            trh_hist.trh_serial         = i-ctrh-serial             /* tk_id */      
-            trh_hist.trh_create_date    = i-ctrh-date               /* 1st date if not blank else 2nd date. */
-            trh_hist.trh_created_by     = USERID("MODULES")
-            trh_hist.trh_modified_date  = i-mtrh-date
-            trh_hist.trh_modified_by    = USERID("MODULES")
-            trh_hist.trh_sequence       = i-ctrh-sequence           /* Tk-ID-sequence-number */
-            trh_hist.trh_date           = i-ctrh-trh-date
-            trh_hist.trh_people_id      = i-trh_people_id           /* Tk-ID-people-ID */
-            o-ctrh-id                   = trh_hist.trh_id
-            o-ctrh-error                = NO         
-            trh_hist.trh_prog_name      = THIS-PROCEDURE:FILE-NAME.      
-                      
-    END.  /*** of no id DO ***/
-    
-    ELSE 
         
         ASSIGN 
-            o-ctrh-error = YES
+            trh_hist.trh_id             = NEXT-VALUE (seq-trh)
+            trh_hist.trh_serial         = i-tk_id                         /* TK_ID */
+            trh_hist.trh_sequence       = i-tk_test_seq                   /* Tk-ID-sequence-number */
+            trh_hist.trh_action         = i-tkstat                        /* TK_status */
+            trh_hist.trh_item           = i-testtype                      /* type */  
+            trh_hist.trh_created_by     = USERID ("MODULES")                                /* 1dot1 */
+            trh_hist.trh_create_date    = i-ctrh-date                     /* 1st date if not blank else 2nd date. */            
+            trh_hist.trh_qty            = i-ctrh-qty                        /* 1 */      
+            trh_hist.trh_date           = i-trh-date
+            trh_hist.trh_people_id      = i-trh_people_id                   /* Tk-ID-people-ID */
+            trh_hist.trh_modified_date  = i-mtrh-date
+            trh_hist.trh_modified_by    = USERID ("MODULES")                /* 1dot1 */
+            trh_hist.trh_prog_name      = THIS-PROCEDURE:FILE-NAME
+            o-ctrh-id                   = trh_hist.trh_ID
             .
-
+    END.  /*  IF NOT AVAILABLE (trh_hist)  */
+    ELSE 
+    IF  i-Admin-Update-OverRyde = YES THEN
+        ASSIGN 
+            trh_hist.trh_qty            = i-ctrh-qty                        /* 1 */      
+            trh_hist.trh_date           = i-trh-date
+            trh_hist.trh_people_id      = i-trh_people_id                   /* Tk-ID-people-ID */
+            trh_hist.trh_modified_date  = i-mtrh-date
+            trh_hist.trh_modified_by    = USERID ("MODULES")                /* 1dot1 */
+            trh_hist.trh_prog_name      = THIS-PROCEDURE:FILE-NAME
+            o-ctrh-id                   = trh_hist.trh_ID
+            .      
+ 
 END. /*** of maineblock ***/
 
 /* **************************  End of Line  *************************** */

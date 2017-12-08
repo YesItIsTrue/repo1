@@ -110,6 +110,11 @@ PROCEDURE createrecords:
                                                                                                 "xmltype = " xmltype SKIP
                                                                                             VIEW-AS ALERT-BOX INFORMATION BUTTONS OK
                                                                                             TITLE "Inside createrecords".
+/*    PUT UNFORMATTED "fileid = " fileid SKIP    */
+/*                    "par = " par SKIP          */
+/*                    "xmlname = " xmlname SKIP  */
+/*                    "xmlvalue = " xmlvalue SKIP*/
+/*                    "xmltype = " xmltype SKIP. */
     ASSIGN 
         o-fail = YES
         cnt = cnt + 1.

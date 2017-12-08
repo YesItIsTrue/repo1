@@ -1,7 +1,7 @@
-
+ 
 /*------------------------------------------------------------------------
     File        : HL7-Load-People-Address.p
-    Purpose     : Load/Update the General.addr_mstr from XML data.  
+    Purpose     : Load/Update the addr_mstr from XML data.  
 
     Description : 
 
@@ -19,79 +19,83 @@
 {XML_TT_Address_Data.i}.        /* XML Extraction Address Data to Load into Progress. */
 {XML_TT_People_Data.i}.         /*  XML Extraction People Data to Load into Progress. */    
 {XML_TT_PeopID_Basic_Data.i}.   /* XML Extraction People ID to be used in the XML-SUB- programs.p. */   
+{Logs_Rpts_Paths_Folders.i}.    /* Logs/Reports folder path. */ 
 
 {E-Mail_definations.i}.  
 
-DEFINE INPUT PARAMETER  i-people-id           LIKE General.people_mstr.people_id    NO-UNDO.
-DEFINE INPUT PARAMETER  i-Admin-Update-OverRyde AS LOGICAL  INITIAL NO              NO-UNDO.
+DEFINE INPUT PARAMETER  i-people-id           LIKE people_mstr.people_id    NO-UNDO.
+DEFINE INPUT PARAMETER  i-Admin-Update-OverRyde AS LOGICAL  INITIAL NO      NO-UNDO.
 
-DEFINE OUTPUT PARAMETER o-addr-id             LIKE General.addr_mstr.addr_id        NO-UNDO.
-DEFINE OUTPUT PARAMETER o-addr-load-error     AS LOGICAL INITIAL NO                 NO-UNDO.
-DEFINE OUTPUT PARAMETER o-addr-error-message  AS CHARACTER  FORMAT "x(200)"         NO-UNDO.
+DEFINE OUTPUT PARAMETER o-addr-id             LIKE addr_mstr.addr_id        NO-UNDO.
+DEFINE OUTPUT PARAMETER o-addr-load-error     AS LOGICAL INITIAL NO         NO-UNDO.
+DEFINE OUTPUT PARAMETER o-addr-error-message  AS CHARACTER  FORMAT "x(200)" NO-UNDO.
                         
 /* ***  Country find output info.                                        *** */
-DEFINE VARIABLE  o-fcountry-ISO          LIKE General.country_mstr.Country_ISO     NO-UNDO. 
-DEFINE VARIABLE  o-fcountry-error        AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE  o-fcountry-ISO          LIKE country_mstr.Country_ISO      NO-UNDO. 
+DEFINE VARIABLE  o-fcountry-error        AS LOGICAL                         NO-UNDO.
 /* ***  State find output info.                                          *** */
-DEFINE VARIABLE  o-fstate-ISO            LIKE General.state_mstr.state_ISO         NO-UNDO.
-DEFINE VARIABLE  o-fstate-error          AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE  o-fstate-ISO            LIKE state_mstr.state_ISO          NO-UNDO.
+DEFINE VARIABLE  o-fstate-error          AS LOGICAL                         NO-UNDO.
 
 /* ***  Address find output info.                                        *** */
-DEFINE VARIABLE  o-faddr-ran     AS LOGICAL INITIAL NO                 NO-UNDO.
+DEFINE VARIABLE  o-faddr-ran     AS LOGICAL INITIAL NO                      NO-UNDO.
 /* ***  Address update output info.                                      *** */
-DEFINE VARIABLE  o-ucaddr-id         LIKE General.addr_mstr.addr_id    NO-UNDO.
-DEFINE VARIABLE  o-ucaddr-create     AS LOGICAL INITIAL NO             NO-UNDO.
-DEFINE VARIABLE  o-ucaddr-update     AS LOGICAL INITIAL NO             NO-UNDO.
-DEFINE VARIABLE  o-ucaddr-avail      AS LOGICAL INITIAL YES            NO-UNDO.
-DEFINE VARIABLE  o-ucaddr-successful AS LOGICAL INITIAL NO             NO-UNDO.
+DEFINE VARIABLE  o-ucaddr-id         LIKE addr_mstr.addr_id                 NO-UNDO.
+DEFINE VARIABLE  o-ucaddr-create     AS LOGICAL INITIAL NO                  NO-UNDO.
+DEFINE VARIABLE  o-ucaddr-update     AS LOGICAL INITIAL NO                  NO-UNDO.
+DEFINE VARIABLE  o-ucaddr-avail      AS LOGICAL INITIAL YES                 NO-UNDO.
+DEFINE VARIABLE  o-ucaddr-successful AS LOGICAL INITIAL NO                  NO-UNDO.
 
 /* ***  pal-list parameters.                                              *** */
-/*DEFINE VARIABLE  i-update            AS  LOGICAL INITIAL NO              NO-UNDO.*/
-DEFINE VARIABLE  o-requestedkey      LIKE General.pal_list.pal_people_ID NO-UNDO.
-DEFINE VARIABLE  o-create            AS LOGICAL INITIAL NO               NO-UNDO.
-DEFINE VARIABLE  o-update            AS LOGICAL INITIAL NO               NO-UNDO.
-DEFINE VARIABLE  o-avail             AS LOGICAL INITIAL YES              NO-UNDO.
-DEFINE VARIABLE  o-successful        AS LOGICAL INITIAL NO               NO-UNDO.
+DEFINE VARIABLE  o-requestedkey      LIKE pal_list.pal_people_ID NO-UNDO.
+DEFINE VARIABLE  o-create            AS LOGICAL INITIAL NO                  NO-UNDO.
+DEFINE VARIABLE  o-update            AS LOGICAL INITIAL NO                  NO-UNDO.
+DEFINE VARIABLE  o-avail             AS LOGICAL INITIAL YES                 NO-UNDO.
+DEFINE VARIABLE  o-successful        AS LOGICAL INITIAL NO                  NO-UNDO.
 
 /* Counters and Stuff. */
-DEFINE VARIABLE arecordsprocessed           AS INTEGER                 NO-UNDO.
-DEFINE VARIABLE Address_Mstr_created_kount  AS INTEGER                 NO-UNDO.
-DEFINE VARIABLE Address_Mstr_updated_kount  AS INTEGER                 NO-UNDO.
-DEFINE VARIABLE Address_Mstr_billedto_kount AS INTEGER                 NO-UNDO.
-DEFINE VARIABLE People_Mstr_updated_kount   AS INTEGER                 NO-UNDO.   
-DEFINE VARIABLE NO_address_kount            AS INTEGER                 NO-UNDO.
-DEFINE VARIABLE Address_NOT_Equal_Error_kount AS INTEGER               NO-UNDO.
-DEFINE VARIABLE BadBState-kount             AS INTEGER                 NO-UNDO.
-DEFINE VARIABLE BadBCountry-kount           AS INTEGER                 NO-UNDO.
-DEFINE VARIABLE BlankState-kount            AS INTEGER                 NO-UNDO.
-DEFINE VARIABLE Address_Discrepancy_kount   AS INTEGER                 NO-UNDO.
+DEFINE VARIABLE arecordsprocessed           AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE Address_Mstr_created_kount  AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE Address_Mstr_updated_kount  AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE Address_Mstr_billedto_kount AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE People_Mstr_updated_kount   AS INTEGER                      NO-UNDO.   
+DEFINE VARIABLE NO_address_kount            AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE Address_NOT_Equal_Error_kount AS INTEGER                    NO-UNDO.
+DEFINE VARIABLE BadBState-kount             AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE BadBCountry-kount           AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE BlankState-kount            AS INTEGER                      NO-UNDO.
+DEFINE VARIABLE Address_Discrepancy_kount   AS INTEGER                      NO-UNDO.
 
-DEFINE VARIABLE h-country_iso           LIKE General.country_mstr.country_ISO   NO-UNDO.
-DEFINE VARIABLE h-state_iso             LIKE General.state_mstr.state_ISO       NO-UNDO. 
-DEFINE VARIABLE h-bill-type             LIKE General.addr_mstr.addr_type        NO-UNDO.  
-DEFINE VARIABLE h-RPT-message           AS CHARACTER FORMAT "x(60)"     NO-UNDO.  
-DEFINE VARIABLE data-info               AS CHARACTER FORMAT "x(8)"      NO-UNDO.
-DEFINE VARIABLE h-blank                 AS CHARACTER FORMAT "x(1)"      NO-UNDO.
-DEFINE VARIABLE o-addrdiscrep_ID        LIKE General.addr_mstr.addr_id  NO-UNDO.                 
-DEFINE VARIABLE h-full-data             AS CHARACTER                    NO-UNDO.
-DEFINE VARIABLE did-full-name-already-print AS LOGICAL INITIAL NO       NO-UNDO.
-DEFINE VARIABLE no-update               AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE h-country_iso           LIKE country_mstr.country_ISO       NO-UNDO.
+DEFINE VARIABLE h-state_iso             LIKE state_mstr.state_ISO           NO-UNDO. 
+DEFINE VARIABLE h-bill-type             LIKE addr_mstr.addr_type            NO-UNDO.  
+DEFINE VARIABLE h-RPT-message           AS CHARACTER FORMAT "x(60)"         NO-UNDO.  
+DEFINE VARIABLE data-info               AS CHARACTER FORMAT "x(8)"          NO-UNDO.
+DEFINE VARIABLE h-blank                 AS CHARACTER FORMAT "x(1)"          NO-UNDO.
+DEFINE VARIABLE o-addrdiscrep_ID        LIKE addr_mstr.addr_id              NO-UNDO.                 
+DEFINE VARIABLE h-full-data             AS CHARACTER                        NO-UNDO.
+DEFINE VARIABLE did-full-name-already-print AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE no-update               AS LOGICAL INITIAL NO               NO-UNDO.
 
-DEFINE VARIABLE Full-TT-XML     AS CHARACTER FORMAT "x(55)"                    NO-UNDO.
-DEFINE VARIABLE Full-Name       AS CHARACTER FORMAT "X(55)"                    NO-UNDO.
-DEFINE VARIABLE Full-DOB        AS CHARACTER FORMAT "99/99/9999"               NO-UNDO.
-DEFINE VARIABLE Full-Addr       AS CHARACTER FORMAT "X(55)"                    NO-UNDO.
+DEFINE VARIABLE Full-TT-XML     AS CHARACTER FORMAT "x(55)"                 NO-UNDO.
+DEFINE VARIABLE Full-Name       AS CHARACTER FORMAT "X(55)"                 NO-UNDO.
+DEFINE VARIABLE Full-DOB        AS CHARACTER FORMAT "99/99/9999"            NO-UNDO.
+DEFINE VARIABLE Full-Addr       AS CHARACTER FORMAT "X(55)"                 NO-UNDO.
 
 DEFINE VARIABLE ITdisplay               AS LOGICAL INITIAL NO           NO-UNDO. 
 
 /* ********************  Preprocessor Definitions  ******************** */
  
-DEFINE VARIABLE drive_letter AS CHARACTER FORMAT "x(01)" NO-UNDO.              
+DEFINE VARIABLE drive_letter AS CHARACTER FORMAT "x(01)"                    NO-UNDO.              
 ASSIGN drive_letter = SUBSTRING(THIS-PROCEDURE:FILE-NAME, 1, 1). 
+
+FIND Logs_Rpts_Paths_Folders WHERE TT-Logs-Rpts-Seq_Nbr_only = 1 NO-LOCK NO-ERROR. 
    
 DEFINE STREAM outwardAM.
-DEFINE VARIABLE loadRpt AS CHARACTER 
-    INITIAL "C:\PROGRESS\WRK\Address-Load-Rpt.txt" NO-UNDO.
+/*DEFINE VARIABLE loadRpt AS CHARACTER                                                */
+/*    INITIAL "C:\PROGRESS\WRK\Address-Load-Rpt.txt"                          NO-UNDO.*/
+DEFINE VARIABLE loadRpt AS CHARACTER NO-UNDO. 
+ASSIGN loadRPT = TT-Logs-Rpts-Path-Folder + "Address-Load-Rpt.txt".
 OUTPUT STREAM outwardAM TO value(loadRpt) PAGED.
 
 PUT STREAM outwardAM
@@ -150,7 +154,7 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
 /** ERROR - required input(s) missing **/  
  
             ASSIGN  data-info     = "XML I/P:" 
-                    h-RPT-message = "ERROR: Missing input address data (or blank) infor."
+                    h-RPT-message = "Warning: Missing input address data (or blank) infor."
                     Full-TT-XML   = XML_TT_Address_Data.TT-addr_addr1  + ", " +
                                     XML_TT_Address_Data.TT-addr_addr2  + " "  +
                                     XML_TT_Address_Data.TT-addr_addr3  + " "  + 
@@ -161,12 +165,12 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
             
             IF  i-people-id > 0 THEN DO: 
                
-                FIND General.people_mstr WHERE 
-                                    General.people_mstr.people_id  = i-people-id  AND 
-                                    General.people_mstr.people_deleted = ? 
+                FIND people_mstr WHERE 
+                                    people_mstr.people_id  = i-people-id  AND 
+                                    people_mstr.people_deleted = ? 
                         NO-LOCK NO-ERROR.
             
-                IF  AVAILABLE (General.people_mstr) THEN DO:     
+                IF  AVAILABLE (people_mstr) THEN DO:     
 
                     ASSIGN  Full-DOB = STRING(people_mstr.people_DOB, "99/99/9999").
 
@@ -181,7 +185,7 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                           i-people-id   AT 10 FORMAT ">,>>>,>>9"
                           h-full-data   AT 21 FORMAT "x(55)" SKIP. 
                         
-                END.  /*  IF  AVAILABLE (General.people_mstr) */        
+                END.  /*  IF  AVAILABLE (people_mstr) */        
          
             END.  /*  IF  i-people-id > 0  */
             
@@ -202,7 +206,10 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                      Full-Addr       AT 21 SKIP. 
                     
             ASSIGN NO_address_kount = (NO_address_kount + 1).
-          
+            
+            IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
+                ASSIGN XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "Warning: Missing input address data (or blank) infor.". 
+            
             ASSIGN o-addr-load-error = YES.
         
             NEXT Main_loop.     
@@ -223,7 +230,7 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
         IF  o-fcountry-error =  YES THEN DO:                /* logical YES = data is not found */
  
             ASSIGN  data-info     = "XML I/P:"
-                    h-RPT-message = "Country not found in ISO country_mstr."
+                    h-RPT-message = "Warning: Country not found in ISO country_mstr."
                     Full-TT-XML   = XML_TT_Address_Data.TT-addr_addr1  + ", " +
                                     XML_TT_Address_Data.TT-addr_addr2  + " "  +
                                     XML_TT_Address_Data.TT-addr_addr3  + " "  + 
@@ -234,12 +241,12 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                               
             IF  i-people-id > 0 THEN DO: 
                
-                FIND General.people_mstr WHERE 
-                                    General.people_mstr.people_id  = i-people-id  AND 
-                                    General.people_mstr.people_deleted = ? 
+                FIND people_mstr WHERE 
+                                    people_mstr.people_id  = i-people-id  AND 
+                                    people_mstr.people_deleted = ? 
                         NO-LOCK NO-ERROR.
             
-                IF  AVAILABLE (General.people_mstr) THEN DO:     
+                IF  AVAILABLE (people_mstr) THEN DO:     
 
                     ASSIGN  Full-DOB = STRING(people_mstr.people_DOB, "99/99/9999").
 
@@ -254,7 +261,7 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                           i-people-id   AT 10 FORMAT ">,>>>,>>9"
                           h-full-data   AT 21 FORMAT "x(55)" SKIP. 
                         
-                END.  /*  IF  AVAILABLE (General.people_mstr) */        
+                END.  /*  IF  AVAILABLE (people_mstr) */        
          
             END.  /*  IF  i-people-id > 0  */
             
@@ -280,6 +287,9 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                                
             ASSIGN  BadBCountry-kount = (BadBCountry-kount + 1).
             
+            IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
+                ASSIGN XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "Warning: Country not found in ISO country_mstr.". 
+                
             ASSIGN o-addr-load-error = YES.  
 
             NEXT Main_loop. 
@@ -310,7 +320,7 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
         ASSIGN  o-addr-load-error = YES.
         
         ASSIGN  data-info     = "XML I/P:"
-                h-RPT-message = "State not found in ISO state_mstr."
+                h-RPT-message = "Warning: State not found in ISO state_mstr."
                 Full-TT-XML   = XML_TT_Address_Data.TT-addr_addr1  + ", " + 
                                 XML_TT_Address_Data.TT-addr_addr2  + " "  +
                                 XML_TT_Address_Data.TT-addr_addr3  + " "  + 
@@ -321,12 +331,12 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                               
         IF  i-people-id > 0 THEN DO: 
                
-                FIND General.people_mstr WHERE 
-                                    General.people_mstr.people_id  = i-people-id  AND 
-                                    General.people_mstr.people_deleted = ? 
+                FIND people_mstr WHERE 
+                                    people_mstr.people_id  = i-people-id  AND 
+                                    people_mstr.people_deleted = ? 
                         NO-LOCK NO-ERROR.
             
-                IF  AVAILABLE (General.people_mstr) THEN DO:     
+                IF  AVAILABLE (people_mstr) THEN DO:     
 
                     ASSIGN  Full-DOB = STRING(people_mstr.people_DOB, "99/99/9999").
 
@@ -341,7 +351,7 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                           i-people-id   AT 10 FORMAT ">,>>>,>>9"
                           h-full-data   AT 21 FORMAT "x(55)" SKIP. 
                         
-                END.  /*  IF  AVAILABLE (General.people_mstr) */        
+                END.  /*  IF  AVAILABLE (people_mstr) */        
          
         END.  /*  IF  i-people-id > 0  */
         
@@ -364,6 +374,9 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
         ASSIGN  BadBState-kount = (BadBState-kount + 1) 
                 o-addr-load-error = YES.   
 
+        IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
+            ASSIGN XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "Warning: State not found in ISO state_mstr.".
+                
         NEXT Main_loop.
                                                                 
     END.  /* IF o-fstate-error =  YES */                                     
@@ -375,7 +388,7 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
     IF  XML_TT_Address_Data.TT-state_iso = "" THEN DO: 
         
         ASSIGN  data-info     = "XML I/P:"
-                h-RPT-message = "Input state is blank (no data)."
+                h-RPT-message = "Warning: Input state is blank (no data)."
                 Full-TT-XML   = XML_TT_Address_Data.TT-addr_addr1  + ", " + 
                                 XML_TT_Address_Data.TT-addr_addr2  + " "  +
                                 XML_TT_Address_Data.TT-addr_addr3  + " "  + 
@@ -386,12 +399,12 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                               
         IF  i-people-id > 0 THEN DO: 
                
-                FIND General.people_mstr WHERE 
-                                    General.people_mstr.people_id  = i-people-id  AND 
-                                    General.people_mstr.people_deleted = ? 
+                FIND people_mstr WHERE 
+                                    people_mstr.people_id  = i-people-id  AND 
+                                    people_mstr.people_deleted = ? 
                         NO-LOCK NO-ERROR.
             
-                IF  AVAILABLE (General.people_mstr) THEN DO:     
+                IF  AVAILABLE (people_mstr) THEN DO:     
 
                     ASSIGN  Full-DOB = STRING(people_mstr.people_DOB, "99/99/9999").
 
@@ -408,7 +421,7 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                     
                     ASSIGN did-full-name-already-print = YES.
                         
-                END.  /*  IF  AVAILABLE (General.people_mstr) */        
+                END.  /*  IF  AVAILABLE (people_mstr) */        
          
         END.  /*  IF  i-people-id > 0  */
             
@@ -428,6 +441,9 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
         PUT STREAM outwardAM
                  Full-Addr       AT 21 SKIP(1). 
                  
+        IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
+            ASSIGN XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "Warning: Input state is blank (no data).". 
+                    
         ASSIGN  BlankState-kount = (BlankState-kount + 1) 
                 o-addr-load-error = YES.   
 
@@ -488,12 +504,12 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
     END.  /**  IF o-addr-load-error = YES AND  **/
 
 /*  store the address-id in its people_mstr record. */
-    FIND General.people_mstr WHERE 
-                                    General.people_mstr.people_id  = i-people-id  AND 
-                                    General.people_mstr.people_deleted = ? 
+    FIND people_mstr WHERE 
+                                    people_mstr.people_id  = i-people-id  AND 
+                                    people_mstr.people_deleted = ? 
             EXCLUSIVE-LOCK NO-ERROR.
            
-    IF  AVAILABLE (General.people_mstr) THEN DO: 
+    IF  AVAILABLE (people_mstr) THEN DO: 
          
          ASSIGN  o-addrdiscrep_ID = 0.
          ASSIGN  Full-DOB = STRING(people_mstr.people_DOB, "99/99/9999").
@@ -512,7 +528,7 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                   h-full-data   AT 21  FORMAT "x(55)" SKIP.  
                  
          IF  o-addr-id <> 0 AND  
-             General.people_mstr.people_addr_id <> o-addr-id THEN DO: 
+             people_mstr.people_addr_id <> o-addr-id THEN DO: 
 
 /* Update the pal_list table with the new addr-id. */
 
@@ -529,14 +545,14 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                              OUTPUT o-avail,
                              OUTPUT o-successful).
                 
-                 ASSIGN  General.people_mstr.people_second_addr_ID   = General.people_mstr.people_addr_id
-                         General.people_mstr.people_addr_id = o-addr-id
+                 ASSIGN  people_mstr.people_second_addr_ID   = people_mstr.people_addr_id
+                         people_mstr.people_addr_id = o-addr-id
                          h-RPT-message = "people_mstr Updated with addr_id: " + STRING(o-addr-id).        
                     
                  ASSIGN 
-                    General.people_mstr.people_modified_by      = USERID ("General")
-                    General.people_mstr.people_modified_date    = TODAY                                     
-                    General.people_mstr.people_prog_name        = THIS-PROCEDURE:FILE-NAME.
+                    people_mstr.people_modified_by      = USERID ("General")
+                    people_mstr.people_modified_date    = TODAY                                     
+                    people_mstr.people_prog_name        = THIS-PROCEDURE:FILE-NAME.
             
                  ASSIGN h-full-data = "".
                             
@@ -597,10 +613,10 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                          
          END. /*  ELSE DO:  */ 
          
-         IF  General.people_mstr.people_second_addr_ID   = General.people_mstr.people_addr_id THEN
-                ASSIGN  General.people_mstr.people_second_addr_ID   = 0.
+         IF  people_mstr.people_second_addr_ID   = people_mstr.people_addr_id THEN
+                ASSIGN  people_mstr.people_second_addr_ID   = 0.
                           
-    END.  /* IF  AVAILABLE (General.people_mstr) THEN */
+    END.  /* IF  AVAILABLE (people_mstr) THEN */
                                                    
     FIND  addr_mstr WHERE 
                    addr_mstr.addr_id = o-addr-id AND 
@@ -609,11 +625,11 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                
     IF o-ucaddr-create THEN DO:
              
-            ASSIGN h-bill-type = General.addr_mstr.addr_type.
+            ASSIGN h-bill-type = addr_mstr.addr_type.
           
             IF  h-bill-type = "" THEN DO:       
                 ASSIGN  h-bill-type = "billed to"
-                        General.addr_mstr.addr_type = h-bill-type
+                        addr_mstr.addr_type = h-bill-type
                         Address_Mstr_billedto_kount = (Address_Mstr_billedto_kount + 1)
                         o-addr-load-error = NO
                         no-update = YES.
@@ -636,12 +652,12 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                              OUTPUT o-addrdiscrep_ID,                          
                              OUTPUT o-addr-load-error).
 
-            FIND General.people_mstr WHERE 
-                                    General.people_mstr.people_id  = i-people-id  AND 
-                                    General.people_mstr.people_deleted = ? 
+            FIND people_mstr WHERE 
+                                    people_mstr.people_id  = i-people-id  AND 
+                                    people_mstr.people_deleted = ? 
                         EXCLUSIVE-LOCK NO-ERROR.
            
-            IF  AVAILABLE (General.people_mstr) AND 
+            IF  AVAILABLE (people_mstr) AND 
                 o-addrdiscrep_ID > 0            THEN  DO: 
                                          
                     IF  XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "D_people" THEN 
@@ -650,8 +666,8 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                         XML_TT_PeopID_Basic_Data.TT_PeopID_Discrep_Table = "D_Addr".  
                                                    
                     ASSIGN  
-                        General.people_mstr.people_second_addr_ID   = General.people_mstr.people_addr_id 
-                        General.people_mstr.people_addr_id          = o-addrdiscrep_ID.   
+                        people_mstr.people_second_addr_ID   = people_mstr.people_addr_id 
+                        people_mstr.people_addr_id          = o-addrdiscrep_ID.   
             
                     PUT STREAM outwardAM
                             "^^^^^  Discrepancy ID Number: "    AT 14 
@@ -672,7 +688,7 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                              OUTPUT o-avail,
                              OUTPUT o-successful).
 
-            END. /* IF  AVAILABLE (General.people_mstr) AND 
+            END. /* IF  AVAILABLE (people_mstr) AND 
                         o-addrdiscrep_ID > 0  */    
                                                               
             IF  o-addr-load-error = YES THEN DO: 
@@ -702,6 +718,9 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
                           
                 ASSIGN Address_NOT_Equal_Error_kount = (Address_NOT_Equal_Error_kount + 1).
 
+                IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
+                    ASSIGN XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "Warning: Discrepancy address-id load error.".
+            
             END.  /*  IF o-addr-load-error = YES  */
                                    
             IF  o-addrdiscrep_ID = 0 THEN
@@ -744,10 +763,17 @@ FOR EACH XML_TT_Address_Data NO-LOCK BREAK BY TT-address-Seq-Nbr:
 END. /* FOR EACH XML_TT_Address_Data */
 
 
-IF  o-addr-load-error = YES THEN 
+IF  o-addr-load-error = YES THEN DO: 
         ASSIGN o-addr-error-message = " Unknown error encountered with input data in " 
                                  + " program: " 
                                  + THIS-PROCEDURE:FILE-NAME + ".".
+                                 
+        IF  AVAILABLE (XML_TT_PeopID_Basic_Data) THEN 
+            ASSIGN XML_TT_PeopID_Basic_Data.TT_PeopID_ERROR_Desc    = "Unknown error encountered with input data in " 
+                                                                    + " program"
+                                                                    + THIS-PROCEDURE:FILE-NAME + ".".
+                                 
+END.  /*  IF  o-addr-load-error = YES   */
 ELSE 
     ASSIGN o-addr-error-message = "".
                                      
@@ -764,14 +790,12 @@ PUT STREAM outwardAM SKIP (1)
     People_Mstr_updated_kount FORMAT ">,>>9"   "  :People Masters updated with addr_id." SKIP(1)
 
     "Warnings:" SKIP 
-    Address_Discrepancy_kount FORMAT ">,>>9"   "  : ADDRESS DISCREPANCIES found." SKIP(1) 
-           
-    "Errors:" SKIP SKIP 
-    BadBCountry-kount FORMAT ">,>>9"           "  :Country not found in ISO country_mstr. NOT processed." SKIP  
-    BadBState-kount FORMAT ">,>>9"             "  :State not found in ISO state_mstr. NOT processed." SKIP
-    BlankState-kount FORMAT ">,>>9"            "  :Input state is blank (no data). NOT processed." SKIP
-    NO_address_kount FORMAT ">,>>9"            "  :Missing input address data (blank) infor. NOT processed." SKIP
-    Address_NOT_Equal_Error_kount FORMAT ">,>>9"   "  :XML input data is not equal to addr_mstr data." SKIP(2).
+    Address_Discrepancy_kount FORMAT ">,>>9"   "  : ADDRESS DISCREPANCIES found." SKIP 
+    NO_address_kount FORMAT ">,>>9"            "  : Missing input address data (or blank) infor." SKIP 
+    BadBCountry-kount FORMAT ">,>>9"           "  : Country not found in ISO country_mstr. NOT processed." SKIP  
+    BadBState-kount FORMAT ">,>>9"             "  : State not found in ISO state_mstr. NOT processed." SKIP
+    BlankState-kount FORMAT ">,>>9"            "  : Input state is blank (no data). NOT processed." SKIP
+    Address_NOT_Equal_Error_kount FORMAT ">,>>9"   "  : XML input data is not equal to addr_mstr data." SKIP(2).
 
 PUT STREAM outwardAM
     "*******************************************" SKIP.

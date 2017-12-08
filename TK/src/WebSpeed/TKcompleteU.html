@@ -27,13 +27,13 @@ CREATE WIDGET-POOL.
 <SCRIPT language='SpeedScript'>
   /*------------------------------------------------------------------
      Main-program  : TKcompleteU.html.
-     Description   : Program displays only MPA Tests with the status of "BURNED" and
+     Description   : Program displays only MPA Tests with the status of "EMAILED" and
                    :     BioMed Tests with the status of "PROCESSED" only. 
                   
      Sub-programs  : none.
                    : 
      Description   : Selects the TK_mstr records where the TK_mstr.TK_status 
-                   : = "BURNED" or "PROCESSED" and displays information on the screen for the 
+                   : = "EMAILED" or "PROCESSED" and displays information on the screen for the 
                    : test kit along with the patient's name, lab sample id and   
                    : a check box to be selected by the user to flag the testkits as 
                    : "COMPLETED" and create a trh history record. 
@@ -319,7 +319,7 @@ IF act = "Display_Selected_Data" THEN DO:                                  /* ST
                     LOOKUP(TK_status,statlist) < LOOKUP("COMPLETE",statlist) AND         /* 1dot3 */
                     
 /*                  ( (test_mstr.test_family      = "MPA" AND    */
-/*                     TK_mstr.TK_status      = "BURNED" )   */
+/*                     TK_mstr.TK_status      = "EMAILED" )   */
 /*                    OR                                         */
 /*                    (test_mstr.test_family      = "BioMed" AND */
 /*                     TK_mstr.TK_status      = "PROCESSED" )*/

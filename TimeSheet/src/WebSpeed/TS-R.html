@@ -7,25 +7,20 @@
     <META NAME="COPYRIGHT" CONTENT="Solsource">
     <META NAME="CREATE_DATE" CONTENT="08/Jan/16">
     <META NAME="MODIFIED_DATE" CONTENT="08/Jan/16">
-    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/timesheet.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css"/>
-    <script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+    <!--WSS {external-dependencies.i} -->
+    
     <style>
         .max-half-width {
             max-width: 50%;
         }
     </style>
     <script>
-            $(document).ready(function() {
-                $('#hours-table').DataTable({
-                    lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]]
-                });
-            });
-        </script>
+           $(document).ready(function() {
+               $('#hours-table').DataTable({
+                   lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]]
+               });
+           });
+       </script>
 	<!--WSS
     PROCEDURE Output-Header:
         {cookie-check-permissions.i "TSlogin.r"}.
@@ -103,7 +98,7 @@ IF act = "" THEN
 /* *********************************** Body ************************************* */
 -->
 
-<div class="vert-nav-page">
+    <div class="vert-nav-page">
         <div class="page-content">
         <br/><br/>
         
@@ -113,20 +108,22 @@ CASE act:
     WHEN "INITIAL" THEN DO:  
         
 -->
-            <h2>Select a week for which to see your hours logged</h2>
+            <h2 class='page-title'>Select a week for which to see your hours logged</h2>
             <form>
-                <div class="form-content w3-card-4 w3-white">
-                    <div class="row">
-	                    <div class="col-md-3"></div>
-	                    <div class="col-md-6">
-		                    <label>Work Week</label>
-		                    <input type="week" name="html5-week" class="form-control" required/>
-	                    </div>
-	                    <div class="col-md-3"></div>
+                <div class='w3-content'>
+	                <div class="form-content w3-card-4 w3-white">
+	                    <div class="row">
+		                    <div class="col-md-2"></div>
+		                    <div class="col-md-8">
+			                    <label>Work Week</label>
+			                    <input type="week" name="html5-week" class="form-control" required/>
+		                    </div>
+		                    <div class="col-md-2"></div>
+		                </div>
+		                <br/>
+	                    <center><button type='submit' name='h-act' value='SEARCH' class='btn w3-theme-dark'>Search</button></center>
 	                </div>
-	                <br/>
-                    <center><button type='submit' name='h-act' value='SEARCH' class='btn w3-theme-dark'>Search</button></center>
-                </div>
+	            </div>
             </form> 
 <!--WSS            
     
@@ -189,13 +186,14 @@ CASE act:
                 ).
          
 -->
-            <div class='row'> 
-                <center>
-                    <h2>`empname` - Time Sheet Report</h2> 
-                    <h2>Monday  `mondate`  - Sunday  `sundate`</h2>
-                </center> 
-            </div> 
 
+            <h2 class='page-title'>
+                `empname` - Time Sheet Report
+                <br/>
+                Monday  `mondate`  - Sunday  `sundate`
+            </h2>
+            
+            <div class='w3-content'>
             <div class='form-content w3-card-4 w3-white' style='padding-right:16px; padding-left:16px; overflow:auto;'>
 		            <div class='table_report'> 
 		                <table id='hours-table' class="stripe"> 
@@ -285,7 +283,6 @@ CASE act:
                 <center><button type='submit' name='h-act' value='INITIAL' class='btn w3-theme-dark'>Search Again</button></center>
 		    </form>
 		</div> 
-    </div>
             
 <!--WSS        
     END. /* SEARCH */

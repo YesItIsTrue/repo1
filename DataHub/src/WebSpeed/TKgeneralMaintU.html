@@ -133,7 +133,7 @@ DEFINE VARIABLE datelist AS DATE EXTENT 17 NO-UNDO.
 
 {../depot/src/WebSpeed/statuslist.i}.                                                                      /* 3dot4 */
 /*DEFINE VARIABLE statlist AS CHARACTER                                                                                                                                    */
-/*    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,COMPLETE,PAID_BY_CUST,VEND_PAID,DELETED,VOID" NO-UNDO.*/
+/*    INITIAL "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,EMAILED,COMPLETE,PAID_BY_CUST,VEND_PAID,DELETED,VOID" NO-UNDO.*/
 
 DEFINE VARIABLE cust-paid           LIKE TK_mstr.TK_cust_paid           NO-UNDO.    /* 3dot1 */
 DEFINE VARIABLE cust-paid-char      AS CHARACTER                        NO-UNDO.    /* 3dot1 */
@@ -685,7 +685,7 @@ CASE v-act:
             RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[11]).
             ASSIGN Last-Date-Position-Found = 11.        
         END.
-        ASSIGN  w-dte = get-value("h-CD_BURNED").
+        ASSIGN  w-dte = get-value("h-CD_EMAILED").
         IF w-dte <> "" THEN DO: 
             RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (w-dte, OUTPUT datelist[12]).
             ASSIGN Last-Date-Position-Found = 12.        

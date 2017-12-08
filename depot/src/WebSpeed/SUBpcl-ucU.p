@@ -14,7 +14,7 @@
 
 /* ***************************  Definitions  ************************** */
 DEFINE INPUT PARAMETER v-people-id LIKE pcl_det.pcl_patient_id NO-UNDO.
-DEFINE INPUT PARAMETER v-condition-id LIKE pcl_det.pcl_cond_id NO-UNDO. 
+DEFINE INPUT PARAMETER v-condition-id LIKE pcl_det.pcl_cond_id NO-UNDO.  
 
 DEFINE OUTPUT PARAMETER o-success AS LOGICAL INITIAL NO NO-UNDO.
 

@@ -9,12 +9,9 @@ DEFINE VARIABLE o-ctrh-error    AS LOGICAL INITIAL YES      NO-UNDO.
 DEFINE BUFFER tk_mstr2 FOR TK_mstr.
 DEFINE BUFFER tk_mstr3 FOR TK_mstr.
 
-DEFINE STREAM s.
-OUTPUT STREAM s TO "C:\PROGRESS\WRK\UTIL-tkmstr-fix-empty-status-log.txt".
-
 FOR EACH TK_mstr WHERE TK_mstr.TK_status = "":
-    FIND FIRST tk_mstr2 WHERE tk_mstr2.TK_ID = TK_mstr.TK_ID AND tk_mstr2.tk_test_seq = TK_mstr.TK_test_seq AND tk_mstr2.tk_status <> "" AND tk_mstr2.tk_deleted = ? NO-ERROR.
-    FIND FIRST tk_mstr3 WHERE tk_mstr3.TK_lab_sample_ID = TK_mstr.TK_lab_sample_ID AND tk_mstr3.tk_lab_seq = TK_mstr.TK_lab_seq AND tk_mstr3.tk_status <> "" AND tk_mstr3.tk_deleted = ? NO-ERROR.
+    FIND FIRST tk_mstr2 WHERE tk_mstr2.TK_ID = TK_mstr.TK_ID AND tk_mstr2.tk_test_seq = TK_mstr.TK_test_seq AND tk_mstr2.tk_status <> "" NO-ERROR.
+    FIND FIRST tk_mstr3 WHERE tk_mstr3.TK_lab_sample_ID = TK_mstr.TK_lab_sample_ID AND tk_mstr3.tk_lab_seq = TK_mstr.TK_lab_seq AND tk_mstr3.tk_status <> "" NO-ERROR.
     IF AVAILABLE (tk_mstr2) OR AVAILABLE (tk_mstr3) THEN DO:
         
         ASSIGN 
@@ -102,21 +99,7 @@ FOR EACH TK_mstr WHERE TK_mstr.TK_status = "":
         
         /* Create a trh_hist record reflecting our change to the TK_mstr's status */
         IF o-uctkm-successful THEN DO:
-            DEFINE VARIABLE statuses AS CHARACTER NO-UNDO.
-            DEFINE VARIABLE i AS INTEGER INITIAL 0 NO-UNDO.
-            DEFINE VARIABLE v-trh-id AS INTEGER NO-UNDO.
-            
-            statuses = "CREATED,IN_STOCK,SOLD,SHIPPED,COLLECTED,LAB_RCVD,LAB_PROCESS,HHI_RCVD,LOADED,PROCESSED,PRINTED,BURNED,COMPLETE".
-            
-            FOR EACH trh_hist WHERE trh_hist.trh_serial = TK_mstr.TK_ID AND trh_hist.trh_sequence = TK_mstr.TK_test_seq NO-LOCK:
-                IF LOOKUP(trh_hist.trh_action, statuses, ",") > i THEN DO: 
-                    ASSIGN 
-                        i = LOOKUP(trh_hist.trh_action, statuses, ",")
-                        v-trh-id = trh_hist.trh_ID.
-                END.
-            END.
-            
-            FIND trh_hist WHERE trh_hist.trh_ID = v-trh-id NO-ERROR.
+            FIND FIRST trh_hist WHERE trh_hist.trh_serial = TK_mstr.TK_ID NO-ERROR.
             IF AVAILABLE (trh_hist) THEN DO:
                 RUN VALUE(SEARCH("SUBtrh-ucU.r")) (
                     0,
@@ -132,7 +115,7 @@ FOR EACH TK_mstr WHERE TK_mstr.TK_status = "":
                     trh_hist.trh_other_ID,  
                     trh_hist.trh_people_ID, 
                     trh_hist.trh_order,     
-                    ADD-INTERVAL(trh_hist.trh_date, 1, "day"),      
+                    trh_hist.trh_date,      
                     trh_hist.trh_time,      
                     trh_hist.trh_ref,       
                     trh_hist.trh_warehouse,       
@@ -165,7 +148,5 @@ FOR EACH TK_mstr WHERE TK_mstr.TK_status = "":
                 
             END.
         END. /* IF o-uctkm-successful */
-        ELSE 
-            EXPORT STREAM s "Update of " TK_mstr.TK_ID " unsuccessful.".
     END.
 END.

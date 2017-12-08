@@ -27,10 +27,10 @@ DEFINE VARIABLE by-pass-data AS LOGICAL INITIAL NO NO-UNDO.
 DEFINE VARIABLE kount AS INTEGER INITIAL 0 NO-UNDO.  
 ReportLoop:
 
-FOR EACH General.fs_mstr WHERE  fs_mstr.fs_deleted = ? 
+FOR EACH fs_mstr WHERE  fs_mstr.fs_deleted = ? 
      /*    fs_mstr.fs_file_ID       = 16735 OR fs_mstr.fs_file_ID = 16736   */
             NO-LOCK,
-        EACH General.atn_det WHERE  atn_det.atn_deleted = ? AND 
+        EACH atn_det WHERE  atn_det.atn_deleted = ? AND 
                                     /* (atn_det.atn_type = "text" OR atn_det.atn_type = "root" OR
                                     substring(atn_det.atn_name, 1, 5) = 'xmlns' OR 
                                     substring(atn_det.atn_name, 1, 3) = 'xsi' OR 

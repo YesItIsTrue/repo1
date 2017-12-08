@@ -87,14 +87,22 @@ ASSIGN
     
 IF act = "" THEN 
     ASSIGN 
-        act = "INITIAL".    
+        act = "INITIAL".
 
 /* *********************************** Body ************************************* */
+{&OUT)
+"<div class='vert-nav-page'>" SKIP
+        "<div class='w3-content page-content'>" SKIP
+            "<br/><br/>" SKIP.
+            
 CASE act:
     
     WHEN "INITIAL" THEN DO:  
         
         {&OUT}
+    "<div class='vert-nav-page'>" SKIP
+        "<div class='w3-content page-content'>" SKIP
+            "<br/><br/>" SKIP
             "<form>" SKIP        
             "<DIV class='row'>" SKIP
             "<DIV class='grid_3'> </DIV>" SKIP
@@ -324,68 +332,54 @@ CASE act:
 	            {&OUT}
 	                "           <TR>" SKIP
 	                "               <TD align='center'>" projname "</TD>" SKIP
-	                "               <TD align='center'><a href='TSentryU.r"
+	                "               <TD align='center'><a href='AdminTSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname
 	                                    "&html5-date=" disp-date[2]
-	                                    "&h-act=TIME"
-	                                    "&h-admin=YES"
-	                                    "&whattorun=8.1"
+	                                    "&h-calling-prog=TSforadminR"
 	                "                   '><div>" projtot[2] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='TSentryU.r"
+	                "               <TD align='center'><a href='AdminTSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname
 	                                    "&html5-date=" disp-date[3]
-	                                    "&h-act=TIME"
-	                                    "&h-admin=YES"
-	                                    "&whattorun=8.1"
+	                                    "&h-calling-prog=TSforadminR"
 	                "                   '><div>" projtot[3] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='TSentryU.r"
+	                "               <TD align='center'><a href='AdminTSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname
 	                                    "&html5-date=" disp-date[4]
-	                                    "&h-act=TIME"
-	                                    "&h-admin=YES"
-	                                    "&whattorun=8.1"
+	                                    "&h-calling-prog=TSforadminR"
 	                "                   '><div>" projtot[4] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='TSentryU.r"
+	                "               <TD align='center'><a href='AdminTSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname
 	                                    "&html5-date=" disp-date[5]
-	                                    "&h-act=TIME"
-	                                    "&h-admin=YES"
-	                                    "&whattorun=8.1"
+	                                    "&h-calling-prog=TSforadminR"
 	                "                   '><div>" projtot[5] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='TSentryU.r"
+	                "               <TD align='center'><a href='AdminTSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname
 	                                    "&html5-date=" disp-date[6]
-	                                    "&h-act=TIME"
-	                                    "&h-admin=YES"
-	                                    "&whattorun=8.1"
+	                                    "&h-calling-prog=TSforadminR"
 	                "                   '><div>" projtot[6] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='TSentryU.r"
+	                "               <TD align='center'><a href='AdminTSentryU.r"
 	                                    "?h-empid=" empid
 	                                   "&h-clientid=" clientid
 	                                    "&h-projname=" projname
 	                                    "&html5-date=" disp-date[7]
-	                                    "&h-act=TIME"
-	                                    "&h-admin=YES"
-	                                    "&whattorun=8.1"
+	                                    "&h-calling-prog=TSforadminR"
 	                "                   '><div>" projtot[7] format ">>9.9<" "</div></a></td>" SKIP
-	                "               <TD align='center'><a href='TSentryU.r"
+	                "               <TD align='center'><a href='AdminTSentryU.r"
 	                                    "?h-empid=" empid
 	                                    "&h-clientid=" clientid
 	                                    "&h-projname=" projname
 	                                    "&html5-date=" disp-date[1]
-	                                    "&h-act=TIME"
-	                                    "&h-admin=YES"
-	                                    "&whattorun=8.1"
+	                                    "&h-calling-prog=TSforadminR"
 	                "                   '><div>" projtot[1] format ">>9.9<" "</div></a></td>" SKIP
 	                "               <td align='center'>" projwktot "</td>" SKIP
 	                "           </TR>" SKIP.
@@ -505,10 +499,9 @@ CASE act:
 
 END CASE.         
         
-         
-</SCRIPT>
-</BODY>
-</HTML>
+{&OUT)
+    "</div>" SKIP
+"</div>" SKIP.
 </SCRIPT>
 </BODY>
 </HTML>

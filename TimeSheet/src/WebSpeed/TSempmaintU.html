@@ -2,40 +2,139 @@
 <HTML>
 <HEAD>
 <TITLE>Employee Maintenance</TITLE>
-    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
-    <META NAME="VERSION" CONTENT="1.2">
+    <META NAME="AUTHOR" CONTENT="Andrew Garver">
+    <META NAME="VERSION" CONTENT="2.0">
     <META NAME="COPYRIGHT" CONTENT="Solsource">
     <META NAME="CREATE_DATE" CONTENT="23/Dec/15">
     <META NAME="MODIFIED_DATE" CONTENT="11/Jul/16">
-    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
-	<SCRIPT LANGUAGE="SpeedScript">
-	/* Create an unnamed pool to store all the widgets created by this procedure.
-	   This is a good default which assures that this procedure's triggers and
-	   internal procedures will execute in this procedure's storage, and that
-	   proper cleanup will occur on deletion of the procedure. */
-	CREATE WIDGET-POOL.
-	</SCRIPT>
-	 <!--WSS
+    <!--WSS {external-dependencies.i} -->
+    
+    <script>
+        $(document).ready(function() {
+            $('#empTable').DataTable({
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]]
+            });
+            
+            // Address Picker
+            function formatAddressResponse (data) {
+               var display = "<div><p style='margin: 0px'>" + data.text + "</p>";
+               if (data.addr2 != undefined) {
+                 display += "<p style='margin: 0px'>" + data.addr2 + "</p>";
+               }
+               if (data.cityStateZip != undefined) {
+                 display += "<p style='margin: 0px'>" + data.cityStateZip + "</p>";
+               }
+               display += "</div>";
+               return display;
+            }
+        
+            function formatAddressSelection (data) {
+                var display = data.text;
+                if (data.addr2 != undefined && data.addr2 != "") {
+                    display += ", " + data.addr2;
+                }
+                if (data.cityStateZip != undefined && data.cityStateZip != "") {
+                    display += ", " + data.cityStateZip;
+                }
+                return display;
+            }
+            
+            $("#emp-address").select2({
+                ajax: {
+                    url: "AJAX-address-picker.r",
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                      return {
+                        addr1: params.term, // search term
+                        page: params.page
+                      };
+                    },
+                    processResults: function (data, params) {
+                      params.page = params.page || 1;
+                
+                      return {
+                        results: data.results,
+                        pagination: {
+                          more: (params.page * 30) < data.total_count
+                        }
+                      };
+                    },
+                    cache: true
+                  },
+                  escapeMarkup: function (markup) { return markup; },
+                  minimumInputLength: 1,
+                  templateResult: formatAddressResponse,
+                  templateSelection: formatAddressSelection
+            });
+            
+            function populateStateDropdown(){
+                $.post("AJAX-populate-state-dropdown.r",
+                {
+                    countryISO: $("#country-picker").val() ? $("#country-picker").val() : "USA" 
+                },
+                function(response, status){
+                    $("#state-picker").children('option').remove();
+                    $.each(response, function (key, value) {
+                        $("#state-picker").append("<option value='" + key + "'>" + value + "</option>");
+                    });
+                });
+            }
+            
+            $("#country-picker").change(function() {
+                populateStateDropdown();
+            });
+            
+            $("#emp-address").change(function() {
+                if ($(this).val() == "-1") {
+                    $("#new-addr-modal").modal();
+                    populateStateDropdown();
+                }
+            });
+            
+            $("#addr-modal-form").submit(function(e) {
+                e.preventDefault();
+                $.post("AJAX-create-address.r",
+                    $("#addr-modal-form").serialize(),
+                    function(data, success) {
+                       if (data.success) {
+                           let select = $('#emp-address');
+                           let option = $('<option></option>').
+                                attr('selected', true).
+                                text(data.prettyAddress).
+                                val(data.addrid);
+                           option.appendTo(select);
+                           select.trigger('change');
+                           $("#new-addr-modal").modal("hide");
+                       }
+                       else {
+                           swal(
+                              'Whoops!',
+                              data.error,
+                              'error'
+                            )
+                       }
+                });
+            });
+        });
+    </script>
+	
+	<!--WSS
     PROCEDURE Output-Header:
-/*        {cookie-check-permissions.i "TSlogin.r"}.*/
+        {cookie-check-permissions.i "TSlogin.r"}.
     END PROCEDURE.
     -->
 </HEAD>
-<BODY class='inside'>
+<BODY class='w3-theme-light'>
 
-<SCRIPT language="SpeedScript">
+<!--WSS
 {TSvert-menu.i}.
   /*------------------------------------------------------------------
     File:           TSempmaintU.html
     Description:    Employee Maintenance Screen
-    Created:        Jacob Luttrell
+    Created:        Andrew Garver
     Version History:
-        1.0 - Created by Jacob Luttrell on 23/Dec/15.
-        1.1 - By Jacob Luttrell on 10/Feb/16
-                Added Pref name update field for v11.1 
-                release. Marked by 1dot1. 
-        1.2 - By Jacob Luttrell on 11/Jul/16
-                Added default client and project fields. marked by 1dot2.    
+        1.0 - Created by Andrew Garver 12/7/17 
   -------------------------------------------------------------------*/
 DEFINE VARIABLE empid         LIKE Emp_Mstr.Emp_ID                NO-UNDO.
 DEFINE VARIABLE empadmin      LIKE Emp_Mstr.Emp_admin             NO-UNDO. 
@@ -66,7 +165,7 @@ DEFINE VARIABLE empname       AS CHARACTER                        NO-UNDO.
 DEFINE VARIABLE emph-notes    LIKE Emph_hist.Emph_notes           NO-UNDO.
 DEFINE VARIABLE emph-action   LIKE Emph_hist.Emph_action          NO-UNDO.
 DEFINE VARIABLE actionlist    AS CHARACTER 
-                              INITIAL "Hire,Bonus,Raise,Promotion,Warning,Terminate,Retire,Quit,Abandon" NO-UNDO.      
+                              INITIAL "Hire,Update Info,Bonus,Raise,Promotion,Warning,Terminate,Retire,Quit,Abandon" NO-UNDO.      
 
 DEFINE VARIABLE addr1         LIKE addr_mstr.addr_addr1           NO-UNDO.
 DEFINE VARIABLE addr2         LIKE addr_mstr.addr_addr2           NO-UNDO.
@@ -148,7 +247,7 @@ ASSIGN
     city          = html-encode(get-value("h-city"))
     state         = html-encode(get-value("h-state"))
     cntry         = html-encode(get-value("h-cntry"))
-    addrid        = INTEGER(html-encode(get-value("h-addrid")))
+    addrid        = INTEGER(html-encode(get-value("h-address-id")))
       
     pp-passBack-peopid      = INTEGER(html-encode(get-value("h-pp-passBack-peopid")))             
     pp-passBack-addrid      = INTEGER(html-encode(get-value("h-pp-passBack-addrid")))
@@ -163,155 +262,130 @@ ASSIGN
     cliproj       = html-encode(get-value("h-cliproj"))                                  /* 1dot2 */
     .
 
-/*{&OUT}                                                                        */
-/*    "<P>BEFORE: if disp-dob: disp-dob = " disp-dob ", dob = " dob "</P>" SKIP.*/
 IF disp-dob <> ? THEN     
-RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
-	disp-dob,                                                               
-	OUTPUT dob                                                             
-	).                 
-/*{&OUT}                                                                       */
-/*    "<P>AFTER: if disp-dob: disp-dob = " disp-dob ", dob = " dob "</P>" SKIP.*/
-/*{&OUT}                                                                                                    */
-/*    "<P>BEFORE: if disp-action: disp-action = " disp-action ", actiondate = " actiondate "</P>" SKIP.    	*/
+	RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+		disp-dob,                                                               
+		OUTPUT dob                                                             
+		).                 
+
 IF disp-action <> ? THEN 
-RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                   
-    disp-action,                                                                 
-    OUTPUT actiondate                                                               
-    ).   	                                    
-/*{&OUT}                                                                                              */
-/*    "<P>AFTER: if disp-action: disp-action = " disp-action ", actiondate = " actiondate "</P>" SKIP.*/
+	RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                   
+	    disp-action,                                                                 
+	    OUTPUT actiondate                                                               
+	    ).   	                                    
+    
 IF act = "" THEN 
     ASSIGN 
         act = "INITIAL".    
 
-FIND people_mstr WHERE people_mstr.people_id = empid AND 
-                       people_mstr.people_deleted = ?
-    NO-LOCK NO-ERROR.
+FIND people_mstr WHERE people_mstr.people_id = empid OR people_mstr.people_id = pp-passBack-peopid NO-LOCK NO-ERROR.
 
 IF AVAILABLE (people_mstr) THEN 
      ASSIGN 
-         empname = people_mstr.people_lastname + ", " + people_mstr.people_firstname.
-
-IF act = "REMOVE" THEN DO: 
-    
-    error-count = 0.
-        
-    FIND Emp_Mstr WHERE Emp_Mstr.Emp_ID = empid EXCLUSIVE-LOCK.
-    IF AVAILABLE (Emp_Mstr) THEN
-        DELETE Emp_Mstr.    
-    ELSE 
-        error-count = error-count + 1.
-        
-    FIND people_mstr WHERE people_mstr.people_id = empid EXCLUSIVE-LOCK.
-    IF AVAILABLE (people_mstr) THEN DO: 
-        ASSIGN 
-                empname = people_mstr.people_lastname + ", " + people_mstr.people_firstname.
-        
-        DELETE people_mstr.
-    END.
-    ELSE 
-        error-count = error-count + 1.
-   
-    IF addrid > 0 THEN DO:      
-        FIND addr_mstr WHERE addr_mstr.addr_id = addrid EXCLUSIVE-LOCK.
-        IF AVAILABLE (addr_mstr) THEN
-            DELETE addr_mstr.
-        ELSE 
-            error-count = error-count + 1.
-    END.
-
-    IF error-count = 0 THEN     
-        {&OUT}                                  
-            "<div class='row'>" skip
-            "   <div class='grid_2'></div>" skip
-            "       <div class='grid_8'>" skip 
-            "           <Center><h2>Employee " empname " has been deleted.</h2></center>" SKIP
-            "       </div>" skip
-            "   </div class='grid_2'></div>" SKIP
-            "</div>" skip.
-    ELSE 
-        {&OUT} 
-           "<div class='row'>" skip
-            "   <div class='grid_2'></div>" skip
-            "       <div class='grid_8'>" skip 
-            "           <Center><h2>There was an error when deleting employee. Employee not deleted.</h2></center>" SKIP
-            "       </div>" skip
-            "   </div class='grid_2'></div>" SKIP
-            "</div>" skip. 
-               
-    ASSIGN 
-        act = "INITIAL"
-        empid = 0
-        addrid = 0
-        firstname = ""
-        lastname = "".   
-END. /* REMOVE */   
+         empname = people_mstr.people_lastname + ", " + people_mstr.people_firstname. 
 /* *********************************** Body ************************************* */
+-->
+
+	<script>
+	    $(document).ready(function() {
+	        $("#deleteButton").click(function() {
+	            $.post("AJAX-get-entries-by-employee.r",
+	            {
+	                employeeID: $("[name='h-empid']").val()
+	            },
+	            function(data, success) {
+	                if (!$.isEmptyObject(data)) {
+	                    swal(
+	                        "Slow down there, Friend!",
+	                        "You need to delete all time entries associated with `empname` before deleting their record.",
+	                        "warning"
+	                    );
+	                }
+	                else {
+	                    swal({
+	                      title: 'Are you sure?',
+	                      text: "Do you really want to delete the employee, `empname`?",
+	                      type: 'warning',
+	                      showCancelButton: true,
+	                      confirmButtonColor: '#3085d6',
+	                      cancelButtonColor: '#d33',
+	                      confirmButtonText: 'Yes, delete it!'
+	                    }).then(function (result) {
+	                      if (result.value) {
+	                        $.post("AJAX-delete-employee.r",
+	                        {
+	                            employeeID: $("[name='h-empid']").val(),
+	                            addressID: $("[name='h-address-id']").val()
+	                        },
+	                        function(data, success) {
+	                            if (data.success) {
+	                                swal("Success!",
+	                                "`empname`, has been deleted.",
+	                                "success")
+	                                .then(function() {
+	                                    window.location = "TSempmaintU.r";
+	                                });
+	                            }
+	                            else {
+	                                swal("Whoops!", data.error, "error");
+	                            }
+	                        });
+	                      }
+	                    })
+	                }
+	            });
+	        });
+	    });
+	</script>
+
+    <div class="vert-nav-page">
+        <div class="page-content">
+        <br/><br/>
+        
+<!--WSS
 CASE act:
     
-    WHEN "INITIAL" THEN DO: 
-	    {&OUT}
-	        "<form>" SKIP
-	        "<div class='row'>" skip
-	        "   <div class='grid_3'></div>" skip
-	        "       <div class='grid_6'>" skip                    
-	        "               <div class='table_2col'>" skip
-	        "                   <table>" skip
-	        "                       <tr>" skip
-	        "                           <th colspan='4'>Employee Maintenance</th>" skip
-	        "                       </tr>" skip                          
-	        "                       <tr>" skip
-            "                           <td>Last Name</td>" skip
-            "                           <td><input type='text' name='h-lastname' value='" lastname "' /></td>" skip	        
-	        "                           <td>First Name</td>" skip
-	        "                           <td><input type='text' name='h-firstname' value='" firstname "' /></td>" skip  
-	        "                       </tr>" skip   
-	        "                   </table>" skip
-	        "               </div>" skip                 
-	        "       </div>" skip
-	        "   </div class='grid_3'></div>" skip
-	        "</div>" skip 
-	        "<BR>" SKIP
-			"<div class='row'>" SKIP
-			"   <div class='grid_3'> </DIV>" SKIP
-            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
-			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='RESULTS' class='btn'>Submit</BUTTON></div>" SKIP
-			"   <div class='grid_2'> </DIV>" SKIP
-			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
-			"   <div class='grid_3'> </DIV>" SKIP
-			"</div>" SKIP
-	        "</form>" SKIP.   
-    END. /* INITIAL */    
-    WHEN "RESULTS" THEN DO:
-      {&OUT}
-            "<div class='row'>" skip
-            "   <div class='grid_3'></div>" skip
-            "       <div class='grid_6'>" skip                    
-            "               <div class='table_report'>" skip
-            "                   <table>" skip
-            "                       <thead>" SKIP
-            "                       <tr>" skip
-            "                           <th colspan='3'>Employee Maintenance</th>" skip
-            "                       </tr>" skip                          
-            "                       <tr>" skip
-            "                           <td>Employee Name</td>" skip
-            "                           <td>Date of Birth</td>" skip   
-            "                           <td>Start Date</td>" skip 
-            "                       </tr>" SKIP
-            "                       </thead>" SKIP.
-         
-         FOR EACH Emp_Mstr WHERE Emp_Mstr.Emp_deleted = ? 
-                                 NO-LOCK,
-             EACH Emph_hist WHERE Emph_hist.Emph_emp_ID = Emp_Mstr.Emp_ID AND 
-                                  Emph_hist.Emph_action = "Hire" NO-LOCK,
-             EACH people_mstr WHERE people_mstr.people_id = Emp_Mstr.Emp_ID AND 
-                                    ((people_mstr.people_firstname BEGINS firstname) OR 
-                                      (firstname = "")) AND 
-                                     ((people_mstr.people_lastname BEGINS lastname) OR 
-                                      (lastname = "")) AND 
-                                      people_mstr.people_deleted = ?
-                                      NO-LOCK BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname:
+    WHEN "INITIAL" THEN DO:
+        
+        IF html-encode(get-value("empUpdated")) <> "" THEN DO:
+-->
+        <script>
+            $(document).ready(function() {
+                $.notify({
+                    // options
+                    icon: 'fa fa-check',
+                    message: '`empname` was successfully updated!'
+                },{
+                    // settings
+                    type: "success",
+                    delay: 2500
+                });
+            });
+        </script>
+<!--WSS
+        END. /* IF html-encode(get-value("empUpdated")) <> "" */  
+-->
+
+        <h2 class='page-title'>Employee Maintenenace</h2>
+            
+        <div class='w3-content'>
+            <div class='form-content w3-card-4 w3-white' style='padding-right:16px; padding-left:16px; overflow:auto;'>
+                <div class='table_report'>
+					<table id='empTable' class="stripe"> 
+					    <thead> 
+						    <tr> 
+						        <td>Employee Name</td> 
+						        <td>Date of Birth</td>    
+						        <td>Start Date</td>  
+						    </tr> 
+					    </thead>
+<!--WSS
+        FOR EACH Emp_Mstr WHERE Emp_Mstr.Emp_deleted = ? NO-LOCK,
+        EACH Emph_hist WHERE Emph_hist.Emph_emp_ID = Emp_Mstr.Emp_ID AND Emph_hist.Emph_action = "Hire" NO-LOCK,
+        EACH people_mstr WHERE people_mstr.people_id = Emp_Mstr.Emp_ID AND 
+        ((people_mstr.people_firstname BEGINS firstname) OR (firstname = "")) AND 
+        ((people_mstr.people_lastname BEGINS lastname) OR (lastname = "")) AND people_mstr.people_deleted = ?
+        NO-LOCK BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname:
                                           
             ASSIGN 
                 empname = people_mstr.people_lastname + ", " + people_mstr.people_firstname
@@ -325,80 +399,54 @@ CASE act:
 		    OUTPUT disp-dob                                                             
 		    ).       
                 
-           {&OUT}     
-           "                        <tr>" SKIP
-           "                        <TD><a href='TSempmaintU.r"                         /* CODEHAUL */ 
-		                                    "?h-pp-passBack-peopid=" Emp_Mstr.Emp_ID
-		                                    "&h-pp-passBack-addrid=" addrid
-		                                    "&h-act=MAINTENANCE"
-		                                    "&whattorun=8.20"
-           "                            '>" empname "</a></td>" SKIP
-           "                            <td>" dob "</td>" SKIP
-           "                            <td>" Emph_hist.Emph_action_date "</td>" SKIP
-           "                        </tr>" SKIP.
+-->
+				        <tr> 
+				            <td><a href='TSempmaintU.r?h-pp-passBack-peopid=`Emp_Mstr.Emp_ID`&h-pp-passBack-addrid=`addrid`&h-act=MAINTENANCE'>`empname`</a></td> 
+				            <td>`dob`</td> 
+				            <td>`Emph_hist.Emph_action_date`</td> 
+				        </tr>
+<!--WSS
         END. /* 4ea. emp_mstr */       
-    
-        {&OUT}
-	        "                        <TFOOT>" SKIP
-			"                        <TR>" SKIP
-			"                            <TD COLSPAN='3'>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
-			"                        </TR>" SKIP
-			"                        </TFOOT>" SKIP 
-            "                   </table>" skip
-            "               </div>" skip                 
-            "       </div>" skip
-            "   </div class='grid_3'></div>" skip
-            "</div>" skip              
-            "<BR>" SKIP
-            "<form>" SKIP
-            "<div class='row'>" SKIP
-            "   <div class='grid_3'> </DIV>" SKIP
-            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
-            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
-            "   <div class='grid_2'> </DIV>" SKIP
-            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='NEW' class='btn'>Create a New Employee</BUTTON></div>" SKIP
-            "   <div class='grid_3'> </DIV>" SKIP
-            "</div>" SKIP
-            "</form>" SKIP.      
+-->
+				        </table> 
+				    </div>
+		            <br/> 
+		            <form>
+		                <center>
+                            <button type='submit' name='h-act' value='NEW' class='btn w3-theme-accent'>Create a new Employee</button>
+                        </center>
+		            </form>
+		        </div>
+		    </div>   
             
-            
+<!--WSS
     END. /* RESULTS */ 
     WHEN "NEW" THEN DO:
-            {&OUT}
-            "<form>" SKIP
-            "<div class='row'>" skip
-            "   <div class='grid_3'></div>" skip
-            "       <div class='grid_6'>" skip                    
-            "               <div class='table_2col'>" skip
-            "                   <table>" skip
-            "                       <tr>" skip
-            "                           <th colspan='4'>Employee Search</th>" skip
-            "                       </tr>" skip                          
-            "                       <tr>" skip
-            "                           <td>Last Name</td>" skip
-            "                           <td class='Req'><input type='text' name='h-lastname' value='" lastname "' required /></td>" skip
-            "                           <td>First Name</td>" skip
-            "                           <td class='Req'><input type='text' name='h-firstname' value='" firstname "' required /></td>" skip              
-            "                       </tr>" skip  
-            "                       <tr>" skip
-            "                           <td>Date of Birth</td>" skip
-            "                           <td class='Req' colspan='3'><input type='date' name='html5-dob' value='" disp-dob "' required /></td>" skip          
-            "                       </tr>" skip  
-            "                   </table>" skip
-            "               </div>" skip                 
-            "       </div>" skip
-            "   </div class='grid_3'></div>" skip
-            "</div>" skip 
-            "<BR>" SKIP
-            "<div class='row'>" SKIP
-            "   <div class='grid_3'> </DIV>" SKIP
-            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
-            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='MAINTENANCE' class='btn'>Submit</BUTTON></div>" SKIP
-            "   <div class='grid_2'> </DIV>" SKIP
-            "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
-            "   <div class='grid_3'> </DIV>" SKIP
-            "</div>" SKIP
-            "</form>" SKIP.      
+-->
+            <form>
+                <div class='w3-content'>
+                    <div class="form-content w3-card-4 w3-white">
+                        <center><h3>First, what is the name and birthdate of your new employee?</h3></center>
+                        <div class="row">
+                            <div class="col-md-2"></div>
+                            <div class="col-md-8">
+                                <label>Last Name</label> 
+                                <input type='text' name='h-lastname' class='form-control' required/> 
+                                <label>First Name</label> 
+                                <input type='text' name='h-firstname' class='form-control' required/>
+                                <label>Date of Birth</label>
+                                <input type='date' name='html5-dob' class='form-control' required/>
+                            </div>
+                            <div class="col-md-2"></div>
+                        </div>
+                        <br/>
+                        <center>
+                            <button type='submit' name='h-act' value='MAINTENANCE' class='btn w3-theme-dark'>Next</button>
+                        </center>
+                    </div>
+                </div>
+            </form>
+<!--WSS
     END.       
     WHEN "MAINTENANCE" THEN DO:                       
                 
@@ -431,11 +479,6 @@ CASE act:
              OUTPUT o-error,                    
              OUTPUT o-fpat-ran                        
             ).
-       
-        
-/*        IF addrid o-addrid > 0 THEN*/
-/*            ASSIGN                 */
-/*                addrid = o-addrid. */
         
         IF empid > 0 THEN DO:
             FIND people_mstr WHERE people_mstr.people_id = empid
@@ -452,27 +495,18 @@ CASE act:
 			    prefname   = people_mstr.people_prefname        /* 1dot1 */
 			    addrid     = IF addrid > 0 THEN addrid ELSE people_mstr.people_addr_id.
 		END. /* if empid > 0 */	    
-		                                                                         IF itmessage = YES THEN DO: 
-		                                                                          {&OUT}
-		                                                                           "ITmessage 1: Find First people_mstr <BR>" SKIP
-		                                                                           "firstname = " firstname "<BR>" SKIP
-		                                                                           "lastname = " lastname "<BR>" SKIP
-		                                                                           "disp-dob = " disp-dob "<BR>" SKIP
-		                                                                           "dob = " dob "<BR>" SKIP
-		                                                                           "people_id = " empid "<BR>" SKIP
-		                                                                           "homephone = " homephone "<BR>" SKIP
-		                                                                           "cellphone = " cellphone "<BR>" SKIP
-		                                                                           "workphone = " workphone "<BR>" SKIP
-		                                                                           "workemail = " workemail "<BR>" SKIP
-		                                                                           "otheremail = " otheremail "<BR>" SKIP
-		                                                                           "<BR></BR>" SKIP.
-		                                                                         END.    
-        FIND Emp_Mstr WHERE Emp_Mstr.Emp_ID = empid AND 
-                            Emp_Mstr.Emp_deleted = ?
-                            NO-LOCK NO-ERROR. 
+		
+		IF addrid > 0 THEN DO:
+		    FIND addr_mstr WHERE addr_mstr.addr_id = addrid NO-ERROR.
+		    IF AVAILABLE (addr_mstr) THEN DO:
+                ASSIGN 
+                    addrline = addr_mstr.addr_addr1 + " " + addr_mstr.addr_addr2 + " " + addr_mstr.addr_addr3 + " " + addr_mstr.addr_city + " " + addr_mstr.addr_stateprov + ", "  + addr_mstr.addr_zip + " " + addr_mstr.addr_country.
+		    END.
+		END. /* IF addrid > 0 */
+
+        FIND Emp_Mstr WHERE Emp_Mstr.Emp_ID = empid AND Emp_Mstr.Emp_deleted = ? NO-LOCK NO-ERROR. 
             
-         IF AVAILABLE (Emp_Mstr) THEN 
-         
+        IF AVAILABLE (Emp_Mstr) THEN 
             ASSIGN 
                 empadmin    = Emp_Mstr.Emp_admin
                 emppayrate  = Emp_Mstr.Emp_base_pay
@@ -480,350 +514,247 @@ CASE act:
                 translation = Emp_Mstr.Emp_trans_def
                 loadedpay   = Emp_Mstr.Emp_loaded_pay
                 emptype     = Emp_Mstr.Emp_type. 
-                                                                                IF itmessage = YES THEN DO:
-                                                                                    {&OUT}
-                                                                                        "ITmessage 2: Find Emp_Mstr <BR>" SKIP
-                                                                                        "empid = " empid "<BR>" SKIP
-                                                                                        "empadmin = " empadmin "<BR>" SKIP
-                                                                                        "emppayrate = " emppayrate "<BR>" SKIP
-                                                                                        "<BR></BR>" SKIP.   
-                                                                                END.
+
             IF emptype = "SALARY" THEN 
-            
                 ASSIGN 
                     t1 = "CHECKED".
                     
             ELSE IF emptype = "HOURLY" THEN 
-                
                 ASSIGN  
                     t2 = "CHECKED".      
             
-         
-         IF empid = 0 THEN 
             ASSIGN 
                  isreq = "class='req'"
                  htmlreq = "required".
          
          
-         IF dob <> ? THEN       
-         RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                           
+        IF dob <> ? THEN       
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                           
 		    dob,                                                               
 		    OUTPUT disp-dob                                                             
-		    ).     
-                 
-         {&OUT}
-            "<form>" SKIP
-            "<div class='row'>" skip
-			"   <div class='grid_2'></div>" skip
-			"       <div class='grid_8'>" skip			
-			"               <div class='table_2col'>" skip
-			"                   <table>" skip
-			"                       <tr>" skip
-			"                           <th colspan='4'>Employee Maintenance</th>" skip
-			"                       </tr>" skip    			              
-			"                       <tr>" skip
-			"                           <td>Employee Name</td>" skip
-			"                           <td>" lastname ", " firstname "</td>" skip 
-            "                           <td>Date of Birth</td>" skip
-            "                           <td>" dob "</td>" skip
-			"                       </tr>" skip	
-			"                       <tr>" skip                                                                                   /* 1dot1 */
-            "                           <td>Preferred Name</td>" skip                                                            /* 1dot1 */
-            "                           <td><input type='text' name='h-prefname' value='" prefname "' /></td>" skip              /* 1dot1 */ 
-            "                           <td>Employee ID</td>" skip                                                                  
-            "                           <td>" empid "</td>" SKIP          
-            "                       </tr>" skip		                                                                             /* 1dot1 */  
-			"                       <tr>" skip
-			"                           <td>Pay Scale</td>" skip
-			"                           <td>$<input type='number' step='.01' name='h-emppayrate' size='3' value='" emppayrate "' /> Per Hour</td>" skip
-			"                           <td>Admin Privileges</td>" SKIP.
-			
-		IF empid = 0 THEN 
-            {&OUT}
-            "                           <td><input type='radio' value='YES' name='h-empadmin' />YES <input type='radio' value='NO' name='h-empadmin' />NO</td>" SKIP.
-	   ELSE IF empadmin = YES THEN 
-		    {&OUT}
-			"                           <td><input type='radio' value='YES' name='h-empadmin' checked />YES <input type='radio' value='NO' name='h-empadmin' />NO</td>" SKIP.
-		ELSE IF empadmin = NO THEN 
-		    {&OUT}
-            "                           <td><input type='radio' value='YES' name='h-empadmin' />YES <input type='radio' value='NO' name='h-empadmin' checked />NO</td>" SKIP.
-			
-		{&OUT}
-			"                       </tr>" SKIP
-            "                       <tr>" skip
-            "                           <td>Loaded Pay</td>" skip            
-            "                           <td>$<input type='number' step='.01' name='h-loadedpay' size='3' value='" loadedpay "' /> Per Hour</td>" skip
-/*            "                           <td>Translation Default</td>" skip.           MOVE THIS                                        */
-/*                                                                                                                                       */
-/*            IF translation = "" OR translation = "Translated" THEN                                                                     */
-/*                {&OUT}                                                                                                                 */
-/*            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated' checked>Translated"*/
-/*            "                           <BR><input type='radio' name='h-translation' value='Bare'>Bare" skip                           */
-/*            "                           <br><input type='radio' name='h-translation' value='Full'>Full</td>" SKIP.                     */
-/*            ELSE IF translation = "Full" THEN                                                                                          */
-/*                {&OUT}                                                                                                                 */
-/*            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated'>Translated"        */
-/*            "                           <BR><input type='radio' name='h-translation' value='Full'checked>Full" skip                    */
-/*            "                           <br><input type='radio' name='h-translation' value='Bare'>Bare</td>" SKIP.                     */
-/*            ELSE IF translation = "Bare" THEN                                                                                          */
-/*                 {&OUT}                                                                                                                */
-/*            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated'>Translated"        */
-/*            "                           <BR><input type='radio' name='h-translation' value='Full'>Full" skip                           */
-/*            "                           <br><input type='radio' name='h-translation' value='Bare' checked>Bare</td>" SKIP.             */
-/*                                                                                                                                       */
-/*            {&OUT}                                                                                                                     */
-            "                           <td>Payment Type</td>" SKIP
-            "                           <td class='req'><input type='radio' name='h-emptype' value='SALARY' " t1 "/>Salary</BR>" SKIP
-            "                               <input type='radio' name='h-emptype' value='HOURLY' " t2 "/>Hourly</td>" skip
-            "                       </tr>" skip
-            "                       <tr>" skip
-            "                           <td>Gender</td>" SKIP.
-            
-            IF empid = 0 THEN
-                {&OUT}
-            "                           <td><input type='radio' value='Yes' name='h-gender' />Male <input type='radio' value='No' name='h-gender' />Female</td>" skip.
-            ELSE IF gender = YES THEN 
-                {&OUT}
-            "                           <td><input type='radio' value='Yes' name='h-gender' checked />Male <input type='radio' value='No' name='h-gender' />Female</td>" skip.
-            ELSE IF gender = NO THEN
-                {&OUT}
-            "                           <td><input type='radio' value='Yes' name='h-gender' />Male <input type='radio' value='No' name='h-gender' checked />Female</td>" skip. 
-             
+		).     
+-->
 
-             
-            {&OUT} 
-            "                           <td>Company</td>" skip
-            "                           <td><input type='text' name='h-company' value='" company "'></td>" skip
-            "                       </tr>" SKIP.  			
-			
-			IF empid > 0 THEN DO:			
-			    					
-			     FIND addr_mstr WHERE addr_mstr.addr_id = addrid NO-LOCK NO-ERROR.
-			
-			     IF AVAILABLE (addr_mstr) THEN 
-			         ASSIGN 
-			             addrline = addr_mstr.addr_addr1 + " " + addr_mstr.addr_addr2 + " " + addr_mstr.addr_addr3 + " " + addr_mstr.addr_city + " " + addr_mstr.addr_stateprov + ", " + addr_mstr.addr_zip + " " + addr_mstr.addr_country
-			             pass-act = "SEARCH".
-			     ELSE 
-			         ASSIGN 
-			             addrline = "Click here to add an address."
-			             pass-act = "INITIAL".  
-			                   
-			         {&OUT}
-			
-			"                       <tr>" skip
-			"                           <td>Address</td>" skip
-			"                           <td colspan='3'><a href='ADDRpickP.r"            /* CODEHAUL */ 
-										     "?h-prevproc=TSempmaintU.r"                  /* Calling Procedure */
-										     "&h-act=MAINTENANCE"                         /* Calling Procedure's Act */                              
-										     "&h-pp-passBack-peopid=" empid               /* Calling Procedure's people id to pass back. */          
-										     "&h-pp-passBack-addrid=" addrid              /* Calling Procedure's address id to pass back. */         
-/*										     "&h-pp-passBack-char1="                      /* Calling Procedure's Character data to pass back. */*/
-/*										     "&h-pp-passBack-char2="                      /* Calling Procedure's Character data to pass back. */*/
-/*										     "&h-pp-passBack-int1="                       /* Calling Procedure's Integer data to pass back. */  */
-/*										     "&h-pp-passBack-int2="                       /* Calling Procedure's Integer data to pass back. */  */
-										     "&h-addr-act=" pass-act 
-										     "&whattorun=" whatshouldrun " '>"
-			                                  addrline "</a></td>" SKIP 
-			"                       </tr>" SKIP.
-			
-			END. /* if empid > 0 */
-			
-			{&OUT}
-			"                       <tr>" skip
-			"                           <td>Home phone</td>" skip
-			"                           <td><input type='text' name='h-homephone' placeholder='xxx-xxx-xxxx' value='" homephone "' /></td>" skip 
-			"                           <td>Cell phone</td>" skip
-			"                           <td><input type='text' name='h-cellphone' placeholder='xxx-xxx-xxxx' value='" cellphone "' /></td>" skip
-			"                       </tr>" skip 
-            "                       <tr>" skip
-            "                           <td>Work phone</td>" skip
-            "                           <td><input type='text' name='h-workphone' placeholder='xxx-xxx-xxxx' value='" workphone "' /></td>" skip 
-            "                           <td colspan='2'></td>" skip
-/*          "                           <td>Department</td>" skip                                */
-/*          "                           <td><select name='h-empdept'>" SKIP                      */
-/*          "                               <option value=''></option>" SKIP                     */
-/*          "                               <option value=IT>IT support</option>" SKIP           */
-/*          "                               <option value=SD >Software Development</option>" SKIP*/
-/*          "                               <option value=off>Office</option>" SKIP              */
-/*          "                               <option value=oth>Other</option></td>" SKIP          */
-/*          "                           <td colspan='2'></td>" skip                              */
-            "                       </tr>" skip 			
-            "                       <tr>" skip
-            "                           <td>Business Email</td>" skip
-            "                           <td><input type='email' name='h-workemail' value='" workemail "' /></td>" skip 
-            "                           <td>Other Email</td>" skip
-            "                           <td><input type='email' name='h-otheremail' value='" otheremail "' /></td>" skip
-            "                       </tr>" skip
-            "                       <tr>" skip                                                                                  /* 1dot2 */
-            "                           <td>Default Client & Project</td>" skip                                                   /* 1dot2 */
-            "                           <td colspan='3'>" SKIP                                                                  /* 1dot2 */
-            "                               <select name='h-cliproj'>" SKIP                                                     /* 1dot2 */
-            "                                   <option value='' />" SKIP.                                                      /* 1dot2 */
-            
-            FOR EACH Proj_Mstr NO-LOCK,                                                                                         /* 1dot2 */
-                EACH Client_Mstr WHERE Client_Mstr.Client_people_ID = Proj_Mstr.Proj_client_ID NO-LOCK                          /* 1dot2 */
-                    BREAK BY Client_Mstr.Client_abbv BY Proj_Mstr.Proj_sort:                                                    /* 1dot2 */
-            
-            
+                <form> 
+		            <div class='w3-content'>
+                        <div class="form-content w3-card-4 w3-white">
+                            <h2 class='page-title'>Employee Maintenance</h2>
+                            <center>
+	                            <h3>`lastname + ", " + firstname` - `dob`</h3>
+	                            <h3>Employee ID: `empid`</h3>
+                            </center>
+                            <div class='row'>
+								<label>Preferred Name</label>
+								<input type='text' name='h-prefname' class='form-control' value='`prefname`' /> 
+                            </div>
+                            <div class='row'> 
+								<label>Pay Scale</label> 
+								<input type='number' step='.01' name='h-emppayrate' class='form-control' value='`emppayrate`' /> 
+								<label>Admin Privileges</label> 
+<!--WSS
+        IF empid = 0 THEN DO:
+-->
+                                <div class='radio'>
+                                    <label><input type='radio' value='YES' name='h-empadmin'/>Yes</label><br/>
+                                    <label><input type='radio' value='NO' name='h-empadmin' />NO</label>
+                                </div>
+<!--WSS
+        END.
+        ELSE IF empadmin = YES THEN DO:
+-->
+                        	    <div class='radio'>
+                                    <label><input type="radio" value="YES" name="h-empadmin" checked>Yes</label><br/>
+                                    <label><input type='radio' value='NO' name='h-empadmin' />NO</label>
+                                </div>
+<!--WSS
+        END.
+		ELSE IF empadmin = NO THEN DO:
+-->
+                                <div class='radio'>
+                                    <label><input type='radio' value='YES' name='h-empadmin'/>Yes</label><br/>
+                                    <label><input type='radio' value='NO' name='h-empadmin' checked/>NO</label>
+                                </div>
+<!--WSS
+        END.
+-->
+                            </div> 
+                            <div class='row'> 
+                                <label>Loaded Pay</label>             
+                                <input type='number' step='.01' name='h-loadedpay' class='form-control' value='`loadedpay`'/> 
+                                <label>Payment Type</label>
+                                <div class='radio'>
+                                    <label><input type='radio' name='h-emptype' value='SALARY'  `t1` />Salary</label><br/>
+                                    <label><input type='radio' name='h-emptype' value='HOURLY'  `t2` />Hourly</label>
+                                </div> 
+                            </div> 
+                            <div class='row'> 
+                                <label>Gender</label>
+<!--WSS
+        IF empid = 0 THEN DO:
+-->
+                                <div class='radio'>
+                                    <label><input type='radio' value='Yes' name='h-gender'/>Male</label><br/>
+                                    <label><input type='radio' value='No' name='h-gender'/>Female</label>
+                                </div>
+<!--WSS
+        END.
+        ELSE IF gender = YES THEN DO:
+-->
+                                <div class='radio'>
+                                    <label><input type='radio' value='Yes' name='h-gender' checked/>Male</label></br>
+                                    <label><input type='radio' value='No' name='h-gender'/>Female</label>
+                                </div>
+<!--WSS
+        END.
+        ELSE IF gender = NO THEN DO:
+-->
+                                <div class='radio'>
+                                    <label><input type='radio' value='Yes' name='h-gender'/>Male</label></br>
+                                    <label><input type='radio' value='No' name='h-gender' checked/>Female</label>
+                                </div>
+<!--WSS
+        END.
+-->
+                                <label>Company</label> 
+                                <input type='text' name='h-company' class='form-control' value='`company`'> 
+                            </div>  			
+							<div class='row'>
+                                <label>Address</label>
+							    <select name='h-address-id' id='emp-address' class='form-control'>
+                                    <option value='`STRING(addrid)`'>`addrline`</option>
+                                </select> 
+							</div>
+			                 <div class='row'> 
+			                     <label>Home phone</label> 
+			                     <input type='text' name='h-homephone' class='form-control' placeholder='xxx-xxx-xxxx' value='`homephone`'/>  
+			                     <label>Cell phone</label> 
+			                     <input type='text' name='h-cellphone' class='form-control' placeholder='xxx-xxx-xxxx' value='`cellphone`'/> 
+			                 </div>  
+			                 <div class='row'> 
+			                     <label>Work phone</label> 
+			                     <input type='text' name='h-workphone' class='form-control' placeholder='xxx-xxx-xxxx' value='`workphone`'/>  
+			                 </div>  			
+			                 <div class='row'> 
+			                     <label>Business Email</label> 
+			                     <input type='email' name='h-workemail' class='form-control' value='`workemail`'/>
+			                     <label>Other Email</label> 
+			                     <input type='email' name='h-otheremail' class='form-control' value='`otheremail`'/> 
+			                 </div> 
+			                 <div class='row'>
+			                     <label>Default Client & Project</label>
+			                     <select name='h-cliproj' class='form-control'>
+			                         <option value='' />
+<!--WSS
+            FOR EACH Proj_Mstr NO-LOCK,                                                                    
+            EACH Client_Mstr WHERE Client_Mstr.Client_people_ID = Proj_Mstr.Proj_client_ID NO-LOCK     
+            BREAK BY Client_Mstr.Client_abbv BY Proj_Mstr.Proj_sort:                               
+                
                 IF empid > 0 THEN DO:      
-	                IF Proj_Mstr.Proj_client_ID = Emp_Mstr.Emp_def_client AND                                                       /* 1dot2 */ 
-	                    Proj_Mstr.Proj_name = Emp_Mstr.Emp_def_proj THEN                                                            /* 1dot2 */
-	                    
-	                    isselected = "SELECTED".                                                                                    /* 1dot2 */    
-	                
-	                ELSE                                                                                                            /* 1dot2 */
-	                    
-	                    isselected = "".                                                                                            /* 1dot2 */
+	                IF Proj_Mstr.Proj_client_ID = Emp_Mstr.Emp_def_client AND Proj_Mstr.Proj_name = Emp_Mstr.Emp_def_proj THEN                                   
+	                    isselected = "SELECTED".                                                               
+	                ELSE                                                                                   
+	                    isselected = "".                                                                   
 	           END. 
 	           ELSE 
-	                isselected = "".         
-                            
-                {&OUT}                                                                                                          /* 1dot2 */        
-            "                                   <option name='h-cliproj' value='" Proj_Mstr.Proj_client_ID "/" Proj_Mstr.Proj_name "' " isselected " />" Client_Mstr.Client_abbv ": " Proj_Mstr.Proj_name "</option>" SKIP.  /* 1dot2 */                 
-                    
-                    
-            END. /* 4ea. proj_mstr */                                                                                           /* 1dot2 */
+	                isselected = "".
+-->
+                                    <option name='h-cliproj' value='`STRING(Proj_Mstr.Proj_client_ID) + "/" + Proj_Mstr.Proj_name`' `isselected`/>`Client_Mstr.Client_abbv + ": " + Proj_Mstr.Proj_name`</option>                    
+<!--WSS
+            END. /* 4ea. proj_mstr */ 
+-->
             
         {&OUT}
-            "                               </SELECT>" SKIP                                                                     /* 1dot2 */   
-            "                           </TD>" SKIP                                                                             /* 1dot2 */
-            "                       <tr>" skip                                                                                  /* 1dot2 */
-            "                           <td>Action</td>" skip            
-            "                           <TD " isreq ">" SKIP
-            "                               <select name='h-emph-action' " htmlreq " >" SKIP
-            "                                   <option value='' />" SKIP.
-    
-            
-            DO x = 1 TO NUM-ENTRIES(actionlist):               
-            
-            {&OUT}
-            "                                   <option name='h-emph-action' value='" ENTRY(x,actionlist) "' />" ENTRY(x,actionlist) "</option>" SKIP.
-        
+			                    </select>   
+			                </div>
+				            <div class='row'>
+				                <label>Action</label>             
+			                    <select name='h-emph-action' class='form-control' `htmlreq`> 
+			                        <option value=''/>
+<!--WSS
+            DO x = 1 TO NUM-ENTRIES(actionlist):
+-->
+                                    <option name='h-emph-action' value='`ENTRY(x,actionlist)`'/>`ENTRY(x,actionlist)`</option>
+<!--WSS
                END.  /** do x **/
-
-        {&OUT}
-            "                               </SELECT>" SKIP
-            "                           </TD>" SKIP            
-            "                           <td>Action Date</td>" skip
-            "                           <td " isreq "><input type='date' name='html5-action' value='" disp-action "' " htmlreq " /></td>" skip
-            "                       </tr>" skip 
-            "                       <tr>" SKIP
-            "                           <td>Notes</TD>" SKIP
-            "                           <td colspan='3'>" SKIP
-            "                               <textarea rows=4 cols=100 name='h-emph-notes' >" emph-notes "</textarea>" SKIP
-            "                           </td>" SKIP
-            "                       </tr>" skip                          	
-			"                   </table>" skip
-			"               </div>" skip                 
-			"       </div>" skip
-			"   </div class='grid_2'></div>" skip
-			"</div>" skip    
-	        "<BR>" SKIP    
-	        
-	        "<div class='row'>" SKIP
-            "   <div class='grid_2-5'> </DIV>" SKIP
-            "   <input type='hidden' name='h-firstname'  value='" firstname "' />" SKIP
-            "   <input type='hidden' name='h-lastname'  value='" lastname "' />" SKIP
-            "   <input type='hidden' name='html5-dob'  value='" disp-dob "' />" SKIP
-            "   <input type='hidden' name='h-empid'  value='" empid "' />" SKIP
-            "   <input type='hidden' name='h-addrid'  value='" addrid "' />" SKIP
-            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
-            "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn'>Update Employee</BUTTON></div>" SKIP
-            "   <div class='grid_1'> </DIV>" SKIP
-            "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='DELETE' class='btn'>Delete Employee</BUTTON></div>" SKIP
-            "   <div class='grid_1'> </DIV>" SKIP
-            "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
-            "   <div class='grid_1'> </DIV>" SKIP
-            "   <div class='grid_1'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
-            "   <div class='grid_2-5'> </DIV>" SKIP
-            "</div>" SKIP
-			"</form>" SKIP.
-        
+-->
+			                    </select> 
+			                    <label>Action Date</label> 
+			                    <input type='date' name='html5-action' class='form-control' value='`disp-action`' `htmlreq`/> 
+				            </div>  
+				            <div class='row'> 
+				                <label>Notes</label> 
+				                <textarea rows=4 name='h-emph-notes' class='form-control'>`emph-notes`</textarea> 
+				            </div>        
+				            <br/>                   	     
+					        <div class='row'>
+			                    <input type='hidden' name='h-firstname'  value='`firstname`'/> 
+			                    <input type='hidden' name='h-lastname'  value='`lastname`'/> 
+			                    <input type='hidden' name='html5-dob'  value='`disp-dob`'/> 
+			                    <input type='hidden' name='h-empid'  value='`empid`'/> 
+			                    <center>
+			                        <button type='submit' name='h-act' value='UPDATE' class='btn w3-theme-dark'>Update Employee</button>
+				                    <button type='button' id='deleteButton' class='btn w3-red'>Delete Employee</button>
+				                    <button type='reset' class='btn'>Clear Changes</button>
+			                    </center>
+				            </div>
+			            </div>                  
+			        </div> 
+			    </form> 
+			    
+			    <!-- Modal -->
+	            <div id="new-addr-modal" class="modal fade" role="dialog">
+	              <div class="modal-dialog">
+	                <div class="modal-content">
+	                  <form id="addr-modal-form">
+	                      <div class="modal-header">
+	                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+	                        <h4 class="modal-title">Create a New Address</h4>
+	                      </div>
+	                      <div class="modal-body">
+	                            <label>Address Line 1</label> 
+	                            <input type='text' name='h-addr1' class='form-control' required/> 
+	                            <label>Address Line 2</label> 
+	                            <input type='text' name='h-addr2' class='form-control'/> 
+	                            <label>Address Line 3</label> 
+	                            <input type='text' name='h-addr3' class='form-control'/> 
+	                            <label>City</label> 
+	                            <input type='text' name='h-city' class='form-control' required/> 
+	                            <label>State</label> 
+	                            <select name='h-stateprov' id='state-picker' class='form-control' required></select> 
+	                            <label>Zipcode</label> 
+	                            <input type='text' name='h-zip' class='form-control' required/> 
+	                            <label>Country</label> 
+	                            <select name='h-country' id='country-picker' class='form-control' required>
+	                            <!--WSS
+	                            FOR EACH country_mstr WHERE country_mstr.Country_Primary = TRUE AND country_mstr.country_deleted = ? NO-LOCK BY country_mstr.country_ISO:
+	                                IF country_mstr.country_ISO = "USA" THEN DO:
+	                            -->
+	                                <option value="`country_mstr.country_ISO`" selected>`country_mstr.country_display_name`</option>
+	                            <!--WSS
+	                                END.
+	                                ELSE DO: 
+	                            -->
+	                                <option value="`country_mstr.country_ISO`">`country_mstr.country_display_name`</option>
+	                            <!--WSS
+	                                END.
+	                            END.
+	                            -->
+	                            </select>
+	                      </div>
+	                      <div class="modal-footer">
+	                        <button type="submit" id="addr-modal-submit-button" class="btn w3-theme-dark">Create</button>
+	                      </div>
+	                  </form>
+	                </div>
+	              </div>
+	            </div>
+<!--WSS
     END. /* MAINTENANCE */
-    WHEN "DELETE" THEN DO:
-    
-        FIND Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = empid NO-LOCK NO-ERROR.
-        
-        IF AVAILABLE (Hours_Mstr) THEN 
-            {&OUT}
-            "<div class='row'>" skip
-            "   <div class='grid_2'></div>" skip
-            "       <div class='grid_8'>" skip 
-            "           <Center><h2>This employee still has entries. Please delete the corresponding entries.</h2></center>" SKIP
-            "       </div>" skip
-            "   </div class='grid_2'></div>" SKIP
-            "</div>" skip 
-            "<BR>" SKIP
-            "<form>" SKIP
-            "<div class='row'>" SKIP
-            "   <div class='grid_5'> </DIV>" SKIP 
-            "   <input type='hidden' name='h-firstname'  value='" firstname "' />" SKIP
-            "   <input type='hidden' name='h-lastname'  value='" lastname "' />" SKIP
-            "   <input type='hidden' name='html5-dob'  value='" disp-dob "' />" SKIP
-            "   <input type='hidden' name='h-empid'  value='" empid "' />" SKIP
-            "   <input type='hidden' name='h-addrid'  value='" addrid "' />" SKIP
-            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
-            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Update Another Employee</BUTTON></div>" SKIP
-            "   <div class='grid_5'> </DIV>" SKIP
-            "</div>" SKIP
-            "</form>" SKIP.       
-        
-        ELSE
-            {&OUT}
-            "<div class='row'>" skip
-            "   <div class='grid_2'></div>" skip
-            "       <div class='grid_8'>" skip 
-            "           <Center><h2>Are you Sure you want to delete " empname "?</h2></center>" SKIP
-            "       </div>" skip
-            "   </div class='grid_2'></div>" SKIP
-            "</div>" skip 
-            "<BR>" SKIP
-            "<form>" SKIP
-            "<div class='row'>" SKIP
-            "   <div class='grid_3'> </DIV>" SKIP 
-            "   <input type='hidden' name='h-firstname'  value='" firstname "' />" SKIP
-            "   <input type='hidden' name='h-lastname'  value='" lastname "' />" SKIP
-            "   <input type='hidden' name='html5-dob'  value='" disp-dob "' />" SKIP
-            "   <input type='hidden' name='h-empid'  value='" empid "' />" SKIP
-            "   <input type='hidden' name='h-addrid'  value='" addrid "' />" SKIP
-            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
-            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='REMOVE' class='btn'>YES</BUTTON></div>" SKIP
-            "   <div class='grid_2'> </DIV>" SKIP
-            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='MAINTENANCE' class='btn'>NO</BUTTON></div>" SKIP
-            "   <div class='grid_3'> </DIV>" SKIP
-            "</div>" SKIP
-            "</form>" SKIP.
-            
-    END. /* DELETE */  
     WHEN "UPDATE" THEN DO: 
-                                                                                        IF itmessage = YES THEN DO: 
-                                                                                           {&OUT}
-                                                                                               "ITmessage 3: UPDATE <BR>" SKIP
-                                                                                               "firstname = " firstname "<BR>" SKIP
-                                                                                               "lastname = " lastname "<BR>" SKIP
-                                                                                               "disp-dob = " disp-dob "<BR>" SKIP
-                                                                                               "dob = " dob "<BR>" SKIP
-                                                                                               "<BR></BR>" SKIP.
-                                                                                        END.        
-
-																						IF itmessage = YES THEN DO:     
-																						    {&OUT} 
-																						        "<P>Before emph-action.</P>" SKIP
-																						        "<P>first name =" firstname "</P>" skip
-																						        "<P>last name =" lastname "</P>" skip
-																						        "<P>dob =" dob "</P>" skip.  
-																						END.        
+                                                                                        
         IF emph-action = "Raise" THEN 
             empraise = actiondate.
         
-																				        IF itmessage = YES THEN DO:     
-																				            {&OUT} 
-																				                "<P>Before SUBpeop-datefindR.r</P>" SKIP
-																				                "<P>first name =" firstname "</P>" skip
-																				                "<P>last name =" lastname "</P>" skip
-																				                "<P>dob =" dob "</P>" skip.        
-																				        END. 
         RUN VALUE(SEARCH("SUBpeop-datefindR.r")) (
 			"",						/*people_mstr.people_prefix   */
 			firstname,				/*people_mstr.people_firstname*/
@@ -831,25 +762,12 @@ CASE act:
 			lastname,				/*people_mstr.people_lastname */
 			"",						/*people_mstr.people_suffix   */
 			dob,					/*people_mstr.people_DOB      */
-			
-			 OUTPUT empid,             
-			 OUTPUT o-addrid,         
-			 OUTPUT o-error,                    
-			 OUTPUT o-fpat-ran                        
-            ).
-                                                                                        IF itmessage = YES AND  o-error = YES OR o-fpat-ran = NO THEN 
-                                                                                           {&OUT}
-                                                                                               "<P>SUBpeop-datefindR.r Failed.</P>" SKIP. 
-/*        IF o-addrid > 0 THEN      */
-/*            ASSIGN                */
-/*                addrid = o-addrid.*/
-																				        IF itmessage = YES THEN DO:
-																				            {&OUT}
-																				                "<P>Before SUBpeop-ucU.r</P>" SKIP 
-																				                "<P>empid = " empid "</P>" skip
-																				                "<P>o-addrid = " o-addrid "</P>" skip
-																				                "<P>o-error = " o-error "</P>" skip.  
-																				        END.                                                                       
+			OUTPUT empid,             
+			OUTPUT o-addrid,         
+			OUTPUT o-error,                    
+			OUTPUT o-fpat-ran                        
+        ).
+                                                                       
         RUN VALUE(SEARCH("SUBpeop-ucU.r")) (
 			empid,					/*people_mstr.people_id       */
 			firstname,				/*people_mstr.people_firstname*/
@@ -869,30 +787,18 @@ CASE act:
 			"",						/*people_mstr.people_contact  */
 			dob,					/*people_mstr.people_DOB      */
 			"",						/*people_mstr.people_second_addr_ID   */
-		    prefname,               /*people_mstr.people_prefname         */              /* 1dot1 */
+		    prefname,               /*people_mstr.people_prefname         */          
 		    "",                     /*people_mstr.people_title            */
 			OUTPUT empid,
 			OUTPUT o-create, 
 			OUTPUT o-update,
 			OUTPUT o-avail,
 			OUTPUT o-successful
-	        ).          
-																							IF itmessage = YES AND o-successful = NO THEN 
-																							{&OUT}
-																							    "<P>SUBpeop-ucU.r Failed.</P>" SKIP.
-	    
-																						    IF itmessage = YES THEN
-																						       {&OUT} "<P>Before SUBemp-ucU</P>" SKIP.
+        ).          
+
 	    ASSIGN 
-	       defclient = INTEGER(SUBSTRING(cliproj,1,INDEX(cliproj,"/") - 1))        /* 1dot2 */
-	       defproj   = SUBSTRING(cliproj,INDEX(cliproj,"/") + 1,LENGTH(cliproj)).  /* 1dot2 */
-	    
-																					        IF itmessage = YES THEN DO: 
-																							    {&OUT}
-																							       "cliproj = " cliproj "<BR>" skip
-																							       "defclient = " defclient "<BR>" skip
-																							       "defproj = " defproj "<BR>" skip.
-																					        END.
+	        defclient = INTEGER(SUBSTRING(cliproj,1,INDEX(cliproj,"/") - 1))      
+	        defproj   = SUBSTRING(cliproj,INDEX(cliproj,"/") + 1,LENGTH(cliproj)). 
 	    
 	    RUN VALUE(SEARCH("SUBemp-ucU.r")) (	   
 			empid,					/*Emp_Mstr.Emp_ID           */
@@ -900,51 +806,35 @@ CASE act:
 			empdept,				/*Emp_Mstr.Emp_dept         */
 			emppayrate,				/*Emp_Mstr.Emp_base_pay      */
 			empraise,				/*Emp_Mstr.Emp_raise_date   */
-/*			progname,				/*Emp_Mstr.Emp_prog_name    */*/
 			loadedpay,              /*Emp_Mstr.Emp_loaded_pay   */
 			translation,            /*Emp_Mstr.Emp_trans_def    */
 			"",						/*Emp_Mstr.Emp_created_by   */
 			?,						/*Emp_Mstr.Emp_create_date  */
 			"",						/*Emp_Mstr.Emp_modified_by  */
 			?,						/*Emp_Mstr.Emp_modified_date*/
-			defclient,              /*Emp_Mstr.Emp_def_client   */       /* 1dot2 */
-			defproj,                /*Emp_Mstr.Emp_def_proj     */ 		 /* 1dot2 */
+			defclient,              /*Emp_Mstr.Emp_def_client   */      
+			defproj,                /*Emp_Mstr.Emp_def_proj     */ 		
 			emptype,                /*Emp_Mstr.Emp_type         */	
-
 			OUTPUT empid,         
 			OUTPUT o-create,                  
 			OUTPUT o-update,                   
 			OUTPUT o-avail,                  
 			OUTPUT o-successful,
 			OUTPUT o-error
-			).             	   
-                                                                                           IF itmessage = YES AND o-successful = NO THEN 
-                                                                                           {&OUT}
-                                                                                               "<P>SUBemp-ucU.r Failed.</P>" SKIP.	
-                                                                                           IF itmessage = YES THEN DO: 
-                                                                                               {&OUT}
-                                                                                                   "ITmessage 4: Run SUBemp <BR>" SKIP
-                                                                                                   "empid = " empid "<BR>" SKIP
-                                                                                                   "empadmin = " empadmin "<BR>" SKIP
-                                                                                                   "emppayrate = " emppayrate "<BR>" SKIP
-                                                                                                   "<BR></BR>" SKIP.
-                                                                                            END.                                                                                                                                           
+		).             	   
+                                                                                                                                                                                                                     
         IF emph-action <> "" THEN DO:                                                                                        	    
-																					       IF itmessage = YES THEN DO: 
-																						      {&OUT} "<P>Before SUBemph-ucU</P>." SKIP.
-		                                                                                   END.
+																					       
 		    RUN VALUE(SEARCH("SUBemph-ucU.r")) ( 
 				empid,					/*Emph_hist.Emph_emp_ID       */
 				emph-action,			/*Emph_hist.Emph_action       */
 				actiondate,				/*Emph_hist.Emph_action_date  */
 				emppayrate,				/*Emph_hist.Emph_payrate      */
 				emph-notes,				/*Emph_hist.Emph_notes        */
-	/*			progname,				/*Emph_hist.Emph_prog_name    */*/
 				"",						/*Emph_hist.Emph_created_by   */
 				?,						/*Emph_hist.Emph_create_date  */
 				"",						/*Emph_hist.Emph_modified_by  */
 				?,						/*Emph_hist.Emph_modified_date*/
-	
 				OUTPUT empid,       
 				OUTPUT o-emph-action,       
 				OUTPUT actiondate,   
@@ -956,21 +846,6 @@ CASE act:
 	            ).
             
         END.            
-                                                                                           IF itmessage = YES AND (o-error = YES OR o-successful = NO) THEN 
-                                                                                           {&OUT}
-                                                                                               "<P>SUBemph-ucU.r Failed.</P>" SKIP.    
-
-                                                                                           IF itmessage = YES THEN DO: 
-                                                                                               {&OUT}
-                                                                                                   "ITmessage 5: Run Values <BR>" SKIP
-                                                                                                   "firstname = " firstname "<BR>" SKIP
-                                                                                                   "lastname = " lastname "<BR>" SKIP
-                                                                                                   "disp-dob = " disp-dob "<BR>" SKIP
-                                                                                                   "dob = " dob "<BR>" SKIP
-                                                                                                   "empid = " empid "<BR>" SKIP
-                                                                                                   "o-emph-action = " o-emph-action "<BR>" SKIP
-                                                                                                   "<BR></BR>" SKIP.
-                                                                                            END.                                                                                                             
                                     
         FIND people_mstr WHERE people_mstr.people_id = empid NO-LOCK NO-ERROR.
         
@@ -978,203 +853,21 @@ CASE act:
              ASSIGN 
                 empname = people_mstr.people_lastname + ", " + people_mstr.people_firstname. 
         
-        FIND Emp_Mstr WHERE Emp_Mstr.Emp_ID = empid AND 
-                                    Emp_Mstr.Emp_deleted = ?
-                                    NO-LOCK NO-ERROR. 
-																																		        IF itmessage = YES THEN DO:
-																																		            {&OUT} 
-																																		                "<P>Before if avail emp</P>." SKIP.
-																																		        END.    
+        FIND Emp_Mstr WHERE Emp_Mstr.Emp_ID = empid AND Emp_Mstr.Emp_deleted = ? NO-LOCK NO-ERROR. 
+
         IF AVAILABLE (Emp_Mstr) THEN DO:                                                                 
-         
-            {&OUT}
-            "<div class='row'>" skip
-            "   <div class='grid_2'></div>" skip
-            "       <div class='grid_8'>" skip          
-            "               <div class='table_2col'>" skip
-            "                   <table>" skip
-            "                       <tr>" skip
-            "                           <th colspan='4'>Employee Maintenance</th>" skip
-            "                       </tr>" skip    
-                          
-            "                       <tr>" skip
-            "                           <td>Employee Name</td>" skip
-            "                           <td>" empname "</td>" skip  
-            "                           <td>Date of Birth</td>" skip
-            "                           <td>" dob "</td>" skip
-            "                       </tr>" skip  
-            "                       <tr>" skip                                                                                   /* 1dot1 */
-            "                           <td>Preferred Name</td>" skip                                                            /* 1dot1 */
-            "                           <td>" prefname "</td>" skip                                                    /* 1dot1 */
-            "                           <td>Employee ID</td>" skip                                                                  
-            "                           <td>" empid "</td>" SKIP            
-            "                       </tr>" skip                                                                                  /* 1dot1 */                               
-            "                       <tr>" skip
-            "                           <td>Base Pay</td>" skip
-            "                           <td>" Emp_Mstr.Emp_base_pay FORMAT "$->>>,>>>,>>9.99" " Per Hour</td>" skip
-            "                           <td>Admin Privileges</td>" SKIP.
-            
-            IF Emp_Mstr.Emp_admin = YES THEN 
-            {&OUT}
-            "                           <td><input type='radio' value='YES' name='h-empadmin' checked disabled />YES<input type='radio' value='NO' name='h-empadmin' disabled />NO</td>" SKIP.
-            ELSE
-            {&OUT}
-            "                           <td><input type='radio' value='YES' name='h-empadmin' disabled />YES<input type='radio' value='NO' name='h-empadmin' checked disabled />NO</td>" SKIP.
-            
-            {&OUT}
-            "                       </tr>" SKIP
-            "                       <tr>" skip
-            "                           <td>Loaded Pay</td>" skip
-            "                           <td>" Emp_Mstr.Emp_loaded_pay FORMAT "$->>>,>>>,>>9.99" " Per Hour</td>" skip
-            
-/*            "                           <td>Translation Default</td>" SKIP.         MOVE THIS                                          */
-/*                                                                                                                                       */
-/*            IF Emp_Mstr.Emp_trans_def = "Translated" THEN                                                                              */
-/*                {&OUT}                                                                                                                 */
-/*            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated' checked>Translated"*/
-/*            "                           <BR><input type='radio' name='h-translation' value='Full'>Full" skip                           */
-/*            "                           <br><input type='radio' name='h-translation' value='Bare'>Bare</td>" SKIP.                     */
-/*            ELSE IF Emp_Mstr.Emp_trans_def = "Full" THEN                                                                               */
-/*                {&OUT}                                                                                                                 */
-/*            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated'>Translated"        */
-/*            "                           <BR><input type='radio' name='h-translation' value='Full'checked>Full" skip                    */
-/*            "                           <br><input type='radio' name='h-translation' value='Bare'>Bare</td>" SKIP.                     */
-/*            ELSE IF Emp_Mstr.Emp_trans_def = "Bare" THEN                                                                               */
-/*                 {&OUT}                                                                                                                */
-/*            "                           <td colspan='3'><input type='radio' name='h-translation' value='Translated'>Translated"        */
-/*            "                           <BR><input type='radio' name='h-translation' value='Full'>Full" skip                           */
-/*            "                           <br><input type='radio' name='h-translation' value='Bare' checked>Bare</td>" SKIP.             */
-/*                                                                                                                                       */
-/*            {&OUT}                                                                                                                     */
-            "                           <td>Payment Type</td>" SKIP
-            "                           <td>" emptype "</td>" skip
-            "                       </tr>" skip           
-            "                       <tr>" skip
-            "                           <td>Gender</td>" SKIP.
-            
-            IF gender = YES THEN 
-                {&OUT}
-            "                           <td><input type='radio' value='Yes' name='h-gender' checked disabled />Male<input type='radio' value='No' name='h-gender' disabled />Female</td>" skip.
-            ELSE
-                {&OUT}
-            "                           <td><input type='radio' value='Yes' name='h-gender' disabled />Male<input type='radio' value='No' name='h-gender' checked disabled />Female</td>" skip. 
-            
-            {&OUT} 
-            "                           <td>Company</td>" skip
-            "                           <td>" company "</td>" skip
-            "                       </tr>" SKIP
-            "                       <tr>" skip
-            "                           <td>Address</td>" SKIP.            
-            
-            FIND addr_mstr WHERE addr_mstr.addr_id = addrid NO-LOCK NO-ERROR.
-            
-                 IF AVAILABLE (addr_mstr) THEN DO: 
-                     ASSIGN 
-                         addrline = addr_mstr.addr_addr1 + " " + addr_mstr.addr_addr2 + " " + addr_mstr.addr_addr3 + " " + addr_mstr.addr_city + " " + addr_mstr.addr_stateprov + ", " + addr_mstr.addr_zip + " " + addr_mstr.addr_country.
-                                                       
-                     {&OUT}
-            
-            
-            "                           <td colspan='3'>"
-                                              addrline "</td>" SKIP.
-                                              
-                 END. /* if avail addr_mstr */
-                 ELSE DO: 
-                     ASSIGN 
-                         addrline = "Click here to add an address.".  
-                               
-                     {&OUT}             
-            "                           <td colspan='3'><a href='ADDRpickP.r"               /* CODEHAUL */ 
-                                             "?h-prevproc=TSempmaintU.r"                  /* Calling Procedure */
-                                             "&h-act=MAINTENANCE"                         /* Calling Procedure's Act */                              
-                                             "&h-pp-passBack-peopid=" empid               /* Calling Procedure's people id to pass back. */          
-                                             "&h-pp-passBack-addrid=" addrid              /* Calling Procedure's address id to pass back. */         
-/*                                             "&h-pp-passBack-char1="                      /* Calling Procedure's Character data to pass back. */*/
-/*                                             "&h-pp-passBack-char2="                      /* Calling Procedure's Character data to pass back. */*/
-/*                                             "&h-pp-passBack-int1="                       /* Calling Procedure's Integer data to pass back. */  */
-/*                                             "&h-pp-passBack-int2="                       /* Calling Procedure's Integer data to pass back. */  */
-                                             "&h-addr-act=" pass-act 
-                                             "&whattorun=" whatshouldrun " '>"
-                                              addrline "</a></td>" SKIP.  
-                
-                END. /* else not avail addr_mstr */
-                
-            {&OUT}                       
-            "                       </tr>" SKIP
-            "                       <tr>" skip
-            "                           <td>Home phone</td>" skip
-            "                           <td>" homephone "</td>" skip 
-            "                           <td>Cell phone</td>" skip
-            "                           <td>" cellphone "</td>" skip
-            "                       </tr>" skip 
-            "                       <tr>" skip
-            "                           <td>Work phone</td>" skip
-            "                           <td>" workphone "</td>" skip 
-            "                           <td colspan='2'></td>" skip
-/*          "                           <td>Department</td>" skip                                */
-/*          "                           <td><select name='h-empdept'>" SKIP                      */
-/*          "                               <option value=''></option>" SKIP                     */
-/*          "                               <option value=IT>IT support</option>" SKIP           */
-/*          "                               <option value=SD >Software Development</option>" SKIP*/
-/*          "                               <option value=off>Office</option>" SKIP              */
-/*          "                               <option value=oth>Other</option></td>" SKIP          */
-/*          "                           <td colspan='2'></td>" skip                              */
-            "                       </tr>" skip             
-            "                       <tr>" skip
-            "                           <td>Business Email</td>" skip
-            "                           <td>" workemail "</td>" skip 
-            "                           <td>Other Email</td>" skip
-            "                           <td>" otheremail "</td>" skip
-            "                       </tr>" skip
-            "                       <tr>" skip                                                                  /* 1dot2 */
-            "                           <td>Default Client & Project</td>" skip.                                  /* 1dot2 */
-            
-            
-            FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = Emp_Mstr.Emp_def_client NO-LOCK NO-ERROR.     /* 1dot2 */
-            
-            IF AVAILABLE (Client_Mstr) THEN                                                                     /* 1dot2 */    
-                ASSIGN                                                                                          /* 1dot2 */
-                    clientabbv = Client_Mstr.Client_abbv.                                                       /* 1dot2 */
-                    
-            ELSE                                                                                                /* 1dot2 */
-               ASSIGN                                                                                           /* 1dot2 */
-                    clientabbv = "Error".                                                                       /* 1dot2 */
-            
-            {&OUT}                                                                                              /* 1dot2 */
-            "                           <td colspan='3'>" clientabbv ": " Emp_Mstr.Emp_def_proj "</TD>" SKIP   /* 1dot2 */
-            "                       <tr>" skip                                                                  /* 1dot2 */        
-            "                       <tr>" skip
-            "                           <td>Action</td>" skip            
-            "                           <TD>" emph-action "</TD>" SKIP            
-            "                           <td>Action Date</td>" skip
-            "                           <td>" actiondate "</td>" skip
-            "                       </tr>" skip 
-            "                       <tr>" SKIP
-            "                           <td>Notes</TD>" SKIP
-            "                           <td colspan='3'>" SKIP
-            "                               <textarea rows=4 cols=100 name='h-emp-hnotes' disabled >" emph-notes "</textarea>" SKIP
-            "                           </td>" SKIP
-            "                       </tr>" skip                             
-            "                   </table>" skip
-            "               </div>" skip                 
-            "       </div>" skip
-            "   </div class='grid_2'></div>" skip
-            "</div>" skip
-            "<BR>" SKIP 
-            "<form>" SKIP
-	        "<div class='row'>" SKIP
-	        "   <div class='grid_5'> </DIV>" SKIP
-	        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
-	        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Update Another Employee</BUTTON></div>" SKIP
-	        "   <div class='grid_5'> </DIV>" SKIP
-	        "</div>" SKIP
-	        "</form>" SKIP.     
-        
+-->
+            <script>
+                window.location = "TSempmaintU.html?empUpdated=true&h-empid=`empid`";
+            </script>
+<!--WSS
         END. /* if avail Emp_Mstr */
              
     END. /* UPDATE */     
     
 END CASE.         
-</SCRIPT>
+-->
+	    </div>
+	</div>
 </BODY>
 </HTML>

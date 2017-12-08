@@ -27,6 +27,9 @@ DEFINE INPUT PARAMETER i-update         AS  LOGICAL INITIAL NO    NO-UNDO.
 DEFINE INPUT PARAMETER i-new-type       AS  CHARACTER INITIAL "" NO-UNDO.
 
 DEFINE OUTPUT PARAMETER o-requestedkey LIKE pal_list.pal_people_ID NO-UNDO.
+DEFINE OUTPUT PARAMETER o-create      AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE OUTPUT PARAMETER o-update      AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE OUTPUT PARAMETER o-avail       AS LOGICAL INITIAL YES          NO-UNDO.
 DEFINE OUTPUT PARAMETER o-successful  AS LOGICAL INITIAL NO           NO-UNDO.
 
 /* ***************************  Main Block  *************************** */
@@ -40,6 +43,8 @@ DO TRANSACTION:
         
     IF i-update THEN /*Update the record*/
         DO:
+            ASSIGN o-update = YES.
+            
             IF AVAILABLE pal_list THEN  
                 ASSIGN 
                     o-successful         = YES
@@ -68,6 +73,7 @@ DO TRANSACTION:
                 pal_list.pal_people_ID      = i-people_id
                 pal_list.pal_addr_ID        = i-addr_id
                 pal_list.pal_type           = i-type
+                o-create              = YES
                 o-successful          = YES
                 pal_list.pal_create_date    = TODAY
                 pal_list.pal_created_by     = USERID("Core")
@@ -76,6 +82,10 @@ DO TRANSACTION:
                 pal_list.pal_prog_name      = SOURCE-PROCEDURE:FILE-NAME
                 o-requestedkey          = IF i-requestedkey = "people_id" THEN pal_list.pal_people_ID ELSE pal_list.pal_addr_ID
                 .    
+        END.
+    ELSE 
+        DO:
+            ASSIGN o-create = YES.
         END.
 END. /*** of maineblock ***/
 

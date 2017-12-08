@@ -213,14 +213,14 @@ IF datelist[14] <> ? THEN                                                       
 /*                {&OUT} "           <TD>" datelist[6] "</TD>" SKIP.*/
                 {&OUT} "           <TD><input type='text' name='h-LAB_RCVD' value =" html5-datelist[6] " disabled /></TD>" SKIP.                    
                 
-            {&OUT} "           <TD>CD Burned</TD>" SKIP.         
+            {&OUT} "           <TD>Emailed</TD>" SKIP.         
 
                 
             IF datelist[12] = ? THEN 
-                {&OUT} "           <TD><input type='date' name='h-CD_BURNED' {1} /></TD>" SKIP.
+                {&OUT} "           <TD><input type='date' name='h-CD_EMAILED' {1} /></TD>" SKIP.
             ELSE 
 /*                {&OUT} "           <TD>" datelist[12] "</TD>" SKIP.*/
-                {&OUT} "           <TD><input type='text' name='h-CD_BURNED' value =" html5-datelist[12] " disabled /></TD>" SKIP.                    
+                {&OUT} "           <TD><input type='text' name='h-CD_EMAILED' value =" html5-datelist[12] " disabled /></TD>" SKIP.                    
                     
             {&OUT} "           <TD>VOID</TD>" SKIP.
                 

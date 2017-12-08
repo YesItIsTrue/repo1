@@ -41,10 +41,12 @@ PROCEDURE createJson :
     ASSIGN
         client-id = INTEGER(html-encode(get-value("h-client")))
         project-name = html-encode(get-value("h-project"))
-        html-date = html-encode(get-value("h-date")).
+        html-date = html-encode(get-value("h-date"))
+        employee-id = INTEGER(html-encode(get-value("h-empid"))).
         
-    IF get-value("empid") <> "" THEN
-        employee-id = INTEGER(html-encode(get-value("empid"))).
+    IF employee-id <> 0 THEN DO:
+        {validate-admin.i "TSadmin"}.
+    END.
     ELSE
         RUN VALUE(SEARCH("session-get-user-id.r")) (
             get-cookie("c-session-token"),
@@ -56,6 +58,7 @@ PROCEDURE createJson :
         OUTPUT prog-date
     ).
     
+    DISPLAY prog-date employee-id client-id project-name WITH 2 COL.
     FOR FIRST Hours_Mstr WHERE Hours_Mstr.Hours_date = prog-date AND Hours_Mstr.Hours_employee_ID = employee-id AND 
     Hours_Mstr.Hours_client_ID = client-id AND Hours_Mstr.Hours_project_name = project-name AND 
     Hours_Mstr.Hours_deleted = ? EXCLUSIVE-LOCK:
