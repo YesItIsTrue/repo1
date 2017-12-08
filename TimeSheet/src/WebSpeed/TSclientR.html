@@ -23,14 +23,9 @@
 </HEAD>
 <BODY class='inside'>
         
-<SCRIPT language="SpeedScript">
+<!--WSS
 {TSvert-menu.i}.
 
-{&OUT}
-    "<div class='vert-nav-page'>" SKIP
-        "<div class='w3-content page-content'>" SKIP
-        "<br/><br/>" SKIP.
-        
   /*------------------------------------------------------------------
     File:           TSclientR.html
     Description:    Client Report
@@ -78,6 +73,11 @@ IF act = "" THEN
         act = "INITIAL".    
 
 /* *********************************** Body ************************************* */
+-->
+    <div class='vert-nav-page'> 
+        <div class='w3-content page-content'> 
+        <br/><br/>
+<!--WSS
 CASE act:
     
     WHEN "INITIAL" THEN DO:  
@@ -130,9 +130,9 @@ CASE act:
             "       </tr>" skip
             "   </table>" skip
             "</div>" skip      
-            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "</DIV>" SKIP
             "<DIV class='grid_3'> </DIV>" SKIP  
-            "</DIV>     <!-- end of row -->" SKIP
+            "</DIV>" SKIP
             "<BR>" SKIP
             "<div class='row'>" SKIP
             "   <div class='grid_3'> </DIV>" SKIP
@@ -210,10 +210,9 @@ CASE act:
             {&OUT}
                 "       <TR>" SKIP
                 "           <TD><a href='TSclientmaintU.r"                                      /* CODEHAUL */ 
-                                    "?h-pp-passBack-peopid=" Client_Mstr.Client_people_ID
-                                    "&h-pp-passBack-addrid=" addr_mstr.addr_id
+                                    "?h-clientid=" Client_Mstr.Client_people_ID
+                                    "&h-addrid=" addr_mstr.addr_id
                                     "&h-act=MAINTENANCE"
-                                    "&whattorun=8.23"
                 "                   '>" Client_Mstr.Client_abbv "</a></td>" SKIP
                 "           <TD>" clientname "</TD>" SKIP
                 "           <TD>" addrline "</TD>" SKIP
@@ -239,8 +238,8 @@ CASE act:
             "        </TFOOT>" SKIP
             "    </TABLE>" SKIP
             "</DIV>" SKIP        
-            "</DIV>         <!-- end of grid_12 -->" SKIP
-            "</DIV>     <!-- end of row -->" SKIP 
+            "</DIV>" SKIP
+            "</DIV>" SKIP 
             "<BR>" SKIP 
             "<form>" SKIP
             "<div class='row'>" SKIP
@@ -253,9 +252,7 @@ CASE act:
     END. /* SEARCH */
 
 END CASE.         
-        
-         
-</SCRIPT>
+-->
         </div>
     </div>
 </BODY>

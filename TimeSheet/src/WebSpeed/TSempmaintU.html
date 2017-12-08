@@ -211,6 +211,7 @@ DEFINE VARIABLE defproj       LIKE Emp_Mstr.Emp_def_proj          NO-UNDO.      
 DEFINE VARIABLE clientabbv    LIKE Client_Mstr.Client_abbv        NO-UNDO.          /* 1dot2 */
 DEFINE VARIABLE cliproj       AS CHARACTER                        NO-UNDO.          /* 1dot2 */    
 DEFINE VARIABLE isselected    AS CHARACTER                        NO-UNDO.          /* 1dot2 */    
+DEFINE VARIABLE v-calling-prog AS CHARACTER                       NO-UNDO.
 
 ASSIGN 
     empid         = INTEGER(html-encode(get-value("h-empid")))
@@ -260,6 +261,7 @@ ASSIGN
     progname      = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1)
     
     cliproj       = html-encode(get-value("h-cliproj"))                                  /* 1dot2 */
+    v-calling-prog = html-encode(get-value("h-calling-prog"))
     .
 
 IF disp-dob <> ? THEN     
@@ -281,11 +283,14 @@ IF act = "" THEN
 FIND people_mstr WHERE people_mstr.people_id = empid OR people_mstr.people_id = pp-passBack-peopid NO-LOCK NO-ERROR.
 
 IF AVAILABLE (people_mstr) THEN 
-     ASSIGN 
+     ASSIGN
+         firstname = people_mstr.people_firstname
+         lastname = people_mstr.people_lastname  
+         dob = people_mstr.people_DOB
          empname = people_mstr.people_lastname + ", " + people_mstr.people_firstname. 
 /* *********************************** Body ************************************* */
 -->
-
+    
 	<script>
 	    $(document).ready(function() {
 	        $("#deleteButton").click(function() {
@@ -323,7 +328,12 @@ IF AVAILABLE (people_mstr) THEN
 	                                "`empname`, has been deleted.",
 	                                "success")
 	                                .then(function() {
-	                                    window.location = "TSempmaintU.r";
+	                                    if ($("#callingProgram").val() === "") {
+	                                        window.location = "TSempmaintU.r";
+                                        }
+                                        else {
+                                            window.location = "`v-calling-prog`.r";
+                                        }
 	                                });
 	                            }
 	                            else {
@@ -449,7 +459,7 @@ CASE act:
 <!--WSS
     END.       
     WHEN "MAINTENANCE" THEN DO:                       
-                
+        
         IF  pp-passBack-peopid > 0 THEN DO:                    
             ASSIGN  
                 empid    = pp-passBack-peopid
@@ -535,7 +545,8 @@ CASE act:
 		).     
 -->
 
-                <form> 
+                <form>
+                    <input type="hidden" id="callingProgram" name="h-calling-prog" value="`v-calling-prog`"/> 
 		            <div class='w3-content'>
                         <div class="form-content w3-card-4 w3-white">
                             <h2 class='page-title'>Employee Maintenance</h2>
@@ -751,6 +762,11 @@ CASE act:
 <!--WSS
     END. /* MAINTENANCE */
     WHEN "UPDATE" THEN DO: 
+        ASSIGN 
+            v-calling-prog = html-encode(get-value("h-calling-prog")).
+-->
+        <input type="hidden" id="callingProgram" name="h-calling-prog" value="`v-calling-prog`"/>
+<!--WSS
                                                                                         
         IF emph-action = "Raise" THEN 
             empraise = actiondate.
@@ -858,10 +874,18 @@ CASE act:
         IF AVAILABLE (Emp_Mstr) THEN DO:                                                                 
 -->
             <script>
-                window.location = "TSempmaintU.html?empUpdated=true&h-empid=`empid`";
+                if ($("#callingProgram").val() === "") {
+                    window.location = "TSempmaintU.html?empUpdated=true&h-empid=`empid`";
+                }
+                else {
+                    window.location = "`v-calling-prog`.r";
+                }
             </script>
 <!--WSS
         END. /* if avail Emp_Mstr */
+        ELSE DO:
+            DISPLAY "Error in TSempmaintU.html: Emp_Mstr not found on line 869".
+        END.
              
     END. /* UPDATE */     
     

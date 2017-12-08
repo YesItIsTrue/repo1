@@ -173,6 +173,9 @@ FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid AND
             if ($("#callingProgram").val() === "") {
                 fetchProjects().then(() => populateProjectInput());
             }
+            else {
+                populateProjectInput();
+            }
             
             $("#clientSelect").change(function(e) {
                 fetchProjects().then(() => populateProjectInput());
@@ -277,10 +280,9 @@ FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid AND
 						<!--WSS
 							    FOR EACH Client_Mstr WHERE Client_Mstr.Client_deleted = ? NO-LOCK BY Client_Mstr.Client_abbv:  
 							        ASSIGN 
-							            clientid = Client_Mstr.Client_people_ID
 							            isSelected = IF Client_Mstr.Client_people_ID = clientid THEN "selected" ELSE "". 
 						-->
-								    <option value='`clientid`' `isSelected`>`Client_Mstr.Client_abbv`</option>
+								    <option value='`Client_Mstr.Client_people_ID`' `isSelected`>`Client_Mstr.Client_abbv`</option>
 						<!--WSS
 							    END.  /** of 4ea. client_mstr **/
 						-->
@@ -289,7 +291,17 @@ FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid AND
 	                        <div class='col-md-6'>
 		                        <label>Project Name</label>
 		                        <div class='col-sm-11 row-margins'>
-		                            <select name='h-projname' id='projectSelect' class='form-control' required></select>
+		                            <select name='h-projname' id='projectSelect' class='form-control' required>
+<!--WSS
+	                                FOR EACH Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid AND Proj_Mstr.proj_deleted = ? NO-LOCK:
+	                                    ASSIGN 
+	                                        isSelected = IF Proj_Mstr.Proj_name = projname THEN "selected" ELSE "".
+-->
+                                        <option value='`Proj_Mstr.Proj_name`' `isSelected`>`Proj_Mstr.Proj_name`</option>
+<!--WSS
+						            END.  /** of 4ea. proj_mstr **/
+-->
+		                            </select>
 	                            </div>
 	                            <div class='col-sm-1'>
 	                               <button type='button' id='newProjButton' class='btn w3-theme-accent'>New</button> 

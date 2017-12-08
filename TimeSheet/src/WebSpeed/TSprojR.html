@@ -107,7 +107,7 @@ CASE act:
             "    <TABLE>" SKIP
             "        <THEAD>" SKIP
             "            <TR>" SKIP
-            "                <TH colspan=14>Project List</TH>" SKIP    /* thead, tr, th makes the silver bar */
+            "                <TH colspan=13>Project List</TH>" SKIP    /* thead, tr, th makes the silver bar */
             "            </TR>" SKIP
             "            <TR>" SKIP
             "                <TD>Project Name</TD>" SKIP
@@ -121,7 +121,7 @@ CASE act:
             "                <TD>Current Total Cost</TD>" SKIP
             "                <TD>Start Date</TD>" SKIP
             "                <TD>End Date</TD>" SKIP
-            "                <TD>Developer Only</TD>" SKIP
+/*            "                <TD>Developer Only</TD>" SKIP*/
             "            </TR>" SKIP
             "        </THEAD>" SKIP(1).
             
@@ -140,7 +140,7 @@ CASE act:
                                     "?h-clientid=" Proj_Mstr.Proj_client_ID
                                     "&h-projname=" Proj_Mstr.Proj_name
                                     "&h-act=MAINTENANCE"
-                                    "&whattorun=8.26"
+                                    "&h-calling-prog=TSprojR"
                 "                   '>" Proj_Mstr.Proj_name "</a></td>" SKIP
                 "           <TD>" Client_Mstr.Client_abbv "</TD>" SKIP
                 "           <TD>" Proj_Mstr.Proj_sort "</TD>" SKIP 
@@ -152,14 +152,14 @@ CASE act:
                 "           <TD>" Proj_Mstr.Proj_curr_total FORMAT "$->>>,>>>,>>9.99" "</TD>" SKIP
                 "           <TD>" Proj_Mstr.Proj_start_date "</TD>" SKIP
                 "           <TD>" Proj_Mstr.Proj_end_date "</TD>" SKIP
-                "           <TD>" Proj_Mstr.Proj_admin_only "</TD>" SKIP 
+/*                "           <TD>" Proj_Mstr.Proj_admin_only "</TD>" SKIP*/
                 "       </TR>" SKIP. 
         
         END. /* 4ea. people, emp, emph */   
         {&OUT}          
             "        <TFOOT>" SKIP
             "            <TR>" SKIP
-            "                <TD COLSPAN=14>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+            "                <TD COLSPAN=13>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
             "            </TR>" SKIP
             "        </TFOOT>" SKIP
             "    </TABLE>" SKIP

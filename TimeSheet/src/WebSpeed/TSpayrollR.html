@@ -179,10 +179,10 @@ CASE act:
             {&OUT}
             "           <tr>" SKIP
             "               <TD><a href='TSempmaintU.r"                                 /* CODEHAUL */ 
-                                    "?h-pp-passBack-int1=" Emp_Mstr.Emp_ID
-                                    "&h-pp-passBack-int2=" people_mstr.people_addr_id
+                                    "?h-empid=" Emp_Mstr.Emp_ID
+                                    "&h-address-id=" people_mstr.people_addr_id
                                     "&h-act=MAINTENANCE"
-                                    "&whattorun=8.20"
+                                    "&h-calling-prog=TSpayrollR"
             "                       '>" empname "</a></td>" SKIP
             "               <td>" Emp_Mstr.Emp_base_pay FORMAT "$->>>,>>>,>>9.99" "</td>" SKIP
             "               <td>" Emp_Mstr.Emp_loaded_pay FORMAT "$->>>,>>>,>>9.99" "</td>" SKIP

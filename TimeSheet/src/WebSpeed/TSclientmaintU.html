@@ -15,183 +15,7 @@
             font-size: 12px;
         }
     </style>
-    <script>
-        $(document).ready(function() {
-            $("[type='date']").mask("9999-99-99",{placeholder:"yyyy-mm-dd"});
-        
-            function populateStateDropdown(){
-		            $.post("AJAX-populate-state-dropdown.r",
-		            {
-		                countryISO: $("#country-picker").val() ? $("#country-picker").val() : "USA" 
-		            },
-		            function(response, status){
-		                $("#state-picker").children('option').remove();
-		                $.each(response, function (key, value) {
-		                    $("#state-picker").append("<option value='" + key + "'>" + value + "</option>");
-		                });
-		            });
-		    }
-		    
-		    $("#delete-client-button").click(function() {
-                $.post("AJAX-get-projects-by-client.r",
-                {
-                    clientID: $("[name='h-clientid']").val()
-                },
-                function(data, success) {
-                    if (!$.isEmptyObject(data)) {
-                        swal(
-                            "Slow down there, Friend!",
-                            "You need to delete all projects associated with the Client, " + $("#clientname").val() + ", before deleting it.",
-                            "warning"
-                        );
-                    }
-                    else {
-                        swal({
-		                  title: 'Are you sure?',
-		                  text: "Do you really want to delete the client, " + $("#clientname").val() + "?",
-		                  type: 'warning',
-		                  showCancelButton: true,
-		                  confirmButtonColor: '#3085d6',
-		                  cancelButtonColor: '#d33',
-		                  confirmButtonText: 'Yes, delete it!'
-		                }).then(function (result) {
-		                  if (result.value) {
-		                    $.post("AJAX-delete-client.r",
-		                    {
-		                        clientID: $("[name='h-clientid']").val()
-		                    },
-		                    function(data, success) {
-		                        if (data.success) {
-		                            swal("Success!",
-		                            "The client, " + $("#clientname").val() + ", has been deleted.",
-		                            "success")
-		                            .then(function() {
-		                                window.location = "TSclientmaintU.r";
-		                            });
-		                        }
-		                        else {
-		                            swal("Whoops!", data.error, "error");
-		                        }
-		                    });
-		                  }
-		                })
-                    }
-                });
-		    });
-		    
-		    $("#country-picker").change(function() {
-		        populateStateDropdown();
-		    });
-        
-            $("#new-address-link").click(function(e) {
-                e.preventDefault();
-                $("#new-addr-modal").modal();
-                populateStateDropdown();
-            });
-            
-            $("#client-address").change(function() {
-                if ($(this).val() == "-1") {
-                    $("#new-address-link").show();
-                    $(".address-error").show();
-                }
-                else {
-                    $("#new-address-link").hide();
-                    $(".address-error").hide();
-                }
-            });
-            
-            // Address Picker
-            function formatAddressResponse (data) {
-               var display = "<div><p style='margin: 0px'>" + data.text + "</p>";
-               if (data.addr2 != undefined) {
-                 display += "<p style='margin: 0px'>" + data.addr2 + "</p>";
-               }
-               if (data.cityStateZip != undefined) {
-                 display += "<p style='margin: 0px'>" + data.cityStateZip + "</p>";
-               }
-               display += "</div>";
-               return display;
-            }
-        
-              function formatAddressSelection (data) {
-                  var display = data.text;
-                  if (data.addr2 != undefined && data.addr2 != "") {
-                      display += ", " + data.addr2;
-                  }
-                  if (data.cityStateZip != undefined && data.cityStateZip != "") {
-                      display += ", " + data.cityStateZip;
-                  }
-                  return display;
-              }
-            
-            $("#client-address").select2({
-                ajax: {
-                    url: "AJAX-address-picker.r",
-                    dataType: 'json',
-                    delay: 250,
-                    data: function (params) {
-                      return {
-                        addr1: params.term, // search term
-                        page: params.page
-                      };
-                    },
-                    processResults: function (data, params) {
-                      params.page = params.page || 1;
-                
-                      return {
-                        results: data.results,
-                        pagination: {
-                          more: (params.page * 30) < data.total_count
-                        }
-                      };
-                    },
-                    cache: true
-                  },
-                  escapeMarkup: function (markup) { return markup; },
-                  minimumInputLength: 1,
-                  templateResult: formatAddressResponse,
-                  templateSelection: formatAddressSelection
-            });
-            
-            $("#addr-modal-form").submit(function(e) {
-                e.preventDefault();
-                $.post("AJAX-create-address.r",
-	                $("#addr-modal-form").serialize(),
-	                function(data, success) {
-	                   if (data.success) {
-	                       let select = $('#client-address');
-						   let option = $('<option></option>').
-							    attr('selected', true).
-							    text(data.prettyAddress).
-							    val(data.addrid);
-						   option.appendTo(select);
-						   select.trigger('change');
-						   $("#new-addr-modal").modal("hide");
-	                   }
-	                   else {
-	                       swal(
-							  'Whoops!',
-							  data.error,
-							  'error'
-							)
-	                   }
-	            });
-            });
-            
-            $("#update-client-button").click(function() {
-                $.post("AJAX-update-client.r",
-                $("#edit-client-form").serialize(),
-                function(data, success) {
-                    if (data.success) {
-                        swal("Success!", $("#clientname").val() + " was successfully updated", "success");
-                    }
-                    else {
-                        swal("Whoops!", data.error, "error");
-                    }
-                });
-            });
-        });
-    </script>
+    
 	<!--WSS
     PROCEDURE Output-Header:
         {cookie-check-permissions.i "TSlogin.r"}.
@@ -322,6 +146,183 @@ IF act = "NEW" THEN
 
 /* *********************************** Body ************************************* */
 -->
+    <script>
+        $(document).ready(function() {
+            $("[type='date']").mask("9999-99-99",{placeholder:"yyyy-mm-dd"});
+        
+            function populateStateDropdown(){
+                    $.post("AJAX-populate-state-dropdown.r",
+                    {
+                        countryISO: $("#country-picker").val() ? $("#country-picker").val() : "USA" 
+                    },
+                    function(response, status){
+                        $("#state-picker").children('option').remove();
+                        $.each(response, function (key, value) {
+                            $("#state-picker").append("<option value='" + key + "'>" + value + "</option>");
+                        });
+                    });
+            }
+            
+            $("#delete-client-button").click(function() {
+                $.post("AJAX-get-projects-by-client.r",
+                {
+                    clientID: $("[name='h-clientid']").val()
+                },
+                function(data, success) {
+                    if (!$.isEmptyObject(data)) {
+                        swal(
+                            "Slow down there, Friend!",
+                            "You need to delete all projects associated with the Client, " + $("#clientname").val() + ", before deleting it.",
+                            "warning"
+                        );
+                    }
+                    else {
+                        swal({
+                          title: 'Are you sure?',
+                          text: "Do you really want to delete the client, " + $("#clientname").val() + "?",
+                          type: 'warning',
+                          showCancelButton: true,
+                          confirmButtonColor: '#3085d6',
+                          cancelButtonColor: '#d33',
+                          confirmButtonText: 'Yes, delete it!'
+                        }).then(function (result) {
+                          if (result.value) {
+                            $.post("AJAX-delete-client.r",
+                            {
+                                clientID: $("[name='h-clientid']").val()
+                            },
+                            function(data, success) {
+                                if (data.success) {
+                                    swal("Success!",
+                                    "The client, " + $("#clientname").val() + ", has been deleted.",
+                                    "success")
+                                    .then(function() {
+                                        window.location = "TSclientmaintU.r";
+                                    });
+                                }
+                                else {
+                                    swal("Whoops!", data.error, "error");
+                                }
+                            });
+                          }
+                        })
+                    }
+                });
+            });
+            
+            $("#country-picker").change(function() {
+                populateStateDropdown();
+            });
+        
+            $("#new-address-link").click(function(e) {
+                e.preventDefault();
+                $("#new-addr-modal").modal();
+                populateStateDropdown();
+            });
+            
+            $("#client-address").change(function() {
+                if ($(this).val() == "-1") {
+                    $("#new-address-link").show();
+                    $(".address-error").show();
+                }
+                else {
+                    $("#new-address-link").hide();
+                    $(".address-error").hide();
+                }
+            });
+            
+            // Address Picker
+            function formatAddressResponse (data) {
+               var display = "<div><p style='margin: 0px'>" + data.text + "</p>";
+               if (data.addr2 != undefined) {
+                 display += "<p style='margin: 0px'>" + data.addr2 + "</p>";
+               }
+               if (data.cityStateZip != undefined) {
+                 display += "<p style='margin: 0px'>" + data.cityStateZip + "</p>";
+               }
+               display += "</div>";
+               return display;
+            }
+        
+              function formatAddressSelection (data) {
+                  var display = data.text;
+                  if (data.addr2 != undefined && data.addr2 != "") {
+                      display += ", " + data.addr2;
+                  }
+                  if (data.cityStateZip != undefined && data.cityStateZip != "") {
+                      display += ", " + data.cityStateZip;
+                  }
+                  return display;
+              }
+            
+            $("#client-address").select2({
+                ajax: {
+                    url: "AJAX-address-picker.r",
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                      return {
+                        addr1: params.term, // search term
+                        page: params.page
+                      };
+                    },
+                    processResults: function (data, params) {
+                      params.page = params.page || 1;
+                
+                      return {
+                        results: data.results,
+                        pagination: {
+                          more: (params.page * 30) < data.total_count
+                        }
+                      };
+                    },
+                    cache: true
+                  },
+                  escapeMarkup: function (markup) { return markup; },
+                  minimumInputLength: 1,
+                  templateResult: formatAddressResponse,
+                  templateSelection: formatAddressSelection
+            });
+            
+            $("#addr-modal-form").submit(function(e) {
+                e.preventDefault();
+                $.post("AJAX-create-address.r",
+                    $("#addr-modal-form").serialize(),
+                    function(data, success) {
+                       if (data.success) {
+                           let select = $('#client-address');
+                           let option = $('<option></option>').
+                                attr('selected', true).
+                                text(data.prettyAddress).
+                                val(data.addrid);
+                           option.appendTo(select);
+                           select.trigger('change');
+                           $("#new-addr-modal").modal("hide");
+                       }
+                       else {
+                           swal(
+                              'Whoops!',
+                              data.error,
+                              'error'
+                            )
+                       }
+                });
+            });
+            
+            $("#update-client-button").click(function() {
+                $.post("AJAX-update-client.r",
+                $("#edit-client-form").serialize(),
+                function(data, success) {
+                    if (data.success) {
+                        swal("Success!", $("#clientname").val() + " was successfully updated", "success");
+                    }
+                    else {
+                        swal("Whoops!", data.error, "error");
+                    }
+                });
+            });
+        });
+    </script>
 
 	<div class="vert-nav-page">
 		<div class="page-content">
@@ -477,7 +478,7 @@ CASE act:
                 </script>
 <!--WSS
             END.
-        END.
+        END. /* IF CREATE */
 	         
         
         IF clientid > 0 THEN DO:
@@ -503,7 +504,7 @@ CASE act:
                                Client_Mstr.Client_deleted   = ?
                             NO-LOCK NO-ERROR. 
             
-         IF AVAILABLE (Client_Mstr) THEN DO:
+        IF AVAILABLE (Client_Mstr) THEN DO:
          
             ASSIGN  
                 clientabbv      = Client_Mstr.Client_abbv    
