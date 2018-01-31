@@ -34,23 +34,23 @@
     "   ~}" SKIP
     "</style>" SKIP.
 
-    DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
-    DEFINE VARIABLE v-username AS CHARACTER NO-UNDO.
-    DEFINE VARIABLE v-password AS CHARACTER NO-UNDO.
-    DEFINE VARIABLE v-last-password-reset-date2 AS DATE. /* This is some voodoo with the cookies. Even though this v-last-password-reset-date is defined in the cookie, we can't reuse it here*/
-    DEFINE VARIABLE v-user-id AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE i-act AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE i-username AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE i-password AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE i-last-password-reset-date2 AS DATE. /* This is some voodoo with the cookies. Even though this i-last-password-reset-date is defined in the cookie, we can't reuse it here*/
+    DEFINE VARIABLE i-user-id AS CHARACTER NO-UNDO.
     
     ASSIGN 
-        v-act = get-value('act')
-        v-username = get-value('username')
-        v-password = get-value('password').
+        i-act = get-value('act')
+        i-username = get-value('username')
+        i-password = get-value('password').
         
-    FIND usr_mstr WHERE usr_mstr.usr_name = v-username AND usr_mstr.usr_password = ENCODE(v-password) AND usr_deleted = ? NO-ERROR.
+    FIND usr_mstr WHERE usr_mstr.usr_name = i-username AND usr_mstr.usr_password = ENCODE(i-password) AND usr_deleted = ? NO-ERROR.
     IF AVAILABLE (usr_mstr) THEN
-        ASSIGN v-user-id = STRING(usr_mstr.usr_people_ID).
+        ASSIGN i-user-id = STRING(usr_mstr.usr_people_ID).
     
-    IF v-login-success = TRUE THEN DO:
-        IF v-password-warning = FALSE THEN DO:
+    IF i-login-success = TRUE THEN DO:
+        IF i-password-warning = FALSE THEN DO:
             {&OUT}
                 "<script>" SKIP
                 "   window.location = '{1}';" SKIP
@@ -74,7 +74,7 @@
                 "               <h4>Your password will expire soon. Please reset it when you get the chance.</h4>" SKIP
                 "           </center>" SKIP
                 "           <form action='password-reset-form.r' method='post'>" SKIP
-                "               <input type='hidden' name='h-user-id' value='`v-user-id`'/>" SKIP
+                "               <input type='hidden' name='h-user-id' value='`i-user-id`'/>" SKIP
                 "               <div class='center-buttons'>" SKIP
                 "                   <button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:250px;'>I'll reset it now</button>" SKIP
                 "                   <button id='no-reset-btn' type='button' class='w3-btn-block w3-dark-grey w3-round' style='max-width:250px;'>Continue without resetting</button>" SKIP
@@ -85,7 +85,7 @@
                 "</div>" SKIP.
         END.
     END.
-    ELSE IF v-password-expired-error = TRUE AND v-user-locked-error = FALSE THEN DO:
+    ELSE IF i-password-expired-error = TRUE AND i-user-locked-error = FALSE THEN DO:
         {&OUT}
             "<script>" SKIP
             "       $(document).ready(function() ~{" SKIP
@@ -100,7 +100,7 @@
             "               <p>Your password has expired. In order to continue, please update it.</p>" SKIP
             "           </center>" SKIP
             "           <form action='password-reset-form.r' method='post'>" SKIP
-            "               <input type='hidden' name='h-user-id' value='`v-user-id`'/>" SKIP
+            "               <input type='hidden' name='h-user-id' value='`i-user-id`'/>" SKIP
             "               <div class='center-buttons'>" SKIP
             "                       <button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:250px;'>Ok</button>" SKIP
             "               </div>" SKIP
@@ -117,10 +117,10 @@
         "           <img class='w3-margin-top w3-image' src='{2}' alt='Company Logo'>" SKIP
         "       </div>" SKIP.
          
-    IF v-invalid-creds-error = YES THEN 
+    IF i-invalid-creds-error = YES THEN 
         {&OUT}
         "       <p class='error-msg'>Either your username or password is incorrect. Please try again.</p>" SKIP.
-    IF v-user-locked-error = YES THEN 
+    IF i-user-locked-error = YES THEN 
         {&OUT}
         "       <p class='error-msg'>Your account has been locked. Please contact your administrator to gain access.</p>" SKIP.          
             

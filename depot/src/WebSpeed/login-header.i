@@ -19,11 +19,11 @@
 
 
 /* ***************************  Main Block  *************************** */
-DEFINE VARIABLE v-invalid-creds-error AS LOGICAL INITIAL NO NO-UNDO.
-DEFINE VARIABLE v-user-locked-error AS LOGICAL INITIAL NO NO-UNDO.
-DEFINE VARIABLE v-password-expired-error AS LOGICAL INITIAL NO NO-UNDO.
-DEFINE VARIABLE v-password-warning AS LOGICAL INITIAL NO NO-UNDO.
-DEFINE VARIABLE v-login-success AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE i-invalid-creds-error AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE i-user-locked-error AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE i-password-expired-error AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE i-password-warning AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE i-login-success AS LOGICAL INITIAL NO NO-UNDO.
 CREATE WIDGET-POOL.
     
 PROCEDURE Output-Header:
@@ -69,59 +69,59 @@ PROCEDURE Output-Header:
                 FIND FIRST sec_ctrl WHERE sec_ctrl.sec_deleted = ? NO-ERROR.
                 IF NOT AVAILABLE (sec_ctrl) THEN DO:
                     RUN Login.
-                    v-login-success = TRUE.
+                    i-login-success = TRUE.
                 END. /* if not available (sec_ctrl) */
                 ELSE DO:
                     IF sec_ctrl.sec_password_exp <> 0 THEN DO:
-                        DEFINE VARIABLE v-last-password-reset-date AS DATE NO-UNDO.
-                        DEFINE VARIABLE v-password-expiry-date AS DATE NO-UNDO.
-                        DEFINE VARIABLE v-password-grace-date AS DATE NO-UNDO.
-                        DEFINE VARIABLE v-password-warning-date AS DATE NO-UNDO.
+                        DEFINE VARIABLE i-last-password-reset-date AS DATE NO-UNDO.
+                        DEFINE VARIABLE i-password-expiry-date AS DATE NO-UNDO.
+                        DEFINE VARIABLE i-password-grace-date AS DATE NO-UNDO.
+                        DEFINE VARIABLE i-password-warning-date AS DATE NO-UNDO.
                         
                         ASSIGN 
-                            v-last-password-reset-date = IF usr_mstr.usr_password_reset <> ? THEN usr_mstr.usr_password_reset ELSE usr_mstr.usr_create_date.
+                            i-last-password-reset-date = IF usr_mstr.usr_password_reset <> ? THEN usr_mstr.usr_password_reset ELSE usr_mstr.usr_create_date.
                             
-                        IF v-last-password-reset-date <> ? THEN DO:
+                        IF i-last-password-reset-date <> ? THEN DO:
                             ASSIGN 
-                                v-password-expiry-date = ADD-INTERVAL(v-last-password-reset-date, sec_ctrl.sec_password_exp, "days")
-                                v-password-grace-date = ADD-INTERVAL(v-password-expiry-date, sec_ctrl.sec_password_grace, "days")
-                                v-password-warning-date = ADD-INTERVAL(v-password-expiry-date, -(sec_ctrl.sec_password_warn), "days").
+                                i-password-expiry-date = ADD-INTERVAL(i-last-password-reset-date, sec_ctrl.sec_password_exp, "days")
+                                i-password-grace-date = ADD-INTERVAL(i-password-expiry-date, sec_ctrl.sec_password_grace, "days")
+                                i-password-warning-date = ADD-INTERVAL(i-password-expiry-date, -(sec_ctrl.sec_password_warn), "days").
                                 
-                            IF v-password-expiry-date > TODAY THEN DO:
-                                IF v-password-warning-date <= TODAY THEN
-                                    v-password-warning = TRUE.
+                            IF i-password-expiry-date > TODAY THEN DO:
+                                IF i-password-warning-date <= TODAY THEN
+                                    i-password-warning = TRUE.
                                 
                                 RUN Login.
-                                v-login-success = TRUE.
-                            END. /* v-password-expiry-date > today */
+                                i-login-success = TRUE.
+                            END. /* i-password-expiry-date > today */
                             ELSE DO:
-                                v-password-expired-error = TRUE.
-                                IF v-password-grace-date < TODAY THEN DO:
+                                i-password-expired-error = TRUE.
+                                IF i-password-grace-date < TODAY THEN DO:
                                     ASSIGN
                                         usr_mstr.usr_locked = TRUE 
                                         usr_mstr.usr_modified_date = TODAY 
                                         usr_mstr.usr_modified_by = USERID("Core")
                                         usr_mstr.usr_prog_name = THIS-PROCEDURE:FILE-NAME
-                                        v-user-locked-error = TRUE.
-                                END. /* if v-password-grace-date > TODAY */
+                                        i-user-locked-error = TRUE.
+                                END. /* if i-password-grace-date > TODAY */
                             END.
-                        END. /* if v-last-password-reset-date <> ? */
+                        END. /* if i-last-password-reset-date <> ? */
                         ELSE DO:
-                            v-password-expired-error = TRUE.
+                            i-password-expired-error = TRUE.
                         END.
                     END. /* if sec_ctrl.sec_password_exp <> 0 */
                     ELSE DO:
                         RUN Login.
-                        v-login-success = TRUE.
+                        i-login-success = TRUE.
                     END.
                 END.
             END. /* if usr_locked = false */
             ELSE DO:
-                ASSIGN v-user-locked-error = TRUE.
+                ASSIGN i-user-locked-error = TRUE.
             END.
         END. /* if available (usr_mstr) */
         ELSE DO:
-            ASSIGN v-invalid-creds-error = TRUE.
+            ASSIGN i-invalid-creds-error = TRUE.
         END.
     END. /* IF get-value('act') = "Login" */
 END PROCEDURE.
@@ -131,7 +131,7 @@ PROCEDURE Login:
     /* Note: This is quite unnecessary until we switch over to multi-tenancy, but it doesn't hurt to have it in here now */
     DEFINE VARIABLE dbc AS HANDLE NO-UNDO.
     DEFINE VARIABLE uuid AS CHARACTER NO-UNDO.
-    DEFINE VARIABLE v-success AS LOGICAL NO-UNDO.
+    DEFINE VARIABLE i-success AS LOGICAL NO-UNDO.
     
     CREATE CLIENT-PRINCIPAL dbc.
     

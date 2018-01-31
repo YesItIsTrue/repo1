@@ -8,12 +8,12 @@
         <meta NAME='CREATE_DATE' CONTENT="31/Aug/2017"/>
         <meta NAME='LAST_UPDATED' CONTENT="31/Aug/2017"/>   
         <meta name="viewport" content="width=device-width, initial-scale=1"/> 
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
-        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
-        <link rel='stylesheet' href='/depot/src/HTMLContent/stylesheets/registration.css'>
+        <!--WSS 
+        {global-includes.i}.
+        {external-dependencies.i}.
+        {registration-ams.i}.
+        {organization-includes.i}.
+        -->
         <!--WSS
         PROCEDURE Output-Header:
             {cookie-check-permissions.i "AMS-landing-R.r"}.
@@ -66,7 +66,6 @@
 			  animation: load7 1.8s infinite ease-in-out;
 			}
 			.loader {
-			  color: #3c4d71;
 			  font-size: 10px;
 			  margin: 80px auto;
 			  position: relative;
@@ -225,10 +224,8 @@
             });
         </script>
     </head>
-    <body class='w3-light-grey'>
+    <body class='ss-background'>
         <!--WSS
-        {registration.i}.
-        
         DEFINE VARIABLE v-people-id LIKE people_mstr.people_id NO-UNDO.
         DEFINE VARIABLE v-event-id LIKE event_mstr.event_ID NO-UNDO.
         DEFINE VARIABLE v-flyer-uri AS CHARACTER INITIAL "/depot/src/HTMLContent/images/Youth-CMS/man-with-question-01.png" NO-UNDO.
@@ -244,7 +241,7 @@
         <div id="page-content" class="w3-container" style="height:90%;">
 	        <div class="w3-margin-right w3-margin-left w3-margin-bottom">
 		        <div class="w3-col m9 dynamic-padding">
-		           <div class="loader" hidden>Loading...</div>
+		           <div class="loader w3-loader" hidden>Loading...</div>
 		           <img id="event-flyer" src="`v-flyer-uri`" class="flyer loadable-content" alt="Event Flyer">
 		        </div>
 		        

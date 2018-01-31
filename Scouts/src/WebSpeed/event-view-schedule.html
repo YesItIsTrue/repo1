@@ -8,23 +8,12 @@
         <META NAME='CREATE_DATE' CONTENT="31/Aug/2017"/>
         <META NAME='LAST_UPDATED' CONTENT="31/Aug/2017"/>   
         <meta name="viewport" content="width=device-width, initial-scale=1"/> 
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"/> 
-        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
-        <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css"/>
-        <style>
-            .w3-select {
-              margin: 5px 0px 10px 0px;
-              padding-left: 10px;
-            }
-            .w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
-            .w3-theme-background {color::#000 !important; background-color:#fff !important}
-            .w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
-            .w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
-            .w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
-        </style>
+        <!--WSS 
+	    {global-includes.i}.
+	    {external-dependencies.i}.
+	    {registration.i}.
+	    {organization-includes.i}.
+	    -->
         <script>        
             $(document).ready(function() {
                 function populateStudentDropDown() {
@@ -48,34 +37,27 @@
             });
         </script>
     </HEAD>
-    <BODY class='w3-white'>
-        <header class='w3-container w3-dark-grey'>
-            <h1>Class Schedule Selection</h1>
-        </header>
-        <br><br>
+    <body class='ss-background'>
         <form action="student-schedule-sheet.r">
-            <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
-                <h2>Schedule Selection</h2>
-                <p>Select a student to view his/her schedule.</p>
-                <p class='w3-padding-left w3-padding-right w3-padding-top'>
+            <div class='ss-card'>
+                <div class='ss-card-title'>
+	                <h2>Schedule Selection</h2>
+	                <p>Select a student to view his/her schedule.</p>
+	            </div>
+                <div class='ss-card-content'>
                     <label>Event Name</label>
-                    <select name='h-event-id' class='w3-border w3-round-large w3-select' required>
+                    <select name='h-event-id' class='ss-select' required>
                         <!--WSS FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND event_mstr.event_deleted = ? NO-LOCK BY event_mstr.event_start_date: -->
                         <option value=" `event_mstr.event_id` "> `event_mstr.event_name` </option>
                         <!--WSS END. -->
                     </select>
                     <label>Date</label>
-                    <input type='date' name='h-date' class='w3-border w3-round-large w3-select' required/>
+                    <input type='date' name='h-date' class='ss-input' required/>
                     <label>Student Name</label>
-                    <select name='h-student-id' class='w3-border w3-round-large w3-select' required>
-                    </select>
-                </p>
-                <br>
-            </div>
-            <br>
-            <div class='w3-row-padding w3-margin'>
-                <div class='w3-center w3-col s12'>
-                    <button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>View Schedule</b></button>
+                    <select name='h-student-id' class='ss-input' required></select>
+                </div>
+                <div class='ss-button-group'>
+                    <button type='submit' class='ss-btn-single w3-theme'>View Schedule</button>
                 </div>
             </div>
         </form>

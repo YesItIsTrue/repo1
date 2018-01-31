@@ -19,7 +19,7 @@
   {1}   = MB_mstr.MB_BSA_ID                 /* Merit Badge ID */
   {2}   = period                            /* ex: s12 m6 l3 */
   {3}   = numeric count of seats open.      /* open seat count */
-  {4}   = w3-col specifications             /* ex: s12 m6 l3 */
+  {4}   = w3-col mpecifications             /* ex: s12 m6 l3 */
   {5}   = actual sched_class_ID             /* Class ID in case a class is taught more than once per event */
   
   ----------------------------------------------------------------------
@@ -61,7 +61,7 @@ FIND FIRST att_files WHERE att_files.att_table = "MB_mstr" AND
     "       <div class='w3-col {4} w3-padding'>" SKIP 
     "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
     "               <div id='card-head'>" SKIP
-    "                   <div class='w3-col s1 m1'>" SKIP
+    "                   <div class='w3-col m1 m1'>" SKIP
     "                       <input type='radio' class='w3-radio' name='".
 
 IF {2} = "1" THEN {&OUT} "h-period-1".
@@ -78,7 +78,7 @@ IF ITmessages = YES THEN                                                        
 
 {&OUT}    
     "                   </div>  <!-- end of div --- radio -->" SKIP
-    "                   <div class='w3-col s8 m8'>" SKIP
+    "                   <div class='w3-col m8 m8'>" SKIP
     "                       <p class='w3-large'><b> ".
     
 IF ITmessages = YES THEN                                                                                    /* 111 */
@@ -87,7 +87,7 @@ IF ITmessages = YES THEN                                                        
 {&OUT}
     MB_mstr.MB_name " </b></p>" SKIP
     "                   </div>  <!-- end of div --- MB Name -->" SKIP
-    "                   <div class='w3-col s3 m3'>" SKIP 
+    "                   <div class='w3-col m3 m3'>" SKIP 
     "                       <img src='".
     
 IF AVAILABLE (att_files) THEN {&OUT} " " att_files.att_filepath "/" att_files.att_filename " ".
@@ -111,14 +111,14 @@ ELSE {&OUT} "This class is undoubtably going to be awesome and earn your praise 
     
 IF AVAILABLE (mb_mstr) AND MB_mstr.MB__log01 = YES THEN 
 {&OUT}
-    "                       <div class='w3-col s2 m1 w3-padding-bottom '>" SKIP
+    "                       <div class='w3-col m2 m1 w3-padding-bottom '>" SKIP
     "                           <img src='/depot/src/HTMLContent/images/Scouting/50px-EagleMedal.jpg' class='w3-right' style='width:100%' />" SKIP
     "                       </div>" SKIP
-    "                       <div class='w3-col s10 m11' style='color:grey; text-align:right'> Open Seats: " {3} "</div>" SKIP.  
+    "                       <div class='w3-col m10 m11' style='color:grey; text-align:right'> Open Seats: " {3} "</div>" SKIP.  
 
 ELSE 
 {&OUT} 
-    "                       <div class='w3-col s12' style='color:grey; text-align:right'> Open Seats: " {3} "</div>" SKIP.
+    "                       <div class='w3-col m12' style='color:grey; text-align:right'> Open Seats: " {3} "</div>" SKIP.
     
 {&OUT}
     "                   </div>  <!-- end of DIV --- card footer row - icons, etc. -->" SKIP

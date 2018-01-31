@@ -8,26 +8,12 @@
     <META NAME="create_date" CONTENT="8/Sept/2017"/>
     <META NAME="last_updated" CONTENT="8/Sept/2017"/>   
     <meta name="viewport" content="width=device-width, initial-scale=1"/> 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.8.0/JsBarcode.all.min.js"></script>
-    
-    <style>
-	    @media print{
-			.pagebreak {page-break-after: always;}
-		}
-        @media (min-width: 600px) {
-            .mobile-right-align {text-align: right;}   
-        }
-        .w3-col {padding: 3px};
-        .w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
-        .w3-theme-background {color::#000 !important; background-color:#fff !important}
-        .w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
-        .w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
-        .w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
-    </style>
-    
+    <!--WSS
+    {global-includes.i}.
+    {external-dependencies.i}.
+    {registration.i}.
+    {organization-includes.i}.
+    -->
     <script>
         $(document).ready(function() {
             $(".barcode").each(function() {
@@ -38,58 +24,64 @@
         });
     </script>
 </head>
-<body class="w3-margin">
-<script language="SpeedScript">
+<body class="ss-background">
+<!--WSS    
     DEFINE VARIABLE v-class-id LIKE sched_mstr.sched_class_ID NO-UNDO.
     DEFINE VARIABLE v-event-id LIKE event_mstr.event_ID NO-UNDO.
     
     PROCEDURE PrintHTMLBody:
         FIND event_mstr WHERE event_mstr.event_ID = v-event-id AND event_deleted = ? NO-ERROR.
-        {&OUT}
-        "<input type='hidden' id='class-id' value='" v-class-id "'/>" SKIP
-		"    <div class='w3-row'>" SKIP
-		"        <div class='w3-col s8'>" SKIP.
-        
-        IF AVAILABLE (event_mstr) THEN 
-        {&OUT}
-		"            <h1 id='class-name'>" event_mstr.event_name "</h1>" SKIP.
-		
-		{&OUT}
-		"            <h3 id='class-name'>" MB_mstr.MB_name " Roster</h3>" SKIP
-		"            <h3 id='class-period'>Class Period: " sched_mstr.sched_period "</h3>" SKIP
-		"        </div>" SKIP
-		"        <div class='w3-col s4 w3-margin-top'>" SKIP
-		"            <div class='mobile-right-align'>" SKIP
-		"                <input type='hidden' class='barcodeValue' value='" sched_mstr.sched_class_ID "'/>" SKIP
-		"                <svg class='barcode'></svg>" SKIP
-		"            </div>" SKIP
-		"        </div>" SKIP
-		"    </div>" SKIP
-		"    <br/>" SKIP
-		"    <div class='w3-row'>" SKIP
-		"        <div class='w3-col s3'><strong>Scout</strong></div>" SKIP
-		"        <div class='w3-col s3'><strong>Troop</strong></div>" SKIP
-		"        <div class='w3-col s3'><strong>Ward</strong></div>" SKIP
-		"        <div class='w3-col s1'><strong>LDS</strong></div>" SKIP
-		"    </div>" SKIP
-		"    <hr/>" SKIP.
+        -->
+        <input type='hidden' id='class-id' value='`v-class-id`'/>
+        <div class='ss-card'>
+            <div class='ss-card-content'>
+			    <div class='w3-row'> 
+			        <div style='float:left'>
+        <!--WSS
+        IF AVAILABLE (event_mstr) THEN DO:
+        -->
+			            <h1 id='class-name'>`event_mstr.event_name`</h1>
+			            <h3 id='class-name'>`MB_mstr.MB_name` Roster</h3> 
+			            <h3 id='class-period'>Class Period: `sched_mstr.sched_period`</h3> 
+			        </div> 
+			        <div class='w3-margin-top' style='float:right'> 
+			            <div class='mobile-right-align'> 
+			                <input type='hidden' class='barcodeValue' value='`sched_mstr.sched_class_ID`'/> 
+			                <svg class='barcode'></svg> 
+			            </div> 
+			        </div> 
+			    </div> 
+			    <br/> 
+			    <div class='w3-row'> 
+			        <div class='w3-col s3'><strong>Guest Name</strong></div> 
+			        <div class='w3-col s3'><strong>Birthday</strong></div> 
+			        <div class='w3-col s3'><strong>Allergies</strong></div> 
+			        <div class='w3-col s1'><strong>Med Condition</strong></div> 
+			    </div> 
+			    <hr/>
+		<!--WSS
+		END.
 		
 		FOR EACH regis_mstr WHERE regis_mstr.regis_class_ID = sched_mstr.sched_class_ID AND regis_mstr.regis_deleted = ?,
 		FIRST people_mstr WHERE people_mstr.people_id = regis_mstr.regis_people_id,
 		FIRST speop_shadow WHERE speop_shadow.speop_ID = people_mstr.people_id NO-LOCK
 		BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname BY people_mstr.people_DOB:
-            {&OUT}
-            "<div class='w3-row'>" SKIP
-            "   <div class='w3-col s3'>" people_mstr.people_firstname + " " + people_mstr.people_lastname "</div>" SKIP.
-            IF AVAILABLE(speop_shadow) THEN
-                {&OUT}
-                "<div class='w3-col s3'>" speop_troop "</div>" SKIP
-                "<div class='w3-col s3'>" speop_ward "</div>" SKIP
-                "<div class='w3-col s1'>" IF speop_LDS THEN "YES" ELSE "NO" "</div>" SKIP.
-            {&OUT}
-            "</div>" SKIP.
+            -->
+	            <div class='w3-row'> 
+	                <div class='w3-col s3'>`people_mstr.people_firstname + " " + people_mstr.people_lastname`</div>
+	                <div class='w3-col s3'>`people_mstr.people_dob`</div> 
+	                <div class='w3-col s3'>`speop_allergies`</div> 
+	                <div class='w3-col s3'>`speop_med_cond`</div> 
+                </div>
+        <!--WSS
 	    END.
-	    {&OUT} "<br/><br/><div class='pagebreak'></div>" SKIP.
+	    -->
+	        </div>
+	        <div class='ss-button-group'></div>
+	    </div>
+	    <br/><br/>
+	    <div class='pagebreak'></div>
+	    <!--WSS
     END PROCEDURE.
     
     ASSIGN 
@@ -111,6 +103,6 @@
 	        RUN PrintHTMLBody.
         END.
     END.
- </script>
+-->
 </body>
 </html>

@@ -6,128 +6,263 @@
     <META NAME='VERSION' CONTENT='1.0'>
     <META NAME='COPYRIGHT' CONTENT='Solsource'>
     <META NAME='CREATE_DATE' CONTENT="31/Aug/2017">
-    <META NAME='LAST_UPDATED' CONTENT="31/Aug/2017">   
-    <meta name="viewport" content="width=device-width, initial-scale=1"> 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="/depot/src/HTMLContent/stylesheets/custom-select2.css"/>
-    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <META NAME='LAST_UPDATED' CONTENT="12/Dec/2017">   
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--WSS 
+    {global-includes.i}.
+    {external-dependencies.i}.
+    {registration.i}.
+    {organization-includes.i}.
+    -->
+</HEAD>
+<body class='ss-background'>
+<!--WSS 
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-event_ID AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE v-event_name LIKE event_mstr.event_name NO-UNDO.
+DEFINE VARIABLE v-event_start_time LIKE event_mstr.event_start_time NO-UNDO.
+DEFINE VARIABLE v-event-start-time-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_end_time LIKE event_mstr.event_end_time NO-UNDO.
+DEFINE VARIABLE v-event-end-time-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_addr_id LIKE event_mstr.event_addr_id NO-UNDO.
+DEFINE VARIABLE v-event_desc LIKE event_mstr.event_desc NO-UNDO.
+DEFINE VARIABLE v-event_slogan LIKE event_mstr.event_slogan NO-UNDO.
+DEFINE VARIABLE v-event_contact LIKE event_mstr.event_contact NO-UNDO.
+DEFINE VARIABLE v-event_start_date LIKE event_mstr.event_start_date NO-UNDO.
+DEFINE VARIABLE v-event-start-date-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_end_date LIKE event_mstr.event_end_date NO-UNDO.
+DEFINE VARIABLE v-event-end-date-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_color_theme LIKE event_mstr.event_color_theme NO-UNDO.
+DEFINE VARIABLE v-event_category LIKE event_mstr.event_category NO-UNDO.
+DEFINE VARIABLE v-event_URL LIKE event_mstr.event_URL NO-UNDO.
+DEFINE VARIABLE v-event_dress_code LIKE event_mstr.event_dress_code NO-UNDO. 
+DEFINE VARIABLE v-event_age_group LIKE event_mstr.event__char01 NO-UNDO.
+DEFINE VARIABLE v-success AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE v-action AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-contact-name AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-addr-string AS CHARACTER NO-UNDO.
+
+/* Always get these, regardless of the act*/
+ASSIGN 
+    v-act = get-value("h-act")
+    v-event_ID = INTEGER(get-value("v-event_ID")).
     
-    <style>
-		a:link {color: blue}
-		a:visited {color: purple}
-		a:hover {color: darkblue}
-		a:active {color: blue}
-		.custom-select:hover {background-color: #e6f5ff;}
-		.center-buttons {text-align: center}
-		.error-message {color:red}
-	    .w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
-		.w3-theme-background {color::#000 !important; background-color:#fff !important}
-		.w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
-		.w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
-		.w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
-		.w3-select {padding: 9px 9px !important}
-    </style>
+IF v-act = "Create" THEN v-event_ID = 0.
     
+FIND event_mstr WHERE event_mstr.event_ID = v-event_ID NO-ERROR.
+IF AVAILABLE (event_mstr) THEN DO:
+    ASSIGN 
+	    v-event_name = event_mstr.event_name
+	    v-event_addr_id = event_mstr.event_addr_id
+	    v-event_desc = event_mstr.event_desc
+	    v-event_slogan = event_mstr.event_slogan
+	    v-event_contact = event_mstr.event_contact
+	    v-event_start_date = event_mstr.event_start_date
+	    v-event_end_date = event_mstr.event_end_date
+	    v-event_color_theme = event_mstr.event_color_theme
+	    v-event_category = event_mstr.event_category
+	    v-event_URL = event_mstr.event_URL
+	    v-event_dress_code = event_mstr.event_dress_code
+	    v-event_age_group = event_mstr.event__char01.
+	    
+    IF event_mstr.event_start_date <> ? THEN 
+	    RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                               
+	        event_mstr.event_start_date,                                                                             
+	        OUTPUT v-event-start-date-string                                                                        
+	    ).
+    
+    IF event_mstr.event_end_date <> ? THEN 
+	    RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                               
+	        event_mstr.event_end_date,                                                                             
+	        OUTPUT v-event-end-date-string                                                                        
+	    ).
+    
+    IF (event_mstr.event_start_time <> ?) THEN
+        v-event-start-time-string = SUBSTRING(ENTRY(1, ENTRY(2, STRING(event_mstr.event_start_time), " "), "."), 1, 5).
+    IF (event_mstr.event_end_time <> ?) THEN
+        v-event-end-time-string = SUBSTRING(ENTRY(1, ENTRY(2, STRING(event_mstr.event_end_time), " "), "."), 1, 5).
+        
+    IF v-event_addr_id > 0 THEN DO:
+	    FIND addr_mstr WHERE addr_mstr.addr_id = v-event_addr_id NO-ERROR.
+	    IF AVAILABLE (addr_mstr) THEN
+	        ASSIGN 
+	            v-addr-string = addr_mstr.addr_addr1 + " " + addr_mstr.addr_addr2 + " " + addr_mstr.addr_addr3 + " " + addr_mstr.addr_city + " " + addr_mstr.addr_stateprov + ", "  + addr_mstr.addr_zip + " " + addr_mstr.addr_country.
+	END. /* IF addrid > 0 */
+	
+	IF v-event_contact > 0 THEN DO:
+	   FIND people_mstr WHERE people_mstr.people_id = v-event_contact NO-ERROR.
+	   IF AVAILABLE (people_mstr) THEN 
+	       ASSIGN 
+	           v-contact-name = people_mstr.people_firstname + " " + people_mstr.people_lastname.
+	END.
+	    
+END.
+    
+FOR FIRST event_mstr WHERE event_mstr.event_ID = v-event_ID NO-LOCK:
+    ASSIGN 
+        v-event_name = event_mstr.event_name.
+END.
+
+-->
+
     <script>        
         $(document).ready(function() {
-            // Some plain old JS lifted from w3Schools to close modal on outside-click
-	        var modal = document.getElementById('delete-event-modal');
-	        window.onclick = function(event) {
-	          if (event.target == modal) {
-	            modal.style.display = "none";
-	          }
-	        }
-        
+            
             $("#delete-event").click(function() {
-                $("#delete-event-modal").show();
-            });
-        
-            $("#new-address-link").click(function(e) {
-                e.preventDefault();
-                $("#edit-form").attr("action", "event-addr-create-U.r").submit();
+                swal({
+                  title: 'Are you sure?',
+                  text: "Do you really want to delete this event?",
+                  type: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: '#3085d6',
+                  cancelButtonColor: '#d33',
+                  confirmButtonText: 'Yes, delete it!'
+                }).then(function (result) {
+                  if (result.value) {
+                    $.post("AJAX-delete-event.r",
+                    {
+                        eventID: "`v-event_ID`"
+                    },
+                    function(data, success) {
+                        if (data.success) {
+                            swal("Success!",
+                            "`v-event_name` has been deleted.",
+                            "success")
+                            .then(function() {
+                                window.location = "event-maint-U.r";
+                            });
+                        }
+                        else {
+                            swal("Whoops!", data.error, "error");
+                        }
+                    });
+                  }
+                })
             });
             
-            $("#new-person-link").click(function(e) {
+            // Handle form submission
+            $("#edit-form").submit(function(e) {
                 e.preventDefault();
-                $("#edit-form").attr("action", "event-people-create-U.r").submit();
-            });
-        
-            $("#eventAddressID").change(function() {
-                if ($(this).val() == "0") {
-                    $("#new-address-link").show();
-                    $(".address-error").show();
-                }
-                else {
-                    $("#new-address-link").hide();
-                    $(".address-error").hide();
-                }
-            });
-            
-            $("#eventContact").change(function() {
-                if ($(this).val() == "0") {
-                    $("#new-person-link").show();
-                    $(".contact-error").show();
-                }
-                else {
-                    $("#new-person-link").hide();
-                    $(".contact-error").hide();
-                }
+                $.post("AJAX-submit-event-maint.r",
+                $("#edit-form").serialize(),
+                function(data, success) {
+                    if (data.success) {
+                        swal("Success!",
+                        $("[name='eventName']").val() + " has been created",
+                        "success")
+                        .then(function() {
+                            window.location = "event-maint-U.r";
+                        });
+                    }
+                    else {
+                        swal("Whoops!", data.error, "error");
+                    }
+                });
             });
         
             // Address Picker
-			function formatAddressResponse (data) {
-			   var display = "<div><p style='margin: 0px'>" + data.text + "</p>";
-			   if (data.addr2 != undefined) {
-			     display += "<p style='margin: 0px'>" + data.addr2 + "</p>";
-			   }
-			   if (data.cityStateZip != undefined) {
+            function formatAddressResponse (data) {
+               var display = "<div><p style='margin: 0px'>" + data.text + "</p>";
+               if (data.addr2 != undefined) {
+                 display += "<p style='margin: 0px'>" + data.addr2 + "</p>";
+               }
+               if (data.cityStateZip != undefined) {
                  display += "<p style='margin: 0px'>" + data.cityStateZip + "</p>";
                }
                display += "</div>";
-    		   return display;
-			}
-		
-		      function formatAddressSelection (data) {
-		          var display = data.text;
-		          if (data.addr2 != undefined && data.addr2 != "") {
-		              display += ", " + data.addr2;
-		          }
-		          if (data.cityStateZip != undefined && data.cityStateZip != "") {
+               return display;
+            }
+        
+              function formatAddressSelection (data) {
+                  var display = data.text;
+                  if (data.addr2 != undefined && data.addr2 != "") {
+                      display += ", " + data.addr2;
+                  }
+                  if (data.cityStateZip != undefined && data.cityStateZip != "") {
                       display += ", " + data.cityStateZip;
                   }
-		          return display;
-		      }
-		    
+                  return display;
+              }
+            
             $("#eventAddressID").select2({
                 ajax: {
-				    url: "AJAX-address-picker.r",
-				    dataType: 'json',
-				    delay: 250,
-				    data: function (params) {
-				      return {
-				        addr1: params.term, // search term
-				        page: params.page
-				      };
-				    },
-				    processResults: function (data, params) {
-				      params.page = params.page || 1;
-				
-				      return {
-				        results: data.results,
-				        pagination: {
-				          more: (params.page * 30) < data.total_count
-				        }
-				      };
-				    },
-				    cache: true
-				  },
-				  escapeMarkup: function (markup) { return markup; },
-				  minimumInputLength: 1,
-				  templateResult: formatAddressResponse,
-				  templateSelection: formatAddressSelection
+                    url: "AJAX-address-picker.r",
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                      return {
+                        addr1: params.term, // search term
+                        page: params.page
+                      };
+                    },
+                    processResults: function (data, params) {
+                      params.page = params.page || 1;
+                
+                      return {
+                        results: data.results,
+                        pagination: {
+                          more: (params.page * 30) < data.total_count
+                        }
+                      };
+                    },
+                    cache: true
+                  },
+                  escapeMarkup: function (markup) { return markup; },
+                  minimumInputLength: 1,
+                  templateResult: formatAddressResponse,
+                  templateSelection: formatAddressSelection
+            });
+            
+            function populateStateDropdown(){
+                $.post("AJAX-populate-state-dropdown.r",
+                {
+                    countryISO: $("#country-picker").val() ? $("#country-picker").val() : "USA" 
+                },
+                function(response, status){
+                    $("#state-picker").children('option').remove();
+                    $.each(response, function (key, value) {
+                        $("#state-picker").append("<option value='" + key + "'>" + value + "</option>");
+                    });
+                });
+            }
+            
+            $("#country-picker").change(function() {
+                populateStateDropdown();
+            });
+            
+            $("#eventAddressID").change(function() {
+                if ($(this).val() === "0") {
+                    $("#new-addr-modal").modal();
+                    populateStateDropdown();
+                }
+            });
+            
+            $("#addr-modal-form").submit(function(e) {
+                e.preventDefault();
+                $.post("AJAX-create-address.r",
+                    $("#addr-modal-form").serialize(),
+                    function(data, success) {
+                       if (data.success) {
+                           let select = $('#eventAddressID');
+                           let option = $('<option></option>').
+                                attr('selected', true).
+                                text(data.prettyAddress).
+                                val(data.addrid);
+                           option.appendTo(select);
+                           select.trigger('change');
+                           $("#new-addr-modal").modal("hide");
+                       }
+                       else {
+                           swal(
+                              'Whoops!',
+                              data.error,
+                              'error'
+                            )
+                       }
+                });
             });
             
             // People Picker
@@ -171,369 +306,294 @@
                   templateResult: formatPeopleResponse,
                   templateSelection: formatPeopleSelection
             });
+            
+            $("#eventContact").change(function() {
+                if ($(this).val() === "0") {
+                    $("#new-people-modal").modal();
+                }
+            });
+            
+            $("#people-modal-form").submit(function(e) {
+                e.preventDefault();
+                $.post("AJAX-create-people-record.r",
+                    $("#people-modal-form").serialize(),
+                    function(data, success) {
+                       if (data.success) {
+                           let select = $('#eventContact');
+                           let option = $('<option></option>').
+                                attr('selected', true).
+                                text(data.prettyName).
+                                val(data.peopleID);
+                           option.appendTo(select);
+                           select.trigger('change');
+                           $("#new-people-modal").modal("hide");
+                       }
+                       else {
+                           swal(
+                              'Whoops!',
+                              data.error,
+                              'error'
+                            )
+                       }
+                });
+            });
         });
     </script>
-</HEAD>
-<BODY class='w3-white'>
-<header class='w3-container w3-dark-grey'>
-<h1>Event Maintenance</h1>
-</header>
-<br><br>
-<script language='SpeedScript'>
-DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
-DEFINE VARIABLE v-redirect AS LOGICAL NO-UNDO.
-DEFINE VARIABLE v-event_ID AS INTEGER NO-UNDO.
 
-DEFINE VARIABLE v-event_name LIKE event_mstr.event_name NO-UNDO.
-DEFINE VARIABLE v-event_start_time LIKE event_mstr.event_start_time NO-UNDO.
-DEFINE VARIABLE v-event-start-time-string AS CHARACTER NO-UNDO.
-DEFINE VARIABLE v-event_end_time LIKE event_mstr.event_end_time NO-UNDO.
-DEFINE VARIABLE v-event-end-time-string AS CHARACTER NO-UNDO.
-DEFINE VARIABLE v-event_addr_id LIKE event_mstr.event_addr_id NO-UNDO.
-DEFINE VARIABLE v-event_desc LIKE event_mstr.event_desc NO-UNDO.
-DEFINE VARIABLE v-event_slogan LIKE event_mstr.event_slogan NO-UNDO.
-DEFINE VARIABLE v-event_contact LIKE event_mstr.event_contact NO-UNDO.
-DEFINE VARIABLE v-event_start_date LIKE event_mstr.event_start_date NO-UNDO.
-DEFINE VARIABLE v-event-start-date-string AS CHARACTER NO-UNDO.
-DEFINE VARIABLE v-event_end_date LIKE event_mstr.event_end_date NO-UNDO.
-DEFINE VARIABLE v-event-end-date-string AS CHARACTER NO-UNDO.
-DEFINE VARIABLE v-event_color_theme LIKE event_mstr.event_color_theme NO-UNDO.
-DEFINE VARIABLE v-event_category LIKE event_mstr.event_category NO-UNDO.
-DEFINE VARIABLE v-event_URL LIKE event_mstr.event_URL NO-UNDO.
-DEFINE VARIABLE v-event_dress_code LIKE event_mstr.event_dress_code NO-UNDO. 
-DEFINE VARIABLE v-event_age_group LIKE event_mstr.event__char01 NO-UNDO.
-DEFINE VARIABLE v-success AS LOGICAL INITIAL NO NO-UNDO.
-DEFINE VARIABLE v-action AS CHARACTER NO-UNDO.
-
-DEFINE VARIABLE v-contact-name AS CHARACTER NO-UNDO.
-DEFINE VARIABLE v-addr-string AS CHARACTER NO-UNDO.
-
-/* Always get these, regardless of the act*/
-ASSIGN 
-    v-act = get-value("h-act")
-    v-event_ID = INTEGER(get-value("v-event_ID"))
-    v-redirect = IF get-value("h-redirect") = "yes" THEN YES ELSE NO.
-
-PROCEDURE GetEventHtmlParams:
-    ASSIGN
-	    v-event_name = get-value("eventName")
-	    v-event_addr_id = INTEGER(get-value("eventAddressID"))
-	    v-event_desc = get-value("eventDescription")
-	    v-event_slogan = get-value("eventSlogan")
-	    v-event_contact = INTEGER(get-value("eventContact"))
-	    v-event_start_date = IF get-value("eventStartDate") <> "" THEN DATE(INTEGER(ENTRY(2, get-value("eventStartDate"), "-")), INTEGER(ENTRY(3, get-value("eventStartDate"), "-")), INTEGER(ENTRY(1, get-value("eventStartDate"), "-"))) ELSE ?
-	    v-event_end_date = IF get-value("eventEndDate") <> "" THEN DATE(INTEGER(ENTRY(2, get-value("eventEndDate"), "-")), INTEGER(ENTRY(3, get-value("eventEndDate"), "-")), INTEGER(ENTRY(1, get-value("eventEndDate"), "-"))) ELSE ?
-	    v-event_ID = INTEGER(get-value("eventID"))
-	    v-event_color_theme = get-value("eventColorTheme")
-	    v-event_category = get-value("eventCategory")
-	    v-event_URL = get-value("eventURL")
-	    v-event_dress_code = get-value("eventDressCode")
-	    v-event-start-time-string = get-value("eventStartTimeString")
-	    v-event-end-time-string = get-value("eventEndTimeString")
-	    v-event_age_group = get-value("eventAgeGroup").
-	    
-	    RUN HTMLifyProgressCode.
-END PROCEDURE.
-
-PROCEDURE GetEventRecordData:
-    RUN VALUE(SEARCH("SUBevent-R.r")) (
-    v-event_ID, "", ?, ?,
-    OUTPUT v-event_name, OUTPUT v-event_start_time, OUTPUT v-event_end_time, OUTPUT v-event_addr_id, OUTPUT v-event_desc,
-    OUTPUT v-event_slogan, OUTPUT v-event_contact, OUTPUT v-event_start_date, OUTPUT v-event_end_date, OUTPUT v-event_ID,
-    OUTPUT v-event_color_theme, OUTPUT v-event_category, OUTPUT v-event_URL, OUTPUT v-event_dress_code, OUTPUT v-event_age_group, 
-    OUTPUT v-success
-    ).
-    
-    RUN HTMLifyProgressCode.
-END PROCEDURE.
-
-PROCEDURE HTMLifyProgressCode:
-    IF (v-event_start_time <> ?) THEN 
-        v-event-start-time-string = SUBSTRING(ENTRY(1, ENTRY(2, STRING(v-event_start_time), " "), "."), 1, 5).
-    IF (v-event_end_time <> ?) THEN 
-        v-event-end-time-string = SUBSTRING(ENTRY(1, ENTRY(2, STRING(v-event_end_time), " "), "."), 1, 5).
-    
-    ASSIGN
-        v-event-start-date-string = IF v-event_start_date <> ? THEN "20" + ENTRY(3, STRING(v-event_start_date), "/") + "-" + ENTRY(1, STRING(v-event_start_date), "/") + "-" + ENTRY(2, STRING(v-event_start_date), "/") ELSE ""
-        v-event-end-date-string = IF v-event_end_date <> ? THEN "20" + ENTRY(3, STRING(v-event_end_date), "/") + "-" + ENTRY(1, STRING(v-event_end_date), "/") + "-" + ENTRY(2, STRING(v-event_end_date), "/") ELSE "".
-    
-    RUN EncodeData.
-    
-    FIND people_mstr WHERE people_mstr.people_id = v-event_contact AND people_mstr.people_deleted = ? NO-ERROR.
-    IF AVAILABLE (people_mstr) THEN DO:
-        ASSIGN
-            v-contact-name = people_mstr.people_firstname + " " + people_mstr.people_lastname.
-    END.
-    
-    FIND addr_mstr WHERE addr_mstr.addr_id = v-event_addr_id AND addr_mstr.addr_deleted = ? NO-ERROR.
-    IF AVAILABLE (addr_mstr) THEN DO:
-        ASSIGN 
-           v-addr-string = addr_mstr.addr_addr1 +
-           (IF addr_addr2 <> "" THEN ", " + addr_addr2 ELSE "") + 
-           (IF addr_city <> "" THEN ", " + addr_city ELSE "") +
-           (IF addr_state <> "" THEN ", " + addr_state ELSE "") +
-           (IF addr_zip <> "" THEN " " + addr_zip ELSE "").
-    END.
-END PROCEDURE.
-
-PROCEDURE EncodeData:
-    ASSIGN 
-        v-event_name = html-encode(v-event_name)
-		v-event_desc = html-encode(v-event_desc)
-		v-event_slogan = html-encode(v-event_slogan)
-		v-event_color_theme = html-encode(v-event_color_theme)
-		v-event_category = html-encode(v-event_category)
-		v-event_URL = html-encode(v-event_URL)
-		v-event_dress_code = html-encode(v-event_dress_code)
-		v-event_age_group = html-encode(v-event_age_group).
-END PROCEDURE.
-
-PROCEDURE ConvertTimeStamps:
-    DEFINE VARIABLE startTimestampString AS CHARACTER INITIAL "" NO-UNDO.
-    DEFINE VARIABLE endTimestampString AS CHARACTER INITIAL "" NO-UNDO.
-    DEFINE VARIABLE startHour AS INTEGER NO-UNDO.
-    DEFINE VARIABLE endHour AS INTEGER NO-UNDO.
-    DEFINE VARIABLE startMin AS INTEGER NO-UNDO.
-    DEFINE VARIABLE endMin AS INTEGER NO-UNDO.
-    
-    IF (get-value("eventStartTimeString") <> "") THEN
-	    ASSIGN 
-	        startTimestampString = STRING(v-event_start_date) + " "
-	        startHour = INTEGER(ENTRY(1, get-value("eventStartTimeString"), ":"))
-	        startMin = INTEGER(ENTRY(2, get-value("eventStartTimeString"), ":"))
-	        v-event-start-time-string = startTimestampString + STRING(startHour) + ":" + STRING(startMin) + ":00".
-    ELSE
-        ASSIGN v-event-start-time-string = "".
-    
-        IF (get-value("eventEndTimeString") <> "") THEN
-        ASSIGN 
-            endTimestampString = STRING(v-event_end_date) + " "
-            endHour = INTEGER(ENTRY(1, get-value("eventEndTimeString"), ":"))
-            endMin = INTEGER(ENTRY(2, get-value("eventEndTimeString"), ":"))
-            v-event-end-time-string = endTimestampString + STRING(endHour) + ":" + STRING(endMin) + ":00".
-    ELSE
-        ASSIGN v-event-end-time-string = "".
-END.
-
+<!--WSS
 CASE v-act:
     WHEN "Create" OR WHEN "Edit" THEN DO:
-       
-        IF v-act = "Create" THEN DO:
-            RUN GetEventHtmlParams.
-        END.
-        ELSE DO:
-            IF v-redirect = YES THEN DO:
-                RUN GetEventHtmlParams.
-	        END.
-	        ELSE DO: 
-	            RUN GetEventRecordData.
-	        END.
-        END.
         
        {&OUT}
        "<form id='edit-form'>" SKIP
             "<input type='hidden' name='eventID' value='" v-event_ID "'/>" SKIP
             "<input type='hidden' name='redirect-act' value='" v-act "'/>" SKIP
-            "<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>" SKIP
-                "<div class='w3-row'>" SKIP
-                "   <div class='w3-col m10'><h2>Editing Details for " v-event_name "</h2></div>" SKIP.
-                IF v-act = "Edit" THEN
-                    {&OUT} "   <div class='w3-col m2'><button type='button' id='delete-event' class='w3-btn w3-red'>Delete Event</button></div>" SKIP.
-            {&OUT}
+            "<div class='ss-card'>" SKIP
+                "<div class='ss-card-title'>" SKIP.
+
+                IF v-act = "Edit" THEN 
+                {&OUT}
+                "   <h1>Editing Details for " v-event_name "</h1>" SKIP.
+                ELSE 
+                {&OUT}
+                "   <h1>Event Creation</h1>" SKIP.
+                
+                {&OUT}
                 "</div>" SKIP
-                "<div class='w3-padding-top'>" SKIP
-                    "<label>Event Name</label>" SKIP
-                    "<input type='text' name='eventName' value=~"" v-event_name "~" class='w3-border w3-round-large w3-select' required/>" SKIP
-                    "<label>Start Time (ex. 10:30, 17:00)</label>" SKIP
-                    "<div><input name='eventStartTimeString' type='text' pattern='([01]?[0-9]{1}|2[0-3]{1}):[0-5]{1}[0-9]{1}' value=~"" v-event-start-time-string "~" class='w3-border w3-round-large w3-select'/>" SKIP
+                "<div class='ss-card-content'>" SKIP
+                    "<label>Event Name *</label>" SKIP
+                    "<input type='text' name='eventName' value=~"" v-event_name "~" class='ss-input' required/>" SKIP
+                    "<label>Start Date *</label>" SKIP
+                    "<input type='date' name='eventStartDate' value=~"" v-event-start-date-string "~" class='ss-input' required/>" SKIP
+                    "<label>End Date *</label>" SKIP
+                    "<input type='date' name='eventEndDate' value=~"" v-event-end-date-string "~" class='ss-input' required/>" SKIP
+                    "<label>Start Time</label>" SKIP
+                    "<div><input name='eventStartTimeString' type='time' value=~"" v-event-start-time-string "~" class='ss-input'/>" SKIP
                     "<label>End Time</label>" SKIP
-                    "<input name='eventEndTimeString' type='text' pattern='([01]?[0-9]{1}|2[0-3]{1}):[0-5]{1}[0-9]{1}' value=~"" v-event-end-time-string "~" class='w3-border w3-round-large w3-select'/>" SKIP
-                    "<label>Event Address</label><a id='new-address-link' href='#' class='w3-right' hidden>New</a>" SKIP
-                    "<span class='address-error error-message' hidden> - Use the link on the right to create a new address, or select another existing one.</span>" SKIP
-                    "<select name='eventAddressID' id='eventAddressID' class='w3-border w3-round-large w3-select'>" SKIP
-                    "  <option value='" IF v-event_addr_id <> 0 THEN STRING(v-event_addr_id) ELSE "" "' selected='selected'>" v-addr-string "</option>" SKIP
+                    "<input name='eventEndTimeString' type='time' value=~"" v-event-end-time-string "~" class='ss-input'/>" SKIP
+                    "<label>Event Address</label>" SKIP
+                    "<select name='eventAddressID' id='eventAddressID' class='ss-input'>" SKIP
+                    "  <option value='" STRING(v-event_addr_id) "'>" v-addr-string "</option>" SKIP
                     "</select>" SKIP
                     "<label>Description</label>" SKIP
-                    "<input type='text' name='eventDescription' value=~"" v-event_desc "~" class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<input type='text' name='eventDescription' value=~"" v-event_desc "~" class='ss-input'/>" SKIP
                     "<label>Slogan</label>" SKIP
-                    "<input type='text' name='eventSlogan' value=~"" v-event_slogan "~" class='w3-border w3-round-large w3-select'/>" SKIP
-                    "<label>Contact</label><a id='new-person-link' href='#' class='w3-right' hidden>New</a>" SKIP
-                    "<span class='contact-error error-message' hidden> - Use the link on the right to create a new person, or select another existing one.</span>" SKIP
-                    "<select name='eventContact' id='eventContact' class='w3-border w3-round-large w3-select'>" SKIP
+                    "<input type='text' name='eventSlogan' value=~"" v-event_slogan "~" class='ss-input'/>" SKIP
+                    "<label>Contact</label>" SKIP
+                    "<select name='eventContact' id='eventContact' class='ss-input'>" SKIP
                     "  <option value='" IF v-event_contact <> 0 THEN STRING(v-event_contact) ELSE "" "' selected='selected'>" v-contact-name "</option>" SKIP
                     "</select>" SKIP
-                    "<label>Start Date</label>" SKIP
-                    "<input type='date' name='eventStartDate' value=~"" v-event-start-date-string "~" class='w3-border w3-round-large w3-select' required/>" SKIP
-                    "<label>End Date</label>" SKIP
-                    "<input type='date' name='eventEndDate' value=~"" v-event-end-date-string "~" class='w3-border w3-round-large w3-select' required/>" SKIP
                     "<label>Color Theme</label>" SKIP
-                    "<input type='text' name='eventColorTheme' value=~"" v-event_color_theme "~" class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<input type='text' name='eventColorTheme' value=~"" v-event_color_theme "~" class='ss-input'/>" SKIP
                     "<label>Event Category</label>" SKIP
-                    "<input type='text' name='eventCategory' value=~"" v-event_category "~" class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<input type='text' name='eventCategory' value=~"" v-event_category "~" class='ss-input'/>" SKIP
                     "<label>Event Age Group</label>" SKIP
-                    "<input type='text' name='eventAgeGroup' value=~"" v-event_age_group "~" class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<input type='text' name='eventAgeGroup' value=~"" v-event_age_group "~" class='ss-input'/>" SKIP
                     "<label>Event Website</label>" SKIP
-                    "<input type='text' name='eventURL' value=~"" v-event_URL "~" class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<input type='text' name='eventURL' value=~"" v-event_URL "~" class='ss-input'/>" SKIP
                     "<label>Dress Code</label>" SKIP
-                    "<input type='text' name='eventDressCode' value=~"" v-event_dress_code "~" class='w3-border w3-round-large w3-select'/>" SKIP
+                    "<input type='text' name='eventDressCode' value=~"" v-event_dress_code "~" class='ss-input'/>" SKIP
                 "</div>" SKIP
-                "<br>" SKIP
-                "</div>" SKIP
-                "<br>" SKIP
-                "<div class='w3-row-padding w3-margin'>" SKIP
-                   "<div class='w3-center w3-col s12'>" SKIP
-                       "<button type='submit' name='h-act' value='Update' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Save Changes</b></BUTTON>" SKIP
-                   "</div>" SKIP
+                "<div class='ss-button-group'>" SKIP
+                "   <div class='w3-row'>" SKIP.
+
+	                IF v-act = "Edit" THEN 
+	                {&OUT}
+	                    "<div class='w3-col m6'>" SKIP
+		                "   <button type='submit' name='h-act' value='Update' class='ss-btn w3-theme'>Save Changes</BUTTON>" SKIP
+		                "</div>" SKIP
+	                    "<div class='w3-col m6'>" SKIP
+	                    "   <button type='button' id='delete-event' class='ss-btn w3-red'>Delete Event</button>" SKIP
+	                    "</div>" SKIP.
+	                ELSE 
+	                {&OUT}
+	                    "<div class='w3-col m2'>&nbsp;</div>" SKIP
+	                    "<div class='w3-col m8'>" SKIP
+	                    "   <button type='submit' name='h-act' value='Update' class='ss-btn w3-theme'>Save Changes</BUTTON>" SKIP
+	                    "</div>" SKIP
+	                    "<div class='w3-col m2'>&nbsp;</div>" SKIP.
+                    
+                    {&OUT}
+                    "</div>" SKIP
                 "</div>" SKIP
             "</div>" SKIP
         "</form>" SKIP.
-    END.
-    WHEN "Update" THEN DO:
-        ASSIGN 
-	        v-event_name = get-value("eventName")
-	        v-event_addr_id = INTEGER(get-value("eventAddressID"))
-	        v-event_desc = get-value("eventDescription")
-	        v-event_slogan = get-value("eventSlogan")
-	        v-event_contact = INTEGER(get-value("eventContact"))
-	        v-event_start_date = IF get-value("eventStartDate") <> "" THEN DATE(INTEGER(ENTRY(2, get-value("eventStartDate"), "-")), INTEGER(ENTRY(3, get-value("eventStartDate"), "-")), INTEGER(ENTRY(1, get-value("eventStartDate"), "-"))) ELSE ?
-	        v-event_end_date = IF get-value("eventEndDate") <> "" THEN DATE(INTEGER(ENTRY(2, get-value("eventEndDate"), "-")), INTEGER(ENTRY(3, get-value("eventEndDate"), "-")), INTEGER(ENTRY(1, get-value("eventEndDate"), "-"))) ELSE ?
-	        v-event_ID = INTEGER(get-value("eventID"))
-	        v-event_color_theme = get-value("eventColorTheme")
-	        v-event_category = get-value("eventCategory")
-	        v-event_URL = get-value("eventURL")
-	        v-event_dress_code = get-value("eventDressCode")
-	        v-event-start-time-string = get-value("eventStartTimeString")
-	        v-event-end-time-string = get-value("eventEndTimeString")
-	        v-event_age_group = get-value("eventAgeGroup").
-	    
-	    RUN ConvertTimeStamps.
-        
-		RUN VALUE(SEARCH("SUBevent-ucU.r")) (
-            v-event_ID,
-            v-event_name,
-            IF v-event-start-time-string <> "" THEN DATETIME(v-event-start-time-string) ELSE ?, /* This gets set in ConvertTimeStamps */
-            IF v-event-end-time-string <> "" THEN DATETIME(v-event-end-time-string) ELSE ?, /* This gets set in ConvertTimeStamps */
-            v-event_addr_id,
-            v-event_desc,
-            v-event_slogan,
-            v-event_contact,
-            v-event_start_date,
-            v-event_end_date,
-            v-event_color_theme,
-            v-event_category,
-            v-event_URL,
-            v-event_dress_code,
-            v-event_age_group,
-            OUTPUT v-success,
-            OUTPUT v-action,
-            OUTPUT v-event_ID
-        ).
-
-        IF (v-success = TRUE) THEN DO:
-            {&OUT}
-                "<center><h1>Success! " v-event_name " has been successfully " IF v-action = "update" THEN "updated" ELSE "created" ".</h1></center>" SKIP
-                "<br/><br/>" SKIP
-                "<div class='w3-row-padding w3-margin'>" SKIP
-                   "<div class='w3-center w3-col s12'>" SKIP
-                   "    <form action='event-maint-U.html'>" SKIP
-                   "        <button class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Continue</b></BUTTON>" SKIP
-                   "    </form>" SKIP
-                   "</div>" SKIP
-                "</div>" SKIP.
-        END.
-        ELSE DO:
-            {&OUT}
-                "<center><h1>Whoops! Something went wrong while " IF v-action = "update" THEN "updated " ELSE "creating " v-event_name ".</h1></center>" SKIP
-                "<br/><br/>" SKIP
-                "<div class='w3-row-padding w3-margin'>" SKIP
-                   "<div class='w3-center w3-col s12'>" SKIP
-                   "    <form action='event-maint-U.html'>" SKIP
-                   "        <button class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Continue</b></BUTTON>" SKIP
-                   "    </form>" SKIP
-                   "</div>" SKIP
-                "</div>" SKIP.
-        END.
-    END.
-    WHEN "Delete" THEN DO:
-        ASSIGN v-event_name = get-value("h-event_name").
-        FIND event_mstr WHERE event_mstr.event_ID = v-event_ID AND event_mstr.event_deleted = ? NO-ERROR.
-        IF AVAILABLE (event_mstr) THEN DO:
-            ASSIGN
-                event_mstr.event_deleted = TODAY
-                event_mstr.event_modified_date = TODAY 
-                event_mstr.event_modified_by = USER("Modules")
-                event_mstr.event_prog_name = THIS-PROCEDURE:FILENAME.
-                
-            {&OUT}
-                "<center><h1>Success! " v-event_name " has been successfully deleted.</h1></center>" SKIP
-                "<br/><br/>" SKIP
-                "<div class='w3-row-padding w3-margin'>" SKIP
-                   "<div class='w3-center w3-col s12'>" SKIP
-                   "    <form action='event-maint-U.html'>" SKIP
-                   "        <button class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Continue</b></BUTTON>" SKIP
-                   "    </form>" SKIP
-                   "</div>" SKIP
-                "</div>" SKIP.
-        END.
-        ELSE DO:
-            {&OUT}
-                "<center><h1>Whoops! Something went wrong while deleting" v-event_name ".</h1></center>" SKIP
-                "<br/><br/>" SKIP
-                "<div class='w3-row-padding w3-margin'>" SKIP
-                   "<div class='w3-center w3-col s12'>" SKIP
-                   "    <form action='event-maint-U.html'>" SKIP
-                   "        <button class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Continue</b></BUTTON>" SKIP
-                   "    </form>" SKIP
-                   "</div>" SKIP
-                "</div>" SKIP.
-        END.
+-->
+        <!-- New Addr Modal -->
+         <div id="new-addr-modal" class="modal fade" role="dialog">
+           <div class="modal-dialog">
+             <div class="modal-content">
+               <form id="addr-modal-form">
+                   <div class="modal-header">
+                     <button type="button" class="close" data-dismiss="modal">&times;</button>
+                     <h4 class="modal-title">Create a New Address</h4>
+                   </div>
+                   <div class="modal-body">
+                         <label>Address Line 1 *</label> 
+                         <input type='text' name='h-addr1' class='form-control' required/> 
+                         <label>Address Line 2</label> 
+                         <input type='text' name='h-addr2' class='form-control'/> 
+                         <label>Address Line 3</label> 
+                         <input type='text' name='h-addr3' class='form-control'/> 
+                         <label>City *</label> 
+                         <input type='text' name='h-city' class='form-control' required/> 
+                         <label>State *</label> 
+                         <select name='h-stateprov' id='state-picker' class='form-control' required></select> 
+                         <label>Zipcode *</label> 
+                         <input type='text' name='h-zip' class='form-control' required/> 
+                         <label>Country *</label> 
+                         <select name='h-country' id='country-picker' class='form-control' required>
+                         <!--WSS
+                         FOR EACH country_mstr WHERE country_mstr.Country_Primary = TRUE AND country_mstr.country_deleted = ? NO-LOCK BY country_mstr.country_ISO:
+                             IF country_mstr.country_ISO = "USA" THEN DO:
+                         -->
+                             <option value="`country_mstr.country_ISO`" selected>`country_mstr.country_display_name`</option>
+                         <!--WSS
+                             END.
+                             ELSE DO: 
+                         -->
+                             <option value="`country_mstr.country_ISO`">`country_mstr.country_display_name`</option>
+                         <!--WSS
+                             END.
+                         END.
+                         -->
+                         </select>
+                   </div>
+                   <div class="modal-footer">
+                     <button type="submit" id="addr-modal-submit-button" class="ss-btn-single w3-theme">Create</button>
+                   </div>
+               </form>
+             </div>
+           </div>
+         </div>
+         
+         <!-- New People Modal -->
+         <div id="new-people-modal" class="modal fade" role="dialog">
+           <div class="modal-dialog modal-lg">
+             <div class="modal-content">
+               <form id="people-modal-form">
+                   <div class="modal-header">
+                     <button type="button" class="close" data-dismiss="modal">&times;</button>
+                     <h4 class="modal-title">Create a New Person</h4>
+                   </div>
+                   <div class="modal-body">
+                        <div class="w3-row">
+                            <div class="w3-col m6">
+					            <label>First Name *</label> 
+					            <input type='text' name='h-firstname' class='form-control' required/>
+				            </div>
+				            <div class="w3-col m6">
+				                <label>Date of Birth *</label> 
+                                <input type='date' name='h-dob' class='form-control' required/>
+                            </div>
+			            </div>
+			            <div class="w3-row">
+	       		            <div class="w3-col m6">
+					            <label>Middle Name</label> 
+					            <input type='text' name='h-midname' class='form-control'/>
+				            </div>
+				            <div class="w3-col m6">
+				                <label>Gender</label> 
+                                <select name='h-gender' class='form-control'> 
+                                   <option value='true'>Male</option> 
+                                   <option value='false'>Female</option> 
+                                </select>
+                            </div>
+				        </div>
+                        <div class="w3-row">
+                            <div class="w3-col m6"> 
+					            <label>Last Name *</label> 
+					            <input type='text' name='h-lastname' class='form-control' required/>
+					        </div>
+					        <div class="w3-col m6">
+                                <label>Home Phone</label> 
+                                <input type='text' name='h-homephone' class='form-control'/>
+                             </div>
+				        </div>
+                        <div class="w3-row">
+                            <div class="w3-col m6"> 
+					            <label>Prefix (Mr., Mrs., etc.)</label> 
+					            <input type='text' name='h-prefix' class='form-control'/>
+					         </div>
+					         <div class="w3-col m6">
+                                <label>Work Phone</label> 
+                                <input type='text' name='h-workphone' class='form-control'/> 
+					         </div>
+				        </div>
+                        <div class="w3-row">
+                            <div class="w3-col m6">
+					            <label>Suffix (Sr., Jr., III, etc.)</label> 
+					            <input type='text' name='h-suffix' class='form-control'/>
+					        </div>
+                             <div class="w3-col m6">
+                                <label>Cell Phone</label> 
+                                <input type='text' name='h-cellphone' class='form-control'/>
+                             </div>
+				        </div>
+                        <div class="w3-row"> 
+                            <div class="w3-col m6">
+					            <label>Preferred Name</label> 
+					            <input type='text' name='h-prefname' class='form-control'/>
+				            </div>
+                             <div class="w3-col m6">
+                                <label>Email</label> 
+                                <input type='text' name='h-email' class='form-control'/>
+                             </div>
+				        </div>
+                        <div class="w3-row"> 
+                            <div class="w3-col m6">
+					            <label>Title</label> 
+					            <input type='text' name='h-title' class='form-control'/>
+				            </div>
+                             <div class="w3-col m6">
+                                <label>Secondary Email</label> 
+                                <input type='text' name='h-email2' class='form-control'/>
+                             </div>
+				        </div>
+                   </div>
+                   <div class="modal-footer">
+                     <button type="submit" id="people-modal-submit-button" class="ss-btn-single w3-theme">Create</button>
+                   </div>
+               </form>
+             </div>
+           </div>
+         </div>
+<!--WSS
     END.
     OTHERWISE DO:
         {&OUT}
         "<form>" SKIP
-            "<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>" SKIP
-			    "<h2>Event Selection</h2>" SKIP
-			    "<p>Choose an event to edit its details, or <a href='event-maint-U.r?h-act=create'>create a new event</a>.</p>" SKIP
-			    "<p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-			    "<label>Event Name</label>" SKIP
-			    "<select name='v-event_ID' class='w3-border w3-round-large w3-select custom-select' required>" SKIP.
-			         FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND event_mstr.event_deleted = ? NO-LOCK BY event_mstr.event_start_date:
-			             {&OUT} "<option value='" event_mstr.event_id "'>" event_mstr.event_name "</option>" SKIP.
-			         end.
-			    {&OUT}
-			    "</select>" SKIP
-			    "</p>" SKIP
-			    "<br>" SKIP
-				"</div>" SKIP
-				"<br>" SKIP
-	            "<div class='w3-row-padding w3-margin'>" SKIP
-	               "<div class='w3-center w3-col s12'>" SKIP
-	                   "<button type='submit' name='h-act' value='Edit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Edit Event</b></BUTTON>" SKIP
-	               "</div>" SKIP
-	            "</div>" SKIP
+            "<div class='ss-card'>" SKIP
+			    "<div class='ss-card-title'>" SKIP
+			    "    <h1>Event Selection</h1>" SKIP
+			    "    <p>Choose an event to edit its details, or create a new one</a>.</p>" SKIP
+			    "</div>" SKIP
+			    "<div class='ss-card-content'>" SKIP
+				"   <label>Event Name</label>" SKIP
+				"   <select name='v-event_ID' class='ss-select'>" SKIP.
+				         FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND event_mstr.event_deleted = ? NO-LOCK BY event_mstr.event_start_date:
+				             {&OUT} "<option value='" event_mstr.event_id "'>" event_mstr.event_name "</option>" SKIP.
+				         end.
+				    {&OUT}
+				"   </select>" SKIP
+			    "</div>" SKIP
+                "<div class='ss-button-group'>" SKIP
+                    "<div class='w3-row'>" SKIP
+	                    "<div class='w3-col m4'>" SKIP
+	                    "   <button type='submit' name='h-act' value='Edit' class='ss-btn w3-theme'>Edit Event</BUTTON>" SKIP
+	                    "</div>" SKIP
+	                    "<div class='w3-col m4'>" SKIP
+	                    "   <button type='submit' name='h-act' value='create' class='ss-btn w3-green'>New Event</BUTTON>" SKIP
+	                    "</div>" SKIP
+	                    "<div class='w3-col m4'>" SKIP
+	                    "   <button type='button' class='ss-btn w3-theme-accent'>View Reports</BUTTON>" SKIP
+	                    "</div>" SKIP
+	                "</div>" SKIP
+                "</div>" SKIP
             "</div>" SKIP
         "</form>" SKIP.
     END.
 END.
-</script>
-<div id="delete-event-modal" class="w3-modal">
-  <div class="w3-modal-content w3-card-4 w3-animate-top">
-    <div class="w3-container">
-      <center><h2>Are you sure you want to delete this event?</h2></center>
-	      <form id='delete-form'>
-	      <script language="SpeedScript">
-            {&OUT} 
-                "<input type='hidden' name='v-event_ID' value='" v-event_ID "'/>" SKIP
-                "<input type='hidden' name='h-event_name' value='" v-event_name "'/>" SKIP.
-          </script>
-	      <div class='center-buttons'>
-	        <button type='submit' name='h-act' value='Delete' class='w3-btn w3-ripple w3-red' onclick="document.getElementById('delete-event-modal').style.display='none'">Yes, delete it.</button>
-	        <button type='button' class='w3-btn w3-ripple w3-dark-grey' onclick="document.getElementById('delete-event-modal').style.display='none'">No, take me back!</button>
-	      </div>
-      </form>
-      <br/>
-    </div>
-  </div>
-</div>
+-->
 </BODY>
 </BODY>

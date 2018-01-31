@@ -67,21 +67,45 @@
      IF AVAILABLE (menu_mstr) THEN DO:   
          
         {&OUT} 
-            "<H1 class='webpagetitle'>" SKIP
-            menu_mstr.menu_num + "." + STRING(menu_mstr.menu_select) + " - " SKIP
-            menu_mstr.menu_title SKIP
-            "</H1> " SKIP(1).
-        
-        
+            "<div>" SKIP
+            "   <h1 class='webpagetitle' style='float:left'>" SKIP
+                    menu_mstr.menu_num + "." + STRING(menu_mstr.menu_select) + " - " SKIP
+                    menu_mstr.menu_title SKIP
+            "   </h1>" SKIP
+            "   <div class='search-bar' style='text-align:right; padding-right:16px; padding-top:20px;'>" SKIP
+            "       <form id='quickNavForm' action='menu-quick-nav.r' onsubmit='return validateQuickNav()'>" SKIP
+            "           QuickNav &nbsp;&nbsp;<input type='text' id='quickNavInput' name='h-menu-num'/>" SKIP
+            "       </form>" SKIP
+            "   </div>" SKIP
+            "</div> " SKIP.
             
      END.  /** of if avail menu_mstr **/
      
      ELSE DO: 
           
         {&OUT} 
-            "<H1 class='webpagetitle'> Unknown Menu Function </H1> " SKIP.
+            "<div>" SKIP
+            "   <h1 class='webpagetitle' style='float:left'>Unknown Menu Function</h1>" SKIP
+            "   <div class='search-bar' style='text-align:right; padding-right:16px; padding-top:20px;'>" SKIP
+            "       <form id='quickNavForm' action='menu-quick-nav.r' onsubmit='return validateQuickNav()'>" SKIP
+            "           QuickNav &nbsp;&nbsp;<input type='text' id='quickNavInput' name='h-menu-num'/>" SKIP
+            "       </form>" SKIP
+            "   </div>" SKIP
+            "</div> " SKIP.
             
      END.  /** of else do --- not avail menu_mstr **/
+     
+     {&OUT}
+        "<script>" SKIP
+        "   function validateQuickNav() ~{" SKIP
+        "       var quickNavValue = document.getElementById('quickNavInput').value;" SKIP
+        "       var isValid = /^[0-9.]*$/.test(quickNavValue);" SKIP(1)
+
+        "       if (!isValid) ~{" SKIP
+        "           return false;" SKIP
+        "       ~}" SKIP
+        "   ~}" SKIP
+        "</script>" SKIP.
         
      /************  End of program naming code  *****************/
      

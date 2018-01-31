@@ -20,9 +20,7 @@
 
 /* ***************************  Main Block  *************************** */
 {&OUT}            
-"    <link rel='stylesheet' href='https://www.w3schools.com/w3css/4/w3.css'>" SKIP
-"    <link rel='stylesheet' href='/depot/src/HTMLContent/stylesheets/timesheet.css'>" SKIP
-"   <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Montserrat'>" SKIP
+"   <link rel='stylesheet' href='/depot/src/HTMLContent/stylesheets/template-clean.css'>" SKIP
 "   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>" SKIP
 "   <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css'>" SKIP
 "   <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>" SKIP

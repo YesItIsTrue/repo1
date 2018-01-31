@@ -8,11 +8,97 @@
         <META NAME="create_date" CONTENT="8/Sept/2017"/>
         <META NAME="last_updated" CONTENT="8/Sept/2017"/>   
         <meta name="viewport" content="width=device-width, initial-scale=1"/> 
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
-        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.8.0/JsBarcode.all.min.js"></script>
-		<link rel="import" href="/depot/rcode/barcode-reader.r" id="barcode-reader">
+        <!--WSS 
+        {global-includes.i}.
+        {registration.i}.
+        {organization-includes.i}.
+        {external-dependencies.i}.
+	    -->
+	    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.8.0/JsBarcode.all.min.js"></script>
+	    <link rel="import" href="/depot/rcode/barcode-reader.r" id="barcode-reader">
+	    <script>
+	        var presentStudents = [];
+	        $(document).ready(function() {
+	            function changeCSS() {
+	                if($(window).width() <= 767){
+	                    $('#main-container').removeClass('w3-card-4');
+	                    $('#main-container').removeClass('w3-container');
+	                }
+	                else {
+	                    $('#main-container').addClass('w3-card-4');
+	                    $('#main-container').addClass('w3-container');
+	                }
+	            }
+	            
+	            changeCSS();
+	            
+	            $(window).resize(function(){
+	                 changeCSS();
+	            });
+	        
+	            $("[name='h-class-id']").blur(function() {
+	               $.post("AJAX-fetch-class-name.r",
+	                {
+	                    classID: $("[name='h-class-id']").val() 
+	                },
+	                function(response, status){
+	                    if (status == "success" && response.className != undefined) {
+	                        $("#class-name").text(response.className);
+	                        $("#class-img").attr("src", response.imgPath);
+	                        $("#class-error").hide();
+	                    }
+	                    else {
+	                        $("#class-error").show();
+	                    }
+	                });
+	            });
+	            
+	            $("#h-student-id").blur(function(e) {
+	                $.post("AJAX-fetch-student-name.r",
+	                {
+	                    studentID: $("#h-student-id").val() 
+	                },
+	                function(response, status){
+	                    if (status == "success" && response.studentName) {
+	                        if ($.inArray($("#h-student-id").val(), presentStudents) == -1) {
+	                            presentStudents.push($("#h-student-id").val());
+	                            $("#student-container").show();
+	                            $("#students-present").append("<center><p>" + response.studentName + "</p></center>");
+	                            $("#h-student-id").val("");
+	                            $("#student-error").hide();
+	                            $("#dupe-student-error").hide();
+	                        }
+	                        else {
+	                            $("#dupe-student-error").show();
+	                            $("#h-student-id").val("");
+	                        }
+	                    }
+	                    else {
+	                        $("#student-error").show();
+	                    }
+	                });
+	            });
+	            
+	            $(".barcode-input").after("<span class='barcode-import'></span>");
+	            $(".barcode-import").append(document.importNode(document.querySelector('#barcode-reader').import.querySelector('#barcode-elements'), true))
+	            $(".barcode-input")
+	                .on("click", function() { toggleScanner($(this)) })
+	                .on("blur", function() {$(this).attr("readonly", "readonly")})
+	                .attr("readonly", "readonly");
+	                
+	            $("#rollCallForm").submit( function(eventObj) {
+	                var students = "";
+	                presentStudents.forEach(function(student) {
+	                    students += students == "" ? (student) : ("," + student);
+	                });
+	                $('<input />').attr('type', 'hidden')
+	                .attr('name', "h-students")
+	                .attr('value', students)
+	                .appendTo('#rollCallForm');
+	                return true;
+	          });
+	        });
+	    </script>
         <style>
             @media print{
                 .pagebreak {page-break-after: always;}
@@ -25,102 +111,11 @@
                 margin-bottom: 0px !important;
             }
             .error-msg {color:red}
-            .w3-col {padding: 3px}
-            .w3-theme-body {color:#000 !important; background-color:#f1f1f1 !important}
-            .w3-theme-background {color::#000 !important; background-color:#fff !important}
-            .w3-theme-accent {color:#fff !important; background-color:#874D74 !important}
-            .w3-hover-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
-            .w3-hover-border-theme-accent:hover {color:#000 !important; background-color:#874D74 !important}
         </style>
-        <script>
-            var presentStudents = [];
-            $(document).ready(function() {
-                function changeCSS() {
-	                if($(window).width() <= 767){
-	                    $('#main-container').removeClass('w3-card-4');
-	                    $('#main-container').removeClass('w3-container');
-	                }
-	                else {
-	                    $('#main-container').addClass('w3-card-4');
-	                    $('#main-container').addClass('w3-container');
-	                }
-                }
-                
-                changeCSS();
-                
-                $(window).resize(function(){
-			         changeCSS();
-			    });
-            
-                $("[name='h-class-id']").blur(function() {
-                   $.post("AJAX-fetch-class-name.r",
-                    {
-                        classID: $("[name='h-class-id']").val() 
-                    },
-                    function(response, status){
-                        if (status == "success" && response.className != undefined) {
-                            $("#class-name").text(response.className);
-                            $("#class-img").attr("src", response.imgPath);
-                            $("#class-error").hide();
-                        }
-                        else {
-                            $("#class-error").show();
-                        }
-                    });
-                });
-                
-                $("#h-student-id").blur(function(e) {
-                    $.post("AJAX-fetch-student-name.r",
-                    {
-                        studentID: $("#h-student-id").val() 
-                    },
-                    function(response, status){
-                        if (status == "success" && response.studentName) {
-                            if ($.inArray($("#h-student-id").val(), presentStudents) == -1) {
-                                presentStudents.push($("#h-student-id").val());
-                                $("#student-container").show();
-	                            $("#students-present").append("<center><p>" + response.studentName + "</p></center>");
-	                            $("#h-student-id").val("");
-	                            $("#student-error").hide();
-	                            $("#dupe-student-error").hide();
-                            }
-                            else {
-                                $("#dupe-student-error").show();
-                                $("#h-student-id").val("");
-                            }
-                        }
-                        else {
-                            $("#student-error").show();
-                        }
-                    });
-                });
-                
-                $(".barcode-input").after("<span class='barcode-import'></span>");
-                $(".barcode-import").append(document.importNode(document.querySelector('#barcode-reader').import.querySelector('#barcode-elements'), true))
-                $(".barcode-input")
-                    .on("click", function() { toggleScanner($(this)) })
-                    .on("blur", function() {$(this).attr("readonly", "readonly")})
-                    .attr("readonly", "readonly");
-                    
-                $("#rollCallForm").submit( function(eventObj) {
-                    var students = "";
-                    presentStudents.forEach(function(student) {
-                        students += students == "" ? (student) : ("," + student);
-                    });
-			        $('<input />').attr('type', 'hidden')
-                    .attr('name', "h-students")
-			        .attr('value', students)
-			        .appendTo('#rollCallForm');
-                    return true;
-			  });
-            });
-        </script>
+        
+        
     </head>
-    <body>
-    <!--WSS {../depot/src/WebSpeed/menuname.i}. -->
-        <header class='w3-container w3-dark-grey'>
-            <center><h1>Class Attendance</h1></center>
-        </header>
+    <body class='ss-background'>
     <!--WSS
         DEFINE VARIABLE v-class-id LIKE Attend_det.attend_class_ID NO-UNDO.
         DEFINE VARIABLE v-student-ids AS CHARACTER NO-UNDO.
@@ -161,11 +156,14 @@
 	       		END. /* DO i = 1... */
 	    -->
 	        <br/>
-	        <div id="student-container" class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+	        <div id="student-container" class='ss-card'>
 	            <form action="/DataHub/rcode/menupager.r?c-usr=&whattorun=15&h-menuheadername=Scouts">
-	                <center><h4>Roll Recorded Successfully</h4></center>
-	                <br/>
-	                <center><button type='submit' class='w3-btn-block w3-green w3-round' style="max-width: 300px"><b>Great!</b></button></center>
+	                <div class="ss-card-title">
+	                   <h1>Roll Recorded Successfully</h1>
+	                </div>
+	                <div class="ss-button-group">
+	                   <button type='submit' class='ss-btn-single w3-theme'>Great!</button>
+	                </div>
 	            </form>
 	        </div>
 	    <!--WSS     
@@ -173,12 +171,18 @@
 	        ELSE DO:
 		-->
 		    <br/>
-	        <div id="student-container" class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+	        <div id="student-container" class='ss-card'>
 	            <form action="event-roll-call.r">
-		            <center><h2>Whoops!</h2><h4>You are trying to take roll for a class that isn't scheduled today. 
-		            Please contact an administrator in order to make sure things get recorded correctly.</h4></center>
-		            <br/>
-		            <center><button type='submit' class='w3-btn-block w3-green w3-round' style="max-width: 300px"><b>Ok</b></button></center>
+	                <div class="ss-card-title">
+	                   <h1>Whoops!</h1>
+                       <p>
+                         You are trying to take roll for a class that isn't scheduled today. <br>
+                         Please contact an administrator in order to make sure things get recorded correctly.
+                       </p>
+	                </div>
+	                <div class="ss-button-group">
+	                   <button type='submit' class='ss-btn-single w3-theme'>Ok</button>
+	                </div>
 		        </form>
 		    </div>
     <!--WSS 		
@@ -188,32 +192,38 @@
     -->
         <div class="w3-margin"'>
             <form id="rollCallForm">
-	            <div id="main-container" class="w3-card-4 w3-container" style="max-width: 1000px; margin: auto;">
-			        <div class="w3-row">
-			            <div class="w3-col s7">
-			                <h2 id="class-name">No Class Selected</h2>
-			            </div>
-			            <div class="w3-col s5">
-			                <img id="class-img" src="" style="max-height: 115px" alt=""/>
-			            </div>
-			        </div>
-	                <label>Class ID</label>
-	                <input type="text" name="h-class-id" class="w3-border w3-round-large w3-select barcode-input"/>
-	                <p id="class-error" class="error-msg" hidden>No class could be found with that ID. Please scan again.</p>
-	                <label>Student ID</label>
-	                <input type="text" id="h-student-id" class="w3-border w3-round-large w3-select barcode-input barcode-cycle"/>
-	                <p id="student-error" class="error-msg" hidden>No student could be found with that ID. Please scan again.</p>
-	                <p id="dupe-student-error" class="error-msg" hidden>That student has already been marked present!</p>
-	                <hr/>
-	                <div id="student-container" class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:425px;' hidden>
-	                    <center><h4>Students Present Today</h4></center>
-	                    <div id="students-present"></div>
-	                    <br/>
+	            <div id="main-container" class="ss-card">
+	                <div class="ss-card-title">
+	                   <h1>Class Attendance</h1>
+	                   <p>Scan your students' schedules or manually input their IDs to mark them present</p>
 	                </div>
-	                <br/>
+	                <div class="ss-card-content">
+	                    <div class="w3-row">
+	                        <div class="w3-col m7">
+	                            <h2 id="class-name">No Class Selected</h2>
+	                        </div>
+	                        <div class="w3-col m5">
+	                            <img id="class-img" src="" style="max-height: 115px" alt=""/>
+	                        </div>
+	                    </div>
+	                    <label>Class ID</label>
+	                    <input type="text" name="h-class-id" class="ss-select barcode-input"/>
+	                    <p id="class-error" class="error-msg" hidden>No class could be found with that ID. Please scan again.</p>
+	                    <label>Student ID</label>
+	                    <input type="text" id="h-student-id" class="ss-select barcode-input barcode-cycle"/>
+	                    <p id="student-error" class="error-msg" hidden>No student could be found with that ID. Please scan again.</p>
+	                    <p id="dupe-student-error" class="error-msg" hidden>That student has already been marked present!</p>
+	                    <hr/>
+	                    <div id="student-container" class='ss-card' style='max-width:425px;' hidden>
+	                        <center><h4>Students Present Today</h4></center>
+	                        <div id="students-present"></div>
+	                        <br/>
+	                    </div>
+	                </div>
+			        <div class="ss-button-group">
+                        <button type='submit' name="h-act" value="Submit" class='ss-btn-single w3-theme'>Submit Roll</button>
+			        </div>
 	            </div>
-	            <br/>
-	            <center><button type='submit' name="h-act" value="Submit" class='w3-btn-block w3-green w3-round' style="max-width: 425px"><b>Submit Roll</b></button></center>
             </form>
         </div>
         <!--WSS 

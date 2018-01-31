@@ -392,10 +392,8 @@ CASE act:
 <!--WSS
         FOR EACH Emp_Mstr WHERE Emp_Mstr.Emp_deleted = ? NO-LOCK,
         EACH Emph_hist WHERE Emph_hist.Emph_emp_ID = Emp_Mstr.Emp_ID AND Emph_hist.Emph_action = "Hire" NO-LOCK,
-        EACH people_mstr WHERE people_mstr.people_id = Emp_Mstr.Emp_ID AND 
-        ((people_mstr.people_firstname BEGINS firstname) OR (firstname = "")) AND 
-        ((people_mstr.people_lastname BEGINS lastname) OR (lastname = "")) AND people_mstr.people_deleted = ?
-        NO-LOCK BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname:
+        EACH people_mstr WHERE people_mstr.people_id = Emp_Mstr.Emp_ID  AND people_mstr.people_deleted = ? NO-LOCK 
+        BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname:
                                           
             ASSIGN 
                 empname = people_mstr.people_lastname + ", " + people_mstr.people_firstname

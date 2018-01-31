@@ -11,448 +11,71 @@
     <META NAME="LAST_UPDATED" CONTENT="25/Aug/16">
     <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
     
-<SCRIPT LANGUAGE="SpeedScript">
+<!--WSS
  /*------------------------------------------------------------------
  * File: TK_TKKitinquI.html
  * Description:  Selects search criteria for Testkit search, sends criteria to TK_TKKit_search.html
  * Created:
- *-------------------------------------------------------------------
- * Revision History:    
- * ---------------------
- * 1.1 - Added and then commented out search by TK sequence.
- *     - Added the ability to search by Testkit creation date.
- *     - Added checkboxes for paid by customer and not paid by customer.
- *     - Added Selection boxes for Testkit type from and to. 
- *     - Added grid classes for sizing user input form.
- *     - Added the ability to search by Patient or Customer names.
- *     - 3/6/15 Added Trim function to; From and To First Name and Last Name, From and To Testkit ID
- *     - Added autofocus to From Testkit ID field.
- * 1.2 - Added lab Sample ID to srarch criteria. Marked by 1dot2 9/30/15 Mark Jacobs.
- * 2.0 - Trae Luttrell - Oct 05 2015 
- *     -    Putting buttons into a button grid.
- *
- * 2.1 - Written by Mark Jacobs on 20/Oct/15. Made edits to the previous revision 2.0 these edits fixed
- *          these buttons by putting them in a row and removing unnecessary button and renamed them.
- *          Marked by 2dot1.
- * 2.2 - Written by Mark Jacobs on 22/Oct/15. Date input fields converted from character-based to HTML 5
- *          date field using external procedure for importing into progress database. Marked by 2dot2. 
- * 2.3 - Written by jacob Luttrell on 17/Mar/16. Marked by 2dot3. Added StatusListDropDown.i. 
- * 2.31 - Written by Jacob Luttrell on 25/Aug/16.  Reordered first name last name. unmarked.
- *
- * 2.4 - written by DOUG LUTTRELL on 20/Oct/17.  There is some sort of problem with this program (or it's
- *          children) that seems to be causing at least 1 error per millisecond to happen in the logs
- *          which is overloading the system.  Looks like I'm finally going to have to do something
- *          about this program.  *SIGH*  Something is certainly wrong with the logicals.  They are
- *          generating errors in the black box just by starting the program.  The errors are showing up
- *          in the Agent log.  Marked by 2dot4.
- *
  *-------------------------------------------------------------------- */
              
 
     {../depot/src/WebSpeed/menuname.i}.
     
-    DEFINE VARIABLE f-lab-id LIKE TK_mstr.TK_lab_ID NO-UNDO.     /* 1dot2 */
-    DEFINE VARIABLE t-lab-id LIKE TK_mstr.TK_lab_ID NO-UNDO.     /* 1dot2 */
-    
-    DEFINE VARIABLE f-typ LIKE test_mstr.test_type NO-UNDO.
-    DEFINE VARIABLE t-typ LIKE test_mstr.test_type  NO-UNDO.     
-    DEFINE VARIABLE creatby LIKE TK_mstr.Tk_created_by NO-UNDO.
-    DEFINE VARIABLE f-kitid LIKE TK_mstr.Tk_ID  NO-UNDO.
-    DEFINE VARIABLE t-kitid LIKE TK_mstr.Tk_ID NO-UNDO.   
-    
-    DEFINE VARIABLE fsdate    AS DATE  NO-UNDO.                
-    DEFINE VARIABLE tsdate    AS DATE NO-UNDO.                   
-    DEFINE VARIABLE f-fname LIKE people_mstr.people_firstname NO-UNDO.
-    DEFINE VARIABLE t-fname LIKE people_mstr.people_firstname  NO-UNDO.
-    DEFINE VARIABLE f-lname LIKE people_mstr.people_lastname  NO-UNDO.
-    DEFINE VARIABLE t-lname LIKE people_mstr.people_lastname  NO-UNDO.
-    DEFINE VARIABLE tk LIKE TK_mstr.tk_id  NO-UNDO.
-    DEFINE VARIABLE cust-id AS INTEGER NO-UNDO. 
-             
-    /*-----------------------------------------------------------------    2dot2 */
-    DEFINE VARIABLE f-mod AS CHARACTER NO-UNDO.
-    DEFINE VARIABLE t-mod AS CHARACTER NO-UNDO.
-    
-    DEFINE VARIABLE fdate AS CHARACTER NO-UNDO. 
-    DEFINE VARIABLE tdate AS CHARACTER NO-UNDO. 
-/*    DEFINE VARIABLE prog-fdate LIKE Tk_create_date NO-UNDO. */
-/*    DEFINE VARIABLE prog-tdate LIKE Tk_create_date  NO-UNDO.*/
-    /*----------------------------------------------------------------*/
-    DEFINE VARIABLE f-test-seq LIKE TK_mstr.TK_test_seq NO-UNDO.
-    DEFINE VARIABLE t-test-seq LIKE TK_mstr.TK_test_seq NO-UNDO.
-      
-    DEFINE VARIABLE sold    LIKE TK_mstr.TK_status NO-UNDO.      
-    DEFINE VARIABLE notsold LIKE TK_mstr.TK_status NO-UNDO.        
-    
-    DEFINE VARIABLE inter    AS LOG NO-UNDO.
-    DEFINE VARIABLE dom      AS LOG NO-UNDO.
-    DEFINE VARIABLE prof     AS LOG NO-UNDO.
-    DEFINE VARIABLE non-prof AS LOG NO-UNDO.
-    
-    DEFINE VARIABLE paid     LIKE TK_mstr.TK_cust_paid  NO-UNDO.      
-    DEFINE VARIABLE notpaid  LIKE TK_mstr.TK_cust_paid NO-UNDO.
-    DEFINE VARIABLE paid-ck    AS CHARACTER NO-UNDO. /* sold-ck */
-    DEFINE VARIABLE notpaid-ck AS CHARACTER NO-UNDO. /* notsold-ck */
-    
-    
-    DEFINE VARIABLE inter-ck   AS CHARACTER NO-UNDO.
-    DEFINE VARIABLE dom-ck     AS CHARACTER NO-UNDO.
-    DEFINE VARIABLE prof-ck    AS CHARACTER NO-UNDO.
-    DEFINE VARIABLE nonprof-ck AS CHARACTER NO-UNDO.
-    
-    DEFINE VARIABLE search-crit AS LOGICAL INITIAL NO   NO-UNDO.
-    
-    DEFINE VARIABLE alltk AS INTEGER NO-UNDO. /* Work in progress */ /* LIKE tk_sold  */
-    DEFINE VARIABLE TK-status LIKE TK_mstr.TK_status NO-UNDO.
-    
+    DEFINE VARIABLE v-tk_id LIKE TK_mstr.TK_ID NO-UNDO.
+    DEFINE VARIABLE v-lastname LIKE people_mstr.people_lastname NO-UNDO.
+    DEFINE VARIABLE v-firstname LIKE people_mstr.people_firstname NO-UNDO.
     DEFINE VARIABLE whattorun AS CHARACTER NO-UNDO.
     
-    /*-----------------------------------------------------------*/      
-    DEF VAR ITfeedback AS LOGICAL INITIAL NO NO-UNDO.       /*---< ITfeedback (YES or NO)  */
-  /*-----------------------------------------------------------*/ 
-       
-   ASSIGN
-       
-       f-lab-id    =   get-value ("h-f-lab-id")   /* 1dot2 */
-       t-lab-id    =   get-value ("h-t-lab-id")   /* 1dot2 */
-        
-       whattorun   =   get-value ("whattorun")
-       f-typ       =   get-value("from-typ")
-       t-typ       =   get-value ("to-typ")
-       tk          =   get-value ("testkit")
-       f-kitid     =   TRIM(get-value("from-id"))
-       t-kitid     =   TRIM(get-value("to-id"))
-       
-       f-fname      =   TRIM(get-value("h-fname"))              /* Names */
-       t-fname      =   TRIM(get-value("h-to-fname"))       
-       f-lname      =   TRIM(get-value("h-lname"))
-       t-lname      =   TRIM(get-value("h-to-lname"))        
-       
-      /*---------------------------------------------------------- 2dot2 --*/   
-       
-       fdate       =   get-value ("from-date") 
-       tdate       =   get-value ("to-date")
-       
-       f-mod       =   get-value ("h-f-mod")
-       t-mod       =   get-value ("h-t-mod")
-             
-      /*-------------------------------------------------------------------*/ 
-      
-       fsdate      =   DATE (get-value ("from-sold"))
-       tsdate      =   DATE (get-value ("to-sold"))
-       creatby     =   get-value ("by")
-       
-       
-              /*** begin 2dot4 ***/
-       dom         =   IF get-value("domestic") = "YES" THEN                    
-                            YES
-                       ELSE 
-                            ?
-       inter       =   IF get-value("inter-al") = "YES" THEN             
-                            YES
-                       ELSE 
-                            ?
-       prof        =   IF get-value("profal") = "YES" THEN 
-                            YES
-                       ELSE 
-                            ? 
-       non-prof    =   IF get-value("non-profal") = "YES" THEN 
-                            YES
-                       ELSE 
-                            ?
-       paid        =   IF get-value("is-paid") = "YES" THEN 
-                            YES
-                       ELSE 
-                            ?                               
-       notpaid     =   IF get-value("not-paid") = "YES" THEN 
-                            YES 
-                       ELSE 
-                            ?      
-                        /**** end of 2dot4 ****/
-                        
-       tk-status   =   get-value ("h-tk-status") 
-       
-       search-crit =   IF get-value ("h-search-crit") = "NO" THEN               /* 2dot4 */ 
-                            NO
-                       ELSE 
-                            YES
-       
-       f-test-seq  =   INTEGER (get-value("h-f-test-seq"))  /* added 1/8/15 */
-       t-test-seq  =   INTEGER (get-value("h-t-test-seq")) 
-      
-       dom-ck      =   IF dom = YES THEN
-                            "checked"
-                            ELSE
-                            ""  
-      inter-ck     =   IF inter = NO THEN 
-                            "checked"
-                            ELSE
-                            "" 
-      prof-ck      =   IF prof = YES THEN
-                            "checked"
-                            ELSE
-                            "" 
-      nonprof-ck   =   IF non-prof = NO THEN
-                            "checked"
-                            ELSE
-                            ""                                          
-      paid-ck       =   IF paid = YES THEN 
-                          "checked"
-                            ELSE
-                            ""
-      notpaid-ck    =   IF notpaid = NO THEN 
-                            "checked"
-                            ELSE
-                             ""  .  
-                             
+    ASSIGN 
+        v-tk_id = html-encode(get-value("h-tk_id"))
+        v-lastname = html-encode(get-value("h-lastname"))
+        v-firstname = html-encode(get-value("h-firstname"))
+        whattorun = html-encode(get-value ("whattorun")).
                                                                                         
-</SCRIPT>
+-->
 </HEAD>
 
-<BODY class='inside'>
-
-<SCRIPT LANGUAGE="SpeedScript">
-
-                                                                                        IF ITfeedback = YES THEN
-                                                                                         {&OUT} "<p> f-type --" f-typ skip
-                                                                                                "<br>f-lab-id -- " f-lab-id skip 
-                                                                                                "<br>t-lab-id -- " t-lab-id skip
-                                                                                                "<br>t-mod -- " t-mod skip
-                                                                                                "<br>fdate -- " fdate skip
-                                                                                                "</p>".
-</SCRIPT>                                                                                         
+<BODY class='inside'>                                                                                     
 
 <div class='row'>
-<div class='grid_1'></div>
-<div class='grid_10'>
-<div class="table_2col" >
-	<FORM  ACTION="TK_TKKit_search.r" method="post" >   
-	   
-		        <table>
-		        <th colspan="4">Search for Testkit Records by entering criteria below</th>		           
-		            <tr>
-		            <!--     <td>From Type</td><td><input type="text" name="from-typ" value="`f-typ`" autofocus ></td>     <!-- Setting cursor in 1st input field on load using autofocus  -->       
-		            <!--     <td>To</td><td><input type="text" name="to-typ" value="`t-typ`"></td></tr>   -->
-		               
-<SCRIPT LANGUAGE="SpeedScript"> 
-                        {&OUT}		                
-		                "<td>From Type</td>
-		                 <td><select name='from-typ' >".		                
-		                
-		                IF f-typ = "" THEN
-		                {&OUT}		                
-		                "<option value=''></option>".
-	                    ELSE  
-	                    {&OUT}                     
-                        "<option value='" f-typ "' selsctred>" f-typ "</option>
-                         <option value=''></option>".
-
-                        FOR EACH test_mstr NO-LOCK:
-                            {&OUT}
-                                   "<option Value='" test_mstr.test_type "'>" test_mstr.test_type "</option>" SKIP.
-                        END.   
-                        
-                        {&OUT}
-                         "</td>".                              
-		             
-                        {&OUT}                       
-                        "<td>To</td>
-                         <td><select name='to-typ'  >".                        
-                        
-                        IF t-typ = "" THEN
-                        {&OUT}                      
-                        "<option value=''></option>".
-                        ELSE  
-                        {&OUT}                     
-                        "<option value='" t-typ "' selsctred>" t-typ "</option>
-                         <option value=''></option>".
-                        FOR EACH test_mstr NO-LOCK:
-                            {&OUT}
-                                   "<option Value='" test_mstr.test_type "'>" test_mstr.test_type "</option>" SKIP.
-                        END.   
-                        
-                         {&OUT}
-                         "</td></tr>".                            
- </SCRIPT>                       
-                                        
-		            <tr>            
-		                <td>From Testkit ID</td><td><input type="text" name="from-id" value="`f-kitid`" autofocus></td>
-		                <td>To</td><td><input type="text" name="to-id" value="`t-kitid`"></td> </tr> 
-                         
-		            <tr>
-		                <td>From Created Date</td>
-<SCRIPT LANGUAGE="SpeedScript">
-                IF fdate = ? THEN
-                    {&OUT}
-                    "<td><input type='date' name='from-date' value='' ></td>".
-                    ELSE                  
-</SCRIPT>            
-		                 <td><input type="date" name="from-date" value="`fdate`" ></td> 	
-	                    
-		                 <td>To</td><td> 
-<SCRIPT LANGUAGE="SpeedScript"> 
-                IF tdate = ? THEN
-                    {&OUT}
-                    "<input type='date' name='to-date' value='' ></td></tr>".
-                    ELSE                            
-</SCRIPT>    		                 
-		                 <input type="date" name="to-date" value="`tdate`" ></td></tr>
-		                 
-	                
-		                 
-<!-- ----------------------------------------------------------------------------------------------- -->                        
-		 <!--            <tr>
-		                <td>Sold Date</td>
-<SCRIPT LANGUAGE="SpeedScript">
-                IF fsdate = ? THEN
-                {&OUT}
-                    "<td><input type='text' name='from-sold' value=''></td>".
-                    ELSE                                    
-</SCRIPT>  		                
-		                <td><input type="text" name="from-sold" value="`fsdate`"></td>
-<!-- --------------------------------- -->	
-        <!--                  
-		                <td>To</td><td>  
-<SCRIPT LANGUAGE="SpeedScript">
-                IF tsdate = ? THEN
-                {&OUT}
-                    "<input type='text' name='to-sold' value=''></td> </tr>".
-                    ELSE                                    
-</SCRIPT>  		                
-		                <input type="text" name="to-sold" value="`tsdate`"></td> </tr>
-<!-- ------------------------------------------------------------------------------------------------ -->              
-                   <tr>
-                   <td>From  Last Mod. Date</td>
-<SCRIPT LANGUAGE="SpeedScript">
-                IF f-mod = ? THEN
-                    {&OUT}
-                    "<td><align='left'><input type='date' name='h-f-mod' value='' ></td>".
-                    ELSE
-</SCRIPT>  
-                   <td><input type="date" name="h-f-mod" value="`f-mod`"></td>
- <SCRIPT LANGUAGE="SpeedScript">                 
-	                {&OUT}
-	                "<td>To</td>".   
-                IF t-mod = ? THEN
-                    {&OUT}
-                    "<td><input type='date' name='h-t-mod' value='' ></td></tr>".
-                    ELSE
-</SCRIPT> 
-                    <td><input type="date" name="h-t-mod" value="`t-mod`"></td></tr>                       
-           <!---------------------------------------------------------------------------------------------- -->  
-                    <tr>
-                    <td>From Lab Sample ID</td>                                                <!--  1dot2 -->
-                    <td><input type="text" name="h-f-lab-id" value="`f-lab-id`"></td>
-                    <td>To</td>
-                    <td><input type="text" name="h-t-lab-id" value="`t-lab-id`"></td>
-                    </tr>      
-           
-           <!---------------------------------------------------------------------------------------------- -->            
-                        
-                    <tr><td>Testkit Status</td><td><select name="h-tk-status"  >
- <SCRIPT LANGUAGE="SpeedScript">                      
-                                    IF tk-status = "" THEN DO:                          
-                                       {&OUT} "<selected>"  SKIP 
-                                                "<option value=' '>All</option>" SKIP.  /*ALL*/
-                                       
-                                       {../depot/src/WebSpeed/StatusListDropDown.i}.                /* 2dot3 */
-                                                                               
-                                       {&OUT}        
-                                              "</select></td> " SKIP.
-                                      END.
-                                      ELSE DO: 
-                                                                  
-                                                         
-                                       {&OUT} "<selected>" SKIP  
-                                              "<option >"tk-status "</option>" SKIP 
-                                              "<option value=' '>All</option>" SKIP.   /* All */  
-                                            
-                                             {../depot/src/WebSpeed/StatusListDropDown.i}.          /* 2dot3 */
-                                                                            
-                                         {&OUT}      
-                                              "</select></td>"SKIP.
-                                        END.      
-  </SCRIPT>                                   
-		           
-		            <td colspan="2"></td></tr> <!-- Created By</td><td ><input type="text" name="by" value="`creatby`"></td></td></tr>  **Commented out on 1/6/15** -->
-		                
-		                    
-		            <tr>
-		                <td>Domestic</td><td><input type="checkbox"  name="domestic" value="yes" `dom-ck`  ></td>		                                       
-		                <td>International</td><td><input type="checkbox"  name="inter-al" value="yes" `inter-ck`  ></td></tr> 
-		       
-		            <tr>
-		                <td>Professional</td><td><input type="checkbox"  name="profal" value="Yes" `prof-ck`  ></td>	               
-		                <td>Non-Professional</td><td><input type="checkbox"  name="not-profal" value="yes" `nonprof-ck`  ></td></tr>                        
-		          
-		            <tr>		               
-		                 <td>Paid by Customer</td><td><input type="checkbox" name="is-paid" value="yes" `paid-ck`  ></td>   
-		                 <td>Not Paid by Customer</td><td><input type="checkbox" name="not-paid" value="yes" `notpaid-ck`  ></td></tr> 	
-		                 
-		                 
-		                 
-		        <th colspan="4"></th>  
-		      
-		            <tr>   
-                        <td>From Last Name</td><td><input type="text" name="h-lname" value="`f-lname`"></td>
-                        <td>To Last Name</td><td><input type="text" name="h-to-lname" value="`t-lname`"></td>  
-                    </tr>    
-		            <tr>
-                        <td>From First Name</td><td><input type="text" name="h-fname" value="`f-fname`"></td>          
-                        <td>To First Name</td><td><input type="text" name="h-to-fname" value="`t-fname`"></td>
-                    </tr>
-                          	               
-		       
-		        </table>
-            </div>              <!--  close of table div  -->
-        </div>                  <!--  close of grid_10  -->
-    <div class='grid_1'></div>
-    </div>                      <!--  close of row -->
-    <input type="hidden" name="whattorun" value="`whattorun`">  	  		            
-		
-<SCRIPT LANGUAGE="SpeedScript">     /*******  2.0  ********/
-
-
-	IF search-crit <> YES THEN DO:                           /* 2.1 */
-	    
-	    {&OUT}
-	        "<div class='row'>" SKIP
-	        "   <div class='grid_3'> </DIV>" SKIP
-	        "   <div class='grid_2'><BUTTON type='submit' name='submit' value='Search' class='btn'>Search</BUTTON></div>" SKIP
-	        "   <div class='grid_2'> </DIV>" SKIP
-	        "   <div class='grid_2'><BUTTON type='reset' name='submit' value='reset' class='btn'>Reset</BUTTON></div>" SKIP
-	        "   <div class='grid_3'> </DIV>" SKIP
-	        "</div>" SKIP
-	        "</form> " SKIP
-	        "<BR>" SKIP.
-	END.   /* IF search-crit <> YES THEN DO: */           /* 2.1 */  
-
-    ELSE                                                /* 2.1 */       
-        
-			{&OUT}        
-			"<div class='row'>" SKIP                            /* 2.1 */   
-			"   <div class='grid_2'> </DIV>" SKIP
-			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Search' class='btn'>Search</BUTTON></div>" SKIP
-/*			"   <div class='grid_1'> </DIV>" SKIP*/
-			"   <div class='grid_1'> </DIV>" SKIP
-            "   <div class='grid_2'><BUTTON type='reset'' name='h-act' value='reset'' class='btn'>Reset</BUTTON></div>" SKIP
-			"   <div class='grid_1'> </DIV>" SKIP
-			
-			  "</form> " SKIP     
-			"   <div class='grid_2'>" skip
-			"<form  ACTION='TK_TKKitinquI.r method='post' ''>" skip         /* Resets search criteria to a blank form */
-			"<input type='hidden' name='whattorun' value=1.3>" SKIP
-			"<input type='hidden' name='h-search-crit' value='NO'>" SKIP
-			"      <button type='submit' name='new' value='ITEM_SELECTED' class='btn'>New Search</BUTTON></div>" SKIP
-			
-			
-			"   <div class='grid_2'> </DIV>" SKIP
-			"</div>" SKIP
-			"<BR>" SKIP.   
-   
-          
-                                                                                   
-             
-</SCRIPT>  
+	<div class='grid_3'></div>
+    <div class='grid_6'>
+        <div class="table_2col" >
+            <form  action="TK_TKKit_search.r" method="post" >   
+                <table>
+                    <th colspan="4">Search for Testkit Records by entering criteria below</th>		           
+                    <tr>            
+                        <td>Testkit ID</td>
+                        <td>
+                            <input type="text" name="h-tk_id" value="`v-tk_id`" autofocus/>
+                        </td>
+			        </tr>
+			        <tr>   
+			            <td>Last Name</td>
+			            <td>
+			                <input type="text" name="h-lastname" value="`v-lastname`"/>
+			            </td>
+			        </tr>    
+			        <tr>
+			            <td>First Name</td>
+			            <td>
+			                <input type="text" name="h-firstname" value="`v-firstname`"/>
+			            </td>          
+			        </tr>
+			    </table>
+			    <br>
+			    <input type="hidden" name="whattorun" value="`whattorun`">
+				<div class='row'> 
+				    <div class='grid_3'> </DIV> 
+				    <div class='grid_2'><BUTTON type='submit' name='submit' value='Search' class='btn'>Search</BUTTON></div> 
+				    <div class='grid_2'> </DIV> 
+				    <div class='grid_2'><BUTTON type='reset' name='submit' value='reset' class='btn'>Reset</BUTTON></div> 
+				    <div class='grid_3'> </DIV> 
+                </div> 
+            </form>  
+        </div>
+    </div>
+    <div class='grid_3'></div>
+</div>
 </BODY>
 </HTML>

@@ -50,16 +50,16 @@ FIND FIRST att_files WHERE att_files.att_table = "MB_mstr" AND
 
     
 {&OUT}
-    "       <div class='w3-col s12 l4 w3-padding'>" SKIP 
+    "       <div class='w3-col m12 l4 w3-padding'>" SKIP 
     "           <div class='w3-row w3-padding w3-card-4 w3-white w3-center'>" SKIP
     "               <div id='card-head'>" SKIP
-    "                   <div class='w3-col s1 m1'>" SKIP
+    "                   <div class='w3-col m1 m1'>" SKIP
     "                       <input type='checkbox' class='w3-check' name='" v-MB_Name[{2}] "' value='" MB_mstr.MB_name "'></input>" SKIP
     "                   </div>  <!-- end of div --- checkbox -->" SKIP
-    "                   <div class='w3-col s8 m8'>" SKIP
+    "                   <div class='w3-col m8 m8'>" SKIP
     "                       <p class='w3-large'><b>" MB_mstr.MB_name "</b></p>" SKIP
     "                   </div>  <!-- end of div --- MB Name -->" SKIP
-    "                   <div class='w3-col s3 m3'>" SKIP 
+    "                   <div class='w3-col m3 m3'>" SKIP 
     "                       <img src='" 
     att_files.att_filepath "/" att_files.att_filename 
     "' class='w3-right w3-circle' style='width:100%; padding-bottom: 4%'/>" SKIP
@@ -69,14 +69,14 @@ FIND FIRST att_files WHERE att_files.att_table = "MB_mstr" AND
     "                   </div>  <!-- end of DIV --- MB Description -->" SKIP
     "                   <br>" SKIP
     "                   <div class='w3-row'>" SKIP
-    "                           <div class='w3-col s2 m1 w3-padding-bottom '>".
+    "                           <div class='w3-col m2 m1 w3-padding-bottom '>".
     
 IF MB_mstr.MB__log01 = YES THEN 
     {&OUT}
         "<img src='/depot/src/HTMLContent/images/Scouting/50px-EagleMedal.jpg' class='w3-right' style='width:100%' /></div>" SKIP.   /* should be tied to an att_files record */
     
 {&OUT}
-    "                           <div class='w3-col s10 m11' style='color:grey; text-align:right'> Open Seats: " 
+    "                           <div class='w3-col m10 m11' style='color:grey; text-align:right'> Open Seats: " 
     {3}     /* open seat count */    
     "</div> <!-- end of DIV --- open seats -->" SKIP
     "                   </div>  <!-- end of DIV --- card footer row - icons, etc. -->" SKIP

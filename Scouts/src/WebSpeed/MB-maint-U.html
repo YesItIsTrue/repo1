@@ -8,21 +8,18 @@
     <META NAME='CREATE_DATE' CONTENT="07/Apr/2017">
     <META NAME='LAST_UPDATED' CONTENT="05/Sep/2017">   
     <META NAME='MODIFIED_BY' CONTENT="DOUG LUTTRELL">
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1"> 
-    <link rel="stylesheet" type="text/css" href="http://www.w3schools.com/lib/w3.css"> 
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/ManCollege.css">
-    
-<SCRIPT LANGUAGE="SpeedScript">
-
-CREATE WIDGET-POOL.
-</SCRIPT>
+    <!--WSS
+    {global-includes.i}.
+	{external-dependencies.i}.
+	{registration.i}.
+	{organization-includes.i}.
+	-->
 </HEAD>
 
-<BODY class='w3-white'>
-<SCRIPT LANGUAGE="SpeedScript"> 
+<body class='ss-background'>
+<!--WSS
   /*------------------------------------------------------------------
     File:
     Description:
@@ -72,178 +69,123 @@ CASE act:
     WHEN "Search" THEN DO:
     
         {&OUT}
-            "<header class='w3-container w3-dark-grey'>" SKIP
-            "   <h1>Merit Badge / Classtivity Maintenance</h1>" SKIP                
-            
-            "</header>" SKIP
-        
-            "<br><br>" SKIP
-        
             "<form action='MB-maint-U.r'>" SKIP
-            "<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>" SKIP
-            "    <h2>Search Criteria</h2>"
-            "    <p>For the ID field use BSA's for Merit Badges, 200 - 999 for other Scout classes, 1000 - 9999 for Young Womens' classes, and 10,000+ for Man College!!! Classtivities.</p>"  
-            
-            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-            "        <label>Merit Badge Name</label>" SKIP
-            "        <input class='w3-input w3-border w3-round-large' name='h-name' value='" v-name "' type='text'>" SKIP
-            "    </p>" SKIP
-            
-/*            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP                                     */
-/*            "        <label>Merit Badge ID</label>" SKIP                                                               */
-/*            "        <input class='w3-input w3-border w3-round-large' name='h-ID' value='" v-ID "' type='number'>" SKIP*/
-/*            "    </p>" SKIP                                                                                            */
-/*                                                                                                                       */
-            "   <div class='w3-row-padding'>" SKIP
-            "    <p class='w3-half'>" SKIP
-            "        <label>From Merit Badge ID</label>" SKIP
-            "        <input class='w3-input w3-border w3-round-large' name='h-from-ID' value='" v-from-ID "' type='number'>" SKIP
-            "    </p>" SKIP
-            "    <p class='w3-half'>" SKIP
-            "        <label>To</label>" SKIP
-            "        <input class='w3-input w3-border w3-round-large' name='h-to-ID' value='" v-to-ID "' type='number'>" SKIP
-            "    </p>" SKIP
-            "   </div>" SKIP
-            
-            "<br>" SKIP
-            
-            "</div>"
-            
-            "<br>" SKIP
-            
-            "<div class='w3-row-padding w3-margin'>" SKIP
-            "   <div class='w3-center w3-col s12'>" SKIP
-            "       <button type='submit' name='h-act' value='List' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Search</b></BUTTON>" SKIP
-            "   </div>" SKIP
-            "</div>" SKIP
-            "<div class='w3-row-padding w3-margin'>" SKIP
-            "   <div class='w3-center w3-col s12'>" SKIP
-            "       <button type='Reset' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Reset</b></BUTTON>" SKIP
-            "   </div>" SKIP
-            "</div>" SKIP
-            "<div class='w3-row-padding w3-margin'>" SKIP
-            "   <div class='w3-center w3-col s12'>" SKIP
-            "       <button type='submit' name='h-act' value='Create' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Create New</b></BUTTON>" SKIP
-            "   </div>" SKIP
-            "</div>" SKIP
-            "</form>" SKIP
-            "<br><br><br><br><br><br><br>" SKIP.  
+            "   <div class='ss-card'>" SKIP
+            "       <div class='ss-card-title'>" SKIP
+            "           <h1>Course Maintenance</h1>"
+            "           <p>Search for the desired courses below using either course name or a range of course IDs</p>"
+            "       </div>" SKIP  
+            "       <div class='ss-card-content'>" SKIP
+            "           <div class='w3-row'>" SKIP
+            "               <div class='w3-col s12'>" SKIP
+            "                   <label>Course Name</label>" SKIP
+            "                   <input class='ss-input' name='h-name' value='" v-name "' type='text'/>" SKIP
+            "               </div>" SKIP
+            "               <div class='w3-col s6'>" SKIP
+            "                   <label>From Course ID</label>" SKIP
+            "                   <input class='ss-input' name='h-from-ID' value='" v-from-ID "' type='number'/>" SKIP
+            "               </div>" SKIP
+            "               <div class='w3-col s6'>" SKIP
+            "                   <label>To</label>" SKIP
+            "                   <input class='ss-input' name='h-to-ID' value='" v-to-ID "' type='number'/>" SKIP
+            "               </div>" SKIP
+            "           </div>" SKIP
+            "       </div>" SKIP
+            "       <div class='ss-button-group'>" SKIP
+            "           <div class='w3-row'>" SKIP
+		    "               <div class='w3-col m4'>" SKIP
+		    "                   <button type='submit' name='h-act' value='List' class='ss-btn w3-theme'>Search</button>" SKIP
+		    "               </div>" SKIP
+	        "               <div class='w3-col m4'>" SKIP
+	        "                   <button type='submit' name='h-act' value='Create' class='ss-btn w3-green'>New Course</button>" SKIP
+	        "               </div>" SKIP
+	        "               <div class='w3-col m4'>" SKIP
+	        "                   <button type='button' class='ss-btn w3-theme-accent'>View Reports</button>" SKIP
+	        "               </div>" SKIP
+	        "           </div>" SKIP
+            "       </div>" SKIP
+            "    </div>"
+            "</form>" SKIP.
         
     END. /*** Search Criteria ***/
 
     WHEN "List" THEN DO:
     
         {&OUT}
-            "<header class='w3-container w3-dark-grey'>" SKIP
-                "<h1> List of Merit Badges </h1>" SKIP
-            "</header>" SKIP
-        
-            "<br><br>" SKIP
-            "<div class='w3-card-4 w3-content w3-white' style='max-width:1100px;'>" SKIP
-            "<ul class='w3-ul'>" SKIP. 
+            "<div class='ss-card'>" SKIP
+            "   <div class='ss-card-title'>" SKIP
+            "       <h1>Course List</h1>" SKIP
+            "       <p>Select a course from the list below to edit it or its requirements</p>" SKIP
+            "   </div>" SKIP
+            "   <ul class='w3-ul'>" SKIP. 
     
-        FOR EACH MB_mstr WHERE 
-            (MB_mstr.MB_name MATCHES "*" + v-name + "*" OR v-name = "") AND 
-            (MB_mstr.MB_BSA_ID >= v-from-id OR v-from-id = 0) AND 
-            (MB_mstr.MB_BSA_ID <= v-to-id OR v-to-id = 0) NO-LOCK
-                BREAK BY MB_mstr.MB_name:
-        
-            ASSIGN 
-                c-mb = c-mb + 1.
-        
-            {&OUT}
-                "<a href='MB-maint-U.r?h-act=Edit&h-id=" MB_mstr.MB_BSA_ID "' style='text-decoration:none;'>" SKIP
-                "    <li class='w3-padding-16 w3-white w3-hover-pale-green' style='border-bottom: 1px solid #ddd !important;'>" SKIP
-                "        <span class='w3-closebtn w3-padding w3-margin-right w3-medium w3-xlarge'><i class='fa fa-pencil-square-o'></i></span>" SKIP
-              "        <span class='w3-xlarge'>" MB_mstr.mb_name "</span>" SKIP
-                "    </li>" SKIP
-                "</a>" SKIP.
-        
-        END. /*** 4ea mb_mstr ***/
+	        FOR EACH MB_mstr WHERE 
+	            (MB_mstr.MB_name MATCHES "*" + v-name + "*" OR v-name = "") AND 
+	            (MB_mstr.MB_BSA_ID >= v-from-id OR v-from-id = 0) AND 
+	            (MB_mstr.MB_BSA_ID <= v-to-id OR v-to-id = 0) NO-LOCK
+	                BREAK BY MB_mstr.MB_name:
+	        
+	            ASSIGN 
+	                c-mb = c-mb + 1.
+	        
+	            {&OUT}
+	                "<a href='MB-maint-U.r?h-act=Edit&h-id=" MB_mstr.MB_BSA_ID "'>" SKIP
+	                "    <li class='ss-li w3-hover-theme-accent'>" MB_mstr.mb_name "</li>" SKIP
+	                "</a>" SKIP.
+	        
+	        END. /*** 4ea mb_mstr ***/
+	        
+	        IF c-mb < 1 THEN 
+	           {&OUT}                    
+                    "<li class='ss-li'><center>No courses matched the provided criteria.</center></li>" SKIP.
         
         {&OUT}
-            "</ul>" SKIP
-            "</div>"  SKIP
-            "<!-- container -->"  SKIP
-            "<br>" SKIP.
-        
-        IF c-mb < 1 THEN {&OUT}                    
-            "    <div class='w3-card-2 w3-panel w3-pale-yellow w3-leftbar w3-border w3-border-yellow w3-content' style='max-width:800px;'>" SKIP
-            "       <p>Sorry, there were no Merit Badges found searching with that criteria.</p>" SKIP
-            "    </div>" SKIP.
-        
-        {&OUT} 
-            "<form>" SKIP
-            "<input type='hidden' name='h-name' value='" v-name "'/>" SKIP
-            "<input type='hidden' name='h-id' value='" v-id "'/>" SKIP
-            "<div class='w3-row-padding w3-margin'>" SKIP
-            "   <div class='w3-center w3-col s12'>" SKIP
-            "       <button type='submit' name='h-act' value='Create' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Create New</b></BUTTON>" SKIP
+            "   </ul>" SKIP
+            "   <form>" SKIP
+            "   <input type='hidden' name='h-name' value='" v-name "'/>" SKIP
+            "   <input type='hidden' name='h-id' value='" v-id "'/>" SKIP
+            "   <div class='ss-button-group'>" SKIP
+            "       <div class='w3-row'>" SKIP
+	            "       <div class='w3-col m6'>" SKIP
+	            "           <button type='submit' name='h-act' value='Create' class='ss-btn w3-theme'>Create New</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "       <div class='w3-col m6'>" SKIP
+	            "           <button  type='submit' name='h-act' value='' class='ss-btn w3-grey'>Search Again</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "  </div>" SKIP
             "   </div>" SKIP
-            "</div>" SKIP
-            "<div class='w3-row-padding w3-margin'>" SKIP
-            "   <div class='w3-center w3-col s12'>" SKIP
-            "       <button  type='submit' name='h-act' value='' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
-            "   </div>" SKIP
-            "</div>" SKIP
-            "</form>" SKIP .
+            "   </form>" SKIP
+            "</div>"  SKIP.
         
     END. /**** Create Act ****/
 
     WHEN "Create" THEN DO:
-        
         {&OUT}
-            "<header class='w3-container w3-dark-grey'>" SKIP
-                "<h1>Merit Badge / Classtivity Creation</h1>" SKIP
-            "</header>" SKIP
-        
-            "<br><br>" SKIP
-        
             "<form>" SKIP
-            "<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>" SKIP
-            "    <h2>Input Details for New Merit Badge</h2>"
-            "    <p>For the ID field use BSA's for Merit Badges, 200 - 999 for other Scout classes, 1000 - 9999 for Young Womens' classes, and 10,000+ for Man College!!! Classtivities.</p>"
-            
-            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-            "        <label>Merit Badge Name</label>" SKIP
-            "        <input class='w3-input w3-border w3-round-large' name='h-name' value='" v-name "' type='text' Required>" SKIP
-            "    </p>" SKIP
-                       
-            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-            "        <label>Merit Badge ID</label>" SKIP
-            "        <input class='w3-input w3-border w3-round-large' name='h-ID' value='" v-ID "' type='number' required>" SKIP
-            "    </p>" SKIP
-            
-            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-            "        <label>Merit Badge Description</label>" SKIP
-            "        <textarea class='w3-input w3-border w3-round-large' name='h-desc' rows='3' cols='50'>" v-desc "</textarea>" SKIP
-            "    </p>" SKIP
-
-            "<br>" SKIP
-            
-            "</div>"
-            
-            "<br>" SKIP
-            
-            "<div class='w3-row-padding w3-margin'>" SKIP
-            "   <div class='w3-center w3-col s12'>" SKIP
-            "       <button type='submit' name='h-act' value='DB_Create' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
+            "<div class='ss-card'>" SKIP
+            "   <div class='ss-card-title'>" SKIP
+            "       <h1>Course Creation</h1>"
+            "   </div>" SKIP
+            "   <label>Course Name</label>" SKIP
+            "   <input class='ss-input' name='h-name' value='" v-name "' type='text' Required>" SKIP
+            "   <label>Course ID</label>" SKIP
+            "   <input class='ss-input' name='h-ID' value='" v-ID "' type='number' required>" SKIP
+            "   <label>Course Description</label>" SKIP
+            "   <textarea class='ss-input' name='h-desc' rows='3' cols='50'>" v-desc "</textarea>" SKIP
+            "   <div class='ss-button-group'>" SKIP
+            "       <div class='w3-row'>" SKIP
+	            "       <div class='w3-col m6'>" SKIP
+	            "           <button type='submit' name='h-act' value='DB_Create' class='ss-btn w3-theme'>Submit</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "       <div class='w3-col m6'>" SKIP
+	            "           <button type='Reset' class='ss-btn w3-grey'>Reset</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "  </div>" SKIP
             "   </div>" SKIP
             "</div>" SKIP
-            "<div class='w3-row-padding w3-margin'>" SKIP
-            "   <div class='w3-center w3-col s12'>" SKIP
-            "       <button type='Reset' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Reset</b></BUTTON>" SKIP
-            "   </div>" SKIP
-            "</div>" SKIP
-            "</form>" SKIP
-            "<br><br><br><br><br><br><br>" SKIP.    
-        
+            "</form>" SKIP.
         
     END. /**** Create Act ****/
-    
-/*                "<input type='hidden' name='h-ID' value='" v-ID "'/>"*/
-/*            "<input type='hidden' name='h-name' value='" v-name "'/>"*/
-/*            "<input type='hidden' name='h-desc' value='" v-desc "'/>"*/
     
     WHEN "Edit" THEN DO:
     
@@ -251,84 +193,62 @@ CASE act:
             NO-LOCK NO-ERROR.
             
         IF AVAILABLE (mb_mstr) THEN DO:  
-        
-            {&OUT}
-            "<header class='w3-container w3-dark-grey'>" SKIP
-                "<h1>Merit Badge / Classtivity  Editing Page</h1>" SKIP
-            "</header>" SKIP
-        
-            "<br><br>" SKIP
-        
-            "<form>" SKIP  
-            "<div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>" SKIP
-            "    <h2>Input or Change Merit Badge Data</h2>"
-            "    <p>For the ID field use BSA's for Merit Badges, 200 - 999 for other Scout classes, 1000 - 9999 for Young Womens' classes, and 10,000+ for Man College!!! Classtivities.</p>"
-                
-            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-            "        <label>Merit Badge Name</label>" SKIP
-            "        <input class='w3-input w3-border w3-round-large' name='h-name' value='" mb_mstr.mb_name "' type='text'>" SKIP
-            "    </p>" SKIP
-            
-            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-            "        <label>Merit Badge ID</label>" SKIP
-            "        <input class='w3-input w3-border w3-round-large' name='h-ID' value='" mb_mstr.mb_BSA_ID "' type='text' disabled>" SKIP
-            "    </p>" SKIP        
-            
-            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-            "        <label>Description</label>" SKIP
-            "        <textarea class='w3-input w3-border w3-round-large' name='h-desc' rows='3' cols='50'>" mb_mstr.mb_desc "</textarea>" SKIP
-            "    </p>" SKIP
-            
-            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-            "        <a href='MB-req-edit.html?mbID=" mb_mstr.mb_BSA_ID "'>Click here to edit this merit badge's requirements</a>" SKIP
-            "    </p>" SKIP
 
-            "<br>" SKIP
-            
+            {&OUT}
+            "<form>" SKIP  
+            "<div class='ss-card'>" SKIP
+            "   <div class='ss-card-title'>" SKIP
+            "       <h1>Editing " MB_mstr.MB_name "</h1>"
+            "   </div>" SKIP
+            "   <label>Course Name</label>" SKIP
+            "   <input class='ss-input' name='h-name' value='" mb_mstr.mb_name "' type='text'>" SKIP
+            "   <label>Course ID</label>" SKIP
+            "   <input class='ss-input' name='h-ID' value='" mb_mstr.mb_BSA_ID "' type='text' disabled>" SKIP
+            "   <label>Description</label>" SKIP
+            "   <textarea class='ss-input' name='h-desc' rows='3' cols='50'>" mb_mstr.mb_desc "</textarea>" SKIP
+            "   <input type='hidden' name='h-ID' value='" mb_mstr.mb_BSA_ID "' />" SKIP
+            "   <div class='ss-button-group'>" SKIP
+            "       <div class='w3-row'>" SKIP
+	            "       <div class='w3-col m4'>" SKIP
+	            "           <button type='submit' name='h-act' value='DB_Edit' class='ss-btn w3-theme'>Submit</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "       <div class='w3-col m4'>" SKIP
+	            "       <a href='MB-req-edit.html?mbID=" mb_mstr.mb_BSA_ID "'>" SKIP
+	            "           <button type='button' class='ss-btn w3-green'>Update Reqs.</BUTTON>" SKIP
+	            "       </a>" SKIP
+	            "       </div>" SKIP
+	            "       <div class='w3-col m4'>" SKIP
+	            "           <button type='Reset' class='ss-btn w3-grey'>Reset</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "  </div>" SKIP
+            "   </div>" SKIP
             "</div>"
-            "<input type='hidden' name='h-ID' value='" mb_mstr.mb_BSA_ID "' />" SKIP
-            "<br>" SKIP
-            "<div class='w3-row-padding w3-margin'>" SKIP
-            "   <div class='w3-center w3-col s12'>" SKIP
-            "       <button type='submit' name='h-act' value='DB_Edit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Submit</b></BUTTON>" SKIP
-            "   </div>" SKIP
-            "</div>" SKIP
-            "<div class='w3-row-padding w3-margin'>" SKIP
-            "   <div class='w3-center w3-col s12'>" SKIP
-            "       <button type='Reset' class='w3-btn-block w3-dark-grey w3-round' style='max-width:400px;'><b>Reset</b></BUTTON>" SKIP
-            "   </div>" SKIP
-            "</div>" SKIP
-            "</form>" SKIP
-            "<br><br><br><br><br><br><br>" SKIP. 
+            "</form>" SKIP.
+
             
         END. /*** avail mb_mstr for editing ***/
         
         ELSE DO:
-        
+            
             {&OUT}
-                "<header class='w3-container w3-dark-grey'>" SKIP
-                    "<h1> Merit Badge / Classtivity Maintenance</h1>" SKIP
-                "</header>" SKIP
-                "<br><br>" SKIP
-                "<br>" SKIP          
-                "    <div class='w3-card-2 w3-panel w3-pale-red w3-leftbar w3-border w3-border-red w3-content' style='max-width:800px;'>" SKIP
-                "       <p>Sorry, no Merit Badge exists with the ID of '" v-ID "', feel free to create one.</p>" SKIP
-                "          <br><br>" SKIP
-                "    </div>" SKIP
-                "  <br><br>" SKIP
-                "<form>" SKIP
-                
-                "<div class='w3-row-padding w3-margin'>" SKIP
-                "   <div class='w3-center w3-col s12'>" SKIP
-                "       <button type='submit' name='h-act' value='Create' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Create New</b></BUTTON>" SKIP
-                "   </div>" SKIP
-                "</div>" SKIP
-                "<div class='w3-row-padding w3-margin'>" SKIP
-                "   <div class='w3-center w3-col s12'>" SKIP
-                "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
-                "   </div>" SKIP
-                "</div>" SKIP
-                "</form>" SKIP.
+            "<form>" SKIP  
+            "<div class='ss-card'>" SKIP
+            "   <div class='ss-card-title'>" SKIP
+            "       <h1>Course Not Found</h1>"
+            "       <p>No course exists with an ID of " v-ID ".</p>" SKIP
+            "   </div>" SKIP
+            "   <div class='ss-button-group'>" SKIP
+                    "<div class='w3-row'>" SKIP
+	            "       <div class='w3-col m6'>" SKIP
+	            "           <button type='submit' name='h-act' value='Create' class='ss-btn w3-theme'>Create Event</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "       <div class='w3-col m6'>" SKIP
+	            "           <button type='submit' name='h-act' value='' class='ss-btn w3-grey'>Search Again</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "  </div>" SKIP
+            "   </div>" SKIP
+            "</div>"
+            "</form>" SKIP.
             
         END. /*** not avail for editing. ****/       
         
@@ -342,34 +262,33 @@ CASE act:
         IF AVAILABLE (mb_mstr) THEN DO:
         
             {&OUT}
-                "<header class='w3-container w3-dark-grey'>" SKIP
-                    "<h1> Merit Badge / Classtivity  Creation Review</h1>" SKIP
-                "</header>" SKIP
-                "<br><br>" SKIP
-                "<br>" SKIP          
-                "    <div class='w3-card-2 w3-panel w3-pale-yellow w3-leftbar w3-border w3-border-yellow w3-content' style='max-width:800px;'>" SKIP
-                "       <p>There is already a Merit Badge with the ID of '" MB_mstr.MB_BSA_ID "', it's named '" mb_mstr.mb_name "'. </p>" SKIP
-                "          <br><br>" SKIP
-                "      <p>Click on the Edit button to change and review this record, or seach again."
-                "    </div>" SKIP
-                "  <br><br>" SKIP
-                "<form>" SKIP
-                "<input type='hidden' name='h-ID' value='" MB_mstr.MB_BSA_ID "'/>"
-                "<input type='hidden' name='h-name' value='" MB_mstr.MB_name "'/>"
-                "<input type='hidden' name='h-desc' value='" MB_mstr.MB_desc "'/>"
-                "<div class='w3-row-padding w3-margin'>" SKIP
-                "   <div class='w3-center w3-col s12'>" SKIP
-                "       <button type='submit' name='h-act' value='Edit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Edit</b></BUTTON>" SKIP
-                "   </div>" SKIP
-                "</div>" SKIP
-                "</form>" SKIP
-                "<form>" SKIP
-                "<div class='w3-row-padding w3-margin'>" SKIP
-                "   <div class='w3-center w3-col s12'>" SKIP
-                "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
-                "   </div>" SKIP
-                "</div>" SKIP
-                "</form>" SKIP.
+            "<form>" SKIP
+            "<input type='hidden' name='h-id' value='" MB_mstr.MB_BSA_ID "'/>" SKIP
+            "<input type='hidden' name='h-name' value='" MB_mstr.MB_name "'/>" SKIP
+            "<input type='hidden' name='h-desc' value='" MB_mstr.MB_desc "'/>" SKIP
+            "<div class='ss-card'>" SKIP
+            "   <div class='ss-card-title'>" SKIP
+            "       <h2>Duplicate Course ID</h2>"
+            "       <p>There is already a course with an ID of " MB_mstr.MB_BSA_ID " named " mb_mstr.mb_name ".</p>"
+            "   </div>" SKIP
+            "   <label>Course Name</label>" SKIP
+            "   <input class='ss-input' name='h-name' value='" mb_mstr.mb_name "' type='text' Disabled>" SKIP
+            "   <label>Course ID</label>" SKIP
+            "   <input class='ss-input' name='h-id' value='" mb_mstr.mb_BSA_ID "' type='number' disabled>" SKIP
+            "   <label>Description</label>" SKIP
+            "   <textarea class='ss-input' name='h-desc' rows='3' cols='50' disabled>" MB_mstr.MB_desc "</textarea>" SKIP
+            "   <div class='ss-button-group'>" SKIP
+            "       <div class='w3-row'>" SKIP
+	            "       <div class='w3-col m6'>" SKIP
+	            "           <button type='submit' name='h-act' value='Edit' class='ss-btn w3-theme'>Edit " MB_mstr.MB_name "</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "       <div class='w3-col m6'>" SKIP
+	            "           <button type='submit' name='h-act' value='' class='ss-btn w3-grey'>Search Again</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "  </div>" SKIP
+            "   </div>" SKIP
+            "</div>"
+            "</form>" SKIP.
             
         END. /*** mb_mstr available, update? ***/
         
@@ -388,51 +307,33 @@ CASE act:
                 MB_mstr.MB_prog_name        = THIS-PROCEDURE:FILE-NAME.                         /* 1dot1 */
         
             {&OUT}
-            "<header class='w3-container w3-dark-grey'>" SKIP
-                "<h1>Merit Badge / Classtivity Creation Review</h1>" SKIP
-            "</header>" SKIP
-        
-            "<br><br>" SKIP
-        
             "<form>" SKIP
             "<input type='hidden' name='h-id' value='" MB_mstr.MB_BSA_ID "'/>" SKIP
             "<input type='hidden' name='h-name' value='" MB_mstr.MB_name "'/>" SKIP
             "<input type='hidden' name='h-desc' value='" MB_mstr.MB_desc "'/>" SKIP
-            "<div class='w3-container w3-card-2 w3-pale-green w3-round w3-content w3-leftbar w3-border w3-border-green' style='max-width:1000px;'>" SKIP
-            "    <h2>Your New Merit Badge was Created with the Following Details</h2>"
-            "    <p>Feel free to look over this and make sure it has the data you want it to.</p>"
-
-            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-            "        <label>Merit Badge Name</label>" SKIP
-            "        <input class='w3-input w3-border w3-round-large' name='h-name' value='" mb_mstr.mb_name "' type='text' Disabled>" SKIP
-            "    </p>" SKIP
-            
-            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-            "        <label>Merit Badge ID</label>" SKIP
-            "        <input class='w3-input w3-border w3-round-large' name='h-id' value='" mb_mstr.mb_BSA_ID "' type='number' disabled>" SKIP
-            "    </p>" SKIP        
-            
-            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-            "        <label>Description</label>" SKIP
-            "        <textarea class='w3-input w3-border w3-round-large' name='h-desc' rows='3' cols='50' disabled>" MB_mstr.MB_desc "</textarea>" SKIP
-            "    </p>" SKIP
-
-            "<br>" SKIP
+            "<div class='ss-card'>" SKIP
+            "   <div class='ss-card-title'>" SKIP
+            "       <h2>Course Created Successfully</h2>"
+            "       <p>Does this look correct?</p>"
+            "   </div>" SKIP
+            "   <label>Course Name</label>" SKIP
+            "   <input class='ss-input' name='h-name' value='" mb_mstr.mb_name "' type='text' Disabled>" SKIP
+            "   <label>Course ID</label>" SKIP
+            "   <input class='ss-input' name='h-id' value='" mb_mstr.mb_BSA_ID "' type='number' disabled>" SKIP
+            "   <label>Description</label>" SKIP
+            "   <textarea class='ss-input' name='h-desc' rows='3' cols='50' disabled>" MB_mstr.MB_desc "</textarea>" SKIP
+            "   <div class='ss-button-group'>" SKIP
+            "       <div class='w3-row'>" SKIP
+	            "       <div class='w3-col m6'>" SKIP
+	            "           <button type='submit' name='h-act' value='' class='ss-btn w3-theme'>Search Again</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "       <div class='w3-col m6'>" SKIP
+	            "           <button type='submit' name='h-act' value='Edit' class='ss-btn w3-grey'>Edit</BUTTON>" SKIP
+	            "       </div>" SKIP
+	            "  </div>" SKIP
+            "   </div>" SKIP
             "</div>"
-            "<br>" SKIP
-            
-            "<div class='w3-row-padding w3-margin'>" SKIP
-            "   <div class='w3-center w3-col s12'>" SKIP
-            "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
-            "   </div>" SKIP
-            "</div>" SKIP
-            "<div class='w3-row-padding w3-margin'>" SKIP
-            "   <div class='w3-center w3-col s12'>" SKIP
-            "       <button type='submit' name='h-act' value='Edit' class='w3-btn-block w3-black w3-round' style='max-width:400px;'><b>Edit</b></BUTTON>" SKIP
-            "   </div>" SKIP
-            "</div>" SKIP
-            "</form>" SKIP
-            "<br><br><br><br><br><br><br>" SKIP. 
+            "</form>" SKIP.
             
         END. /*** mb_mstr not available, - creation ***/
         
@@ -449,53 +350,33 @@ CASE act:
                 MB_mstr.MB_desc = v-desc.
     
             {&OUT}
-                "<header class='w3-container w3-dark-grey'>" SKIP
-                    "<h1> Merit Badge / Classtivity Edit Review</h1>" SKIP
-                "</header>" SKIP
-            
-                "<br><br>" SKIP
-            
                 "<form>" SKIP
                 "<input type='hidden' name='h-id' value='" mb_mstr.mb_BSA_ID "'/>" SKIP
 	            "<input type='hidden' name='h-name' value='" mb_mstr.mb_name "'/>" SKIP
 	            "<input type='hidden' name='h-desc' value='" mb_mstr.mb_desc "'/>" SKIP
-                "<div class='w3-container w3-card-2 w3-pale-green w3-round w3-content w3-leftbar w3-border w3-border-green' style='max-width:1000px;'>" SKIP
-                "    <h2>Edited Merit Badge</h2>"
-                "    <p>Make sure that this looks like what you want it to.</p>"
-    
-                "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-	            "        <label>Merit Badge Name</label>" SKIP
-	            "        <input class='w3-input w3-border w3-round-large' name='h-name' value='" mb_mstr.mb_name "' type='text' Disabled>" SKIP
-	            "    </p>" SKIP
-	            
-	            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-	            "        <label>Merit Badge ID</label>" SKIP
-	            "        <input class='w3-input w3-border w3-round-large' name='h-id' value='" mb_mstr.mb_BSA_ID "' type='number' disabled>" SKIP
-	            "    </p>" SKIP        
-	            
-	            "    <p class='w3-padding-left w3-padding-right w3-padding-top'>" SKIP
-	            "        <label>Description</label>" SKIP
-	            "        <textarea class='w3-input w3-border w3-round-large' name='h-desc' rows='3' cols='50' disabled>" mb_mstr.mb_desc "</textarea>" SKIP
-	            "    </p>" SKIP 
-    
-                "<br>" SKIP
-                
+                "<div class='ss-card'>" SKIP
+                "   <div class='ss-card-title'>" SKIP
+                "       <h2>" MB_mstr.MB_name " Edited</h2>"
+                "       <p>Does this look correct?</p>"
+                "   </div>" SKIP
+	            "   <label>Merit Badge Name</label>" SKIP
+	            "   <input class='ss-input' name='h-name' value='" mb_mstr.mb_name "' type='text' Disabled>" SKIP
+	            "   <label>Merit Badge ID</label>" SKIP
+	            "   <input class='ss-input' name='h-id' value='" mb_mstr.mb_BSA_ID "' type='number' disabled>" SKIP
+	            "   <label>Description</label>" SKIP
+	            "   <textarea class='ss-input' name='h-desc' rows='3' cols='50' disabled>" mb_mstr.mb_desc "</textarea>" SKIP
+                "   <div class='ss-button-group'>" SKIP
+                "       <div class='w3-row'>" SKIP
+		            "       <div class='w3-col m6'>" SKIP
+		            "           <button type='submit' name='h-act' value='' class='ss-btn w3-theme'>Search Again</BUTTON>" SKIP
+		            "       </div>" SKIP
+		            "       <div class='w3-col m6'>" SKIP
+		            "           <button type='submit' name='h-act' value='Edit' class='ss-btn w3-grey'>Edit</BUTTON>" SKIP
+		            "       </div>" SKIP
+		            "   </div>" SKIP
+	            "   </div>" SKIP
                 "</div>"
-                
-                "<br>" SKIP
-                
-                "<div class='w3-row-padding w3-margin'>" SKIP
-	            "   <div class='w3-center w3-col s12'>" SKIP
-	            "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
-	            "   </div>" SKIP
-	            "</div>" SKIP
-	            "<div class='w3-row-padding w3-margin'>" SKIP
-	            "   <div class='w3-center w3-col s12'>" SKIP
-	            "       <button type='submit' name='h-act' value='Edit' class='w3-btn-block w3-black w3-round' style='max-width:400px;'><b>Edit</b></BUTTON>" SKIP
-	            "   </div>" SKIP
-	            "</div>" SKIP
-                "</form>" SKIP
-                "<br><br><br><br><br><br><br>" SKIP.    
+                "</form>" SKIP.    
         
         END. /*** available edited thing ***/
         
@@ -514,7 +395,7 @@ CASE act:
                 "  <br><br>" SKIP
                 "<form>" SKIP
                 "<div class='w3-row-padding w3-margin'>" SKIP
-                "   <div class='w3-center w3-col s12'>" SKIP
+                "   <div class='w3-center w3-col m12'>" SKIP
                 "       <button type='submit' name='h-act' value='' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Search Again</b></BUTTON>" SKIP
                 "   </div>" SKIP
                 "</div>" SKIP
@@ -547,6 +428,6 @@ CASE act:
     
 END CASE.
 
-</SCRIPT>
+-->
 </BODY>
 </HTML>

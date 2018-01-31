@@ -15,13 +15,15 @@
         <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
         <!--WSS
 		PROCEDURE Output-Header:
-		    {cookie-check-permissions.i "AMS-landing-R.r"}.
+/*		    {cookie-check-permissions.i "regis-login.r"}.*/
 		END PROCEDURE.
          -->
     </head>
-    <body class='w3-light-grey'>
+    <body class='ss-background'>
         <!--WSS
+        {global-includes.i}.
         {registration.i}.
+        {organization-includes.i}.
         
 	    DEFINE VARIABLE v-people-id AS INTEGER NO-UNDO.
 	    
@@ -32,27 +34,139 @@
 		-->
 
         <div class="w3-padding">
-            <h1 class="w3-padding-left w3-padding-bottom">Account Details</h1>
+            <h1 class="w3-padding-left w3-padding-bottom" style='position:relative;font-size:50px;top:-20px'>Your Profile</h1>
             
-	        <div class="w3-row">
+            <div class="w3-row">
 	            <div class="w3-col m3 w3-padding">
                     <div class='w3-card-4 w3-content w3-white'>
-			            <div style="height:300px;background-color:blue;"></div>
+			            <img src='/depot/src/HTMLContent/images/default-profile-picture.jpg' style='width:100%'></img>
+			        </div>
+			        <div>
+                        <center>
+                            <a href=''><h5>Edit Profile <i class="fa fa-pencil-square-o" aria-hidden="true"></i></h5></a>
+                        </center>
 			        </div>
 	            </div>
-	            <div class="w3-col m9 w3-padding">
-	               <ul class="w3-ul w3-card-4 w3-white w3-xlarge">
-	                   <li>Andrew</li>
-	                   <li>Garver</li>
-	                   <li>04/06/1992</li>
-	                   <li>andrew@email.com</li>
-	                   <li>703-123-1234</li>
-	                   <li>703-123-1234</li>
-	                   <li>Male</li>
-	                   <li>GirdUpYourLoins</li>
-	                   <li>&#9679&#9679&#9679&#9679&#9679&#9679&#9679&#9679</li>
-                   </ul>
-	            </div>
+	            <div class="w3-col m9 w3-padding-right w3-padding-left">
+	                <h1 style='margin-top:0px !important;'>Personal Details</h1>
+	                <table class='w3-card-4 w3-white w3-xlarge w3-table w3-bordered'>
+	                    <tr>
+	                        <td style='width:20%'>
+	                            First Name
+	                        </td>
+	                        <td style='width:80%'>
+	                            Andrew
+                            </td>
+	                    </tr>
+	                    <tr>
+                            <td style='width:20%'>
+                                Last Name
+                            </td>
+                            <td style='width:80%'>
+                                Smith
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='width:20%'>
+                                Gender
+                            </td>
+                            <td style='width:80%'>
+                                Male
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='width:20%'>
+                                Birthday
+                            </td>
+                            <td style='width:80%'>
+                                04/07/1986
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='width:20%'>
+                                Primary Phone
+                            </td>
+                            <td style='width:80%'>
+                                703-123-1234
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='width:20%'>
+                                Secondary Phone
+                            </td>
+                            <td style='width:80%'>
+                                703-114-3562
+                            </td>
+                        </tr>
+	                </table>
+	                
+	                <br>
+	                <h1>Account Details</h1>
+                    <table class='w3-card-4 w3-white w3-xlarge w3-table w3-bordered'>
+                        <tr>
+                            <td style='width:20%'>
+                                Username
+                            </td>
+                            <td style='width:80%'>
+                                DeepThinker79
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='width:20%'>
+                                Password
+                            </td>
+                            <td style='width:80%'>
+                                &#9679&#9679&#9679&#9679&#9679&#9679&#9679&#9679
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <br>
+                    <h1>Earned Certificates</h1>
+                    <table class='w3-card-4 w3-white w3-xlarge w3-table w3-bordered'>
+                        <tr>
+                            <th>Title</th>
+                            <th>Date Earned</th>
+                            <th>Exp. Date</th>
+                        </tr>
+                        <tr>
+                            <td>
+                                CPR
+                            </td>
+                            <td>
+                                03/27/2017
+                            </td>
+                            <td>
+                                03/27/2019
+                                <button type='button' style='float:right;margin-right:10px'><i class="fa fa-print" aria-hidden="true"></i></button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                AED
+                            </td>
+                            <td>
+                                05/12/2016
+                            </td>
+                            <td>
+                                05/12/2018
+                                <button type='button' style='float:right;margin-right:10px'><i class="fa fa-print" aria-hidden="true"></i></button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Pepper Spray
+                            </td>
+                            <td>
+                                11/01/2014
+                            </td>
+                            <td>
+                                Never
+                                <button type='button' style='float:right;margin-right:10px'><i class="fa fa-print" aria-hidden="true"></i></button>
+                            </td>
+                        </tr>
+                    </table>
+	             </div>
 	        </div>
         </div>
     </body>

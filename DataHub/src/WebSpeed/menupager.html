@@ -42,6 +42,10 @@ CREATE WIDGET-POOL.
  *          CMC structure (Release 12).  Still need to add in the 
  *          data entry code to allow users to type in the menu item they
  *          want to run.  Marked by 3dot6.
+ *  3.7 - written by ANDREW GARVER on 12/Jan/18. Added QuickNav to menu pages
+ *          to allow for immediate access to any menu item. Simply type in the 
+ *          number of the menu item you want to access and hit enter. 
+ *          E.g. 1.1 or 36.99 Marked by 3dot7.
  *
  ******************************************************************
  
@@ -93,7 +97,33 @@ IF showmsg = YES THEN
       "<P>whattorun = " get-value('whattorun') skip 
       "<P>whichmenu = " whichmenu skip
       "<P>menuheadername = " menuheadername skip(1).
-  
+
+/* Begin 3dot7 */         
+{&OUT}
+    "<br>" SKIP
+    "<div class='search-bar' style='text-align:right; padding-right:16px;'>" SKIP
+    "    <form id='quickNavForm' action='menu-quick-nav.r' onsubmit='return validateQuickNav()'>" SKIP
+    "        QuickNav &nbsp;&nbsp;<input type='text' id='quickNavInput' name='h-menu-num'/>" SKIP
+    "    </form>" SKIP
+    "</div>" SKIP.
+</script>
+
+<script>
+    document.getElementById('quickNavInput').focus();
+    
+    function validateQuickNav() {
+        var quickNavValue = document.getElementById('quickNavInput').value;
+        var isValid = /^[0-9.]*$/.test(quickNavValue);
+        
+        if (!isValid) {
+            return false;
+        }
+    }
+</script>
+
+<script language="SpeedScript">
+/* End 3dot7 */
+    
 {&OUT}
     "<DIV class='row'>" SKIP                                                    /* 3dot5 */
     "   <DIV class='grid_12'>" SKIP                                                /* 3dot5 */

@@ -47,32 +47,32 @@ FOR FIRST event_mstr WHERE (event_mstr.event_ID = {1}) AND
     {&OUT}
                    /** What? --- Name row **/
         "       <div class='w3-row w3-padding-small w3-white w3-display-container'>" SKIP
-        "           <div class='w3-col s4'><b>What?</b></div>" SKIP
-        "           <div class='w3-col s8'>" SKIP
+        "           <div class='w3-col m4'><b>What?</b></div>" SKIP
+        "           <div class='w3-col m8'>" SKIP
         "               <center id='ed-name'>" event_mstr.event_name "</center>" SKIP 
         "           </div>" SKIP
         "       </div>" SKIP
         
                    /** Who? --- Ages row **/
         "       <div class='w3-row w3-padding-small w3-white w3-display-container'>" SKIP
-        "           <div class='w3-col s4'><b>Ages</b></div>" SKIP
-        "           <div class='w3-col s8'>" SKIP
+        "           <div class='w3-col m4'><b>Ages</b></div>" SKIP
+        "           <div class='w3-col m8'>" SKIP
         "               <CENTER id='ed-ages'>" event_mstr.event__char01 "</CENTER>" SKIP 
         "           </div>" SKIP
         "       </div>" SKIP     
         
                    /** When? --- Start date row **/
         "       <div class='w3-row w3-padding-small w3-white w3-display-container'>" SKIP
-        "           <div class='w3-col s4'><b>Start Date</b></div>" SKIP
-        "           <div class='w3-col s8'>" SKIP
+        "           <div class='w3-col m4'><b>Start Date</b></div>" SKIP
+        "           <div class='w3-col m8'>" SKIP
         "               <CENTER id='ed-start-date'>" event_mstr.event_start_date "</CENTER>" SKIP 
         "           </div>" SKIP
         "       </div>" SKIP      
          
                     /** Start Time row **/
         "       <div class='w3-row w3-padding-small w3-white w3-display-container'>" SKIP
-        "           <div class='w3-col s4'><b>Start Time</b></div>" SKIP
-        "           <div class='w3-col s8'>" SKIP
+        "           <div class='w3-col m4'><b>Start Time</b></div>" SKIP
+        "           <div class='w3-col m8'>" SKIP
         "               <CENTER id='ed-start-time'>" event_mstr.event_start_time "</CENTER>" SKIP 
         "           </div>" SKIP
         "       </div>" SKIP         
@@ -80,24 +80,24 @@ FOR FIRST event_mstr WHERE (event_mstr.event_ID = {1}) AND
 
                     /** End Time row **/
         "       <div  class='w3-row w3-padding-small w3-white w3-display-container'>" SKIP
-        "           <div class='w3-col s4'><b>End Time</b></div>" SKIP
-        "           <div class='w3-col s8'>" SKIP
+        "           <div class='w3-col m4'><b>End Time</b></div>" SKIP
+        "           <div class='w3-col m8'>" SKIP
         "               <CENTER id='ed-end-time'>" event_mstr.event_end_time "</CENTER>" SKIP 
         "           </div>" SKIP
         "       </div>" SKIP  
         
                     /** Where? --- location row **/
         "       <div class='w3-row w3-padding-small w3-white w3-display-container'>" SKIP
-        "           <div class='w3-col s4'><b>Location</b></div>" SKIP
-        "           <div class='w3-col s8'>" SKIP
+        "           <div class='w3-col m4'><b>Location</b></div>" SKIP
+        "           <div class='w3-col m8'>" SKIP
         "               <CENTER id='ed-location'>" i-event-location "</CENTER>" SKIP 
         "           </div>" SKIP
         "       </div>" SKIP  
         
                     /** Dress code row **/
         "       <div class='w3-row w3-padding-small w3-white w3-display-container'>" SKIP
-        "           <div class='w3-col s4'><b>Dress Code</b></div>" SKIP
-        "           <div class='w3-col s8'>" SKIP
+        "           <div class='w3-col m4'><b>Dress Code</b></div>" SKIP
+        "           <div class='w3-col m8'>" SKIP
         "               <CENTER id='ed-dress-code'>" event_mstr.event_dress_code "</CENTER>" SKIP 
         "           </div>" SKIP
         "       </div>" SKIP.

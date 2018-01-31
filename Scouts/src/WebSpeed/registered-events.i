@@ -27,10 +27,11 @@ RUN VALUE(SEARCH("session-get-user-id.r")) (
 ).
     
 {&OUT}
-"<header class='w3-container w3-theme-dark'>" SKIP
-"    <h3>Registered Events</h3>" SKIP
-"</header>" SKIP
-"<ul class='w3-ul'> " SKIP.
+"<div class='w3-card-4 w3-content w3-white'>" SKIP
+"   <header class='w3-container w3-theme-dark'>" SKIP
+"       <h3>Registered Events</h3>" SKIP
+"   </header>" SKIP
+"   <ul class='w3-ul'> " SKIP.
     
 DEFINE VARIABLE v-num-registered-events AS INTEGER INITIAL 0 NO-UNDO.
 
@@ -41,11 +42,11 @@ BREAK BY YEAR(event_mstr.event_start_date) BY event_mstr.event_start_date BY eve
     IF FIRST-OF (YEAR(event_mstr.event_start_date)) THEN DO:
 
     {&OUT}
-    "<li class='w3-padding w3-white w3-theme' style='border-bottom: 1px solid #ddd !important;'>" SKIP
-    "   <span class='w3-margin-right w3-large'>" SKIP
-    "       <center>`YEAR(event_mstr.event_start_date)`</center> " SKIP
-    "   </span>" SKIP
-    "</li>" SKIP.
+        "<li class='w3-padding w3-white w3-theme' style='border-bottom: 1px solid #ddd !important;'>" SKIP
+        "   <span class='w3-margin-right w3-large'>" SKIP
+        "       <center>`YEAR(event_mstr.event_start_date)`</center> " SKIP
+        "   </span>" SKIP
+        "</li>" SKIP.
     
     END. /* IF FIRST-OF (YEAR(event_mstr.event_start_date)) */
     
@@ -72,4 +73,5 @@ IF v-num-registered-events = 0 THEN DO:
 END.
  
 {&OUT}
-    "</ul>" SKIP.
+    "</ul>" SKIP
+"</div>" SKIP.

@@ -20,9 +20,7 @@
 
 /* ***************************  Main Block  *************************** */
 {&OUT}            
-"    <link rel='stylesheet' href='https://www.w3schools.com/w3css/4/w3.css'>" SKIP
-"    <link rel='stylesheet' href='/depot/src/HTMLContent/stylesheets/timesheet.css'>" SKIP
-"   <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Montserrat'>" SKIP
+"   <link rel='stylesheet' href='/depot/src/HTMLContent/stylesheets/template-clean.css'>" SKIP
 "   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>" SKIP
 "   <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css'>" SKIP
 "   <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>" SKIP
@@ -108,7 +106,7 @@ RUN VALUE(SEARCH("session-get-user-id.r")) (
                     FOR EACH menu_mstr3 WHERE menu_mstr3.menu_num = ENTRY(i-template-clean-counter, i-items) AND menu_mstr3.menu_hidden = FALSE NO-LOCK,
                     EACH gud_det3 WHERE gud_det3.gud_people_ID = i-template-clean-people-id NO-LOCK,
                     FIRST gmd_det3 WHERE gmd_det3.gmd_menu_num = menu_mstr3.menu_num AND gmd_det3.gmd_menu_select = menu_mstr3.menu_select AND gmd_det3.gmd_grp_id = gud_det3.gud_grp_id NO-LOCK
-                    BREAK BY menu_mstr3.menu_title BY menu_mstr3.menu_select:
+                    BREAK BY menu_mstr3.menu_select:
                         IF FIRST-OF (menu_mstr3.menu_select) THEN DO:
                 
                             {&OUT}
@@ -127,13 +125,13 @@ RUN VALUE(SEARCH("session-get-user-id.r")) (
                     FOR EACH menu_mstr3 WHERE menu_mstr3.menu_num = ENTRY(i-template-clean-counter, i-items) AND menu_mstr3.menu_hidden = FALSE NO-LOCK,
                     EACH gud_det3 WHERE gud_det3.gud_people_ID = i-template-clean-people-id NO-LOCK,
                     FIRST gmd_det3 WHERE gmd_det3.gmd_menu_num = menu_mstr3.menu_num AND gmd_det3.gmd_menu_select = menu_mstr3.menu_select AND gmd_det3.gmd_grp_id = gud_det3.gud_grp_id NO-LOCK
-                    BREAK BY menu_mstr3.menu_title BY menu_mstr3.menu_select:
+                    BREAK BY menu_mstr3.menu_select:
                         IF FIRST-OF (menu_mstr3.menu_select) THEN DO:
     
                             {&OUT}
                             "<div class='col-md-4'>" SKIP
                             "    <a href='" menu_mstr3.menu_exprog "'> " SKIP
-                            "         <div class='w3-container w3-card-4 w3-white w3-hover-theme w3-round w3-content col-md-12'> " SKIP
+                            "         <div class='ss-card w3-hover-theme w3-text-theme col-md-12'> " SKIP
                             "             <div class='component-card'> " SKIP
                             "                 <div class='icon'><i class='" menu_mstr3.menu__char01 "'></i></div> " SKIP
                             "              <h1>" menu_mstr3.menu_title "</h1> " SKIP
