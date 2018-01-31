@@ -1,0 +1,1572 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>People Maintenance</TITLE>
+<META NAME='AUTHOR' CONTENT='Trae Luttrell'>
+<META NAME='VERSION' CONTENT='1.1'>
+<META NAME='COPYRIGHT' CONTENT='Solsource'>
+<META NAME='CREATE_DATE' CONTENT='25/Jan/16'>
+<META NAME='LAST_UPDATED' CONTENT='30/Sep/17'>    
+<LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src='/depot/src/HTMLContent/buttons.js'></script>
+
+<style>
+.no-underline {
+    text-decoration: none;
+}
+</style>
+
+</HEAD>
+
+<BODY class='inside'>
+<!--WSS
+  /*------------------------------------------------------------------
+    File: People_MaintU.html 
+    Description: This is the generic people maintenance. It edits the 
+        people master
+    Created:
+        
+  -------------------------------------------------------------------
+  
+  Revision History:
+  -----------------
+  0.1  -  written by TRAE LUTTRELL on 25/Jan/16.  Original version.
+  1.1  -  written by DOUG LUTTRELL on 30/Sep/17.  Modified to support
+            the new CMC structure (Release 12).  Really can't have 
+            Patient Condition at all.  It is a totally different 
+            structure now.  Also, tied this to the single rcode
+            directory in the PROPATH.  Marked by 1dot1.      
+        
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/************************  Variable Definitions  *********************/
+
+DEFINE VARIABLE v-act               AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-html-dob          AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-ADDR-ITmessages   AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE v-PEOP-ITmessages   AS LOGICAL INITIAL NO NO-UNDO.
+
+DEFINE VARIABLE i-addrpicker-people-id AS INTEGER NO-UNDO.
+DEFINE VARIABLE i-addrpicker-addr-id AS INTEGER NO-UNDO. 
+DEFINE VARIABLE i-addrpicker-number AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE i-peoppicker-id AS INTEGER NO-UNDO.
+DEFINE VARIABLE i-peoppicker-type AS CHARACTER NO-UNDO.
+DEFINE VARIABLE i-peoppicker-person-id AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-RP-lastname   AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-RP-firstname  AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-DOC-lastname  AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-DOC-firstname AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-CUST-lastname AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-CUST-firstname AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE whichmonth      AS CHARACTER EXTENT 12 NO-UNDO.
+DEFINE VARIABLE monthname       AS CHARACTER EXTENT 12 
+           INITIAL ["01 - Jan", "02 - Feb", "03 - Mar", "04 - Apr", "05 - May", "06 - Jun", "07 - Jul", "08 - Aug", "09 - Sep", "10 - Oct", "11 - Nov", "12 - Dec"]
+           NO-UNDO.
+DEFINE VARIABLE i AS INTEGER NO-UNDO.
+DEFINE VARIABLE x AS INTEGER NO-UNDO.
+
+/************************  Database Variables  ************************/
+DEFINE VARIABLE v-people_id     LIKE people_mstr.people_id          NO-UNDO.
+DEFINE VARIABLE v-firstname     LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE v-midname       LIKE people_mstr.people_midname     NO-UNDO.
+DEFINE VARIABLE v-lastname      LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-prefix        LIKE people_mstr.people_prefix      NO-UNDO.
+DEFINE VARIABLE v-suffix        LIKE people_mstr.people_suffix      NO-UNDO.
+DEFINE VARIABLE v-company       LIKE people_mstr.people_company     NO-UNDO.
+DEFINE VARIABLE v-gender        LIKE people_mstr.people_gender      NO-UNDO.
+DEFINE VARIABLE v-homephone     LIKE people_mstr.people_homephone   NO-UNDO.
+DEFINE VARIABLE v-workphone     LIKE people_mstr.people_workphone   NO-UNDO.
+DEFINE VARIABLE v-cellphone     LIKE people_mstr.people_cellphone   NO-UNDO.  
+DEFINE VARIABLE v-fax           LIKE people_mstr.people_fax         NO-UNDO.
+DEFINE VARIABLE v-email         LIKE people_mstr.people_email       NO-UNDO.
+DEFINE VARIABLE v-email2        LIKE people_mstr.people_email2      NO-UNDO.
+DEFINE VARIABLE v-addr_id       LIKE people_mstr.people_addr_id     NO-UNDO.
+DEFINE VARIABLE v-contact       LIKE people_mstr.people_contact     NO-UNDO.
+DEFINE VARIABLE v-DOB           LIKE people_mstr.people_DOB         NO-UNDO.
+DEFINE VARIABLE v-addr_ID2      LIKE people_mstr.people_second_addr_ID NO-UNDO.
+DEFINE VARIABLE v-title         LIKE people_mstr.people_title       NO-UNDO.
+DEFINE VARIABLE v-prefname      LIKE people_mstr.people_prefname    NO-UNDO.
+
+DEFINE VARIABLE v-addr_mstr-1       LIKE addr_mstr.addr_addr1       NO-UNDO.
+DEFINE VARIABLE v-addr_mstr-2       LIKE addr_mstr.addr_addr2       NO-UNDO.
+DEFINE VARIABLE v-addr_mstr-3       LIKE addr_mstr.addr_addr3       NO-UNDO.
+DEFINE VARIABLE v-addr_mstr-city    LIKE addr_mstr.addr_city        NO-UNDO.
+DEFINE VARIABLE v-addr_mstr-state   LIKE addr_mstr.addr_stateprov   NO-UNDO.
+DEFINE VARIABLE v-addr_mstr-zip     LIKE addr_mstr.addr_zip         NO-UNDO.
+DEFINE VARIABLE v-addr_mstr-country LIKE addr_mstr.addr_country     NO-UNDO.
+
+DEFINE VARIABLE v2-addr-disabled     AS CHARACTER INITIAL "disabled"        NO-UNDO.    
+DEFINE VARIABLE v2-addr-exists       AS LOGICAL                             NO-UNDO.
+DEFINE VARIABLE v2-addr_mstr-ID      LIKE addr_mstr.addr_id          NO-UNDO.
+DEFINE VARIABLE v2-addr_mstr-1       LIKE addr_mstr.addr_addr1       NO-UNDO.
+DEFINE VARIABLE v2-addr_mstr-2       LIKE addr_mstr.addr_addr2       NO-UNDO.
+DEFINE VARIABLE v2-addr_mstr-3       LIKE addr_mstr.addr_addr3       NO-UNDO.
+DEFINE VARIABLE v2-addr_mstr-city    LIKE addr_mstr.addr_city        NO-UNDO.
+DEFINE VARIABLE v2-addr_mstr-state   LIKE addr_mstr.addr_stateprov   NO-UNDO.
+DEFINE VARIABLE v2-addr_mstr-zip     LIKE addr_mstr.addr_zip         NO-UNDO.
+DEFINE VARIABLE v2-addr_mstr-country LIKE addr_mstr.addr_country     NO-UNDO.
+
+DEFINE VARIABLE v-patient-disabled  AS CHARACTER INITIAL "disabled" NO-UNDO.
+DEFINE VARIABLE v-patient-exists    AS LOGICAL NO-UNDO.
+/*DEFINE VARIABLE v-patient-condition LIKE patient_mstr.patient_condition NO-UNDO.            /* 1dot1 */*/
+/*DEFINE VARIABLE v-patient-condition LIKE pcl_det.pcl_cond_id NO-UNDO.                           /* 1dot1 */*/
+DEFINE VARIABLE v-patient-notes     LIKE patient_mstr.patient_notes     NO-UNDO.
+DEFINE VARIABLE v-patient-RP        LIKE patient_mstr.patient_RP_ID     NO-UNDO.
+    DEFINE VARIABLE v-patient-RP-name AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-patient-DOC       LIKE patient_mstr.patient_doctor_ID NO-UNDO.
+    DEFINE VARIABLE v-patient-DOC-name AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-patient-CUST      LIKE patient_mstr.patient_cust_ID   NO-UNDO.
+    DEFINE VARIABLE v-patient-CUST-name AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-patient-verified  LIKE patient_mstr.patient_verified  NO-UNDO.
+
+DEFINE VARIABLE v-doctor-disabled   AS CHARACTER INITIAL "disabled" NO-UNDO.
+DEFINE VARIABLE v-doctor-exists     AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-doctor-TCP        LIKE doctor_mstr.doctor_TCP_code    NO-UNDO.
+
+DEFINE VARIABLE v-cust-disabled     AS CHARACTER INITIAL "disabled" NO-UNDO.
+DEFINE VARIABLE v-cust-exists       AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-cust-card-nbr     LIKE cust_mstr.cust_card_nbr    NO-UNDO.
+DEFINE VARIABLE v-cust-card-seccode LIKE cust_mstr.cust_card_seccode NO-UNDO.
+DEFINE VARIABLE v-cust-card-type    LIKE cust_mstr.cust_card_type   NO-UNDO.
+DEFINE VARIABLE v-cust-card-expmonth LIKE cust_mstr.cust_card_expmonth NO-UNDO.
+DEFINE VARIABLE v-cust-card-expyear LIKE cust_mstr.cust_card_expyear NO-UNDO.
+
+DEFINE VARIABLE v-scust-disabled    AS CHARACTER INITIAL "disabled" NO-UNDO.
+DEFINE VARIABLE v-scust-exists      AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-scust-magento_ID  LIKE scust_shadow.scust_magento_ID NO-UNDO.
+DEFINE VARIABLE v-scust-prof        LIKE scust_shadow.scust_prof        NO-UNDO.
+
+/************************  SUB routine variables  ************************/
+DEFINE VARIABLE o-ucpeople-create       AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-ucpeople-update       AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-ucpeople-avail        AS LOGICAL NO-UNDO.
+DEFINE VARIABLE o-ucpeople-successful   AS LOGICAL NO-UNDO.
+
+DEFINE VARIABLE o-ucpatient-id          LIKE patient_mstr.patient_id    NO-UNDO.
+DEFINE VARIABLE o-ucpatient-create      AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-ucpatient-update      AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-ucpatient-error       AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-ucpatient-successful  AS LOGICAL INITIAL NO           NO-UNDO.
+
+DEFINE VARIABLE o-uccust-id             LIKE cust_mstr.cust_id  NO-UNDO.
+DEFINE VARIABLE o-uccust-create         AS LOGICAL INITIAL NO   NO-UNDO.
+DEFINE VARIABLE o-uccust-update         AS LOGICAL INITIAL NO   NO-UNDO.
+DEFINE VARIABLE o-uccust-error          AS LOGICAL INITIAL NO   NO-UNDO.
+DEFINE VARIABLE o-uccust-successful     AS LOGICAL INITIAL NO   NO-UNDO.
+
+DEFINE VARIABLE o-ucscust-id            LIKE scust_shadow.scust_id  NO-UNDO.
+DEFINE VARIABLE o-ucscust-create        AS LOGICAL INITIAL NO       NO-UNDO.
+DEFINE VARIABLE o-ucscust-update        AS LOGICAL INITIAL NO       NO-UNDO.
+DEFINE VARIABLE o-ucscust-error         AS LOGICAL INITIAL NO       NO-UNDO.
+DEFINE VARIABLE o-ucscust-successful    AS LOGICAL INITIAL NO       NO-UNDO.
+
+DEFINE VARIABLE o-ucdoctor-id          LIKE doctor_mstr.doctor_id      NO-UNDO.
+DEFINE VARIABLE o-ucdoctor-create      AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-ucdoctor-update      AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-ucdoctor-error       AS LOGICAL INITIAL NO           NO-UNDO.
+DEFINE VARIABLE o-ucdoctor-successful  AS LOGICAL INITIAL NO           NO-UNDO.
+
+/***************************  HTML Variables  ************************/
+ASSIGN 
+    v-act       = get-value("h-act")
+    whatshouldrun   = get-value('whattorun')
+    
+    v-people_id = INTEGER(get-value("h-people_ID"))
+    v-firstname = get-value("h-firstname")
+    v-midname   = get-value("h-midname")
+    v-lastname  = get-value("h-lastname")
+    v-prefix    = get-value("h-prefix")
+    v-suffix    = get-value("h-suffix")
+    v-company   = get-value("h-company")
+    v-gender    = IF (get-value("h-gender")) = "YES" THEN YES ELSE IF (get-value("h-gender")) = "NO" THEN NO ELSE ?
+    v-homephone = get-value("h-homephone")
+    v-workphone = get-value("h-workphone")
+    v-cellphone = get-value("h-cellphone")
+    v-fax       = get-value("h-fax")
+    v-email     = get-value("h-email")
+    v-email2    = get-value("h-email2")
+    v-addr_id   = INTEGER(get-value("h-addr_id"))
+    v-contact   = get-value("h-contact")
+    v-html-dob  = get-value("h-dob")
+    v-addr_ID2  = INTEGER(get-value("h-addr_ID2"))
+    v-title     = get-value("h-title")
+    v-prefname  = get-value("h-prefname")
+
+    v-addr_ID      = INTEGER(get-value("h-addr_mstr-ID"))
+    v-addr_mstr-1       = get-value("h-addr_mstr-1")
+    v-addr_mstr-2       = get-value("h-addr_mstr-2")
+    v-addr_mstr-3       = get-value("h-addr_mstr-3")
+    v-addr_mstr-city    = get-value("h-addr_mstr-city")
+    v-addr_mstr-state   = get-value("h-addr_mstr-state")
+    v-addr_mstr-zip     = get-value("h-addr_mstr-zip")
+    v-addr_mstr-country = get-value("h-addr_mstr-country")    
+    
+    v2-addr-exists       = IF (get-value("h2-addr-exists")) = "YES" THEN YES ELSE NO
+    v2-addr_mstr-ID      = INTEGER(get-value("h2-addr_mstr-ID"))
+    v2-addr_mstr-1       = get-value("h2-addr_mstr-1")
+    v2-addr_mstr-2       = get-value("h2-addr_mstr-2")
+    v2-addr_mstr-3       = get-value("h2-addr_mstr-3")
+    v2-addr_mstr-city    = get-value("h2-addr_mstr-city")
+    v2-addr_mstr-state   = get-value("h2-addr_mstr-state")
+    v2-addr_mstr-zip     = get-value("h2-addr_mstr-zip")
+    v2-addr_mstr-country = get-value("h2-addr_mstr-country")
+
+    v-patient-exists    = IF (get-value("h-patient-exists")) = "YES" THEN YES ELSE NO
+/*    v-patient-condition = INTEGER(get-value("h-patient-condition"))                             /* 1dot1 */*/
+    v-patient-notes     = get-value("h-patient-notes")
+    v-patient-RP        = INTEGER(get-value("h-patient-RP"))
+    v-patient-DOC       = INTEGER(get-value("h-patient-DOC"))
+    v-patient-CUST      = INTEGER(get-value("h-patient-CUST"))
+    v-patient-verified  = IF (get-value("h-patient-verified")) = "YES" THEN YES ELSE IF (get-value("h-patient-verified")) = "NO" THEN NO ELSE ?
+
+    v-doctor-exists = IF (get-value("h-doctor-exists")) = "YES" THEN YES ELSE NO
+    v-doctor-TCP    = get-value("h-doctor-TCP")
+
+    v-cust-exists       = IF (get-value("h-cust-exists")) = "YES" THEN YES ELSE NO
+    v-cust-card-nbr     = get-value("h-cust-card-nbr")
+    v-cust-card-seccode = INTEGER(get-value("h-cust-card-seccode"))
+    v-cust-card-type    = get-value("h-cust-card-type")
+    v-cust-card-expmonth = INTEGER(get-value("h-cust-card-expmonth"))
+    v-cust-card-expyear = INTEGER(get-value("h-cust-card-expyear"))
+
+    v-scust-exists      = IF (get-value("h-scust-exists")) = "YES" THEN YES ELSE NO
+    v-scust-magento_ID  = get-value("h-scust-magento_ID")
+    v-scust-prof        = IF (get-value("h-scust-prof")) = "YES" THEN YES ELSE IF (get-value("h-scust-prof")) = "NO" THEN NO ELSE ?
+    
+    i-addrpicker-people-id = INTEGER(get-value("h-pp-passBack-peopid")) 
+    i-addrpicker-addr-id = INTEGER(get-value("h-pp-passBack-addrid"))
+    i-addrpicker-number = get-value("h-pp-passBack-char1")
+    
+    i-peoppicker-id = INTEGER(get-value("h-PEOP-passBack-integer2"))        /**** people_mstr ID of the RP/DOC/CUST for the patient ***/
+    i-peoppicker-type = get-value("h-PEOP-passBack-character1")             /**** RP/DOC/CUST ? ******/
+    i-peoppicker-person-id = INTEGER(get-value("h-PEOP-passBack-integer1")) /**** original ID of the person we are editing ****/
+    .
+
+                                                            IF v-ADDR-ITmessages = YES THEN 
+                                                                {&OUT} 
+                                                                    "<UL>Post get-value" SKIP
+                                                                    "   <LI>v-act = " v-act "</LI>" SKIP
+                                                                    "   <LI>v2-addr_mstr-ID = " v2-addr_mstr-ID "</LI>" SKIP
+                                                                    "   <li>v-addr_ID = " v-addr_ID "</LI>" SKIP
+                                                                    "   <li>i-addrpicker-addr-id = " i-addrpicker-addr-id "</LI>" SKIP
+                                                                    "   <li>v2-addr_mstr-ID get value = " get-value('h-addr_mstr-ID') "</LI>" SKIP
+                                                                    "   <li>v2-addr_mstr-ID = " v2-addr_mstr-ID "</li>" SKIP
+                                                                    "</ul>" SKIP. 
+                                                                    
+                                                            IF v-PEOP-ITmessages = YES THEN 
+                                                                {&OUT} 
+                                                                    "<UL>Post get-value" SKIP
+                                                                    "   <LI>v-act = " v-act "</LI>" SKIP
+                                                                    "   <li>v-people_ID = " v-people_ID "</LI>" SKIP
+                                                                    "   <li>i-peoppicker-person-id = " i-peoppicker-person-id "</LI>" SKIP
+                                                                    "   <LI>i-peoppicker-id = " i-peoppicker-id "</LI>" SKIP
+                                                                    "   <li>i-peoppicker-type = " i-peoppicker-type "</LI>" SKIP
+                                                                    "</ul>" SKIP.
+
+IF i-peoppicker-person-id <> 0 AND v-people_id = 0 THEN ASSIGN v-people_id = i-peoppicker-person-id.
+
+IF i-addrpicker-people-id <> 0 AND v-people_ID = 0 THEN ASSIGN v-people_id = i-addrpicker-people-id.
+
+IF i-addrpicker-addr-id <> 0 THEN DO:
+    
+    IF i-addrpicker-number = "secondary" THEN DO:
+        
+        ASSIGN v2-addr_mstr-id = i-addrpicker-addr-id.
+        
+        ASSIGN v2-addr-exists = YES.
+        
+    END. /*** of char1 = secondary ***/
+    
+    ELSE  ASSIGN v-addr_id = i-addrpicker-addr-id.
+    
+END.
+                                                            IF v-ADDR-ITmessages = YES THEN 
+                                                                {&OUT} 
+                                                                    "<UL>Post address tweakage" SKIP
+                                                                    "   <LI>v-act = " v-act "</LI>" SKIP
+                                                                    "   <LI>v2-addr_mstr-ID = " v2-addr_mstr-ID "</LI>" SKIP
+                                                                    "   <li>v-addr_ID = " v-addr_ID "</LI>" SKIP
+                                                                    "   <li>i-addrpicker-addr-id = " i-addrpicker-addr-id "</LI>" SKIP
+                                                                    "   <li>v2-addr_mstr-ID get value = " get-value('h-addr_mstr-ID') "</LI>" SKIP
+                                                                    "   <li>v2-addr_mstr-ID = " v2-addr_mstr-ID "</li>" SKIP
+                                                                    "</ul>" SKIP.  
+                                                                    
+                                                            IF v-PEOP-ITmessages = YES THEN 
+                                                                {&OUT} 
+                                                                    "<UL>Post tweakage" SKIP
+                                                                    "   <LI>v-act = " v-act "</LI>" SKIP
+                                                                    "   <li>v-people_ID = " v-people_ID "</LI>" SKIP
+                                                                    "   <li>i-peoppicker-person-id = " i-peoppicker-person-id "</LI>" SKIP
+                                                                    "   <LI>i-peoppicker-id = " i-peoppicker-id "</LI>" SKIP
+                                                                    "   <li>i-peoppicker-type = " i-peoppicker-type "</LI>" SKIP
+                                                                    "</ul>" SKIP.                                                                  
+
+IF v-act = "" THEN ASSIGN v-act = "Initial" .
+/*IF v-act = "" THEN ASSIGN v-act = "Edit" .*/
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))(v-html-dob, OUTPUT v-dob). 
+    
+/****************************************  Main Program  *********************************************/
+CASE v-act:
+
+    WHEN "Initial" THEN DO: /***************************  Initial Act  ***************************/
+    
+        {&OUT}
+        "<DIV class='row'>" SKIP
+        "   <DIV class='grid_2'> </DIV>" SKIP
+        "   <DIV class='grid_8'>" SKIP
+        "       <div class='table_2col'>" SKIP
+        "           <form>" SKIP
+        "           <table>" SKIP
+        "               <tr>" SKIP
+        "                   <th colspan=4>Search Criteria</th>" SKIP
+        "               </tr>" SKIP
+        "               <tr>" SKIP
+        "                   <td>Last Name Begins With</td>" SKIP
+        "                   <td><input type='text' name='h-lastname' value='" v-lastname "'/></td>" SKIP
+        "                   <td>First Name Begins With</td>" SKIP
+        "                   <td><input type='text' name='h-firstname' value='" v-firstname "'/></td>" SKIP
+        "               </tr>" SKIP
+        "               <tr>" SKIP
+        "                   <td>Date of Birth</td>" SKIP
+        "                   <td colspan='3'><input type='date' name='h-dob' value='" v-html-dob "'/></td>" SKIP
+        "               </tr>" SKIP
+        "           </table>" SKIP
+        "       </div>" SKIP
+        "   </DIV>" SKIP
+        "   <DIV class='grid_2'> </DIV>" SKIP  
+        "</DIV>" SKIP
+        "<br></br>" SKIP
+        "<input type='hidden' name='whattorun' value='" whatshouldrun "'/>"
+        "<div class='row'>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Report' class='btn'>Submit</BUTTON></div>" SKIP 
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Edit' class='btn'>Create New</BUTTON></div>" SKIP   
+        "   <div class='grid_2'> </DIV>" SKIP
+        "   <div class='grid_2'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+        "   <div class='grid_2'> </DIV>" SKIP
+        "</form>" SKIP
+        "</div>" SKIP
+        "<BR>" SKIP.
+        
+    
+    END. /*** of initial ***/
+
+    WHEN "Report" THEN DO: /***************************  Report Act  ***************************/
+    
+    {&OUT}
+    "<DIV class='row'>" SKIP
+    "<DIV class='grid_1'> </DIV>" SKIP
+    "<DIV class='grid_10'>" SKIP
+    "<DIV class='table_report'>" SKIP
+    "   <TABLE>" SKIP
+    "       <THEAD>" SKIP
+    "          <TR>" SKIP
+    "              <TH colspan=5>Possible People</TH>" SKIP    
+    "          </TR>" SKIP
+    "          <TR>" SKIP
+    "              <TD>Database ID</td>" SKIP
+    "              <TD>Lastname</TD>" SKIP          
+    "              <TD>Firstname</TD>" SKIP
+    "              <TD>Date of Birth</TD>" SKIP
+    "              <TD>Email</td>" SKIP
+/*    "              <TD></td>" SKIP*/
+    "          </TR>" SKIP
+    "      </THEAD>" SKIP(1).
+    
+    FOR EACH people_mstr WHERE 
+        (people_mstr.people_firstname BEGINS v-firstname OR v-firstname = "") AND
+        (people_mstr.people_lastname BEGINS v-lastname OR v-lastname = "") AND 
+        (people_mstr.people_DOB = v-dob OR v-dob = ?) AND
+        (people_mstr.people_email = v-email OR v-email = "") AND 
+        people_mstr.people_deleted = ?
+        NO-LOCK
+        BREAK BY people_mstr.people_lastname 
+        BY people_mstr.people_firstname 
+        BY people_mstr.people_DOB:
+            
+    
+        {&OUT}
+            "       <tr>" SKIP
+            "           <td><a href=~"PEOPmaintU.r?h-people_id=" people_mstr.people_id              /* 1dot1 */
+            "&h-act=Edit&whattorun=" whatshouldrun "~">" people_mstr.people_id "</a></td>" SKIP
+            "           <td>" people_mstr.people_lastname "</td>" SKIP
+            "           <td>" people_mstr.people_firstname "</td>" SKIP
+            "           <td>" people_mstr.people_DOB "</td>" SKIP
+            "           <td>" people_mstr.people_email "</td>" SKIP
+            "       </tr>" SKIP.
+    
+    END. /*** for each people_mstr ***/
+    
+    {&OUT}    
+    "   <TFOOT>" SKIP
+    "       <TR>" SKIP
+    "           <TD COLSPAN=5>END OF REPORT</TD>" SKIP  /* tfoot, tr, td makes the blue bar */
+    "       </TR>" SKIP
+    "   </TFOOT>" SKIP
+    "   </TABLE>" SKIP
+    "</DIV>" SKIP(1)
+    "</DIV>" SKIP
+    "<DIV class='grid_1'> </DIV>" SKIP  
+    "</DIV>" SKIP
+    "<br></br>" SKIP
+    "<form>" SKIP
+    "<input type='hidden' name='whattorun' value='" whatshouldrun "'/>"
+    "<div class='row'>" SKIP
+    "   <div class='grid_5'> </DIV>" SKIP
+    "   <div class='grid_2'><button type='submit' name='h-act' value='Initial' class='btn'>Search Again</BUTTON></div>" SKIP
+    "   <div class='grid_5'> </DIV>" SKIP
+    "</div>" SKIP
+    "</form>" SKIP
+    "<BR>" SKIP.
+        
+    END. /*** of initial ***/
+
+    WHEN "Edit" THEN DO:    /**************************  Edit Person Act  ************************/
+    
+    IF v-people_ID <> 0 THEN 
+
+    FIND people_mstr WHERE 
+        people_mstr.people_id = v-people_ID AND 
+        people_mstr.people_deleted = ?
+        NO-LOCK NO-ERROR.
+        
+    IF AVAILABLE (people_mstr) THEN DO:
+
+        ASSIGN        
+         v-firstname     = people_mstr.people_firstname   
+         v-midname       = people_mstr.people_midname     
+         v-lastname      = people_mstr.people_lastname    
+         v-prefix        = people_mstr.people_prefix      
+         v-suffix        = people_mstr.people_suffix      
+         v-company       = people_mstr.people_company     
+         v-gender        = people_mstr.people_gender      
+         v-homephone     = people_mstr.people_homephone   
+         v-workphone     = people_mstr.people_workphone   
+         v-cellphone     = people_mstr.people_cellphone   
+         v-fax           = people_mstr.people_fax         
+         v-email         = people_mstr.people_email       
+         v-email2        = people_mstr.people_email2      
+/*         v-addr_id       = people_mstr.people_addr_id*/
+         v-contact       = people_mstr.people_contact     
+         v-DOB           = people_mstr.people_DOB         
+/*         v-addr_ID2      = people_mstr.people_second_addr_ID*/
+         v-title         = people_mstr.people_title       
+         v-prefname      = people_mstr.people_prefname. 
+
+        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (v-DOB,OUTPUT v-html-DOB).
+
+        IF v-addr_ID = 0 THEN ASSIGN v-addr_id = people_mstr.people_addr_id.
+        IF v2-addr_mstr-ID = 0 THEN ASSIGN v2-addr_mstr-ID = people_mstr.people_second_addr_ID.
+
+/*        IF v-addr_ID2 = 0 THEN ASSIGN v-add*/
+
+        FIND addr_mstr WHERE 
+            addr_mstr.addr_id = v-addr_ID AND 
+            addr_mstr.addr_deleted = ? NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (addr_mstr) THEN ASSIGN
+/*            v-addr_ID      = addr_mstr.addr_id*/
+            v-addr_mstr-1       = addr_mstr.addr_addr1
+            v-addr_mstr-2       = addr_mstr.addr_addr2
+            v-addr_mstr-3       = addr_mstr.addr_addr3
+            v-addr_mstr-city    = addr_mstr.addr_city
+            v-addr_mstr-state   = addr_mstr.addr_stateprov
+            v-addr_mstr-zip     = addr_mstr.addr_zip
+            v-addr_mstr-country = addr_mstr.addr_country.
+ 
+        FIND addr_mstr WHERE 
+            addr_mstr.addr_id = v2-addr_mstr-ID AND 
+            addr_mstr.addr_deleted = ? 
+            NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (addr_mstr) THEN ASSIGN
+            v2-addr-exists          = YES
+            v2-addr-disabled        = ""
+/*            v2-addr_mstr-ID         = addr_mstr.addr_id*/
+            v2-addr_mstr-1          = addr_mstr.addr_addr1
+            v2-addr_mstr-2          = addr_mstr.addr_addr2
+            v2-addr_mstr-3          = addr_mstr.addr_addr3
+            v2-addr_mstr-city       = addr_mstr.addr_city
+            v2-addr_mstr-state      = addr_mstr.addr_stateprov
+            v2-addr_mstr-zip        = addr_mstr.addr_zip
+            v2-addr_mstr-country    = addr_mstr.addr_country.
+
+        FIND patient_mstr WHERE
+            patient_mstr.patient_ID = v-people_ID AND 
+            patient_mstr.patient_deleted = ?
+            NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (patient_mstr) THEN DO:
+
+            ASSIGN
+                v-patient-exists    = YES
+                v-patient-disabled  = ""
+                v-patient-notes     = patient_mstr.patient_notes
+                v-patient-verified  = patient_mstr.patient_verified
+                v-patient-CUST      = patient_mstr.patient_cust_ID
+                v-patient-DOC       = patient_mstr.patient_doctor_ID
+                v-patient-RP        = patient_mstr.patient_RP_ID. 
+            
+
+            
+            IF i-peoppicker-type = "CUST" AND i-peoppicker-id <> 0 THEN DO:
+            
+                FIND people_mstr WHERE  
+                    people_mstr.people_id = i-peoppicker-id AND 
+                    people_mstr.people_deleted = ?
+                    NO-LOCK NO-ERROR.
+                    
+                IF AVAILABLE (people_mstr) THEN DO:
+                    
+                    FIND cust_mstr WHERE 
+                    cust_mstr.cust_id = i-peoppicker-id AND 
+                    cust_mstr.cust_deleted = ?
+                    NO-LOCK NO-ERROR.
+            
+                    IF AVAILABLE (cust_mstr) THEN DO:
+                    
+                        ASSIGN v-patient-CUST = i-peoppicker-id.
+                        
+                    END. /*** avail cust_mstr for people picker ***/
+            
+                    ELSE {&OUT} 
+                        "<div class='row'>" SKIP
+                        "<div class='grid_12'>" SKIP
+                        "<center>" SKIP
+                        "<h1> Error - " People_mstr.people_firstname " " people_mstr.people_lastname " is not a Customer.</h1>" SKIP
+                        "</center></div></div>" SKIP.
+            
+                END. /*** avail people_mstr for people picker ***/
+            
+            END. /*** Cust coming in from people picker ***/
+            
+            IF i-peoppicker-type = "DOC" AND i-peoppicker-id <> 0 THEN DO:
+            
+                FIND people_mstr WHERE  
+                    people_mstr.people_id = i-peoppicker-id AND 
+                    people_mstr.people_deleted = ?
+                    NO-LOCK NO-ERROR.
+                    
+                IF AVAILABLE (people_mstr) THEN DO:
+                    
+                    FIND doctor_mstr WHERE 
+                    doctor_mstr.doctor_id = i-peoppicker-id AND 
+                    doctor_mstr.doctor_deleted = ?
+                    NO-LOCK NO-ERROR.
+            
+                    IF AVAILABLE (doctor_mstr) THEN DO:
+                    
+                        ASSIGN v-patient-DOC = i-peoppicker-id.
+                        
+                    END. /*** avail cust_mstr for people picker ***/
+            
+                    ELSE {&OUT} 
+                        "<div class='row'>" SKIP
+                        "<div class='grid_12'>" SKIP
+                        "<center>" SKIP
+                        "<h1> Error - " People_mstr.people_firstname " " people_mstr.people_lastname " is not a Doctor.</h1>" SKIP
+                        "</center></div></div>" SKIP.
+            
+                END. /*** avail people_mstr for people picker ***/
+            
+            END. /*** Cust coming in from people picker ***/
+            
+            IF i-peoppicker-type = "RP" AND i-peoppicker-id <> 0 THEN ASSIGN v-patient-RP = i-peoppicker-id.
+            
+            IF v-patient-cust <> 0 THEN DO:
+            
+                FIND people_mstr WHERE 
+                    people_mstr.people_id = v-patient-CUST AND 
+                    people_mstr.people_deleted = ?
+                    NO-LOCK NO-ERROR.
+                    
+                IF AVAILABLE (people_mstr) THEN DO: 
+                    
+                    FIND cust_mstr WHERE 
+                        cust_mstr.cust_id = v-patient-CUST AND
+                        cust_mstr.cust_deleted = ?
+                        NO-LOCK NO-ERROR.
+                    
+                    IF AVAILABLE (cust_mstr) THEN ASSIGN 
+                        v-patient-CUST-name = STRING(people_mstr.people_lastname + ", " + people_mstr.people_firstname)
+                        v-CUST-firstname = people_mstr.people_firstname
+                        v-CUST-lastname = people_mstr.people_lastname.
+                        
+                    ELSE ASSIGN v-patient-CUST-name = "Non-Customer Assigned".
+                
+                END. /*** avail people_mstr ***/
+                    
+                ELSE ASSIGN v-patient-CUST-name = "Error - Contact SolSource".
+                
+            END. /*** look for cust ***/
+            
+            ELSE ASSIGN v-patient-CUST-name = "Click to Add Customer".
+            
+            IF v-patient-DOC <> 0 THEN DO:
+            
+                FIND people_mstr WHERE 
+                    people_mstr.people_id = v-patient-DOC AND 
+                    people_mstr.people_deleted = ?
+                    NO-LOCK NO-ERROR.
+                    
+                IF AVAILABLE (people_mstr) THEN DO:
+                    
+                    FIND doctor_mstr WHERE 
+                        doctor_mstr.doctor_ID = v-patient-DOC AND 
+                        doctor_mstr.doctor_deleted = ?
+                        NO-LOCK NO-ERROR.
+                    
+                    IF AVAILABLE doctor_mstr THEN DO: 
+                        
+                        ASSIGN 
+                            v-patient-DOC-name = STRING(people_mstr.people_lastname + ", " + people_mstr.people_firstname)
+                            v-DOC-firstname = people_mstr.people_firstname
+                            v-DOC-lastname = people_mstr.people_lastname.
+                        
+                    END. /*** doctor avail ***/
+                    
+                    ELSE DO: 
+                    
+                        ASSIGN v-patient-DOC-name = "Non-Doctor Assigned". 
+                         
+                    END. /*** no doc avail ***/
+                 
+                END. /*** person avail **/ 
+                    
+                ELSE ASSIGN v-patient-DOC-name = "Error - Contact SolSource".
+                
+            END. /*** look for DOC ***/
+            
+            ELSE ASSIGN v-patient-DOC-name = "Click to Add Doctor".
+            
+            IF v-patient-RP <> 0 THEN DO:
+            
+                FIND people_mstr WHERE 
+                    people_mstr.people_id = v-patient-RP AND 
+                    people_mstr.people_deleted = ?
+                    NO-LOCK NO-ERROR.
+                    
+                IF AVAILABLE (people_mstr) THEN
+                    ASSIGN v-patient-RP-name = STRING(people_mstr.people_lastname + ", " + people_mstr.people_firstname)
+                        v-RP-firstname = people_mstr.people_firstname
+                        v-RP-lastname = people_mstr.people_lastname.
+                    
+                ELSE ASSIGN v-patient-RP-name = "Error - Contact SolSource".
+                
+            END. /*** look for RP ***/
+            
+            ELSE ASSIGN v-patient-RP-name = "Click to Add Responsible Party".
+
+        END. /** Patient Available **/    
+            
+        FIND doctor_mstr WHERE 
+            doctor_mstr.doctor_ID = v-people_ID AND 
+            doctor_mstr.doctor_deleted = ?
+            NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (doctor_mstr) THEN ASSIGN 
+            v-doctor-exists     = YES
+            v-doctor-disabled   = ""
+            v-doctor-TCP        = doctor_mstr.doctor_TCP_code.
+
+        FIND cust_mstr WHERE 
+            cust_mstr.cust_id = v-people_ID AND 
+            cust_mstr.cust_deleted = ?
+            NO-LOCK NO-ERROR.
+            
+        IF AVAILABLE (cust_mstr) THEN ASSIGN
+            v-cust-exists           = YES 
+            v-cust-disabled         = ""
+            v-cust-card-nbr         = cust_mstr.cust_card_nbr
+            v-cust-card-seccode     = cust_mstr.cust_card_seccode
+            v-cust-card-type        = cust_mstr.cust_card_type
+            v-cust-card-expmonth    = cust_mstr.cust_card_expmonth
+            v-cust-card-expyear     = cust_mstr.cust_card_expyear.
+
+        FIND scust_shadow WHERE
+            scust_shadow.scust_ID = v-people_ID 
+            AND scust_shadow.scust_deleted = ?
+            NO-LOCK NO-ERROR.
+       
+        IF AVAILABLE (scust_shadow) THEN ASSIGN
+            v-scust-exists          = YES 
+            v-scust-disabled        = ""
+            v-scust-magento_ID      = scust_shadow.scust_magento_ID
+            v-scust-prof            = scust_shadow.scust_prof.        
+
+    END. /** if available people_mstr **/
+    
+-->
+
+	<div class="container">
+	  
+	  <ul class="nav nav-tabs">
+	    <li class="active"><a data-toggle="tab" href="#home">Personal Info</a></li>
+	    <li><a data-toggle="tab" href="#menu1">Address Info</a></li>
+	    <li><a data-toggle="tab" href="#menu2">Patient Info</a></li>
+	    <li><a data-toggle="tab" href="#menu3">Customer Info</a></li>
+	    <li><a data-toggle="tab" href="#menu4">Doctor Info</a></li>
+	  </ul>
+	
+	  <div class="tab-content">
+	    <div id="home" class="tab-pane fade in active">
+	       <div class='table_col'>
+	           <table>
+	               <tr> 
+	                   <th colspan=2>Name Information</th> 
+	               </tr>
+	               <tr> 
+	                   <td>Last Name</td> 
+	                   <td class='req'><input type='text' name='h-lastname' value='`v-lastname`' required/></td> 
+	               </tr>
+	               <tr> 
+	                   <td>First Name</td> 
+	                   <td class='req'><input type='text' name='h-firstname' value='`v-firstname`' required/></td> 
+	               </tr> 
+	               <tr> 
+	                   <td>Middle Name</td> 
+	                   <td><input type='text' name='h-midname' value='`v-midname`'/></td> 
+	               </tr> 
+	               <tr> 
+	                   <td>Prefix</td> 
+	                   <td><input type='text' name='h-prefix' value='`v-prefix`'/></td> 
+	               </tr> 
+	               <tr> 
+	                   <td>Suffix</td> 
+	                   <td><input type='text' name='h-suffix' value='`v-suffix`'/></td> 
+	               </tr> 
+	               <tr> 
+	                   <td>Preferred Name</td> 
+	                   <td><input type='text' name='h-prefname' value='`v-prefname`'/></td> 
+	               </tr>
+	           </table>
+            </div>
+            
+            <div class='table_col'> 
+                <table> 
+                    <tr> 
+                        <th colspan=2>Other Information</th> 
+                    </tr> 
+                    <tr> 
+                        <td>People ID</td> 
+                        <td><input type='number' name='h-people_ID' value='`v-people_ID`' disabled /></td> 
+                    </tr> 
+                    <tr> 
+                        <td>Title</td> 
+                        <td><input type='text' name='h-title' value='`v-title`'/></td> 
+                    </tr> 
+                    <tr> 
+                        <td>Date of Birth</td> 
+                        <td class='req'><input type='date' name='h-dob' value='`v-html-dob`'/></td> 
+                    </tr> 
+                    <tr> 
+                        <td>Gender</td> 
+                        <td>
+                            <input type='radio' name='h-gender' value='YES'
+                            <!--WSS
+                                IF v-gender = YES THEN 
+                                    {&OUT} " checked ".
+			                -->
+			                />Male 
+                            <input type='radio' name='h-gender' value='NO'
+					        <!--WSS
+							    IF v-gender = NO THEN 
+							    {&OUT} " checked ".
+					        -->
+					        />Female
+					    </td>  
+                    </tr> 
+                    <tr> 
+                        <td>Company</td> 
+                        <td><input type='text' name='h-company' value='`v-company`'/></td> 
+                    </tr> 
+                </table> 
+            </div>
+            
+            <div class='table_col'> 
+                <table> 
+                    <tr> 
+                        <th colspan=2>Contact Information</th> 
+                    </tr> 
+                    <tr> 
+                        <td>Home Phone</td> 
+                        <td><input type='text' name='h-homephone' value='`v-homephone`'/></td> 
+                    </tr> 
+                    <tr> 
+                        <td>Work Phone</td> 
+                        <td><input type='text' name='h-workphone' value='`v-workphone`'/></td> 
+                    </tr> 
+                    <tr> 
+                        <td>Cell Phone</td> 
+                        <td><input type='text' name='h-cellphone' value='`v-cellphone`'/></td> 
+                    </tr> 
+                    <tr> 
+                        <td>Fax Number</td> 
+                        <td><input type='text' name='h-fax' value='`v-fax`'/></td> 
+                    </tr> 
+                    <tr> 
+                        <td>Contact</td> 
+                        <td><input type='text' name='h-contact' value='`v-contact`'/></td> 
+                    </tr> 
+                    <tr> 
+                        <td>Email 1</td> 
+                        <td class='req'><input type='text' name='h-email' value='`v-email`'/></td> 
+                    </tr> 
+                    <tr> 
+                        <td>Email 2</td> 
+                        <td><input type='text' name='h-email2' value='`v-email2`'/></td> 
+                    </tr>        
+                </table> 
+            </div>
+	    </div>
+	    <div id="menu1" class="tab-pane fade">
+	      <h3>Menu 1</h3>
+	      <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+	    </div>
+	    <div id="menu2" class="tab-pane fade">
+            <div class='table_col'> 
+                <table>
+                    <tr> 
+                        <th colspan=2>Patient Information 
+                            <input type='checkbox' name='h-patient-exists' value='YES' 
+	                        <!--WSS
+	                            IF v-patient-exists = YES THEN {&OUT} " checked".
+	                        --> 
+                            />
+                        </th> 
+                    </tr> 
+                    <tr> 
+	                    <td>Responsible Party</td> 
+	                    <td>
+	                    <!--WSS  
+	                    {&OUT}
+	                        "<a href=~"PEOPpickP.r"                     /* 1dot1 */
+					        "?h-prevproc=PEOPmaintU.r"                  /* Calling Procedure */
+					        "&h-pp-act=EDIT"                            /* Calling Procedure's Act */
+					        "&h-pp-whattorun=" whatshouldrun            /* Calling Procedure's Whattorun */
+					        "&h-PEOP-passBack-integer1=" v-people_ID    /* Calling Procedure's Person ID */
+					        "&h-PEOP-passBack-character1=RP"            /* Calling Procedure's Character field 1 data to pass back. */
+					        "&h-act=".
+					        IF v-patient-RP-name = "Error - Contact SolSource" OR v-patient-RP-name = "Click to Add Responsible Party" THEN
+					            {&OUT} "INITIAL".
+					        ELSE 
+					            {&OUT} "SEARCH".  
+					    {&OUT}               
+					        "&h-firstname=" v-RP-firstname
+					        "&h-lastname=" v-RP-lastname
+					        "&whattorun=" whatshouldrun                 /* Calling Procedure's Whattorun passed to PEOPpickP */ 
+					        "~" " v-patient-disabled ">" v-patient-RP-name "</a><input type='hidden' name='h-patient-RP' value='" v-patient-RP "'/>".
+	                    -->
+	                    </td>  
+                    </tr> 
+                    <tr> 
+	                    <td>Doctor</td>
+	                    <td>
+	                    <!--WSS
+	                    {&OUT}
+	                        "<a href=~"PEOPpickP.r"                     /* 1dot1 */
+					        "?h-prevproc=PEOPmaintU.r"                  /* Calling Procedure */
+					        "&h-pp-act=EDIT"                            /* Calling Procedure's Act */
+					        "&h-pp-whattorun=" whatshouldrun            /* Calling Procedure's Whattorun */
+					        "&h-PEOP-passBack-integer1=" v-people_ID    /* Calling Procedure's Person ID */
+					        "&h-PEOP-passBack-character1=DOC"           /* Calling Procedure's Character field 1 data to pass back. */
+					        "&h-act=".
+					        IF v-patient-DOC-name = "Error - Contact SolSource" OR v-patient-DOC-name = "Click to Add Doctor" OR v-patient-DOC-name = "Non-Doctor Assigned" THEN
+					            {&OUT} "INITIAL".
+					        ELSE 
+					            {&OUT} "SEARCH".  
+					    {&OUT}               
+					        "&h-firstname=" v-DOC-firstname
+					        "&h-lastname=" v-DOC-lastname
+					        "&whattorun=" whatshouldrun                 /* Calling Procedure's Whattorun passed to PEOPpickP */ 
+					        "~" " v-patient-disabled ">" v-patient-DOC-name "</a><input type='hidden' name='h-patient-DOC' value='" v-patient-DOC "'/>".
+	                    -->
+	                    </td>  
+                    </tr> 
+                    <tr> 
+                        <td>Customer</td>
+                        <td>
+                        <!--WSS
+                            {&OUT}
+                                "<a href=~"PEOPpickP.r"                     /* 1dot1 */
+		                        "?h-prevproc=PEOPmaintU.r"                  /* Calling Procedure */
+		                        "&h-pp-act=EDIT"                            /* Calling Procedure's Act */
+		                        "&h-pp-whattorun=" whatshouldrun            /* Calling Procedure's Whattorun */
+		                        "&h-PEOP-passBack-integer1=" v-people_ID    /* Calling Procedure's Person ID */
+		                        "&h-PEOP-passBack-character1=CUST"          /* Calling Procedure's Character field 1 data to pass back. */
+		                        "&h-act=".
+		                        IF v-patient-CUST-name = "Error - Contact SolSource" OR v-patient-CUST-name = "Click to Add Customer" OR v-patient-CUST-name = "Non-Customer Assigned" THEN
+		                            {&OUT} "INITIAL".
+		                        ELSE 
+                                    {&OUT} "SEARCH".  
+		                    {&OUT}               
+		                        "&h-firstname=" v-CUST-firstname
+		                        "&h-lastname=" v-CUST-lastname
+		                        "&whattorun=" whatshouldrun                 /* Calling Procedure's Whattorun passed to PEOPpickP */ 
+		                        "~" " v-patient-disabled ">" v-patient-CUST-name "</a><input type='hidden' name='h-patient-CUST' value='" v-patient-CUST "'/>".
+                        -->
+                        </td>  
+                    </tr> 
+                    <tr> 
+                        <td>Patient Verified?</td> 
+                            <td>
+                            <input type='radio' name='h-patient-verified' value='YES'
+                            <!--WSS
+                                IF v-patient-verified = YES THEN {&OUT} " checked ".
+                            --> 
+                            `v-patient-disabled` />Yes 
+                            <input type='radio' name='h-patient-verified' value='NO'
+                            <!--WSS
+                                IF v-patient-verified = NO THEN {&OUT} " checked ".
+                            --> 
+                            `v-patient-disabled` />No
+                        </td>  
+                    </tr> 
+                    <tr> 
+                        <td>Notes</td> 
+                        <td><textarea cols='33' rows='4' name='h-patient-notes'  `v-patient-disabled`  /> `v-patient-notes` </textarea></td> 
+                    </tr> 
+                </table> 
+            </div>
+	    </div>
+	    <div id="menu3" class="tab-pane fade">
+	      <h3>Menu 3</h3>
+	      <p>Eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+	    </div>
+	    <div id="menu4" class="tab-pane fade">
+          <h3>Menu 4</h3>
+          <p>Eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+        </div>
+	  </div>
+	</div>
+	
+<!--WSS
+    END. /*** of edit ***/
+
+    WHEN "Submit" THEN DO:  /*****************************************  Submition Act  ******************************************/
+
+                                                                                IF v-ADDR-ITmessages = YES THEN DO:
+                                                                                    {&OUT} 
+                                                                                        "<UL>Start of Submit ACT" SKIP
+                                                                                        "   <LI>v-act = " v-act "</LI>" SKIP
+                                                                                        "   <LI>v2-addr_mstr-ID = " v2-addr_mstr-ID "</LI>" SKIP
+                                                                                        "   <li>v-addr_ID = " v-addr_ID "</LI>" SKIP
+                                                                                        "   <li>i-addrpicker-addr-id = " i-addrpicker-addr-id "</LI>" SKIP
+                                                                                        "</ul>" SKIP.                        
+                                                                                END. /*** it message ***/
+                                                                                
+        IF v2-addr-exists = NO THEN ASSIGN v2-addr_mstr-ID = 0.
+
+                                                                                IF v-ADDR-ITmessages = YES THEN DO:
+                                                                                    {&OUT} 
+                                                                                        "<UL>Before Runs" SKIP
+                                                                                        "   <LI>v-act = " v-act "</LI>" SKIP
+                                                                                        "   <LI>v2-addr_mstr-ID = " v2-addr_mstr-ID "</LI>" SKIP
+                                                                                        "   <li>v-addr_ID = " v-addr_ID "</LI>" SKIP
+                                                                                        "   <li>i-addrpicker-addr-id = " i-addrpicker-addr-id "</LI>" SKIP
+                                                                                        "   <li>v2-addr_mstr-ID get value = " get-value('h-addr_mstr-ID') "</LI>" SKIP
+                                                                                        "</ul>" SKIP.                        
+                                                                                END. /*** it message ***/
+
+        IF v-people_ID = 0 THEN DO:
+            
+            IF v-firstname <> "" AND v-lastname <> "" THEN DO:
+                
+                RUN VALUE(SEARCH("SUBpeop-ucU.r"))
+                    (v-people_id,
+                    v-firstname, 
+                    v-midname,
+                    v-lastname,
+                    v-prefix,
+                    v-suffix, 
+                    v-company,
+                    v-gender,
+                    v-homephone,
+                    v-workphone,
+                    v-cellphone,
+                    v-fax,
+                    v-email,
+                    v-email2,
+                    v-addr_ID,
+                    v-contact,
+                    v-DOB,
+                    v2-addr_mstr-ID,
+                    v-prefname,
+                    "",
+                    OUTPUT v-people_ID,
+                    OUTPUT o-ucpeople-create,
+                    OUTPUT o-ucpeople-update,
+                    OUTPUT o-ucpeople-avail,
+                    OUTPUT o-ucpeople-successful).
+                    
+                IF o-ucpeople-successful = YES THEN {&OUT} 
+                    "<div class='row'>" SKIP
+                    "<div class='grid_12'>" SKIP
+                    "<center>" SKIP
+                    "<h1> You have successfully created that record in the People table. </h1>" SKIP
+                    "</center></div></div>" SKIP.
+    
+                ELSE {&OUT}
+                    "<div class='row'>" SKIP
+                    "<div class='grid_12'>" SKIP
+                    "<center>" SKIP
+                    "<h1> There has been an error changing the People Database. </h1>" SKIP
+                    "</center></div></div>" SKIP.
+    
+            END. /*** nameless person ***/
+            
+            ELSE {&OUT} 
+                "<div class='row'>" SKIP
+                "<div class='grid_12'>" SKIP
+                "<center>" SKIP
+                "<h1>Error - must have a first and last name to create a people record.</h1>" SKIP
+                "</center></div></div>" SKIP.
+
+        END. /**** people_id = 0 ******/
+
+        FIND people_mstr WHERE 
+            people_mstr.people_id = v-people_ID AND 
+            people_mstr.people_deleted = ?
+            NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (people_mstr) AND          
+             (v-firstname     <> people_mstr.people_firstname    OR 
+             v-midname       <> people_mstr.people_midname      OR    
+             v-lastname      <> people_mstr.people_lastname     OR 
+             v-prefix        <> people_mstr.people_prefix       OR 
+             v-suffix        <> people_mstr.people_suffix       OR 
+             v-company       <> people_mstr.people_company      OR 
+             v-gender        <> people_mstr.people_gender       OR 
+             v-homephone     <> people_mstr.people_homephone    OR 
+             v-workphone     <> people_mstr.people_workphone    OR 
+             v-cellphone     <> people_mstr.people_cellphone    OR 
+             v-fax           <> people_mstr.people_fax          OR 
+             v-email         <> people_mstr.people_email        OR 
+             v-email2        <> people_mstr.people_email2       OR 
+             v-addr_id       <> people_mstr.people_addr_id      OR 
+             v-contact       <> people_mstr.people_contact      OR 
+             v-DOB           <> people_mstr.people_DOB          OR 
+             v2-addr_mstr-ID <> people_mstr.people_second_addr_ID OR 
+             v-title         <> people_mstr.people_title        OR 
+             v-prefname      <> people_mstr.people_prefname)    
+         THEN DO: 
+
+            RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (v-DOB,OUTPUT v-html-DOB).
+            
+            RUN VALUE(SEARCH("SUBpeop-ucU.r"))
+                (v-people_id,
+                v-firstname, 
+                v-midname,
+                v-lastname,
+                v-prefix,
+                v-suffix, 
+                v-company,
+                v-gender,
+                v-homephone,
+                v-workphone,
+                v-cellphone,
+                v-fax,
+                v-email, 
+                v-email2,
+                v-addr_ID,
+                v-contact,
+                v-DOB,
+                v2-addr_mstr-ID,
+                v-prefname,
+                v-title,
+                OUTPUT v-people_ID,
+                OUTPUT o-ucpeople-create,
+                OUTPUT o-ucpeople-update,
+                OUTPUT o-ucpeople-avail,
+                OUTPUT o-ucpeople-successful).
+             
+            IF o-ucpeople-successful = YES THEN {&OUT} 
+                "<div class='row'>" SKIP
+                "<div class='grid_12'>" SKIP
+                "<center>" SKIP
+                "<h1> You have successfully updated that record in the People table.</h1>" SKIP
+                "</center></div></div>" SKIP.
+
+            ELSE {&OUT}
+                "<div class='row'>" SKIP
+                "<div class='grid_12'>" SKIP
+                "<center>" SKIP
+                "<h1> There has been an error changing the People Database.</h1>" SKIP
+                "</center></div></div>" SKIP.
+                
+        END. /** if available people_mstr and data is different **/
+
+        IF v-patient-exists = YES THEN DO:
+        
+            IF v-DOB <> ? THEN DO:
+         
+                FIND patient_mstr WHERE
+                    patient_mstr.patient_ID = v-people_ID
+                    AND people_mstr.people_deleted = ?
+                    NO-LOCK NO-ERROR.
+        
+                IF AVAILABLE (patient_mstr) AND
+/*                    v-patient-condition = patient_mstr.patient_condition  AND               /* 1dot1 */*/
+                    v-patient-notes     = patient_mstr.patient_notes      AND  
+                    v-patient-verified  = patient_mstr.patient_verified   AND 
+                    v-patient-CUST      = patient_mstr.patient_cust_ID    AND 
+                    v-patient-DOC       = patient_mstr.patient_doctor_ID  AND 
+                    v-patient-RP        = patient_mstr.patient_RP_ID THEN DO:
+                    
+                END. /*** all the same ***/
+                    
+                ELSE DO:
+                    RUN VALUE(SEARCH("SUBpat-ucU.r"))
+                        (v-people_ID,
+/*                        v-patient-condition,                            /* 1dot1 */*/
+                        v-patient-notes,
+                        v-patient-RP,
+                        v-patient-DOC,
+                        v-patient-CUST,
+                        v-patient-verified,
+                        OUTPUT o-ucpatient-id,
+                        OUTPUT o-ucpatient-create,
+                        OUTPUT o-ucpatient-update,
+                        OUTPUT o-ucpatient-error,
+                        OUTPUT o-ucpatient-successful).
+                    
+                    IF o-ucpatient-successful = YES THEN DO:
+                
+                        {&OUT} 
+                            "<div class='row'>" SKIP
+                            "<div class='grid_12'>" SKIP
+                            "<center>" SKIP
+                            "<h1> You have successfully ".
+                        
+                        IF o-ucpatient-create = YES THEN {&OUT} "created" SKIP.
+                        
+                        ELSE IF o-ucpatient-update = YES THEN {&OUT} "updated" SKIP. 
+                        
+                        {&OUT}
+                            " that record in the Patient table. </h1>" SKIP
+                            "</center></div></div>" SKIP.
+                
+                    END. /** Patient Successful **/
+                    
+                END. /*** ELSE: patient available and needs to be updated or created ***/
+        
+            END. /*** v-DOB <> ? ***/
+            
+            ELSE DO:
+            
+                {&OUT} 
+                    "<div class='row'>" SKIP
+                    "<div class='grid_12'>" SKIP
+                    "<center>" SKIP
+                    "<h1> Error - " People_mstr.people_firstname " " people_mstr.people_lastname " must have a valid Date of Birth to become a Patient.</h1>" SKIP
+                    "</center></div></div>" SKIP.
+        
+                ASSIGN v-patient-exists = NO.
+        
+            END. /*** of no date of birth ***/
+        
+        END. /*** of v-patient-exist = yes ****/
+
+        ELSE IF v-patient-exists = NO THEN DO:
+          
+            FIND patient_mstr WHERE
+                patient_mstr.patient_ID = v-people_ID
+                AND patient_mstr.patient_deleted = ?
+                EXCLUSIVE-LOCK NO-ERROR.    
+            
+            IF AVAILABLE (patient_mstr) THEN DO:
+            
+                FIND FIRST TK_mstr WHERE 
+                    TK_mstr.TK_patient_ID = patient_mstr.patient_ID AND 
+                    TK_mstr.TK_deleted = ? NO-LOCK NO-ERROR.
+                    
+                IF NOT AVAILABLE (tk_mstr) THEN DO:
+                
+                    ASSIGN patient_mstr.patient_deleted = TODAY.  
+            
+                    {&OUT} 
+                        "<div class='row'>" SKIP
+                        "<div class='grid_12'>" SKIP
+                        "<center>" SKIP
+                        "<h1>Record in Patient Master Deleted </h1>" SKIP
+                        "</center></div></div>" SKIP.
+                    
+                END. /** No TK's ***/
+            
+                ELSE {&OUT} 
+                    "<div class='row'>" SKIP
+                    "<div class='grid_12'>" SKIP
+                    "<center>" SKIP
+                    "<h1>Patient has Testkits attached to them. Cannot Delete.</h1>" SKIP
+                    "</center></div></div>" SKIP.
+            
+            END. /*** avail patient that shouldn't exist ****/
+            
+        END. /*** find and delete a patient ***/
+
+        IF v-doctor-exists = YES THEN DO:
+        
+            FIND doctor_mstr WHERE
+                doctor_mstr.doctor_ID = v-people_ID AND 
+                doctor_mstr.doctor_deleted = ?
+                NO-LOCK NO-ERROR.
+
+            IF AVAILABLE (doctor_mstr) AND 
+                v-doctor-TCP = doctor_mstr.doctor_TCP_code THEN DO:
+            
+            END. /*** Doc is all set. ***/
+        
+            ELSE DO:
+                RUN VALUE(SEARCH("SUBdoc-ucC.r"))  /** this is supposed to be SUBdoc-ucU.r **/
+                    (v-people_ID,
+                    v-doctor-TCP,
+                    OUTPUT o-ucdoctor-id,
+                    OUTPUT o-ucdoctor-create,
+                    OUTPUT o-ucdoctor-update,
+                    OUTPUT o-ucdoctor-error,
+                    OUTPUT o-ucdoctor-successful).
+                    
+                IF o-ucdoctor-successful = YES THEN DO:
+            
+                    {&OUT} 
+                        "<div class='row'>" SKIP
+                        "<div class='grid_12'>" SKIP
+                        "<center>" SKIP
+                        "<h1> You have successfully ".
+                    
+                    IF o-ucdoctor-create = YES THEN {&OUT} "created" SKIP.
+                    
+                    ELSE IF o-ucdoctor-update = YES THEN {&OUT} "updated" SKIP.
+                    
+                    {&OUT}
+                        " that record in the Doctor table. </h1>" SKIP
+                        "</center></div></div>" SKIP.
+            
+                END. /** Doctor **/  
+                
+                ELSE {&OUT} 
+                    "<div class='row'>" SKIP
+                    "<div class='grid_12'>" SKIP
+                    "<center>" SKIP
+                    "<h1> There is in error in the Doctor Information. </h1>" SKIP
+                    "</center></div></div>" SKIP.
+            
+            END. /*** of doctor updated **/
+
+        END. /*** v-doctor-exists = YES ***/
+        
+        ELSE IF v-doctor-exists = NO THEN DO:
+        
+            FIND doctor_mstr WHERE
+                doctor_mstr.doctor_ID = v-people_ID AND 
+                doctor_mstr.doctor_deleted = ?
+                EXCLUSIVE-LOCK NO-ERROR.
+
+            IF AVAILABLE (doctor_mstr) THEN DO:
+            
+                FIND FIRST Patient_mstr WHERE 
+                    patient_mstr.patient_doctor_ID = v-people_ID AND
+                    patient_mstr.patient_deleted = ?
+                    NO-LOCK NO-ERROR.
+                    
+                IF NOT AVAILABLE (patient_mstr) THEN DO:
+                
+    /*                ASSIGN doctor_mstr.doctor_deleted = TODAY.*/
+                    DELETE doctor_mstr.
+    
+                    {&OUT} 
+                        "<div class='row'>" SKIP
+                        "<div class='grid_12'>" SKIP
+                        "<center>" SKIP
+                        "<h1>Record in Doctor Master Deleted </h1>" SKIP
+                        "</center></div></div>" SKIP.
+            
+                END. /*** Patient NOT Avail who uses this doc ***/
+            
+                ELSE {&OUT} 
+                    "<div class='row'>" SKIP
+                    "<div class='grid_12'>" SKIP
+                    "<center>" SKIP
+                    "<h1>Cannot Delete, other Patient(s) use this Doctor</h1>" SKIP
+                    "</center></div></div>" SKIP.
+            
+            END. /*** Doctor Avail **/
+            
+        END. /** doc exists = no ***/
+        
+        IF v-cust-exists = YES THEN DO:
+            
+            IF v-email <> "" THEN DO:
+            
+                FIND cust_mstr WHERE
+                    cust_mstr.cust_id = v-people_ID AND 
+                    cust_mstr.cust_deleted = ?
+                    NO-LOCK NO-ERROR.
+            
+                IF AVAILABLE (cust_mstr) AND 
+                    v-cust-card-nbr         = cust_mstr.cust_card_nbr       AND 
+                    v-cust-card-seccode     = cust_mstr.cust_card_seccode   AND 
+                    v-cust-card-type        = cust_mstr.cust_card_type      AND 
+                    v-cust-card-expmonth    = cust_mstr.cust_card_expmonth  AND
+                    v-cust-card-expyear     = cust_mstr.cust_card_expyear THEN DO:
+                
+                END. /*** all set ***/
+                
+                ELSE DO:
+                    RUN VALUE(SEARCH("SUBcust-ucU.r"))
+                        (v-people_ID,
+                        v-cust-card-nbr,
+                        v-cust-card-seccode,
+                        v-cust-card-type,
+                        v-cust-card-expmonth,
+                        v-cust-card-expyear,
+                        OUTPUT o-uccust-id,
+                        OUTPUT o-uccust-create,
+                        OUTPUT o-uccust-update,
+                        OUTPUT o-uccust-error,
+                        OUTPUT o-uccust-successful).   
+                    
+                    IF o-uccust-successful = YES THEN DO:
+                
+                        {&OUT} 
+                            "<div class='row'>" SKIP
+                            "<div class='grid_12'>" SKIP
+                            "<center>" SKIP
+                            "<h1> You have successfully ".
+                        
+                        IF o-uccust-create = YES THEN {&OUT} "created" SKIP.
+                        
+                        ELSE IF o-uccust-update = YES THEN {&OUT} "updated" SKIP.
+                        
+                        {&OUT}
+                            " that record in the Customer table. </h1>" SKIP
+                            "</center></div></div>" SKIP.
+                
+                    END. /** Customer Successful **/
+                    
+                    ELSE {&OUT} 
+                        "<div class='row'>" SKIP
+                        "<div class='grid_12'>" SKIP
+                        "<center>" SKIP
+                        "<h1> There is in error in the Customer Information. </h1>" SKIP
+                        "</center></div></div>" SKIP.
+                
+                END.  /** Customer avail and needed to be changed **/
+        
+            END. /** email isn't blank **/
+            
+            ELSE DO:
+            
+                {&OUT} 
+                    "<div class='row'>" SKIP
+                    "<div class='grid_12'>" SKIP
+                    "<center>" SKIP
+                    "<h1> Error - " People_mstr.people_firstname " " people_mstr.people_lastname " must have a valid Email to become a Customer.</h1>" SKIP
+                    "</center></div></div>" SKIP.
+             
+               ASSIGN v-cust-exists = NO.
+               
+           END. /*** cust has no email ***/
+
+        END. /*** Cust exists ***/
+        
+        ELSE IF v-cust-exists = NO THEN DO:
+            
+            FIND cust_mstr WHERE
+                cust_mstr.cust_id = v-people_ID AND 
+                cust_mstr.cust_deleted = ?
+                EXCLUSIVE-LOCK NO-ERROR.
+            
+            IF AVAILABLE (cust_mstr) THEN DO:
+            
+                FIND FIRST TK_mstr WHERE 
+                    TK_mstr.TK_cust_ID = v-people_ID AND 
+                    TK_mstr.TK_deleted = ? NO-LOCK NO-ERROR.
+                    
+                IF NOT AVAILABLE (tk_mstr) THEN DO: 
+                
+                    FIND FIRST patient_mstr WHERE
+                        patient_mstr.patient_cust_ID = v-people_ID AND
+                        patient_mstr.patient_deleted = ? NO-LOCK no-error.
+                
+                    IF NOT AVAILABLE (patient_mstr) THEN DO:
+                
+                        ASSIGN cust_mstr.cust_deleted = TODAY.  
+                        
+                        DELETE cust_mstr.
+                        
+                        FIND scust_shadow WHERE
+                            scust_shadow.scust_ID = v-people_ID AND 
+                            scust_shadow.scust_deleted = ?
+                            EXCLUSIVE-LOCK NO-ERROR.              
+                    
+                        IF AVAILABLE (scust_shadow) THEN DO:
+                            
+                            ASSIGN scust_shadow.scust_deleted = TODAY
+                                v-scust-exists = NO.
+                                
+                            DELETE scust_shadow.
+                    
+                        END.
+                    
+                        {&OUT} 
+                        "<div class='row'>" SKIP
+                        "<div class='grid_12'>" SKIP
+                        "<center>" SKIP
+                        "<h1>Record in Customer Master Deleted.</h1>" SKIP
+                        "</center></div></div>" SKIP.
+                
+                    END. /*** Pat uses this cust ***/
+                
+                    ELSE {&OUT} 
+                    "<div class='row'>" SKIP
+                    "<div class='grid_12'>" SKIP
+                    "<center>" SKIP
+                    "<h1>Cannot Delete, other Patients use this Customer.</h1>" SKIP
+                    "</center></div></div>" SKIP.
+                
+                END. /*** TK_MSTR not avail ***/
+                
+                ELSE {&OUT} 
+                    "<div class='row'>" SKIP
+                    "<div class='grid_12'>" SKIP
+                    "<center>" SKIP
+                    "<h1>Customer has Testkits attached to them. Cannot Delete.</h1>" SKIP
+                    "</center></div></div>" SKIP.
+           
+            END.  /*** avail cust_mstr ***/
+            
+        END. /*** cust-exists = no ***/
+            
+        IF v-scust-exists = YES THEN DO:
+            
+            FIND cust_mstr WHERE
+                cust_mstr.cust_id = v-people_ID AND 
+                cust_mstr.cust_deleted = ?
+                NO-LOCK NO-ERROR.
+            
+            IF AVAILABLE (cust_mstr) THEN DO:
+            
+                FIND scust_shadow WHERE
+                    scust_shadow.scust_ID = v-people_ID AND 
+                    scust_shadow.scust_deleted = ?
+                    EXCLUSIVE-LOCK NO-ERROR.
+    
+                IF AVAILABLE (scust_shadow) AND 
+                    v-scust-magento_ID      = scust_shadow.scust_magento_ID AND 
+                    v-scust-prof            = scust_shadow.scust_prof THEN DO:
+                        
+                END. /** scust all set **/
+                
+                ELSE DO:
+                    RUN VALUE(SEARCH("SUBscust-ucU.r")) 
+                        (v-people_ID,
+                        v-scust-magento_ID,
+                        v-scust-prof,
+                        v-patient-DOC,
+                        OUTPUT o-ucscust-id,
+                        OUTPUT o-ucscust-create,
+                        OUTPUT o-ucscust-update,
+                        OUTPUT o-ucscust-error,
+                        OUTPUT o-ucscust-successful).
+                    
+                    IF o-ucscust-successful = YES THEN DO:
+                
+                        {&OUT} 
+                            "<div class='row'>" SKIP
+                            "<div class='grid_12'>" SKIP
+                            "<center>" SKIP
+                            "<h1> You have successfully ".
+                        
+                        IF o-ucscust-create = YES THEN {&OUT} "created" SKIP.
+                        
+                        ELSE IF o-ucscust-update = YES THEN {&OUT} "updated" SKIP.
+                        
+                        {&OUT}
+                            " that record in the (Shadow) Customer table. </h1>" SKIP
+                            "</center></div></div>" SKIP.
+                
+                    END. /** Shadow Customer successfull **/
+                    
+                    ELSE {&OUT} 
+                        "<div class='row'>" SKIP
+                        "<div class='grid_12'>" SKIP
+                        "<center>" SKIP
+                        "<h1> There is in error in the (Shadow) Customer Information. </h1>" SKIP
+                        "</center></div></div>" SKIP.
+                 
+                END. /*** Shadow Customer needed to change **/
+        
+            END. /*** AVAIL CUST ***/
+            
+            ELSE DO:
+            
+                {&OUT} 
+                    "<div class='row'>" SKIP
+                    "<div class='grid_12'>" SKIP
+                    "<center>" SKIP
+                    "<h1>Cannot create (shadow) customer record until person has customer record.</h1>" SKIP
+                    "</center></div></div>" SKIP.
+                    
+                ASSIGN v-scust-exists = NO.
+                
+            END. /**** No CUST AVAIL ***/
+        
+        END. /*** of scust exists ***/
+        
+        ELSE IF v-scust-exists = NO THEN DO:
+        
+            FIND scust_shadow WHERE
+                scust_shadow.scust_ID = v-people_ID AND 
+                scust_shadow.scust_deleted = ?
+                EXCLUSIVE-LOCK NO-ERROR.
+
+            IF AVAILABLE (scust_shadow) THEN DO:
+                
+                ASSIGN scust_shadow.scust_deleted = TODAY.
+            
+                {&OUT} 
+                    "<div class='row'>" SKIP
+                    "<div class='grid_12'>" SKIP
+                    "<center>" SKIP
+                    "<h1>Record in the (shadow) Customer Master Deleted.</h1>" SKIP
+                    "</center></div></div>" SKIP.
+            
+            END. /*** scust avail ***/
+            
+        END. /*** no scust ***/
+                           
+        {&OUT}
+            "<form>"
+            "<input type='hidden' name='h-scust-exists' value='" v-scust-exists "'/>" SKIP
+            "<input type='hidden' name='h-cust-exists' value='" v-cust-exists "'/>" SKIP
+            "<input type='hidden' name='h-doctor-exists' value='" v-doctor-exists "'/>" SKIP
+            "<input type='hidden' name='h-patient-exists' value='" v-patient-exists "'/>" SKIP
+            "<input type='hidden' name='h2-addr-exists' value='" v2-addr-exists "'/>" SKIP
+            "<input type='hidden' name='h-people_ID' value='" v-people_id "'/>" SKIP
+            "<input type='hidden' name='whattorun' value='" whatshouldrun "'/>"
+/*            "<input type='hidden' name='' value='"  "'/>" SKIP*/
+            "<div class='row'>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Edit' class='btn'>Review Record</BUTTON></div>" SKIP
+            "   <div class='grid_2'> </DIV>" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='Initial' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_3'> </DIV>" SKIP
+            "</div>" SKIP
+            "<BR>" SKIP.
+
+    END. /*** of Submit ***/
+
+END CASE.
+-->
+</BODY>
+</HTML>

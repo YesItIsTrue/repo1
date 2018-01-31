@@ -1,0 +1,443 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"><!></!>
+<html>
+    <head>
+        <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+        <title>Schedule Viewer</title>
+        <meta NAME='VERSION' CONTENT='1.0'/>
+        <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+        <meta NAME='CREATE_DATE' CONTENT="31/Aug/2017"/>
+        <meta NAME='LAST_UPDATED' CONTENT="31/Aug/2017"/>   
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <!--WSS 
+        {global-includes.i}.
+        {external-dependencies.i}.
+        {registration.i}.
+        {organization-includes.i}.
+        -->
+        
+        <script>        
+            $(document).ready(function() {
+                function populateStudentDropDown() {
+                    $.post("AJAX-populate-student-dropdown.r",
+                    {
+                        eventID: $("[name='h-event-id']").val() 
+                    },
+                    function(response, status){
+                        $("[name='h-student-id']").children().remove();
+                        $.each(response, function (key, value) {
+                            $("[name='h-student-id']").append("<option value='" + key + "'>" + value + "</option>");
+                        });
+                    });
+                }
+                
+                populateStudentDropDown();
+                
+                $("[name='h-event-id']").change(function() {
+                   populateStudentDropDown();
+                });
+            });
+        </script> 
+    </head>
+    <body class='ss-background'>
+        <!--WSS
+        DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE v-guest AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE v-fake-new-guest AS CHARACTER NO-UNDO.
+        
+        ASSIGN 
+            v-act = html-encode(get-value("h-act"))
+            v-guest = html-encode(get-value("h-guest"))
+            v-fake-new-guest = html-encode(get-value("h-fake-new-guest")).
+            
+        -->
+           
+        <script>
+            $(document).ready(function() {
+                $("#guest-picker").select2();
+            });
+        </script>
+           
+        <!--WSS    
+        IF v-act = "VIEW" THEN DO:
+        -->
+        <script>
+            $(document).ready(function() {
+                $("#saveAndPrint").click(function() {
+                    swal({
+                          title: 'Saved!',
+                          text: "`v-guest`'s schedule has been saved",
+                          type: 'success',
+                          confirmButtonColor: '#3C4D71',
+                          confirmButtonText: 'Print Schedule',
+                          reverseButtons: true
+                        }).then(function (result) {
+                          if (result.value) {
+                              window.print();
+                              $("#saveAndPrint").hide();
+                              $("#backButton").hide();
+                              $("#returnToMenu").show();
+                              $("#printButton").show();
+                          }
+                        })
+                });
+                
+                $("#returnToMenu").click(function() {
+                    window.location = 'regis-admin-portal.r';
+                });
+                
+                $("select").change(function() {
+                    $("#saveAndPrint").show();
+                    $("#backButton").show();
+                    $("#returnToMenu").hide();
+                    $("#printButton").hide();
+                });
+            });
+        </script>
+        
+        <div class='ss-card'>
+	        <div class='ss-card-title'>
+	            <h2>Schedule Maintenance - `v-guest`</h2>
+        <!--WSS IF v-fake-new-guest = "" THEN DO: -->
+                <p>Make desired changes to the selected schedule below</p>
+        <!--WSS END. ELSE DO: -->
+                <p>Sign up for classes below</p>
+        <!--WSS END. -->
+	        </div>
+	        <div class='ss-card-content'>
+	        <!--WSS IF v-fake-new-guest = "" THEN DO: -->
+                <div class='w3-row'>
+                    <div class='w3-col s2'>
+                        <label>Period</label>
+                    </div>
+                    <div class='w3-col s4'>
+                        <label>Time</label>
+                    </div>
+                    <div class='w3-col s3'>
+                        <label>Current Class</label>
+                    </div>
+                    <div class='w3-col s3'>
+                        <label>Transfer to</label>
+                    </div>
+                </div>
+	            <div class='w3-row'>
+	               <div class='w3-col s2'>
+                       <h4>A1</h4>
+                   </div>
+	               <div class='w3-col s4'>
+                       <h4>9:30 am - 10:30 am</h4>
+                   </div>
+	               <div class='w3-col s3'>
+	                   <h4>Woodworking</h4>
+	               </div>
+	               <div class='w3-col s3'>
+	                   <select class='ss-select'>
+	                       <option></option>
+	                       <option disabled>Archery (0)</option>
+                           <option>Arts and Crafts (3)</option>
+	                       <option>Basket Weaving (11)</option>
+	                       <option>Swimming (7)</option>
+	                   </select>
+                   </div>
+	            </div>
+	            <div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A2</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>11:00 am - 12:00 pm</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <h4>Archery</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <select class='ss-select'>
+                           <option></option>
+                           <option>Arts and Crafts (5)</option>
+                           <option>Basket Weaving (1)</option>
+                           <option>Hiking (3)</option>
+                           <option>Swimming (3)</option>
+                       </select>
+                   </div>
+                </div>
+                <div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A3</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>12:30 pm - 1:30 pm</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <h4>Lunch</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <select class='ss-select'>
+                           <option></option>
+                       </select>
+                   </div>
+                </div>
+                <div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A4</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>2:00 pm - 3:30 pm</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <h4>Swimming</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <select class='ss-select'>
+                           <option></option>
+                           <option>Archery (5)</option>
+                           <option disabled>Arts and Crafts (0)</option>
+                           <option disabled>Basket Weaving (0)</option>
+                           <option>Paddleboarding (7)</option>
+                       </select>
+                   </div>
+                </div>
+                <div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A5</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>4:00 pm - 5:00 pm</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <h4>Arts and Crafts</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <select class='ss-select'>
+                           <option></option>
+                           <option disabled>Archery (0)</option>
+                           <option>Horseback Riding (3)</option>
+                           <option disabled>Rifle Shooting (0)</option>
+                       </select>
+                   </div>
+                </div>
+                <div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A6</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>5:30 pm - 6:30 pm</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <h4>Laser Tag</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <select class='ss-select'>
+                           <option></option>
+                           <option>Arts and Crafts (5)</option>
+                           <option disabled>Swimming (0)</option>
+                       </select>
+                   </div>
+                </div>
+                <div class="w3-row"></div><div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A7</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>7:00 pm - 8:00 pm</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <h4>Dinner</h4>
+                   </div>
+                   <div class='w3-col s3'>
+                       <select class='ss-select'>
+                           <option></option>
+                       </select>
+                   </div>
+                </div>
+        <!--WSS END. /* IF v-fake-new-guest */ 
+                ELSE DO: -->
+                <div class='w3-row'>
+                    <div class='w3-col s2'>
+                        <label>Period</label>
+                    </div>
+                    <div class='w3-col s4'>
+                        <label>Time</label>
+                    </div>
+                    <div class='w3-col s3'>
+                        <label>Class</label>
+                    </div>
+                </div>
+                <div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A1</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>9:30 am - 10:30 am</h4>
+                   </div>
+                   <div class='w3-col s6'>
+                       <select class='ss-select'>
+                           <option></option>
+                           <option disabled>Archery (0)</option>
+                           <option>Arts and Crafts (6)</option>
+                           <option>Basket Weaving (1)</option>
+                           <option>Swimming (2)</option>
+                       </select>
+                   </div>
+                </div>
+                <div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A2</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>11:00 am - 12:00 pm</h4>
+                   </div>
+                   <div class='w3-col s6'>
+                       <select class='ss-select'>
+                           <option></option>
+                           <option>Arts and Crafts (8)</option>
+                           <option>Basket Weaving (1)</option>
+                           <option>Hiking (1)</option>
+                           <option>Swimming (3)</option>
+                       </select>
+                   </div>
+                </div>
+                <div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A3</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>12:30 pm - 1:30 pm</h4>
+                   </div>
+                   <div class='w3-col s6'>
+                       <select class='ss-select'>
+                           <option>Lunch</option>
+                       </select>
+                   </div>
+                </div>
+                <div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A4</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>2:00 pm - 3:30 pm</h4>
+                   </div>
+                   <div class='w3-col s6'>
+                       <select class='ss-select'>
+                           <option></option>
+                           <option>Archery (3)</option>
+                           <option disabled>Arts and Crafts (0)</option>
+                           <option disabled>Basket Weaving (0)</option>
+                           <option>Paddleboarding (6)</option>
+                       </select>
+                   </div>
+                </div>
+                <div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A5</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>4:00 pm - 5:00 pm</h4>
+                   </div>
+                   <div class='w3-col s6'>
+                       <select class='ss-select'>
+                           <option></option>
+                           <option disabled>Archery (0)</option>
+                           <option>Horseback Riding (2)</option>
+                           <option disabled>Rifle Shooting (0)</option>
+                       </select>
+                   </div>
+                </div>
+                <div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A6</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>5:30 pm - 6:30 pm</h4>
+                   </div>
+                   <div class='w3-col s6'>
+                       <select class='ss-select'>
+                           <option></option>
+                           <option>Arts and Crafts (17)</option>
+                           <option disabled>Swimming (0)</option>
+                       </select>
+                   </div>
+                </div>
+                <div class="w3-row"></div><div class='w3-row'>
+                   <div class='w3-col s2'>
+                       <h4>A7</h4>
+                   </div>
+                   <div class='w3-col s4'>
+                       <h4>7:00 pm - 8:00 pm</h4>
+                   </div>
+                   <div class='w3-col s6'>
+                       <select class='ss-select'>
+                           <option>Dinner</option>
+                       </select>
+                   </div>
+                </div>
+        <!--WSS END.  -->
+	        </div>
+	        <div class='ss-button-group'>
+	            <div class='w3-row'>
+		            <div class='w3-col m6'>
+		               <form>
+    	                   <button type='submit' id='backButton' class='ss-btn w3-grey'>Back</button>
+    	                   <button type='button' id='returnToMenu' class='ss-btn w3-theme-accent' hidden>Return to Menu</button>
+		               </form>
+		            </div>
+		            <div class='w3-col m6'>
+               <!--WSS IF v-fake-new-guest = "" THEN DO: -->
+	                   <button type='button' id='saveAndPrint' class='ss-btn w3-theme'>Save Changes</button>
+               <!--WSS END. 
+                       ELSE DO: -->
+                       <button type='button' id='saveAndPrint' class='ss-btn w3-theme'>Save and Finish</button>
+               <!--WSS END.  -->
+                       <button type='button' id='printButton' class='ss-btn w3-grey' hidden>Print Schedule</button>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+            
+        <!--WSS
+        END.
+        ELSE DO:
+        -->
+        <form>
+            <input type='hidden' name='h-fake-new-guest' value='`v-fake-new-guest`'/>
+            <div class='ss-card'>
+                <div class='ss-card-title'>
+	                <h2>Guest Schedule Maintenance</h2>
+	                <!--WSS 
+	                IF v-guest = "" THEN DO: 
+	                -->
+	                <p>Select a guest to update their schedule</p>
+	                <!--WSS 
+	                END.
+	                ELSE DO:  -->
+	                <p>Select an event for which to update `v-guest`'s schedule</p>
+	                <input type='hidden' name='h-guest' value='`v-guest`'/>
+	                <!--WSS
+	                END.
+	                -->
+	            </div>
+                <div class='ss-card-content'>
+            <!--WSS IF v-guest = "" THEN DO: -->
+                    <label>Guest Name</label>
+                    <select name='h-guest' id='guest-picker' class='ss-select' required>
+                        <option value=''></option>
+                        <option value='Johnny Beaulieu'>Johnny Beaulieu</option>
+                        <option value='Andrew Wiggins'>Andrew Wiggins</option>
+                        <option value='Sam Smith'>Sam Smith</option>
+                    </select>
+            <!--WSS END. -->
+                    <label>Event</label>
+                    <select name='h-event-id' class='ss-select' required>
+                        <!--WSS FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND event_mstr.event_deleted = ? NO-LOCK BY event_mstr.event_start_date: -->
+                        <option value=" `event_mstr.event_id` "> `event_mstr.event_name` </option>
+                        <!--WSS END. -->
+                    </select>
+                </div>
+                <div class='ss-button-group'>
+                    <button type='submit' name='h-act' value='VIEW' class='ss-btn-single w3-theme'>Edit Schedule</button>
+                </div>
+            </div>
+        </form>
+        <!--WSS
+        END.
+        -->
+    </body>
+</html>

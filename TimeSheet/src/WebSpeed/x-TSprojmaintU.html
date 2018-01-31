@@ -1,0 +1,556 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<TITLE>Project Maintenance</TITLE>
+    <META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="02/Jan/16">
+    <META NAME="MODIFIED_DATE" CONTENT="02/Jan/16">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+	<SCRIPT LANGUAGE="SpeedScript">
+	/* Create an unnamed pool to store all the widgets created by this procedure.
+	   This is a good default which assures that this procedure's triggers and
+	   internal procedures will execute in this procedure's storage, and that
+	   proper cleanup will occur on deletion of the procedure. */
+	CREATE WIDGET-POOL. 
+	</SCRIPT>
+	<!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
+</HEAD> 
+<BODY class='inside'>
+
+<SCRIPT language="SpeedScript"> 
+{TSvert-menu.i}.
+  /*------------------------------------------------------------------
+    File:           TSProjmaintU.html
+    Description:    Project Maintenance Screen
+    Created:        Jacob Luttrell
+    Version History:
+        1.0 - Created by Jacob Luttrell on 02/Jan/16.
+  -------------------------------------------------------------------*/
+DEFINE VARIABLE clientid            LIKE Proj_Mstr.Proj_client_ID           NO-UNDO.
+DEFINE VARIABLE projname            LIKE Proj_Mstr.Proj_name                NO-UNDO. 
+DEFINE VARIABLE price-adj           LIKE Proj_Mstr.Proj_price_adj           NO-UNDO.
+DEFINE VARIABLE price-adj-dollar    LIKE Proj_Mstr.Proj_price_adj_dollar    NO-UNDO.
+DEFINE VARIABLE est-total           LIKE Proj_Mstr.Proj_est_total           NO-UNDO.
+DEFINE VARIABLE est-hours           LIKE Proj_Mstr.Proj_est_hours           NO-UNDO.
+DEFINE VARIABLE curr-total          LIKE Proj_Mstr.Proj_curr_total          NO-UNDO.
+DEFINE VARIABLE curr-hours          LIKE Proj_Mstr.Proj_curr_hours          NO-UNDO.
+
+DEFINE VARIABLE act                 AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE itmessage           AS LOGICAL INITIAL NO                   NO-UNDO.
+
+DEFINE VARIABLE clientabbv          LIKE Client_Mstr.Client_abbv            NO-UNDO.
+
+DEFINE VARIABLE old-projname        LIKE Proj_Mstr.Proj_name                NO-UNDO.
+
+DEFINE VARIABLE disp-start          AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE startdate           LIKE Proj_Mstr.Proj_start_date          NO-UNDO.
+DEFINE VARIABLE disp-end            AS CHARACTER                            NO-UNDO.
+DEFINE VARIABLE enddate             LIKE Proj_Mstr.Proj_end_date            NO-UNDO.
+DEFINE VARIABLE sortorder           LIKE Proj_Mstr.Proj_sort                NO-UNDO.
+
+DEFINE VARIABLE progname      AS CHARACTER                              NO-UNDO.
+
+DEFINE VARIABLE clientname    AS CHARACTER                              NO-UNDO.
+DEFINE VARIABLE contactname   AS CHARACTER                              NO-UNDO.
+
+DEFINE VARIABLE o-create      AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE o-update      AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE o-avail       AS LOGICAL                                NO-UNDO. 
+DEFINE VARIABLE o-successful  AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE o-error       AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE o-fpat-ran    AS LOGICAL                                NO-UNDO.
+DEFINE VARIABLE o-clientid    AS INTEGER                                NO-UNDO. 
+DEFINE VARIABLE o-projname    AS CHARACTER                              NO-UNDO.
+
+DEFINE VARIABLE ischecked     AS CHARACTER                              NO-UNDO. 
+DEFINE VARIABLE admin-only    LIKE Proj_Mstr.Proj_admin_only            NO-UNDO.
+DEFINE VARIABLE admin-control AS LOGICAL INITIAL NO                     NO-UNDO.
+
+DEFINE VARIABLE isdisabled    AS CHARACTER                              NO-UNDO.
+DEFINE VARIABLE isrequired    AS CHARACTER                              NO-UNDO.
+DEFINE BUFFER   contact_buff  FOR people_mstr. 
+
+ASSIGN 
+    clientid            = INTEGER(html-encode(get-value("h-clientid")))
+    projname            = html-encode(get-value("h-projname"))
+    old-projname        = html-encode(get-value("h-old-projname"))
+    price-adj           = DECIMAL(html-encode(get-value("h-price-adj")))
+    price-adj-dollar    = DECIMAL(html-encode(get-value("h-price-adj-dollar")))
+    est-total           = DECIMAL(html-encode(get-value("h-est-total")))
+    est-hours           = DECIMAL(html-encode(get-value("h-est-hours")))
+    curr-total          = DECIMAL(html-encode(get-value("h-curr-total")))
+    curr-hours          = DECIMAL(html-encode(get-value("h-curr-hours")))
+    sortorder           = INTEGER(html-encode(get-value("h-sortorder")))
+    
+    clientabbv          = html-encode(get-value("h-clientabbv"))                          
+    
+    act           = html-encode(get-value("h-act"))
+    
+    disp-start    = html-encode(get-value("html5-start"))
+    disp-end      = html-encode(get-value("html5-end"))
+    progname      = SUBSTRING(THIS-PROCEDURE:FILE-NAME,R-INDEX(THIS-PROCEDURE:FILE-NAME,"\") + 1)
+    .
+    
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                           
+    disp-start,                                                               
+    OUTPUT startdate                                                             
+    ).                                                                          
+
+RUN VALUE(SEARCH("subr_CCYY_to_YY.r")) (                                   
+    disp-end,                                                                 
+    OUTPUT enddate                                                               
+    ).                                          
+
+IF act = "" THEN 
+    ASSIGN 
+        act = "INITIAL".    
+
+FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid AND 
+                       Client_Mstr.Client_deleted = ? NO-LOCK NO-ERROR.
+   IF AVAILABLE (Client_Mstr) THEN 
+   ASSIGN clientabbv = Client_Mstr.Client_abbv.
+
+IF act = "NEW" THEN 
+    ASSIGN 
+        projname = ""
+        act = "MAINTENANCE".
+        
+IF act = "REMOVE" THEN DO: 
+    FOR FIRST Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid AND 
+                              Proj_Mstr.Proj_name = projname
+                              EXCLUSIVE-LOCK: 
+        
+        DELETE Proj_Mstr. 
+   END.     
+    {&OUT}                                  
+        "<div class='row'>" skip
+        "   <div class='grid_2'></div>" skip
+        "       <div class='grid_8'>" skip 
+        "           <Center><h2>Project " projname " for " clientabbv " has been deleted.</h2></center>" SKIP
+        "       </div>" skip
+        "   </div class='grid_2'></div>" SKIP
+        "</div>" skip.
+        
+    ASSIGN 
+        act = "INITIAL".   
+END. /* REMOVE */    
+/* *********************************** Body ************************************* */
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:         
+        
+        {TSprojmaintU.i "PROJECT" "REQ" "NOTHING" "REQUIRED" "DISABLED" "DISABLED"}. 
+        
+    END. /* INITIAL */    
+    WHEN "PROJECT" THEN DO: 
+        
+/*        FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid AND     */
+/*                               Client_Mstr.Client_deleted = ? NO-LOCK NO-ERROR.*/
+/*           IF AVAILABLE (Client_Mstr) THEN                                     */
+/*           ASSIGN clientabbv = Client_Mstr.Client_abbv.                        */
+        
+        {TSprojmaintU.i "MAINTENANCE" "NOTHING" "REQ" "DISABLED" "NOTHING" "DISABLED"}.
+        
+    END.    
+    WHEN "MAINTENANCE" THEN DO:        
+            
+/*        FIND Client_Mstr WHERE Client_Mstr.Client_people_ID = clientid NO-LOCK NO-ERROR.*/
+/*                                                                                        */
+        IF AVAILABLE (Client_Mstr) THEN DO:
+/*            ASSIGN                                   */
+/*                clientabbv = Client_Mstr.Client_abbv.*/
+
+                                                                                 IF itmessage = YES THEN DO:
+                                                                                     {&OUT}
+                                                                                         "ITmessage 1: if avail client_mstr <BR>" SKIP
+                                                                                         "clientid = " clientid "<BR>" SKIP
+                                                                                         "<BR></BR>" SKIP.
+                                                                                 END.                  
+	      {&OUT}
+                "<form>" SKIP
+                "<div class='row'>" skip
+                "   <div class='grid_2'></div>" skip
+                "       <div class='grid_8'>" skip          
+                "               <div class='table_2col'>" skip
+                "                   <table>" skip
+                "                       <tr>" skip 
+                "                           <th colspan='4'>Project Maintenance</th>" skip 
+                "                       </tr>" skip    
+                              
+                "                       <tr>" skip
+                "                           <td>Client Abbreviated Name</td>" skip              
+                "                           <td>" Clientabbv "</td>" skip
+                "                           <td>Project Name</td>" skip.
+	        
+	        FIND Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = clientid AND 
+	                             Proj_Mstr.Proj_name      = projname AND 
+	                             Proj_Mstr.Proj_deleted   = ?  
+	                            NO-LOCK NO-ERROR. 
+                                                                                 IF itmessage = YES THEN DO:
+                                                                                     {&OUT}
+                                                                                         "ITmessage 2: find proj_mstr <BR>" SKIP
+                                                                                         "clientid = " clientid "<BR>" SKIP
+                                                                                         "projname = " projname "<BR>" SKIP
+                                                                                         "<BR></BR>" SKIP. 
+                                                                                 END.    	                                                                                                                              
+	        IF AVAILABLE (Proj_Mstr) THEN DO: 
+	         
+	            ASSIGN       
+	                old-projname        = Proj_Mstr.Proj_name
+	                price-adj           = Proj_Mstr.Proj_price_adj
+	                price-adj-dollar    = Proj_Mstr.Proj_price_adj_dollar   
+	                startdate           = Proj_Mstr.Proj_start_date
+	                enddate             = Proj_Mstr.Proj_end_date            
+	                curr-total          = Proj_Mstr.Proj_curr_total
+	                curr-hours          = Proj_Mstr.Proj_curr_hours
+	                est-total           = Proj_Mstr.Proj_est_total
+	                est-hours           = Proj_Mstr.Proj_est_hours
+	                sortorder           = Proj_Mstr.Proj_sort
+	                admin-control       = Proj_Mstr.Proj_admin_only. 	      
+	                        
+	            IF admin-control = YES THEN 
+	                ASSIGN 
+	                    isdisabled = "DISABLED"
+	                    isrequired = "".	               
+	           
+		        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                              
+                    startdate,                                                                             
+		            OUTPUT disp-start                                                                        
+		            ). 
+		                   
+		        RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                              
+		            enddate,                                                                             
+		            OUTPUT disp-end                                                                        
+		            ).    
+           
+             {&OUT}
+               "                        <td><input type='text' name='h-projname'  value='" projname "' " isdisabled "/>" skip
+               "                            <input type='hidden' name='h-old-projname' value='" old-projname "' /></td>" skip.
+           
+            END.
+            ELSE 
+            
+             {&OUT}
+                "                       <td class='req'><input type='text' name='h-projname' value='" projname "' required />" SKIP
+                "                                       <input type='hidden' name='h-old-projname' value='" old-projname "' /></td>" skip.
+
+			IF admin-control = NO THEN 
+                    ASSIGN 
+                        isdisabled = ""
+                        isrequired = "REQUIRED". 
+
+	         {&OUT}	                       
+	            "                       </tr>" skip                                          
+	            "                       <tr>" skip
+	            "                           <td>Hour Adjustment</td>" SKIP
+	            "                           <td><input type='number' value='" price-adj "' name='h-price-adj' " isdisabled "/></td>" skip
+	            "                           <td>Price Adjustment</td>" skip
+	            "                           <td>$<input type='number' step='.01' name='h-price-adj-dollar' value='" price-adj-dollar "' " isdisabled "/></td>" skip
+	            "                       </tr>" SKIP
+                "                       <tr>" skip                                             
+                "                           <td>Estimated Project Hours</TD>" SKIP
+                "                           <TD><input type='number' name='h-est-hours' value='" est-hours "' " isdisabled "/></TD>" SKIP
+                "                           <td>Current Project Hours</TD>" SKIP
+                "                           <TD>" curr-hours FORMAT "->>>,>>>,>>9.99" "</TD>" SKIP            
+                "                       </tr>" skip 	            
+	            "                       <tr>" skip
+	            "                           <td>Estimated Price Total</td>" skip            
+	            "                           <TD>$<input type='number' step='.01' name='h-est-total' value='" est-total "' " isdisabled "/></TD>" SKIP
+	            "                           <td>Current Price Total</td>" skip            
+	            "                           <TD>" curr-total FORMAT "$->>>,>>>,>>9.99" "</TD>" SKIP  
+	            "                       </tr>" SKIP
+	            "                       <tr>" SKIP
+	            "                           <td>Start Date</td>" skip
+	            "                           <td class='req'><input type='date' name='html5-start' value='" disp-start "' " isrequired " " isdisabled "/></td>" skip
+	            "                           <td>End Date</td>" skip
+	            "                           <td><input type='date' name='html5-end' value='" disp-end "' " isdisabled "/></td>" skip            
+	            "                       </tr>" skip  
+                "                       <tr>" skip
+                "                           <td>Sort Order</td>" SKIP
+                "                           <td colspan='3'><input type='number' value='" sortorder "' name='h-sortorder' step='10' " isdisabled "/></td>" skip
+                "                       </tr>" SKIP	                      
+	            "                   </table>" skip 
+	            "               </div>" skip                 
+	            "       </div>" skip
+	            "   </div class='grid_2'></div>" skip
+	            "</div>" skip            
+		        "<BR>" SKIP    
+		        "<div class='row'>" SKIP
+		        "   <div class='grid_2-5'> </DIV>" SKIP
+		        "   <input type='hidden' name='h-clientid'  value='" clientid "' />" SKIP
+		        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+		        "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='UPDATE' class='btn'>Update Project</BUTTON></div>" SKIP
+		        "   <div class='grid_1'> </DIV>" SKIP
+		        "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='DELETE' class='btn'>Delete Project</BUTTON></div>" SKIP
+		        "   <div class='grid_1'> </DIV>" SKIP
+		        "   <div class='grid_1'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+                "   <div class='grid_1'> </DIV>" SKIP
+		        "   <div class='grid_1'><BUTTON type='reset' class='btn'>Clear Changes</BUTTON></div>" SKIP
+		        "   <div class='grid_2-5'> </DIV>" SKIP
+		        "</div>" SKIP
+		        "</form>" SKIP.
+            
+            END. /* if avail client_mstr */
+            ELSE
+            
+                {&OUT}
+                "<div class='row'>" skip
+                "   <div class='grid_3'></div>" skip
+                "       <div class='grid_6'>" skip 
+                "           <h2>Client does not exist. Please create the client before continuing with Project Maintenance.</h2>" SKIP
+                "       </div>" skip
+                "   </div class='grid_3'></div>" skip
+                "</div>" skip 
+                "<BR>" SKIP              
+                "<div class='row'>" SKIP
+                "   <div class='grid_3'> </DIV>" SKIP
+                "   <div class='grid_2'>" SKIP
+                "   <form action='TSclientmaintU.r'>" SKIP
+                "   <input type='hidden' name='h-abbv'  value='" clientabbv "' />" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='8.2' />" SKIP /* this needs to pass the actual menu value */
+                "   <button type='submit' name='h-act' value='MAINTENANCE' class='btn'>Proceed to Client Maintenance</BUTTON>" SKIP
+                "   </form>" SKIP                
+                "   </div>" SKIP
+                "   <div class='grid_2'> </DIV>" SKIP
+                "   <div class='grid_2'>" SKIP
+                "   <form>" SKIP
+                "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP                
+				"   <BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON>" SKIP
+				"   </form>" SKIP
+				"</div>" SKIP                
+                "   <div class='grid_3'> </DIV>" SKIP
+                "</div>" SKIP.
+            
+    END. /* MAINTENANCE */
+    WHEN "DELETE" THEN DO:
+
+        FIND Hours_Mstr WHERE Hours_Mstr.Hours_client_ID = clientid AND 
+                              Hours_Mstr.Hours_project_name = projname NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (Hours_Mstr) THEN
+            {&OUT}
+            "<div class='row'>" skip
+/*          "   <div class='grid_2'></div>" skip*/
+            "       <div class='grid_12'>" skip 
+            "           <Center><h2>Project " projname " for " clientabbv " still has employee entries.<BR>"
+                                    "Please delete all corresponding entries before deleting this project.</h2></center>" SKIP
+            "       </div>" skip
+/*          "   </div class='grid_2'></div>" SKIP*/
+            "</div>" skip 
+            "<BR>" SKIP
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP 
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Update Another Project</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.    
+            
+        ELSE
+	       {&OUT}
+	        "<div class='row'>" skip
+/*	        "   <div class='grid_2'></div>" skip*/
+	        "       <div class='grid_12'>" skip 
+	        "           <Center><h2>Are you Sure you want to delete " projname " for " clientabbv "?</h2></center>" SKIP
+	        "       </div>" skip
+/*	        "   </div class='grid_2'></div>" SKIP*/
+	        "</div>" skip 
+	        "<BR>" SKIP
+	        "<form>" SKIP
+	        "<div class='row'>" SKIP
+	        "   <div class='grid_3'> </DIV>" SKIP 
+	        "   <input type='hidden' name='h-clientid'  value='" clientid "' />" SKIP
+	        "   <input type='hidden' name='h-projname'  value='" projname "' />" SKIP
+	        "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+	        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='REMOVE' class='btn'>YES</BUTTON></div>" SKIP
+	        "   <div class='grid_2'> </DIV>" SKIP
+	        "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='MAINTENANCE' class='btn'>NO</BUTTON></div>" SKIP
+	        "   <div class='grid_3'> </DIV>" SKIP
+	        "</div>" SKIP
+	        "</form>" SKIP.
+	        
+	END. /* DELETE */        
+    WHEN "UPDATE" THEN DO: 
+                                                                                                                                                 IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 3: UPDATE <BR>" SKIP
+/*                                                                                                                                                        "firstname = " firstname "<BR>" SKIP*/
+/*                                                                                                                                                        "lastname = " lastname "<BR>" SKIP  */
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END.                                                                                                 
+                                                                                                                  
+        RUN VALUE(SEARCH("SUBproj-ucU.r")) (    
+			clientid,					/*Proj_Mstr.Proj_client_ID       */
+			projname,					/*Proj_Mstr.Proj_name            */
+			price-adj,					/*Proj_Mstr.Proj_price_adj       */
+			price-adj-dollar,			/*Proj_Mstr.Proj_price_adj_dollar*/
+			startdate,					/*Proj_Mstr.Proj_start_date      */
+			enddate,					/*Proj_Mstr.Proj_end_date        */
+			est-total,					/*Proj_Mstr.Proj_est_total       */
+			curr-total,					/*Proj_Mstr.Proj_curr_total      */             
+			est-hours,   				/*Proj_Mstr.Proj_est_hours       */
+			curr-hours,					/*Proj_Mstr.Proj_curr_hours      */              
+/*			progname,    				/*Proj_Mstr.Proj_prog_name       */*/
+/*            NO,                         /*Proj_Mstr.Proj_admin_only      */*/
+/*            sortorder,                  /*Proj_Mstr.Proj_sort            */*/
+/*                                                                           */
+/*            old-projname,                                                  */
+
+            OUTPUT o-clientid,                  
+            OUTPUT o-projname,                            
+            OUTPUT o-create,                  
+            OUTPUT o-update,                   
+            OUTPUT o-avail,                  
+            OUTPUT o-successful,
+            OUTPUT o-error
+            ).                 
+                                                                                           IF itmessage = YES AND o-successful = NO THEN 
+                                                                                           {&OUT}
+                                                                                               "<P>SUBclient-ucU.r Failed.</P>" SKIP.  
+                                                                                                                                         
+
+
+                                                                                                                                                IF itmessage = YES THEN DO: 
+                                                                                                                                                    {&OUT}
+                                                                                                                                                        "ITmessage 5: Run Values <BR>" SKIP
+/*                                                                                                                                                        "firstname = " firstname "<BR>" SKIP*/
+/*                                                                                                                                                        "lastname = " lastname "<BR>" SKIP  */
+                                                                                                                                                        "empid = " clientid "<BR>" SKIP
+                                                                                                                                                        "<BR></BR>" SKIP.
+                                                                                                                                                 END. 
+        IF old-projname <> projname THEN DO: 
+            
+            FOR EACH Hours_Mstr WHERE Hours_Mstr.Hours_project_name = old-projname EXCLUSIVE-LOCK:            
+                ASSIGN 
+                    Hours_Mstr.Hours_project_name = projname
+                    Hours_Mstr.Hours_modified_date = TODAY 
+                    Hours_Mstr.Hours_modified_by = USERID("Modules")
+                    Hours_Mstr.Hours_prog_name = progname.                  
+            END.                                                                                                                                                                                                                                                                                                                                                                                        
+            
+            FOR EACH Emp_Mstr WHERE Emp_Mstr.Emp_def_proj = old-projname EXCLUSIVE-LOCK:              
+                ASSIGN 
+                    Emp_Mstr.Emp_def_proj = projname
+                    Emp_Mstr.Emp_modified_date = TODAY 
+                    Emp_Mstr.Emp_modified_by = USERID("Modules")
+                    Emp_Mstr.Emp_prog_name = progname.            
+            END.                        
+        END. 
+        
+        FIND Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = o-clientid AND 
+                                  Proj_Mstr.Proj_name = o-projname AND 
+                                  Proj_Mstr.Proj_deleted = ?
+                                  NO-LOCK NO-ERROR.   
+        IF AVAILABLE (Proj_Mstr) THEN DO:
+            ASSIGN 
+                price-adj           = Proj_Mstr.Proj_price_adj
+                price-adj-dollar    = Proj_Mstr.Proj_price_adj_dollar
+                est-hours           = Proj_Mstr.Proj_est_hours
+                est-total           = Proj_Mstr.Proj_est_total
+                curr-hours          = Proj_Mstr.Proj_curr_hours
+                curr-total          = Proj_Mstr.Proj_curr_total
+                startdate           = Proj_Mstr.Proj_start_date
+                enddate             = Proj_Mstr.Proj_end_date
+                sortorder           = Proj_Mstr.Proj_sort.               
+                   
+              {&OUT}
+                "<form>" SKIP
+                "<div class='row'>" skip
+                "   <div class='grid_2'></div>" skip
+                "       <div class='grid_8'>" skip          
+                "               <div class='table_2col'>" skip
+                "                   <table>" skip
+                "                       <tr>" skip
+                "                           <th colspan='4'>Project Maintenance</th>" skip
+                "                       </tr>" skip                                  
+                "                       <tr>" skip
+                "                           <td>Client Abbreviated Name</td>" skip.
+                 
+        FOR FIRST Client_Mstr WHERE Client_Mstr.Client_people_ID = o-clientid AND 
+                                    Client_Mstr.Client_deleted = ?
+                                    NO-LOCK: 
+            {&OUT}              
+                "                           <td>" Client_Mstr.Client_abbv "</td>" SKIP.
+        END. /* for first client_mstr */ 
+        
+        {&OUT}
+                "                           <td>Project Name</td>" skip
+                "                           <td>" o-projname "</td>" skip                 
+                "                       </tr>" skip                                          
+                "                       <tr>" skip
+                "                           <td>Project Adjustment</td>" SKIP
+                "                           <td>" price-adj FORMAT "->>>,>>>,>>9.99" "</td>" skip
+                "                           <td>Dollar Adjustment</td>" skip
+                "                           <td>" price-adj-dollar FORMAT "$->>>,>>>,>>9.99" "</td>" skip
+                "                       </tr>" SKIP
+                "                       <tr>" skip                                             
+                "                           <td>Estimated Project Hours</TD>" SKIP
+                "                           <TD>" est-hours FORMAT "->>>,>>>,>>9.99" "</TD>" SKIP
+                "                           <td>Current Project Hours</TD>" SKIP
+                "                           <TD>" curr-hours FORMAT "->>>,>>>,>>9.99" "</TD>" SKIP            
+                "                       </tr>" skip                 
+                "                       <tr>" skip
+                "                           <td>Estimated Cost Total</td>" skip            
+                "                           <TD>" est-total FORMAT "->>>,>>>,>>9.99" "</TD>" SKIP
+                "                           <td>Current Cost Total</td>" skip            
+                "                           <TD>" curr-total FORMAT "$->>>,>>>,>>9.99" "</TD>" SKIP  
+                "                       </tr>" SKIP
+                "                       <tr>" SKIP
+                "                           <td>Start Date</td>" skip
+                "                           <td>" startdate "</td>" skip
+                "                           <td>End Date</td>" skip
+                "                           <td>" enddate "</td>" SKIP  
+                "                       </tr>" skip   
+                "                       <tr>" skip
+                "                           <td>Sort Order</td>" SKIP
+                "                           <td colspan='3'>" sortorder "</td>" skip
+                "                       </tr>" SKIP                          
+                "                   </table>" skip
+                "               </div>" skip                 
+                "       </div>" skip
+                "   </div class='grid_2'></div>" skip
+                "</div>" skip            
+                "<BR>" SKIP       	            
+	            "<div class='row'>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+	            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Update Another Project</BUTTON></div>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "</div>" SKIP
+	            "</form>" SKIP.     
+        END. /* if avail proj_mstr */
+        ELSE 
+            {&OUT}
+	            "<div class='row'>" skip
+	            "   <div class='grid_3'></div>" skip
+	            "       <div class='grid_6'align='center'>" skip 
+	            "           <h2>Proj_Mstr was not updated. Please Contact SolSource for help.</h2>" SKIP
+	            "       </div>" skip
+	            "   </div class='grid_3'></div>" skip
+	            "</div>" skip 
+	            "<BR>" SKIP              
+	            "<div class='row'>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP            
+	            "   <div class='grid_2'>" SKIP
+	            "   <form>" SKIP                      
+	            "       <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP                
+	            "       <BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>Restart Search</BUTTON>" SKIP
+	            "   </form>" SKIP            
+	            "   </div>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "</div>" SKIP.        
+	        
+             
+    END. /* UPDATE */     
+    
+END CASE.         
+</SCRIPT>
+</BODY>
+</HTML>

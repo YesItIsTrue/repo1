@@ -1,0 +1,308 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+<head>
+    <title>Admin TS Entry</title>
+    <meta NAME="AUTHOR" CONTENT="Andrew Garver">
+    <meta NAME="VERSION" CONTENT="1.0">
+    <meta NAME="COPYRIGHT" CONTENT="Solsource">
+    <meta NAME="CREATE_DATE" CONTENT="15/Nov/17">
+    <meta NAME="LAST_UPDATED" CONTENT="15/Nov/17">    
+    <!--WSS {external-dependencies.i} -->
+    
+    <style>
+        .form-button {
+            margin-top: 8px;
+        }
+        .left-button {
+            position: relative;
+            right: 8px;
+        }
+        .row-offset {
+            margin-left: 0px;
+            margin-right: 0px;
+        }
+    </style>
+    
+    <!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
+</head>
+
+<body class='w3-theme-light'>
+    <!--WSS 
+    {TSvert-menu.i}.
+    
+    DEFINE VARIABLE empid AS INTEGER NO-UNDO.
+    DEFINE VARIABLE v-emp-name AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE v-clientid LIKE Hours_Mstr.Hours_client_ID NO-UNDO.
+    DEFINE VARIABLE v-projname LIKE Hours_Mstr.Hours_project_name NO-UNDO.
+    DEFINE VARIABLE v-html-date AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE v-hours LIKE Hours_Mstr.Hours_amount NO-UNDO.
+    DEFINE VARIABLE v-description LIKE Hours_Mstr.Hours_description NO-UNDO.
+    DEFINE VARIABLE v-calling-prog AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE v-week AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE isSelected AS CHARACTER NO-UNDO.
+    
+    ASSIGN
+        v-act = html-encode(get-value("h-act"))
+        v-clientid = INTEGER(html-encode(get-value("h-clientid")))
+        v-projname = html-encode(get-value("h-projname"))
+        v-html-date = html-encode(get-value("html5-date"))
+        v-hours = DECIMAL(html-encode(get-value("h-hours")))
+        v-description = html-encode(get-value("h-description"))
+        v-week = html-encode(get-value("html5-week"))
+        v-calling-prog = html-encode(get-value("h-calling-prog"))
+        empid = INTEGER(html-encode(get-value("h-empid"))).
+    
+    FIND people_mstr WHERE people_mstr.people_id = empid NO-ERROR.
+    IF AVAILABLE (people_mstr) THEN 
+        v-emp-name = people_mstr.people_firstname.
+        
+    -->
+    <input type="hidden" id="callingProgram" value="`v-calling-prog`"/>
+    
+    <script>
+        function fetchClients() {
+            return new Promise((resolve, reject) => {
+                $.post("AJAX-get-clients-by-entries.r",
+                {
+                   empID: $("#empSelect").val() 
+                },
+                function(data, success) {
+                    if (success) {
+                        $("#client-select").find('option').remove().end();
+                        $.each(data, function(key, value) {
+                             $("#client-select").append('<option value="' + key + '">' + value + '</option>');
+                        });
+                        resolve(true);
+                    }
+                    else {
+                       reject("Error!");
+                    }
+                });
+            });
+        };
+    
+        function fetchProjects() {
+            return new Promise((resolve, reject) => {
+                $.post("AJAX-get-projects-by-client.r",
+                {
+                   clientID: $("#client-select").val(),
+                   empID: $("#empSelect").val()
+                },
+                function(data, success) {
+                    if (success) {
+                        $("#project-select").find('option').remove().end();
+                        $.each(data, function(key, value) {
+                             $("#project-select").append('<option value="' + key + '">' + value + '</option>');
+                        });
+                        resolve(true);
+                    }
+                    else {
+                       reject("Error!");
+                    }
+                });
+            });
+        };
+        
+        function fetchHoursDesc() {
+            $.post("AJAX-get-hours-desc.r",
+            {
+               clientID: $("#client-select").val(),
+               projectID: $("#project-select").val(),
+               empID: $("#empSelect").val(),
+               date: $("#date-picker").val()
+            },
+            function(data, success) {
+                if (data.success) {
+                    $("#comments").val(data.description);
+                    $("#hours-worked").val(data.hoursWorked);
+                    $("#delete-button").show();
+                }
+                else {
+                    $("#comments").val("");
+                    $("#hours-worked").val("");
+                    $("#delete-button").hide(); 
+                }
+            });
+        };
+            
+        $(document).ready(function() {
+        
+            if ($("#callingProgram").val() === "") {
+			    fetchClients()
+	            .then(() => fetchProjects())
+	            .then(() => fetchHoursDesc());
+			}
+			else {
+                fetchHoursDesc();
+			}
+                    
+            $("#delete-button").click(function() {
+                swal({
+                  title: 'Are you sure?',
+                  text: "Do you really want to delete this time entry?",
+                  type: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: '#3085d6',
+                  cancelButtonColor: '#d33',
+                  confirmButtonText: 'Yes, delete it!'
+                }).then(function (result) {
+                  if (result.value) {
+                    var lastDate = $("[name='h-date']").val();
+                    $.post("AJAX-delete-time-entry.r",
+                    $("#logMaintForm").serialize(),
+                    function(data, success) {
+                        if (data.success) {
+                            swal("Success!",
+                            $("#empSelect option:selected").text() + "'s time entry for " + $("[name='h-client'] option:selected").text() + " has been deleted.",
+                            "success")
+                            .then(function() {
+                                if ($("#callingProgram").val() !== "") {
+                                    window.location = "`v-calling-prog`.r";
+                                }
+                                fetchHoursDesc();
+                            });
+                        }
+                        else {
+                            swal("Whoops!", "Something went wrong while deleting that time entry. Please try again later.", "error");
+                        }
+                    });
+                  }
+                })
+            });
+            
+            // Handle form submission
+            $("#logMaintForm").submit(function(e) {
+                e.preventDefault();
+                $.post("AJAX-submit-AdminTSentryU.r",
+                $("form").serialize(),
+                function(data, success) {
+                    if (data.success) {
+                        swal("Success!",
+                        $("#empSelect option:selected").text() + "'s time entry for " + $("[name='h-client'] option:selected").text() + " has been updated",
+                        "success")
+                        .then(function() {
+                            if ($("#callingProgram").val() !== "") {
+                                window.location = "`v-calling-prog`.r";
+                            }
+                            $("#delete-button").show();
+                        });
+                    }
+                    else {
+                        swal("Whoops!", "Something went wrong while logging your work. Please try again later.", "error");
+                    }
+                });
+            });
+        
+            Date.prototype.toDateInputValue = (function() {
+                var local = new Date(this);
+                local.setMinutes(this.getMinutes() - this.getTimezoneOffset());
+                return local.toJSON().slice(0,10);
+            });
+        
+            $("#empSelect").focus();
+            //$("[type='date']").mask("9999-99-99",{placeholder:"yyyy-mm-dd"});
+            
+            $("#empSelect").change(function() {
+                fetchClients()
+                .then(() => fetchProjects())
+                .then(() => fetchHoursDesc());
+            });
+            
+            $("#client-select").change(function() {
+                fetchProjects().then(() => fetchHoursDesc());
+            });
+            
+            $("#project-select").change(function() {
+                fetchHoursDesc();
+            });
+            
+            $("#date-picker").change(function() {
+                fetchHoursDesc();
+            });
+            
+        });
+    </script>
+    
+    <div class="vert-nav-page">
+	    <div class="w3-content page-content">
+	        <br/><br/>
+		    
+            <h1 class="page-title">Admin's Time Entry Maintenance</h1>
+            <form id="logMaintForm">
+                <input type="hidden" name="h-old-clientid" value="`v-clientid`"/>
+                <input type="hidden" name="h-old-projname" value="`v-projname`"/>
+                <input type="hidden" name="h-old-date" value="`v-html-date`"/>
+                <div class="form-content w3-card-4 w3-white" style="padding-right:16px; padding-left:16px;">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label>Employee</label>
+	                        <select id="empSelect" name="h-empid" class="form-control" required>
+	                            <option value=""></option>
+<!--WSS
+                            FOR EACH Emp_Mstr WHERE Emp_Mstr.Emp_deleted = ? NO-LOCK,
+                            EACH people_mstr WHERE people_mstr.people_id = Emp_Mstr.Emp_ID AND people_mstr.people_deleted = ? NO-LOCK
+                            BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname: 
+                                ASSIGN 
+                                    isSelected = IF people_mstr.people_ID = empid THEN "selected" ELSE "".
+-->
+                                <option value="`people_mstr.people_ID`" `isSelected`>`people_mstr.people_lastname + ", " + people_mstr.people_firstname`</option>
+<!--WSS                     
+                            END.
+-->
+	                        </select>
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label>Client</label>
+                            <select id="client-select" name="h-client" class="form-control" required>
+<!--WSS
+					    FOR EACH Client_Mstr WHERE Client_Mstr.Client_deleted = ? NO-LOCK,
+					    FIRST Hours_Mstr WHERE Hours_Mstr.Hours_client_ID = Client_Mstr.Client_people_ID AND Hours_Mstr.Hours_employee_ID = empid AND Hours_Mstr.Hours_deleted = ? NO-LOCK:
+					        ASSIGN 
+                                isSelected = IF Client_Mstr.Client_people_ID = v-clientid THEN "selected" ELSE "".
+-->
+					        <option value="`Client_Mstr.Client_people_ID`" `isSelected`>`Client_Mstr.Client_abbv`</option>
+<!--WSS
+					    END.  /** of 4ea. state_mstr **/
+-->
+                            </select>
+                            <label>Project</label>
+                            <select id="project-select" name="h-project" class="form-control" required>
+<!--WSS
+                        FOR EACH Proj_Mstr WHERE Proj_Mstr.Proj_client_ID = v-clientid AND Proj_Mstr.proj_deleted = ? NO-LOCK,
+				        FIRST Hours_Mstr WHERE Hours_Mstr.Hours_employee_ID = empid AND Hours_Mstr.Hours_project_name = Proj_Mstr.Proj_name AND Hours_Mstr.Hours_client_ID = v-clientid NO-LOCK
+				        BREAK BY Proj_Mstr.Proj_name:
+				            ASSIGN 
+                                isSelected = IF Proj_Mstr.Proj_name = v-projname THEN "selected" ELSE "".
+-->
+				            <option value="`Proj_Mstr.Proj_name`" `isSelected`>`Proj_Mstr.Proj_name`</option>
+<!--WSS
+				        END.  /** of 4ea. state_mstr **/
+-->
+                            </select>
+                            <label>Date</label>
+                            <input id="date-picker" name="h-date" type="date" class="form-control" value="`v-html-date`" required/>
+                            <label>Hours Worked</label>
+                            <input id="hours-worked" name="h-hours" type="number" step=".25" min="0" class="form-control" value="`v-hours`" required/>
+                        </div>
+                        <div class="col-md-6">
+                            <label>Comments</label>
+                            <textarea id="comments" name="h-comments" rows="9" class="form-control" required>`v-description`</textarea>
+                            <button type="submit" class="btn w3-theme w3-right form-button">Submit</button>
+                            <button id="delete-button" type="button" class="btn w3-red w3-right form-button left-button" hidden>Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+	    </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Andrew Garver">
+    <TITLE>Event Maintenance</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="31/Aug/2017">
+    <META NAME='LAST_UPDATED' CONTENT="12/Dec/2017">   
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--WSS 
+	{global-includes.i}.
+	{external-dependencies.i}.
+	{registration.i}.
+	{organization-includes.i}. 
+	-->
+	<script type="text/javascript" src="/depot/src/HTMLContent/javascript/daypilot-all.min.js?v=217"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css" />
+	<link rel="stylesheet" href="https://cdn.rawgit.com/taromero/swal-forms/master/swal-forms.css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/swal-forms@0.5.0/swal-forms.min.js"></script>
+</HEAD>
+<body class='ss-background'>
+<!--WSS
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-event_ID AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE v-event_name LIKE event_mstr.event_name NO-UNDO.
+DEFINE VARIABLE v-event_start_time LIKE event_mstr.event_start_time NO-UNDO.
+DEFINE VARIABLE v-event-start-time-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_end_time LIKE event_mstr.event_end_time NO-UNDO.
+DEFINE VARIABLE v-event-end-time-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_addr_id LIKE event_mstr.event_addr_id NO-UNDO.
+DEFINE VARIABLE v-event_desc LIKE event_mstr.event_desc NO-UNDO.
+DEFINE VARIABLE v-event_slogan LIKE event_mstr.event_slogan NO-UNDO.
+DEFINE VARIABLE v-event_contact LIKE event_mstr.event_contact NO-UNDO.
+DEFINE VARIABLE v-event_start_date LIKE event_mstr.event_start_date NO-UNDO.
+DEFINE VARIABLE v-event-start-date-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_end_date LIKE event_mstr.event_end_date NO-UNDO.
+DEFINE VARIABLE v-event-end-date-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_color_theme LIKE event_mstr.event_color_theme NO-UNDO.
+DEFINE VARIABLE v-event_category LIKE event_mstr.event_category NO-UNDO.
+DEFINE VARIABLE v-event_URL LIKE event_mstr.event_URL NO-UNDO.
+DEFINE VARIABLE v-event_dress_code LIKE event_mstr.event_dress_code NO-UNDO. 
+DEFINE VARIABLE v-event_age_group LIKE event_mstr.event__char01 NO-UNDO.
+DEFINE VARIABLE v-success AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE v-action AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-contact-name AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-addr-string AS CHARACTER NO-UNDO.
+
+/* Always get these, regardless of the act*/
+ASSIGN 
+    v-act = get-value("h-act")
+    v-event_ID = INTEGER(get-value("v-event_ID")).
+    
+FIND event_mstr WHERE event_mstr.event_ID = v-event_ID NO-ERROR.
+IF AVAILABLE (event_mstr) THEN DO:
+    ASSIGN 
+	    v-event_name = event_mstr.event_name
+	    v-event_addr_id = event_mstr.event_addr_id
+	    v-event_desc = event_mstr.event_desc
+	    v-event_slogan = event_mstr.event_slogan
+	    v-event_contact = event_mstr.event_contact
+	    v-event_start_date = event_mstr.event_start_date
+	    v-event_end_date = event_mstr.event_end_date
+	    v-event_color_theme = event_mstr.event_color_theme
+	    v-event_category = event_mstr.event_category
+	    v-event_URL = event_mstr.event_URL
+	    v-event_dress_code = event_mstr.event_dress_code
+	    v-event_age_group = event_mstr.event__char01.
+	    
+    IF event_mstr.event_start_date <> ? THEN 
+	    RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                               
+	        event_mstr.event_start_date,                                                                             
+	        OUTPUT v-event-start-date-string                                                                        
+	    ).
+    
+    IF event_mstr.event_end_date <> ? THEN 
+	    RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                               
+	        event_mstr.event_end_date,                                                                             
+	        OUTPUT v-event-end-date-string                                                                        
+	    ).
+    
+    IF (event_mstr.event_start_time <> ?) THEN
+        v-event-start-time-string = SUBSTRING(ENTRY(1, ENTRY(2, STRING(event_mstr.event_start_time), " "), "."), 1, 5).
+    IF (event_mstr.event_end_time <> ?) THEN
+        v-event-end-time-string = SUBSTRING(ENTRY(1, ENTRY(2, STRING(event_mstr.event_end_time), " "), "."), 1, 5).
+        
+    IF v-event_addr_id > 0 THEN DO:
+	    FIND addr_mstr WHERE addr_mstr.addr_id = v-event_addr_id NO-ERROR.
+	    IF AVAILABLE (addr_mstr) THEN
+	        ASSIGN 
+	            v-addr-string = addr_mstr.addr_addr1 + " " + addr_mstr.addr_addr2 + " " + addr_mstr.addr_addr3 + " " + addr_mstr.addr_city + " " + addr_mstr.addr_stateprov + ", "  + addr_mstr.addr_zip + " " + addr_mstr.addr_country.
+	END. /* IF addrid > 0 */
+	
+	IF v-event_contact > 0 THEN DO:
+	   FIND people_mstr WHERE people_mstr.people_id = v-event_contact NO-ERROR.
+	   IF AVAILABLE (people_mstr) THEN 
+	       ASSIGN 
+	           v-contact-name = people_mstr.people_firstname + " " + people_mstr.people_lastname.
+	END.
+	    
+END.
+    
+FOR FIRST event_mstr WHERE event_mstr.event_ID = v-event_ID NO-LOCK:
+    ASSIGN 
+        v-event_name = event_mstr.event_name.
+END.
+
+CASE v-act:
+    WHEN "Edit" THEN DO:
+-->
+        <script>
+            $(document).ready(function() {
+                dp = new DayPilot.Calendar("dp");
+	        
+	            // view
+	            dp.viewType = "Week";
+	            dp.businessBeginsHour = 7;
+	            dp.businessEndsHour = 22;
+	        
+	            // event creating
+	            dp.onTimeRangeSelected = function (args) {
+	               swal.withForm({
+                       title: 'New Period Name',
+                       input: 'text',
+                       showCancelButton: true,
+                       confirmButtonText: 'Submit',
+                       formFields: [
+                           { id: 'name', placeholder:'New Period Name'},
+                       ]
+                    }, function(isConfirm) {
+                        if (isConfirm) {
+                            var e = new DayPilot.Event({
+	                            start: args.start,
+	                            end: args.end,
+	                            id: DayPilot.guid(),
+	                            text: this.swalForm.name
+	                        });
+	                        dp.events.add(e);
+	                        dp.clearSelection();
+                            console.log(this.swalForm) 
+                        }
+                    })
+	               
+	            };
+	            
+	            dp.onEventClick = function(args) {
+	                //alert("clicked: " + args.e.id());
+	                swal({
+                       title: 'Delete Period',
+                       text: "Would you like to delete this period?",
+                       showCancelButton: true,
+                       confirmButtonColor: '#F44336',
+                       confirmButtonText: 'Delete it!',
+                       closeOnConfirm: true,
+                    }, function(isConfirm) {
+                        
+                    })
+	            };
+	            
+	            dp.init();
+	            
+	            dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(7),
+                        end: new DayPilot.Date.today().addHours(8),
+                        id: DayPilot.guid(),
+                        text: "A1"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(8).addMinutes(30),
+                        end: new DayPilot.Date.today().addHours(9).addMinutes(30),
+                        id: DayPilot.guid(),
+                        text: "A2"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(10),
+                        end: new DayPilot.Date.today().addHours(11),
+                        id: DayPilot.guid(),
+                        text: "A3"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(11).addMinutes(30),
+                        end: new DayPilot.Date.today().addHours(12).addMinutes(30),
+                        id: DayPilot.guid(),
+                        text: "A4"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(13),
+                        end: new DayPilot.Date.today().addHours(15),
+                        id: DayPilot.guid(),
+                        text: "A5"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(15).addMinutes(30),
+                        end: new DayPilot.Date.today().addHours(16).addMinutes(30),
+                        id: DayPilot.guid(),
+                        text: "A6"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(17),
+                        end: new DayPilot.Date.today().addHours(18),
+                        id: DayPilot.guid(),
+                        text: "A7"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(18).addMinutes(30),
+                        end: new DayPilot.Date.today().addHours(20).addMinutes(30),
+                        id: DayPilot.guid(),
+                        text: "A8"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(7),
+                        end: new DayPilot.Date.today().addHours(9),
+                        id: DayPilot.guid(),
+                        text: "B1"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(9).addMinutes(30),
+                        end: new DayPilot.Date.today().addHours(10).addMinutes(30),
+                        id: DayPilot.guid(),
+                        text: "B2"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(11),
+                        end: new DayPilot.Date.today().addHours(12),
+                        id: DayPilot.guid(),
+                        text: "B3"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(12).addMinutes(30),
+                        end: new DayPilot.Date.today().addHours(13).addMinutes(30),
+                        id: DayPilot.guid(),
+                        text: "B4"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(14),
+                        end: new DayPilot.Date.today().addHours(16),
+                        id: DayPilot.guid(),
+                        text: "B5"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(16).addMinutes(30),
+                        end: new DayPilot.Date.today().addHours(17).addMinutes(30),
+                        id: DayPilot.guid(),
+                        text: "B6"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(18),
+                        end: new DayPilot.Date.today().addHours(19),
+                        id: DayPilot.guid(),
+                        text: "B7"
+                    })
+                );
+                
+                dp.events.add(
+                    new DayPilot.Event({
+                        start: new DayPilot.Date.today().addHours(19).addMinutes(30),
+                        end: new DayPilot.Date.today().addHours(20).addMinutes(30),
+                        id: DayPilot.guid(),
+                        text: "B8"
+                    })
+                );
+	            
+	            $("#add-period").click(function() {
+	                swal.withForm({
+					   title: 'Create a New Period',
+					   text: "Please provide the date, and start and end times for the new period",
+					   showCancelButton: true,
+					   confirmButtonColor: '#4CAF50',
+					   confirmButtonText: 'Create',
+					   closeOnConfirm: true,
+					   formFields: [
+					       { id: 'name', placeholder:'Period Name'},
+                           { id: 'date', placeholder:'Date', type: 'date'},
+					       { id: 'startTime', placeholder:'Start Time', type: 'time'},
+					       { id: 'endTime', placeholder:'End Time', type: 'time'}
+					   ]
+					}, function(isConfirm) {
+					    if (isConfirm) {
+						    var e = new DayPilot.Event({
+			                    start: DayPilot.Date(this.swalForm.date).addHours(this.swalForm.startTime.split(':')[0]),
+			                    end: DayPilot.Date(this.swalForm.date).addHours(this.swalForm.endTime.split(':')[0]),
+			                    id: DayPilot.guid(),
+			                    text: this.swalForm.name
+			                });
+			                dp.events.add(e);
+		                }
+					})
+	            });
+	            
+            });
+		</script>
+        
+
+       <div class='ss-card'> 
+           <div class='ss-card-title'> 
+               <h1>A/B Schedule Framework</h1> 
+           </div> 
+           <div class='ss-card-content'> 
+                <div>
+				    <div id="dp"></div>
+				</div>
+				
+				<div id="print"></div>
+           </div> 
+           <div class='ss-button-group'>
+               <div class='w3-row'>
+	               <div class='w3-col m4'> 
+	                  <button type='submit' name='h-act' value='Edit' class='ss-btn w3-theme'>Save Framework</BUTTON> 
+	               </div> 
+	               <div class='w3-col m4'> 
+	                  <button type='button' id='add-period' class='ss-btn w3-green'>Add Period</BUTTON> 
+	               </div> 
+	               <div class='w3-col m4'>
+	                  <a href='schedule-framework-maint.r'>
+	                    <button type='button' class='ss-btn w3-red'>Cancel Changes</BUTTON>
+	                  </a> 
+	               </div>
+               </div>
+           </div> 
+       </div>
+<!--WSS
+    END.
+    OTHERWISE DO:
+-->
+        <form> 
+            <div class='ss-card'> 
+			    <div class='ss-card-title'> 
+			        <h1>Schedule Framework Selection</h1> 
+			        <p>Select a schedule framework to edit or create a new one</a>.</p> 
+			    </div> 
+			    <div class='ss-card-content'> 
+				   <label>Framework Name</label> 
+				   <select name='v-framework_ID' class='ss-select'>
+                        <option val='1'>Teen Framework</option>
+                        <option val='1'>Youth Framework</option>
+                        <option val='1'>A/B Framework</option>
+				   </select> 
+			    </div> 
+                <div class='ss-button-group'>
+                    <div class='w3-row'>
+	                    <div class='w3-col m4'> 
+	                       <button type='submit' name='h-act' value='Edit' class='ss-btn w3-theme'>Edit Framework</BUTTON> 
+	                    </div> 
+	                    <div class='w3-col m4'> 
+	                       <button type='submit' name='h-act' value='Create' class='ss-btn w3-green'>New Framework</BUTTON> 
+	                    </div> 
+	                    <div class='w3-col m4'> 
+	                       <button type='button' class='ss-btn w3-theme-accent'>View Reports</BUTTON> 
+	                    </div> 
+                    </div>
+                </div> 
+            </div> 
+        </form>
+<!--WSS
+    END.
+END.
+-->
+</BODY>
+</BODY>

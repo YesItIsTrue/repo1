@@ -1,0 +1,371 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="DOUG LUTTRELL">
+<TITLE>Customer Inquiry - V2</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="DATE">
+    <META NAME='LAST_UPDATED' CONTENT="DATE">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+</HEAD>
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------
+    Template Notes: 
+        This template is designed to be used with a simple search report.
+        It has a link designed to send the user to a more advanced (From
+        To) search. The validation act allows you to decide weather the 
+        criteria the user is inputting is valid for your table to search
+        by (outside date range for example).  Quoted areas are either
+        instuctions or place holders for your variables and fields. 
+    
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE ITmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+
+DEFINE VARIABLE v-lastname      LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-firstname     LIKE people_mstr.people_firstname   NO-UNDO. 
+DEFINE VARIABLE v-email         LIKE people_mstr.people_email       NO-UNDO.
+
+DEFINE VARIABLE v-record_count AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE v-mag_cust_ID AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-foundaddr AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-cc_worthy AS LOGICAL NO-UNDO. 
+
+
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act             = html-encode(get-value("h-act"))
+    /* additional variables here */
+    v-lastname      = html-encode(get-value("h-lastname"))
+    v-firstname     = html-encode(get-value("h-firstname"))
+    v-email         = html-encode(get-value("h-email"))
+    v-cc_worthy     = IF html-encode(get-value("h-cc_worthy")) = "YES" THEN 
+                        YES
+                      ELSE 
+                        NO.
+
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+IF act = "VALIDATION" THEN DO: 
+    
+    /* add a validation for the search criteria based off of the table(s) you 
+    are searching by. */
+    
+    IF v-lastname <> "" THEN 
+        FIND FIRST people_mstr WHERE people_mstr.people_lastname = v-lastname NO-LOCK NO-ERROR.
+    ELSE IF v-firstname <> "" THEN 
+        FIND FIRST people_mstr WHERE people_mstr.people_firstname = v-firstname NO-LOCK NO-ERROR.
+    ELSE IF v-email <> "" THEN 
+        FIND FIRST people_mstr WHERE people_mstr.people_email = v-email NO-LOCK NO-ERROR.
+        
+            
+    IF AVAILABLE ( people_mstr ) THEN
+      
+        ASSIGN    
+            act = "SEARCH".
+    
+    ELSE DO:
+        {&OUT}
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<h2>Incorrect parameters for table " /* table */ ". Search Again.</h2>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP.
+        ASSIGN
+            act = "INITIAL".
+
+    END. /* else do not avail */
+END. /* validation */    
+        
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP 
+            "   <INPUT type='hidden' name='h-cc_worthy' value='" v-cc_worthy "' />" SKIP       
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" skip
+            "           <td>Last Name</td>" skip
+            "           <td><input type='text' name='h-lastname' value='" v-lastname "' /></td>" skip           
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" skip
+            "           <td>First Name</td>" skip
+            "           <td><input type='text' name='h-firstname' value='" v-firstname "' /></td>" skip           
+            "       </tr>" SKIP(1)
+            
+            "       <tr>" skip
+            "           <td>Email</td>" skip
+            "           <td><input type='text' name='h-email' value='" v-email "' /></td>" skip           
+            "       </tr>" SKIP(1)
+            
+        /* copy and paste above <tr>...</tr> for more fields */
+        
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Search</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"</div>" SKIP
+			"</FORM>" SKIP(1).
+    
+    END. /* INITIAL */
+    WHEN "SEARCH" THEN DO:
+        {&OUT}
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='16'>Customer List</TH>" SKIP    
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            
+            "               <td>Customer Number</td>" SKIP
+            "               <td>Customer Name</td>" SKIP
+            
+            "               <td>Address 1</td>" SKIP
+            "               <td>City</td>" SKIP
+            "               <td>State</td>" SKIP
+            "               <td>Zip</td>" SKIP
+            "               <td>Country</td>" SKIP
+            
+            "               <td>Email Address</td>" SKIP
+            "               <td>Phone</td>" SKIP
+            
+            "               <TD>CC Type</TD>" SKIP
+            "               <TD>CC Number</TD>" SKIP
+            "               <TD>CC Sec Code</TD>" SKIP
+            "               <TD>CC Exp Month</TD>" SKIP
+            "               <TD>CC Exp Year</TD>" SKIP
+            
+            "               <TD>Magento ID</TD>" SKIP
+            "               <td>Professional Account</td>" SKIP            
+            
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1).
+            
+        FOR EACH people_mstr WHERE (people_mstr.people_lastname = v-lastname OR 
+                                        v-lastname = "") AND
+                                   (people_mstr.people_firstname = v-firstname OR 
+                                        v-firstname = "") AND 
+                                   (people_mstr.people_email = v-email OR 
+                                        v-email = "") AND 
+                                   people_mstr.people_deleted = ? NO-LOCK,
+            FIRST cust_mstr WHERE cust_mstr.cust_id = people_mstr.people_id AND 
+                cust_mstr.cust_deleted = ? NO-LOCK,
+            FIRST scust_shadow WHERE scust_shadow.scust_id = cust_mstr.cust_id AND 
+                scust_shadow.scust_deleted = ? NO-LOCK  
+                    BREAK BY people_mstr.people_lastname BY people_mstr.people_firstname BY people_mstr.people_email:
+                        
+        ASSIGN 
+            v-record_count  = v-record_count + 1.
+        
+        FIND speop_shadow WHERE speop_shadow.speop_id = people_mstr.people_id AND 
+            speop_shadow.speop_deleted = ? 
+                NO-LOCK NO-ERROR.
+
+        IF AVAILABLE (speop_shadow) THEN 
+            ASSIGN 
+                v-mag_cust_ID   = "<a href='https://shop.holisticheal.com/index.php/S279HHIS/customer/edit/id/" + 
+                                    string(speop_shadow.speop_external_ID) + 
+                                    "/' target='_blank'>" + 
+                                    string(speop_shadow.speop_external_ID) + 
+                                    "</a>".
+                
+        ELSE IF scust_magento_id <> "" THEN 
+            ASSIGN 
+                v-mag_cust_ID   = "<a href='https://shop.holisticheal.com/index.php/S279HHIS/customer/edit/id/" + 
+                                    string(scust_shadow.scust_magento_ID) + 
+                                    "/' target='_blank'>" + 
+                                    STRING(scust_shadow.scust_magento_ID) + 
+                                    "</a>".
+                
+        ELSE 
+            ASSIGN 
+                v-mag_cust_ID   = "".
+
+            /*** phone tree here? ***/                                    
+                        
+            {&OUT}
+                "           <tr>" SKIP
+                            
+                "               <td><a href='PEOPmaintU.r?h-people_ID=" people_mstr.people_ID "&h-act=EDIT&whattorun=35.99'>" people_mstr.people_id "</a></td>" SKIP
+                "               <TD>" people_mstr.people_lastname ", " people_mstr.people_firstname "</TD>" SKIP.
+                
+            
+            v-foundaddr = NO.
+             
+            FOR EACH pal_list WHERE pal_list.pal_people_ID = people_mstr.people_id AND 
+                    pal_list.pal_deleted = ? NO-LOCK,
+                FIRST addr_mstr WHERE addr_mstr.addr_id = pal_list.pal_addr_ID AND 
+                    addr_mstr.addr_deleted = ? NO-LOCK
+                BREAK
+                    BY pal_list.pal_people_ID 
+                    BY addr_mstr.addr_addr1 
+                    BY addr_mstr.addr_addr2
+                    BY addr_mstr.addr_addr3
+                    BY addr_mstr.addr_city
+                    BY addr_mstr.addr_stateprov
+                    BY addr_mstr.addr_zip
+                    BY addr_mstr.addr_country:                  
+                
+                IF FIRST-OF(pal_list.pal_people_ID) THEN DO: 
+                    
+                    v-foundaddr = YES.
+                    
+                    {&OUT}
+                        "<div>" SKIP.                      /** this used to be a table so it could handle multiple addresses.  **/  
+                    
+                END.  /** of if first-of pal_people_ID **/
+                                                
+	            {&OUT}
+	                "               <TD>" addr_mstr.addr_addr1     "</TD>" SKIP
+	                "               <TD>" addr_mstr.addr_city      "</TD>" SKIP 
+	                "               <TD>" addr_mstr.addr_state     "</TD>" SKIP 
+	                "               <TD>" addr_mstr.addr_zip       "</TD>" SKIP 
+	                "               <TD>" addr_mstr.addr_country   "</TD>" SKIP.
+                
+                IF LAST-OF(pal_list.pal_people_ID) THEN DO:
+                     
+                    {&OUT}
+                        "</div>" SKIP.
+                        
+                END.  /** of if last-of pal_people_ID **/
+                
+            END.  /** of 4ea. pal_list, etc. **/                
+                
+            IF v-foundaddr = NO THEN DO:  
+            
+                {&OUT}
+                    "<TD colspan=5>No Address Found</TD>" SKIP.
+                    
+            END.  /** of if v-foundaddr = no **/    
+                
+                
+            {&OUT}     
+                "               <TD>" people_mstr.people_email "</TD>" SKIP 
+                "               <TD>" people_mstr.people_homephone "</TD>" SKIP.
+                
+            IF v-cc_worthy = YES AND cust_mstr.cust_card_nbr <> "" THEN DO: 
+                
+                {&OUT}
+                    "           <DIV>" SKIP 
+                    "                   <TD>" cust_mstr.cust_card_type "</TD>" SKIP
+                    "                   <TD>" cust_mstr.cust_card_nbr format "9999 9999 9999 9999" "</TD>" SKIP 
+                    "                   <TD>" cust_mstr.cust_card_seccode "</TD>" SKIP
+                    "                   <TD>" cust_mstr.cust_card_expmonth FORMAT "99" "</TD>" SKIP.
+                    
+                IF cust_mstr.cust_card_expyear < 2000 THEN 
+                    {&OUT}    
+                        "                   <TD>" (cust_mstr.cust_card_expyear + 2000) format "9999" "</TD>" SKIP.
+                ELSE 
+                    {&OUT}
+                        "                   <TD>" cust_mstr.cust_card_expyear format "9999" "</TD>" SKIP.
+                        
+                {&OUT}
+                    "           </DIV>" SKIP(1).
+            
+            END.  /** of if v-cc_worthy = yes **/
+            
+            ELSE 
+                {&OUT}
+                    "           <TD colspan=5>No Credit Card Info On File</TD>" SKIP(1).
+                
+            {&OUT} 
+                "               <TD>" v-mag_cust_ID "</TD>" SKIP
+                "               <TD>" scust_shadow.scust_prof "</TD>" SKIP
+                "           </tr>" SKIP.
+
+        END. /* 4ea. */
+        
+        {&OUT}          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='16'>END OF REPORT - " v-record_count " Customer records.</TD>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+    OTHERWISE DO: 
+    
+        {&OUT}
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<h2>Could not find act " act ".</h2>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

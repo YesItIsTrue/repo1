@@ -1,0 +1,201 @@
+<?xml version="1.0"?>
+<pipeline version="0.2" zoom="70">
+	<nodes>
+		<node ID="1" Operation="CHOOSE" x="603" y="110" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input #0" function="input" ID="2">
+				<properties>
+					<property name="Name" value="Input #0"/>
+					<property name="DataType" value="node()"/>
+					<property name="Default Value" isURL="true" value="ConvertedXMLs\H140513-2354-1.xml"/>
+				</properties>
+			</input_port>
+			<output_port name="Output #0" ID="3">
+				<properties>
+					<property name="Name" value="Output #0"/>
+					<property name="DataType" value="node()"/>
+					<property name="Copy to URL" isURL="true" value=""/>
+				</properties>
+			</output_port>
+			<output_port name="Output #1" ID="4">
+				<properties>
+					<property name="Name" value="Output #1"/>
+					<property name="DataType" value="node()"/>
+					<property name="Copy to URL" isURL="true" value=""/>
+				</properties>
+			</output_port>
+			<output_port name="Output #2" ID="5">
+				<properties>
+					<property name="Name" value="Output #2"/>
+					<property name="DataType" value="node()"/>
+					<property name="Copy to URL" isURL="true" value=""/>
+				</properties>
+			</output_port>
+			<output_port name="Output #3" ID="6">
+				<properties>
+					<property name="Name" value="Output #3"/>
+					<property name="DataType" value="node()"/>
+					<property name="Copy to URL" isURL="true" value=""/>
+				</properties>
+			</output_port>
+			<output_port name="Output #4" ID="7">
+				<properties>
+					<property name="Name" value="Output #4"/>
+					<property name="DataType" value="node()"/>
+					<property name="Copy to URL" isURL="true" value=""/>
+				</properties>
+			</output_port>
+			<output_port name="Output 'no match'" ID="8">
+				<properties>
+					<property name="Name" value="Output 'no match'"/>
+					<property name="DataType" value="node()"/>
+					<property name="Copy to URL" isURL="true" value="CorruptSSXMLs\corruptFile.xml"/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="Choose #2"/>
+				<property name="Number of inputs" value="1"/>
+				<property name="Number of choices" value="5"/>
+				<property name="XPath #0" value="//client_ref[starts-with(//client_ref/text(), 'FM')]"/>
+				<property name="XPath #1" value="//client_ref[starts-with(//client_ref/text(), 'HE')]"/>
+				<property name="XPath #2" value="//client_ref[starts-with(//client_ref/text(), 'UTEE')]"/>
+				<property name="XPath #3" value="//client_ref[starts-with(//client_ref/text(), 'UTM')]"/>
+				<property name="XPath #4" value="//client_ref[starts-with(//client_ref/text(), 'KYG')]"/>
+			</properties>
+		</node>
+		<node ID="9" Operation="XSLT" x="230" y="415" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="10">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="Default Value" isURL="true" value="CSVStandards\F140529-2605-1.xml"/>
+				</properties>
+			</input_port>
+			<output_port name="Output" ID="11">
+				<properties>
+					<property name="Name" value="Output"/>
+					<property name="DataType" value="any"/>
+					<property name="Copy to URL" isURL="true" value="ProcessedSSXMLs\FM 07102011.xml"/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="FM.xsl"/>
+				<property name=".xsl file" isURL="true" value="CSVStandards\FM.xsl"/>
+				<property name="Base URL" isURL="true" value=""/>
+			</properties>
+		</node>
+		<node ID="12" Operation="XSLT" x="397" y="415" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="13">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="Default Value" isURL="true" value="CSVStandards\H140513-2354-1.xml"/>
+				</properties>
+			</input_port>
+			<output_port name="Output" ID="14">
+				<properties>
+					<property name="Name" value="Output"/>
+					<property name="DataType" value="any"/>
+					<property name="Copy to URL" isURL="true" value="ProcessedSSXMLs\FM 07102011.xml"/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="HE.xsl"/>
+				<property name=".xsl file" isURL="true" value="CSVStandards\HE.xsl"/>
+				<property name="Base URL" isURL="true" value=""/>
+			</properties>
+		</node>
+		<node ID="15" Operation="XSLT" x="566" y="416" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="16">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="Default Value" isURL="true" value="CSVStandards\U131009-2056-1.xml"/>
+				</properties>
+			</input_port>
+			<output_port name="Output" ID="17">
+				<properties>
+					<property name="Name" value="Output"/>
+					<property name="DataType" value="any"/>
+					<property name="Copy to URL" isURL="true" value="ProcessedSSXMLs\FM 07102011.xml"/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="UTEE.xsl"/>
+				<property name=".xsl file" isURL="true" value="CSVStandards\UTEE.xsl"/>
+				<property name="Base URL" isURL="true" value=""/>
+			</properties>
+		</node>
+		<node ID="18" Operation="XSLT" x="730" y="417" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="19">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="Default Value" isURL="true" value="CSVStandards\U150624-2073-1.xml"/>
+				</properties>
+			</input_port>
+			<output_port name="Output" ID="20">
+				<properties>
+					<property name="Name" value="Output"/>
+					<property name="DataType" value="any"/>
+					<property name="Copy to URL" isURL="true" value="ProcessedSSXMLs\FM 07102011.xml"/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="UTM.xsl"/>
+				<property name=".xsl file" isURL="true" value="CSVStandards\UTM.xsl"/>
+				<property name="Base URL" isURL="true" value=""/>
+			</properties>
+		</node>
+		<node ID="21" Operation="XSLT" x="897" y="415" w="140" h="100" rotate="0" annotation="false">
+			<input_port name="Input" function="input" ID="22">
+				<properties>
+					<property name="Name" value="Input"/>
+					<property name="Default Value" isURL="true" value="CSVStandards\KYG-06861-12802-US.xml"/>
+				</properties>
+			</input_port>
+			<output_port name="Output" ID="23">
+				<properties>
+					<property name="Name" value="Output"/>
+					<property name="DataType" value="any"/>
+					<property name="Copy to URL" isURL="true" value="ProcessedSSXMLs\FM 07102011.xml"/>
+				</properties>
+			</output_port>
+			<properties>
+				<property name="Name" value="KYG.xsl"/>
+				<property name=".xsl file" isURL="true" value="CSVStandards\KYG.xsl"/>
+				<property name="Base URL" isURL="true" value=""/>
+			</properties>
+		</node>
+	</nodes>
+	<edges>
+		<edge ID="24" fromNode="1" toNode="9" fromPort="3" toPort="10" style="line"/>
+		<edge ID="25" fromNode="1" toNode="12" fromPort="4" toPort="13" style="line"/>
+		<edge ID="26" fromNode="1" toNode="15" fromPort="5" toPort="16" style="line"/>
+		<edge ID="27" fromNode="1" toNode="18" fromPort="6" toPort="19" style="line"/>
+		<edge ID="28" fromNode="1" toNode="21" fromPort="7" toPort="22" style="line"/>
+	</edges>
+	<scenarios current="Scenario1">
+		<scenario name="Scenario1">
+			<deployment DeploymentModule="Java Deployer">
+				<properties>
+					<DeployDialogProperties>
+						<property name="Target Directory" value="." type="6"/>
+						<property name="Package Name" value="" type="1"/>
+						<property name="Class Name" value="CSVConversion" type="1"/>
+						<property name="Execution Log" value="stdout" type="4"/>
+						<property name="Add to Project" value="No" type="5"/>
+						<property name="Generate Inline Code" value="Yes" type="5"/>
+						<property name="VS Project name" value="HL7toSS" type="1"/>
+						<property name="Open the C# file" value="Yes" type="5"/>
+						<property name="Main Method" value="Yes" type="5"/>
+						<property name="Create VS Project" value="Yes" type="5"/>
+						<property name="Embed XQuery" value="Yes" type="5"/>
+					</DeployDialogProperties>
+				</properties>
+			</deployment>
+			<execution-framework type="builtin">
+				<component name="FO operator" value="RenderX XEP"/>
+				<component name="XSLT operator" value="Saxon 9.1.0.5 (Java)"/>
+				<component name="Validate operator" value="Java built-in"/>
+				<component name="XQuery operator" value="DataDirect XQuery"/>
+			</execution-framework>
+		</scenario>
+	</scenarios>
+	<merged-xquery-collections/>
+</pipeline>

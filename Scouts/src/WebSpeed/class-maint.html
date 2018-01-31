@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Andrew Garver">
+    <TITLE>Event Maintenance</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="31/Aug/2017">
+    <META NAME='LAST_UPDATED' CONTENT="12/Dec/2017">   
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--WSS 
+	{global-includes.i}.
+	{external-dependencies.i}.
+	{registration.i}.
+	{organization-includes.i}.
+	-->
+	<script type="text/javascript" src="/depot/src/HTMLContent/javascript/daypilot-all.min.js?v=217"></script>
+    <!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "regis-login.r"}.
+    END PROCEDURE.
+    -->
+</HEAD>
+<body class='ss-background'>
+<!--WSS
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_ID AS INTEGER NO-UNDO.
+DEFINE VARIABLE v-event_name LIKE event_mstr.event_name NO-UNDO.
+DEFINE VARIABLE v-event_start_time LIKE event_mstr.event_start_time NO-UNDO.
+DEFINE VARIABLE v-event-start-time-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_end_time LIKE event_mstr.event_end_time NO-UNDO.
+DEFINE VARIABLE v-event-end-time-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_addr_id LIKE event_mstr.event_addr_id NO-UNDO.
+DEFINE VARIABLE v-event_desc LIKE event_mstr.event_desc NO-UNDO.
+DEFINE VARIABLE v-event_slogan LIKE event_mstr.event_slogan NO-UNDO.
+DEFINE VARIABLE v-event_contact LIKE event_mstr.event_contact NO-UNDO.
+DEFINE VARIABLE v-event_start_date LIKE event_mstr.event_start_date NO-UNDO.
+DEFINE VARIABLE v-event-start-date-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_end_date LIKE event_mstr.event_end_date NO-UNDO.
+DEFINE VARIABLE v-event-end-date-string AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-event_color_theme LIKE event_mstr.event_color_theme NO-UNDO.
+DEFINE VARIABLE v-event_category LIKE event_mstr.event_category NO-UNDO.
+DEFINE VARIABLE v-event_URL LIKE event_mstr.event_URL NO-UNDO.
+DEFINE VARIABLE v-event_dress_code LIKE event_mstr.event_dress_code NO-UNDO. 
+DEFINE VARIABLE v-event_age_group LIKE event_mstr.event__char01 NO-UNDO.
+DEFINE VARIABLE v-success AS LOGICAL INITIAL NO NO-UNDO.
+DEFINE VARIABLE v-action AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-contact-name AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-addr-string AS CHARACTER NO-UNDO.
+
+/* Always get these, regardless of the act*/
+ASSIGN 
+    v-act = get-value("h-act")
+    v-event_ID = INTEGER(get-value("v-event_ID")).
+    
+FIND event_mstr WHERE event_mstr.event_ID = v-event_ID NO-ERROR.
+IF AVAILABLE (event_mstr) THEN DO:
+    ASSIGN 
+	    v-event_name = event_mstr.event_name
+	    v-event_addr_id = event_mstr.event_addr_id
+	    v-event_desc = event_mstr.event_desc
+	    v-event_slogan = event_mstr.event_slogan
+	    v-event_contact = event_mstr.event_contact
+	    v-event_start_date = event_mstr.event_start_date
+	    v-event_end_date = event_mstr.event_end_date
+	    v-event_color_theme = event_mstr.event_color_theme
+	    v-event_category = event_mstr.event_category
+	    v-event_URL = event_mstr.event_URL
+	    v-event_dress_code = event_mstr.event_dress_code
+	    v-event_age_group = event_mstr.event__char01.
+	    
+    IF event_mstr.event_start_date <> ? THEN 
+	    RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                               
+	        event_mstr.event_start_date,                                                                             
+	        OUTPUT v-event-start-date-string                                                                        
+	    ).
+    
+    IF event_mstr.event_end_date <> ? THEN 
+	    RUN VALUE(SEARCH("subr_YY_to_CCYY.r")) (                                               
+	        event_mstr.event_end_date,                                                                             
+	        OUTPUT v-event-end-date-string                                                                        
+	    ).
+    
+    IF (event_mstr.event_start_time <> ?) THEN
+        v-event-start-time-string = SUBSTRING(ENTRY(1, ENTRY(2, STRING(event_mstr.event_start_time), " "), "."), 1, 5).
+    IF (event_mstr.event_end_time <> ?) THEN
+        v-event-end-time-string = SUBSTRING(ENTRY(1, ENTRY(2, STRING(event_mstr.event_end_time), " "), "."), 1, 5).
+        
+    IF v-event_addr_id > 0 THEN DO:
+	    FIND addr_mstr WHERE addr_mstr.addr_id = v-event_addr_id NO-ERROR.
+	    IF AVAILABLE (addr_mstr) THEN
+	        ASSIGN 
+	            v-addr-string = addr_mstr.addr_addr1 + " " + addr_mstr.addr_addr2 + " " + addr_mstr.addr_addr3 + " " + addr_mstr.addr_city + " " + addr_mstr.addr_stateprov + ", "  + addr_mstr.addr_zip + " " + addr_mstr.addr_country.
+	END. /* IF addrid > 0 */
+	
+	IF v-event_contact > 0 THEN DO:
+	   FIND people_mstr WHERE people_mstr.people_id = v-event_contact NO-ERROR.
+	   IF AVAILABLE (people_mstr) THEN 
+	       ASSIGN 
+	           v-contact-name = people_mstr.people_firstname + " " + people_mstr.people_lastname.
+	END.
+	    
+END.
+    
+FOR FIRST event_mstr WHERE event_mstr.event_ID = v-event_ID NO-LOCK:
+    ASSIGN 
+        v-event_name = event_mstr.event_name.
+END.
+
+CASE v-act:
+    WHEN "Edit" THEN DO:
+-->
+    <script>
+        $(document).ready(function() {
+            $("select").select2();
+        });
+    </script>
+       <div class='ss-card'> 
+           <div class='ss-card-title'> 
+               <h1>`v-event_name` Schedule</h1>
+               <h3>A/B Framework</h3>
+           </div> 
+           <div class='ss-card-content'> 
+               
+           </div> 
+           <div class='ss-button-group'>
+               <div class='w3-row'> 
+	               <div class='w3-col m4'> 
+	                  <button type='button' class='ss-btn w3-theme'>Save Schedule</BUTTON> 
+	               </div> 
+                   <div class='w3-col m4'>
+		               <form> 
+	                      <button type='submit' class='ss-btn w3-grey'>Cancel Changes</BUTTON> 
+                       </form>
+                   </div> 
+	               <div class='w3-col m4'> 
+	                  <button type='button' class='ss-btn w3-red'>Delete Schedule</BUTTON> 
+	               </div>
+	           </div> 
+           </div> 
+       </div>
+<!--WSS
+    END.
+    OTHERWISE DO:
+-->
+        <form> 
+            <div class='ss-card'> 
+			    <div class='ss-card-title'> 
+			        <h1>Class Maintenance</h1> 
+			        <p>Choose an event, course, and class, to edit it's details</a>.</p> 
+			    </div> 
+			    <div class='ss-card-content'> 
+				   <label>Event Name</label> 
+				   <select name='v-event_ID' class='ss-select'>
+                    <!--WSS
+				         FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND event_mstr.event_deleted = ? NO-LOCK BY event_mstr.event_start_date:
+                    -->
+				             <option value='`event_mstr.event_id`'>`event_mstr.event_name`</option>
+                    <!--WSS
+				         END.
+				    -->
+				   </select> 
+				   <label>Course</label>
+				   <select class='ss-select'>
+				       <option>Archery</option>
+	                   <option>Arts and Crafts</option>
+	                   <option>Badmintion</option>
+	                   <option>Basket Weaving</option>
+	                   <option>Breakfast</option>
+	                   <option>Dinner</option>
+	                   <option>Hiking</option>
+	                   <option>Horseback Riding</option>
+	                   <option>Lunch</option>
+	                   <option>Paddleboarding</option>
+	                   <option>Rifle Shooting</option>
+	                   <option>Swimming</option>
+				   </select>
+				   <label>Class</label>
+                   <select class='ss-select'>
+                       <option>New</option>
+                   </select>
+			    </div> 
+                <div class='ss-button-group'>
+                    <button type='submit' name='h-act' value='Edit' class='ss-btn-single w3-theme'>Continue</BUTTON> 
+                </div> 
+            </div> 
+        </form>
+<!--WSS
+    END.
+END.
+-->
+</BODY>
+</BODY>

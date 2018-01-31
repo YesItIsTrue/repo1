@@ -1,0 +1,564 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<META NAME="AUTHOR" CONTENT="Jacob Luttrell">
+<TITLE>Group Maintenance</TITLE>
+<META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="4/May/16">
+    <META NAME='LAST_UPDATED' CONTENT="4/May/16">    
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+<SCRIPT LANGUAGE="SpeedScript">
+/* Create an unnamed pool to store all the widgets created by this procedure.
+   This is a good default which assures that this procedure's triggers and
+   internal procedures will execute in this procedure's storage, and that
+   proper cleanup will occur on deletion of the procedure. */
+CREATE WIDGET-POOL.
+</SCRIPT>
+
+<script src='/depot/src/HTMLContent/buttons.js'></script>
+
+<script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+  
+</HEAD>  
+
+<BODY>
+<SCRIPT LANGUAGE="SpeedScript">
+  /*------------------------------------------------------------------  
+    Template Notes:    
+        This template is designed to be used with a maintenance screen.
+        Quoted areas are either instuctions or place holders for your 
+        variables and fields.
+    
+  --------------------------------------------------------------------  
+    File:           
+    Description:
+    Created:
+  -------------------------------------------------------------------*/
+
+{../depot/src/WebSpeed/menuname.i}.
+
+/* ************************* Definitions *************************** */
+DEFINE VARIABLE act             AS CHARACTER            NO-UNDO.
+DEFINE VARIABLE itmessage       AS LOGICAL INITIAL NO   NO-UNDO.
+DEFINE VARIABLE v-new           AS LOGICAL              NO-UNDO.
+DEFINE VARIABLE whichrec        AS INTEGER              NO-UNDO.
+DEFINE VARIABLE o-successful    AS LOGICAL              NO-UNDO.
+/* ****************** Additional Variables Here ******************** */
+DEFINE VARIABLE v-type          LIKE grp_mstr.grp_type  NO-UNDO.
+DEFINE VARIABLE v-ID            LIKE grp_mstr.grp_ID    NO-UNDO.
+DEFINE VARIABLE v-desc          LIKE grp_mstr.grp_desc  NO-UNDO.
+DEFINE VARIABLE v-notes         LIKE grp_mstr.grp_notes NO-UNDO.
+DEFINE VARIABLE found           AS LOGICAL              NO-UNDO.
+/* ************************* Assignments *************************** */
+ASSIGN 
+    act             = get-value("h-act")
+    whichrec        = INTEGER(get-value("h-whichrec"))
+    v-new           = IF get-value("h-new") = "YES" THEN YES ELSE IF get-value("h-new") = "NO" THEN NO ELSE ?
+    /* additional variables here */
+    v-type          = get-value("h-type")
+    v-ID            = get-value("h-ID")
+    v-desc          = get-value("h-desc") 
+    v-notes         = get-value("h-notes")
+    .
+
+    
+IF act= "" THEN 
+    act = "INITIAL".
+
+
+/* ************************ Validation Acts ************************ */
+IF act = "VALIDATION" THEN DO: 
+    
+    FIND grp_mstr WHERE grp_mstr.grp_ID = v-ID 
+                            NO-LOCK NO-ERROR.
+                            
+        IF AVAILABLE (grp_mstr) THEN 
+            ASSIGN 
+                found = YES.
+        ELSE 
+            ASSIGN 
+                found = NO. 
+    
+        IF v-new = YES THEN DO: 
+            
+            IF found = NO THEN
+                ASSIGN    
+                    act = "UPDATE".
+            
+            ELSE
+                
+               {&OUT}
+		            "<form>" SKIP
+		            "<INPUT type='hidden' name='h-new' value='" v-new "' />" SKIP
+		            "<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP 
+                    "<INPUT type='hidden' name='h-ID' value='" v-ID "' />" SKIP		                   
+		            "<DIV class='row'>" SKIP
+		            "<DIV class='grid_3'> </DIV>" SKIP
+		            "<DIV class='grid_6'>" SKIP   
+		            "<center><h2>The record you are trying to create already exists. Would you like to Update it?</h2></center>" SKIP
+		            "</DIV>         <!-- end of grid_6 -->" SKIP
+		            "<DIV class='grid_3'> </DIV>" SKIP  
+		            "</DIV>     <!-- end of row -->" SKIP
+		            "<BR>" SKIP
+		            "<div class='row'>" SKIP
+		            "   <div class='grid_3'> </DIV>" SKIP
+		            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='MAINTENANCE' class='btn'>Yes</BUTTON></div>" SKIP
+		            "   <div class='grid_2'> </DIV>" SKIP
+		            "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>No</BUTTON></div>" SKIP        
+		            "   <div class='grid_3'> </DIV>" SKIP
+		            "</div>" SKIP.
+                
+
+        END. /* v-new = yes */    
+        ELSE IF v-new = NO THEN DO:  
+            
+            IF found = NO THEN DO:
+                
+                ASSIGN v-new = YES.
+                
+                {&OUT}
+                    "<form>" SKIP
+                    "<INPUT type='hidden' name='h-new' value='" v-new "' />" SKIP
+                    "<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP 
+                    "<INPUT type='hidden' name='h-type' value='" v-type "' />" SKIP
+                    "<INPUT type='hidden' name='h-ID' value='" v-ID "' />" SKIP
+                    "<INPUT type='hidden' name='h-desc' value='" v-desc "' />" SKIP
+                    "<INPUT type='hidden' name='h-notes' value='" v-notes "' />" SKIP  
+                    "<DIV class='row'>" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP
+                    "<DIV class='grid_6'>" SKIP   
+                    "<center><h2>The record you are trying to update does not exist. Would you like to create it?</h2></center>" SKIP
+                    "</DIV>         <!-- end of grid_6 -->" SKIP
+                    "<DIV class='grid_3'> </DIV>" SKIP  
+                    "</DIV>     <!-- end of row -->" SKIP
+                    "<BR>" SKIP
+                    "<div class='row'>" SKIP
+                    "   <div class='grid_3'> </DIV>" SKIP
+                    "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='VALIDATION' class='btn'>Yes</BUTTON></div>" SKIP
+                    "   <div class='grid_2'> </DIV>" SKIP
+                    "   <div class='grid_2'><BUTTON type='submit' name='h-act' value='INITIAL' class='btn'>No</BUTTON></div>" SKIP        
+                    "   <div class='grid_3'> </DIV>" SKIP
+                    "</div>" SKIP
+                    "</form>" SKIP.
+            END. /* if /* ID */ = 0 */       
+            
+            ELSE         
+                ASSIGN    
+                    act = "UPDATE".
+        
+        END. /* v-new = no */
+        ELSE DO:
+            {&OUT} 
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>An error has occured in the validation process. v-new = " v-new ". Please contact Solsource.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP.
+
+        END. /* else do v-new = ? */
+END. /* validation */    
+IF act = "VALIDATE_DELETE" THEN DO: 
+  
+    /* use a multi table find first here to find if there are any records dependent on the one you are 
+    trying to delete.  */
+    
+    FIND grp_mstr WHERE grp_mstr.grp_ID = v-ID 
+                            NO-LOCK NO-ERROR.
+                            
+        IF AVAILABLE (grp_mstr) THEN 
+            ASSIGN 
+                found = YES.
+        ELSE 
+            ASSIGN 
+                found = NO.         
+ 
+    
+    IF found = YES THEN
+    DO: 
+        
+        FIND FIRST gud_det WHERE gud_det.gud_grp_id = v-ID
+                                    NO-LOCK NO-ERROR.
+        
+        IF AVAILABLE (gud_det) THEN
+    
+            {&OUT}
+				"<form>" SKIP
+				"<DIV class='row'>" SKIP
+				"<DIV class='grid_3'> </DIV>" SKIP
+				"<DIV class='grid_6'>" SKIP   
+				"<center><h2>The record you are trying to delete has dependent records in the User Master.  Delete dependent records before continuing.</h2></center>" SKIP
+				"</DIV>         <!-- end of grid_6 -->" SKIP
+				"<DIV class='grid_3'> </DIV>" SKIP  
+				"</DIV>     <!-- end of row -->" SKIP
+				"<BR>" SKIP 
+				"<div class='row'>" SKIP
+				"   <div class='grid_5'> </DIV>" SKIP
+				"   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+				"   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+				"   <div class='grid_5'> </DIV>" SKIP
+				"</div>" SKIP
+				"</form>" SKIP. 
+         
+         ELSE
+         
+            ASSIGN act = "DELETE".
+         
+    END. /* if avail table_mstr */
+    ELSE IF found = NO THEN 
+
+	    {&OUT}
+	        "<INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP       
+	        "<DIV class='row'>" SKIP
+	        "<DIV class='grid_3'> </DIV>" SKIP
+	        "<DIV class='grid_6'>" SKIP   
+	        "<center><H2>An Error has occured while trying to find the record you want to delete. Please contact Solsource.</H2></center>" SKIP
+	        "</DIV>         <!-- end of grid_6 -->" SKIP
+	        "<DIV class='grid_3'> </DIV>" SKIP  
+	        "</DIV>     <!-- end of row -->" SKIP.     
+    ELSE 
+    
+        {&OUT} 
+			"<DIV class='row'>" SKIP
+			"<DIV class='grid_3'> </DIV>" SKIP
+			"<DIV class='grid_6'>" SKIP 
+			    "<center><h2>An error has occured in the validate deletion process. found = " found ". Please contact Solsource.</h2></center>" SKIP
+			"</DIV>         <!-- end of grid_6 -->" SKIP
+			"<DIV class='grid_3'> </DIV>" SKIP
+			"</DIV>     <!-- end of row -->" SKIP.
+        
+END. /* validate delete */         
+/* ************************* Main Block *************************** */   
+
+CASE act:
+    
+    WHEN "INITIAL" THEN DO:  
+        
+        {&OUT}
+            "<form>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP        
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP   
+            "<div class='table_col'>" SKIP
+            "   <table>" SKIP(1)
+            "       <tr>" SKIP
+            "           <th colspan=2>Search Criteria</th>" SKIP
+            "       </tr>" SKIP(1)
+            "       <tr>" skip
+            "           <td>Group ID</td>" skip
+            "           <td><input type='text' name='h-ID'  value='" v-ID "' /></td>" SKIP            
+            "       </tr>" SKIP(1)
+        /* copy and paste above <tr>...</tr> for more fields */
+        
+            "   </table>" skip
+            "</div>" skip      
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP  
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP
+            "<div class='row'>" SKIP
+			"   <div class='grid_3'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='submit' name='h-act' value='SEARCH' class='btn'>Search</BUTTON></div>" SKIP
+			"   <div class='grid_2'> </DIV>" SKIP
+			"   <div class='grid_2'><BUTTON type='reset' class='btn'>Reset</BUTTON></div>" SKIP        
+			"   <div class='grid_3'> </DIV>" SKIP
+			"</div>" SKIP.
+    
+    END. /* INITIAL */    
+    WHEN "SEARCH" THEN DO:
+    
+    /* the .i file below is a holding pin for the javascript only.  You will need to go to the file and copy 
+    and paste the javascript from there and into your code here. */ 
+        
+/********** * * * JAVASCRIPT * * * *************/
+</script> 
+
+<script TYPE='text/javascript'>
+
+$(document).ready(function() {
+
+                // Get an array of all element heights
+
+                var elementHeights = $('.btn').map(function() {
+                    return $(this).height();
+                }).get();
+
+                // Math.max takes a variable number of arguments
+
+                var maxHeight = Math.max.apply(null, elementHeights);
+
+                // Set each height to the max height
+
+                $('.btn').height(maxHeight);
+            });
+
+$(document).ready(function() {
+   //change .table to the table class being used.
+    $('.table_report tbody tr').click(function(event) {
+        if (event.target.type !== 'radio') {
+            $(':radio', this).trigger('click');
+        }
+    });
+});
+
+</script>
+
+<SCRIPT language='SpeedScript'>
+/********** * * * END OF JAVA * * * *************/        
+        
+        {&OUT}
+            "<form>" SKIP        
+            "<DIV class='row'>" SKIP
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "<DIV class='grid_12'>" SKIP
+            "<DIV class='table_report'>" SKIP
+            "    <TABLE>" SKIP
+            "        <THEAD>" SKIP
+            "            <TR>" SKIP
+            "                <TH colspan='5'>Groups</TH>" SKIP    
+            "            </TR>" SKIP
+            "            <TR>" SKIP
+            "                <TD>Select</TD>" SKIP
+            "                <TD>Group ID</TD>" SKIP
+            "                <TD>Group Type</TD>" SKIP
+            "                <TD>Description</TD>" SKIP
+            "                <TD>Notes</TD>" SKIP
+            "            </TR>" SKIP
+            "        </THEAD>" SKIP(1)
+            "        <tbody class='clickable'>" SKIP.
+            
+        FOR EACH grp_mstr WHERE grp_mstr.grp_ID BEGINS v-ID
+                                          NO-LOCK BY grp_mstr.grp_type BY grp_mstr.grp_ID:
+                                              
+                                                  
+            {&OUT}
+            "           <tr>" SKIP
+            "               <TD><center><input type='radio' name='h-ID' value='" grp_mstr.grp_ID "' /></center></TD>" SKIP
+            "               <td>" grp_mstr.grp_ID "</td>" SKIP
+            "               <td>" grp_mstr.grp_type "</td>" SKIP
+            "               <td>" grp_mstr.grp_desc "</td>" SKIP
+            "               <td>" grp_mstr.grp_notes "</td>" SKIP
+            "           </tr>" SKIP.
+
+        END. /* 4ea. */
+        
+        {&OUT}
+            "        </tbody>" SKIP          
+            "        <TFOOT>" SKIP
+            "            <TR>" SKIP
+            "                <TD COLSPAN='5'>END OF REPORT</TD>" SKIP
+            "            </TR>" SKIP
+            "        </TFOOT>" SKIP
+            "    </TABLE>" SKIP
+            "</DIV>" SKIP        
+            "</DIV>         <!-- end of grid_12 -->" SKIP 
+/*            "<DIV class='grid_" /* buffer */ "'></DIV>" SKIP*/
+            "</DIV>     <!-- end of row -->" SKIP 
+            "<BR>" SKIP 
+            "<div class='row'>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='MAINTENANCE' class='btn'>Edit</BUTTON></div>" SKIP          
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='NEW' class='btn'>New</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP            
+            "   <div class='grid_1'><button type='submit' name='h-act' value='VALIDATE_DELETE' class='btn'>Delete</BUTTON></div>" SKIP
+            "   <div class='grid_1'> </DIV>" SKIP
+            "   <div class='grid_1'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_2-5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.
+    END. /* SEARCH */
+    WHEN "NEW" THEN DO:
+        
+        ASSIGN 
+            v-new   = YES
+            v-ID    = ""
+            v-type  = ""
+            v-desc  = ""
+            v-notes = "". 
+         
+        {GRPmaintU-form.i "VALIDATION" "NOTHING" "REQ" "NOTHING"}.
+            
+    END. /* new */
+    WHEN "MAINTENANCE" THEN DO:
+        
+        ASSIGN v-new = NO.
+        
+        FIND grp_mstr WHERE grp_mstr.grp_ID = v-ID
+                                NO-LOCK NO-ERROR.
+
+        IF AVAILABLE (grp_mstr) THEN 
+        DO:
+
+            ASSIGN
+               v-type   = grp_mstr.grp_type
+               v-desc   = grp_mstr.grp_desc
+               v-notes  = grp_mstr.grp_notes
+                .
+                
+            {GRPmaintU-form.i "VALIDATION" "REQUIRED" "REQ" "NOTHING"}.
+        
+        END. /* if avial table_mstr */
+        ELSE
+
+            {&OUT}
+            "<DIV class='row'>" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "<DIV class='grid_6'>" SKIP 
+                "<center><h2>Could not find record " v-ID ".</h2></center>" SKIP
+            "</DIV>         <!-- end of grid_6 -->" SKIP
+            "<DIV class='grid_3'> </DIV>" SKIP
+            "</DIV>     <!-- end of row -->" SKIP
+            "<BR>" SKIP 
+            "<form>" SKIP
+            "<div class='row'>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+            "   <div class='grid_5'> </DIV>" SKIP
+            "</div>" SKIP
+            "</form>" SKIP.              
+        
+    END. /* maintenance */
+    WHEN "UPDATE" THEN DO:
+      
+      
+      FIND grp_mstr WHERE grp_mstr.grp_ID = v-ID
+                            EXCLUSIVE-LOCK NO-ERROR. 
+            
+        IF NOT AVAILABLE (grp_mstr) THEN 
+            
+            CREATE grp_mstr. 
+             
+        ASSIGN 
+            grp_mstr.grp_type   = v-type
+            grp_mstr.grp_ID     = v-id 
+            grp_mstr.grp_desc   = IF v-desc     <> "" THEN v-desc   ELSE grp_mstr.grp_desc
+            grp_mstr.grp_notes  = IF v-notes    <> "" THEN v-notes  ELSE grp_mstr.grp_notes
+            o-successful        = YES
+            .    
+
+        IF o-successful = YES THEN DO:
+
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center>" SKIP
+                    "<h2>Record updated.</h2>" SKIP
+                    "</center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</div>" SKIP.
+            
+            ASSIGN
+                v-type  = grp_mstr.grp_type
+                v-ID    = grp_mstr.grp_ID
+                v-desc  = grp_mstr.grp_desc
+                v-notes = grp_mstr.grp_notes
+                .
+            
+            {GRPmaintU-form.i "INITIAL" "DISABLED" "NOTHING" "DISABLED"}.
+        
+        END. 
+        ELSE
+        
+            {&OUT}
+                "<DIV class='row'>" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "<DIV class='grid_6'>" SKIP 
+	                "<center><h2>Could not update/create record " v-ID ". Contact Solsource.</h2></center>" SKIP
+	            "</DIV>         <!-- end of grid_6 -->" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "</DIV>     <!-- end of row -->" SKIP
+	            "<BR>" SKIP 
+	            "<form>" SKIP
+	            "<div class='row'>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+	            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Search Again</BUTTON></div>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "</DIV>     <!-- end of row -->" SKIP
+	            "</form>" SKIP.     
+        
+    END. /* update */
+    WHEN "DELETE" THEN DO: 
+    
+        FIND grp_mstr WHERE grp_mstr.grp_ID = v-ID
+                                EXCLUSIVE-LOCK NO-ERROR.
+
+        IF AVAILABLE (grp_mstr) THEN
+        DO: 
+            
+            DELETE grp_mstr. 
+            
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>Record " v-type " / " v-ID " has been deleted.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP.
+            
+            {GRPmaintU-form.i "INITIAL" "DISABLED" "NOTHING" "DISABLED"}.
+        
+        END. /* if avail table_mstr */
+        ELSE
+         
+            {&OUT}
+                "<DIV class='row'>" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "<DIV class='grid_6'>" SKIP 
+                    "<center><h2>Could not find record " v-type " / " v-ID " to delete. Please contact Solsource.</h2></center>" SKIP
+                "</DIV>         <!-- end of grid_6 -->" SKIP
+                "<DIV class='grid_3'> </DIV>" SKIP
+                "</DIV>     <!-- end of row -->" SKIP
+                "<BR>" SKIP.                                  
+        
+    END. /* delete */                
+    OTHERWISE DO: 
+    
+        IF act = "VALIDATION" OR act = "VALIDATE_DELETE" THEN 
+        
+            {&OUT}
+                "<DIV class='row'>" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "<DIV class='grid_6'>" SKIP 
+	                "<center><h2>Stuck in act = " act ". Contact Solsource.</h2></center>" SKIP
+	            "</DIV>         <!-- end of grid_6 -->" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "</DIV>     <!-- end of row -->" SKIP.
+        
+        ELSE 
+            {&OUT}
+	            "<DIV class='row'>" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "<DIV class='grid_6'>" SKIP 
+	                "<center><h2>Could not find act " act ".</h2></center>" SKIP
+	            "</DIV>         <!-- end of grid_6 -->" SKIP
+	            "<DIV class='grid_3'> </DIV>" SKIP
+	            "</DIV>     <!-- end of row -->" SKIP
+	            "<BR>" SKIP 
+	            "<form>" SKIP
+	            "<div class='row'>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "   <INPUT type='hidden' name='whattorun' value='" whatshouldrun "' />" SKIP
+	            "   <div class='grid_2'><button type='submit' name='h-act' value='INITIAL' class='btn'>Return to Start</BUTTON></div>" SKIP
+	            "   <div class='grid_5'> </DIV>" SKIP
+	            "</div>" SKIP
+	            "</form>" SKIP.
+            
+    END. /* otherwise */     
+        
+END CASE.         
+
+/* *********************** End of Script ************************* */
+</SCRIPT>
+</BODY>
+</HTML>

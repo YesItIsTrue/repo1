@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Andrew Garver">
+    <META NAME="VERSION" CONTENT="1.0">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="12/Jan/18">
+    <META NAME="LAST_UPDATED" CONTENT="12/Jan/18">
+    <TITLE>QuickNav</TITLE>
+</HEAD>
+
+<BODY>
+<!--WSS
+  /*------------------------------------------------------------------
+    File: menu-quick-nav.html
+    Description: Redirect user to requested page
+    Created: 1/12/18
+  -------------------------------------------------------------------*/
+
+DEFINE VARIABLE v-menu-num AS CHARACTER NO-UNDO.
+DEFINE VARIABLE menusuffix AS INTEGER NO-UNDO.
+DEFINE VARIABLE menuprefix AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-menu-title AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-num-periods AS INTEGER INITIAL 0 NO-UNDO.
+
+DEFINE BUFFER menu_mstr2 FOR menu_mstr.
+
+ASSIGN 
+    v-menu-num = html-encode(get-value("h-menu-num"))
+    menusuffix = INTEGER(SUBSTRING(v-menu-num,R-INDEX(v-menu-num,".") + 1))
+    menuprefix = SUBSTRING(v-menu-num,1,R-INDEX(v-menu-num,".") - 1)
+    v-num-periods = NUM-ENTRIES(v-menu-num, ".") - 1.
+    
+IF v-num-periods = 0 THEN 
+    menuprefix = "0".
+
+FIND menu_mstr WHERE menu_mstr.menu_num = menuprefix AND menu_mstr.menu_select = menusuffix AND menu_mstr.menu_hidden = FALSE NO-ERROR.
+/* If a menu item exists with the provided prefix and suffix */
+IF AVAILABLE(menu_mstr) THEN DO:
+    FIND FIRST menu_mstr2 WHERE menu_mstr2.menu_num = menu_mstr.menu_exprog NO-ERROR.
+    /* If the provided menu item points to another level of the menu */
+    IF AVAILABLE(menu_mstr2) THEN DO:
+        /* If the next level of the menu is not hidden */
+        IF menu_mstr2.menu_hidden = FALSE THEN DO:
+        -->
+		    <script>
+                window.location = "menupager.html?whattorun=`v-menu-num`&h-menuheadername=`menu_mstr.menu_title`";
+		    </script>
+		<!--WSS
+        END.
+        /* If the next level of the menu is hidden */
+        ELSE DO:
+		-->
+		    <script>
+		      window.location = "menupager.html";
+		    </script>
+		<!--WSS
+        END.
+    END.
+    /* If the provided menu item points to a program */
+    ELSE DO:
+    -->
+        <script>
+            window.location = "`menu_mstr.menu_exprog`?whattorun=`v-menu-num`";
+        </script>
+    <!--WSS
+    END.
+END.
+/* If the menu item in question does not exist or is hidden */
+ELSE DO:
+-->
+    <script>
+        window.location = "menupager.html";
+    </script>
+<!--WSS
+END.
+-->
+</BODY>
+</HTML>

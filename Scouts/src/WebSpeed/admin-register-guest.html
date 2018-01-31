@@ -1,0 +1,506 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+    <META NAME="AUTHOR" CONTENT="Andrew Garver">
+    <TITLE>Registration</TITLE>
+    <META NAME='VERSION' CONTENT='1.0'>
+    <META NAME='COPYRIGHT' CONTENT='Solsource'>
+    <META NAME='CREATE_DATE' CONTENT="8/Sept/2017">
+    <META NAME='LAST_UPDATED' CONTENT="8/Sept/2017">   
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <!--WSS
+	{global-includes.i}.
+	{external-dependencies.i}.
+	{registration.i}.
+	{organization-includes.i}.
+	-->
+	<script>
+	    $(document).ready(function() {
+	        $("#registration-form").submit(function(e) {
+	            if ($("[name='h-password']").val() != $("#confirm-password").val() || 
+	                $("#confirm-email").val() != $("[name='h-email']").val() || 
+	                $(".error-msg:visible").length > 0) {
+	                e.preventDefault();
+	            }
+	        });
+	    
+	        $("[name='h-username']").blur(function() {
+	            if ($("[name='h-username']").val().length > 0) {
+	                $.post("AJAX-check-username.r",
+	                {
+	                    username: $("[name='h-username']").val()
+	                },
+	                function(response, success) {
+	                    if (response.success) {
+	                        $("#username-error").hide();
+	                        $("#username-valid").show();
+	                    }
+	                    else {
+	                        $("#username-valid").hide();
+	                        $("#username-error").show();
+	                    }
+	                });
+	            }
+	            else {
+	                $("#username-valid").hide();
+	                $("#username-error").hide();
+	            }
+	        });
+	        
+	        $("[name='h-password']").blur(function() {
+	            if ($(this).val().length > 0) {
+	                if ($(this).val().length < 7) {
+	                    $("#password-valid").hide();
+	                    $("#password-error").show();
+	                }
+	                else {
+	                    $("#password-error").hide();
+	                    $("#password-valid").show();
+	                }
+	            }
+	            else {
+	                $("#password-error").hide();
+	                $("#password-valid").hide();
+	            }
+	        });
+	        
+	        $("#confirm-password").blur(function() {
+	            if ($(this).val().length > 0) {
+	                if ($(this).val() == $("[name='h-password']").val()) {
+	                    $("#confirm-password-error").hide();
+	                    $("#confirm-password-valid").show();
+	                }
+	                else {
+	                    $("#confirm-password-valid").hide();
+	                    $("#confirm-password-error").show();
+	                }
+	            }
+	            else {
+	                $("#confirm-password-error").hide();
+	                $("#confirm-password-valid").hide();
+	            }
+	        });
+	        
+	        //$("[name='h-email']").blur(function() {
+	        //    if ($("[name='h-email']").val().length > 0) {
+	        //        $.post("AJAX-check-email-availability.r",
+	        //        {
+	        //            email: $("[name='h-email']").val()
+	        //        },
+	        //        function(response, success) {
+	        //        console.log(response.success);
+	        //            if (response.success) {
+	        //                $("#email-taken-error").hide();
+	        //            }
+	        //            else {
+	        //                $("#email-taken-error").show();
+	        //            }
+	        //        });
+	        //    }
+	        //    else {
+	        //        $("#email-taken-error").hide();
+	        //    }
+	        //});
+	        
+	        $("#confirm-email").blur(function() {
+	            if ($(this).val().length > 0) {
+	                if ($(this).val() == $("[name='h-email']").val()) {
+	                    $("#email-error").hide();
+	                }
+	                else {
+	                    $("#email-error").show();
+	                }
+	            }
+	            else {
+	                $("#email-error").hide();
+	            }
+	        });
+	    });
+	</script>
+</HEAD>
+<body class='ss-background'>
+<!--WSS
+DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+DEFINE VARIABLE v-people-id        LIKE people_mstr.people_id          NO-UNDO.
+DEFINE VARIABLE v-people-prefix    LIKE people_mstr.people_prefix      NO-UNDO.
+DEFINE VARIABLE v-people-firstname LIKE people_mstr.people_firstname   NO-UNDO.
+DEFINE VARIABLE v-people-midname   LIKE people_mstr.people_midname     NO-UNDO.
+DEFINE VARIABLE v-people-lastname  LIKE people_mstr.people_lastname    NO-UNDO.
+DEFINE VARIABLE v-people-suffix    LIKE people_mstr.people_suffix      NO-UNDO.
+DEFINE VARIABLE v-people-gender    LIKE people_mstr.people_gender      NO-UNDO.
+DEFINE VARIABLE v-people-homephone LIKE people_mstr.people_homephone   NO-UNDO.
+DEFINE VARIABLE v-people-cellphone LIKE people_mstr.people_cellphone   NO-UNDO.
+DEFINE VARIABLE v-people-fax       LIKE people_mstr.people_fax         NO-UNDO.
+DEFINE VARIABLE v-people-email     LIKE people_mstr.people_email       NO-UNDO.
+DEFINE VARIABLE v-people-DOB       LIKE people_mstr.people_DOB         NO-UNDO.
+DEFINE VARIABLE v-people-prefname  LIKE people_mstr.people_prefname    NO-UNDO.
+DEFINE VARIABLE v-username         LIKE usr_mstr.usr_name              NO-UNDO.
+DEFINE VARIABLE v-password         LIKE usr_mstr.usr_password          NO-UNDO.
+DEFINE VARIABLE v-unit             LIKE speop_shadow.speop_ward        NO-UNDO.
+DEFINE VARIABLE v-Tsize            LIKE speop_shadow.speop_Tsize       NO-UNDO.
+
+DEFINE VARIABLE v-people-create AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-people-update AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-people-avail AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-successful AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-error AS LOGICAL NO-UNDO.
+DEFINE VARIABLE v-garbage AS INTEGER NO-UNDO.
+
+DEFINE VARIABLE v-calling-page AS CHARACTER NO-UNDO.
+
+DEFINE VARIABLE v-guest AS CHARACTER NO-UNDO.
+
+ASSIGN 
+    v-act = html-encode(get-value("h-act"))
+    v-calling-page = html-encode(get-value("h-calling-page"))
+    v-guest = html-encode(get-value("h-guest")).
+    
+CASE v-act:
+	WHEN "x-Submit" THEN DO:
+	    ASSIGN
+	        v-people-prefix = html-encode(get-value("h-prefix")) 
+		    v-people-firstname = html-encode(get-value("h-firstname"))
+		    v-people-midname = html-encode(get-value("h-midname"))
+		    v-people-lastname = html-encode(get-value("h-lastname"))
+		    v-people-suffix = html-encode(get-value("h-suffix"))
+		    v-people-gender = LOGICAL(html-encode(get-value("h-gender")))
+		    v-people-homephone = html-encode(get-value("h-homephone"))
+		    v-people-cellphone = html-encode(get-value("h-cellphone"))
+		    v-people-email = html-encode(get-value("h-email"))
+		    v-people-DOB = IF html-encode(get-value("h-dob")) <> "" THEN DATE(INTEGER(ENTRY(2, html-encode(get-value("h-dob")), "-")), INTEGER(ENTRY(3, html-encode(get-value("h-dob")), "-")), INTEGER(ENTRY(1, html-encode(get-value("h-dob")), "-"))) ELSE ?
+		    v-people-prefname = html-encode(get-value("h-prefname"))
+		    v-username = html-encode(get-value("h-username"))
+		    v-password = html-encode(get-value("h-password"))
+		    v-unit = html-encode(get-value("h-unit"))
+		    v-Tsize = html-encode(get-value("h-Tsize")).
+		    
+		RUN VALUE(SEARCH("SUBpeop-datefindR.r")) (
+	        v-people-prefix,
+			v-people-firstname,
+			v-people-midname,
+			v-people-lastname,
+			v-people-suffix,
+			v-people-DOB,
+			OUTPUT v-people-id,
+			OUTPUT v-garbage,
+			OUTPUT v-error,
+			OUTPUT v-successful
+		).
+		
+		/* If there was an error, set people-id to 0 for redundancy */
+		IF v-error = YES THEN ASSIGN v-people-id = 0.
+	
+		RUN VALUE(SEARCH("SUBpeop-ucU.r")) (
+		    v-people-id,
+			v-people-firstname,
+			v-people-midname,
+			v-people-lastname,
+			v-people-prefix,
+			v-people-suffix,
+			"",
+	        v-people-gender,
+			v-people-homephone,
+			"",
+			v-people-cellphone,
+			"",
+			v-people-email,
+			"",
+			0,
+			"",
+			v-people-DOB,
+			0,
+			v-people-prefname,
+			"",
+			OUTPUT v-people-id,
+			OUTPUT v-people-create,
+			OUTPUT v-people-update,
+			OUTPUT v-people-avail,
+			OUTPUT v-successful
+		).
+		
+		RUN VALUE(SEARCH("SUBspeop-ucU.r")) (
+		   v-people-id,
+		   v-Tsize,
+	       v-unit,
+	       OUTPUT v-error
+		).
+		
+		IF v-people-id <> 0 THEN DO:
+		    
+			RUN VALUE(SEARCH("SUBusr-ucU.r")) (
+			    v-username,
+				v-password,
+				v-people-id,
+				TODAY,
+				NO,
+				YES,
+				OUTPUT v-successful
+			).
+			
+		END.
+		
+		IF v-successful = YES THEN DO:
+		    -->
+		    <header class='w3-container w3-theme-dark'>
+	            <h1>Account Created</h1>
+	        </header>
+	        <br><br>
+	        <form action="AMS-landing-R.r" method="post">
+	            <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+	                <center>
+	                <h1>Success!</h1>
+	                <h3>Your account has been successfully created. You may now log in with your new username and password.</h3>
+	                </center>
+	                <br>
+	            </div>
+	            <br>
+	            <div class='w3-row-padding w3-margin'>
+	                <div class='w3-center'>
+	                    <button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Ok</b></button>
+	                </div>
+	            </div>
+	        </form>
+		<!--WSS
+		END. /* IF v-successful = YES */
+		ELSE DO:
+		-->
+		    <header class='w3-container w3-theme-dark'>
+	            <h1>Error</h1>
+	        </header>
+	        <br><br>
+	        <form action="AMS-landing-R.r" method="post">
+	            <div class='w3-container w3-card-4 w3-light-grey w3-round w3-content' style='max-width:1000px;'>
+	                <center>
+	                <h1>Whoops!</h1>
+	                <h3>Something has gone terribly wrong. Please contact customer support.</h3>
+	                </center>
+	                <br>
+	            </div>
+	            <br>
+	            <div class='w3-row-padding w3-margin'>
+	                <div class='w3-center'>
+	                    <button type='submit' class='w3-btn-block w3-green w3-round' style='max-width:400px;'><b>Ok</b></button>
+	                </div>
+	            </div>
+	        </form>
+	<!--WSS   
+		END.
+	END. /* WHEN "Submit" */
+	WHEN "Edit" THEN DO:
+    -->
+        <script>
+            $(document).ready(function() {
+                $("[name='h-allergies']").select2({
+                    tags: true
+                });
+                
+                $("#classRegButton").click(function() {
+                    $("#hiddenForm").submit();
+                });
+                
+                $("#savePersonalInfo").click(function() {
+                    swal("Saved!", "`v-guest`'s info has been successfully saved", "success");
+                })
+            });
+        </script>
+        
+        <form id='hiddenForm' action='guest-schedule-maint.r'>
+            <input type='hidden' name='h-guest' value='`v-guest`'/>
+            <input type='hidden' name='h-fake-new-guest' value='true'/>
+        </form>
+        
+        <form id="guest-info-form" method="post">
+        <div class='ss-card'>
+            <div class='ss-card-title'>
+                <h1>`v-guest`'s Personal Info</h1>
+            </div>
+            <div class='card-content'>
+                <label>Allergies *</label>
+                <select name='h-allergies' class='ss-input' multiple>
+                    <option></option>
+                    <option>Bees/Wasps</option>
+                    <option>Peanuts</option>
+                    <option>Penicillin</option>
+                </select>
+                <label>T-Shirt Size</label>
+                <select class='ss-select'>
+                    <option>X-Small</option>
+                    <option>Small</option>
+                    <option>Medium</option>
+                    <option>Large</option>
+                    <option>X-Large</option>
+                    <option>XX-Large</option>
+                </select>
+            </div>
+            <div class='ss-button-group'>
+                <div class='w3-row'>
+                    <div class='w3-col m4'>
+                        <button type='submit' class='ss-btn w3-grey'>Cancel</button>
+                    </div>
+                    <div class='w3-col m4'>
+                        <button type='button' id='savePersonalInfo' class='ss-btn w3-theme'>Save Changes</button>
+                    </div>
+                    <div class='w3-col m4'>
+                        <button type='button' id='classRegButton' class='ss-btn w3-theme-accent'>Register for Classes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    <!--WSS
+	END.
+	WHEN "New" THEN DO:
+	  -->
+	<script>
+	    $(document).ready(function() {
+	        $("#paymentCheckbox").click(function() {
+	            if ($("#paymentCheckbox:checked").length ===1) {
+	                $("#paymentAndBillingInfo").slideDown();
+	            }
+	            else {
+	                $("#paymentAndBillingInfo").slideUp();
+	            }
+	        });
+	    });
+	</script>
+	<form id="registration-form" method="post">
+	    <div class='ss-card'>
+	        <div class='ss-card-title'>
+	        </div>
+	        <div class='card-content'>
+	            <h3><b>Guest Personal Info</b></h3>
+	            <label>First Name *</label>
+	            <input type='text' name='h-firstname' class='ss-input' required/>
+	            <label>Last Name *</label>
+	            <input type='text' name='h-lastname' class='ss-input' required/>
+	            <label>Date of Birth *</label>
+	            <input type='date' name='h-dob' class='ss-input' required/>
+	            <label>Email *</label>
+	            <input type='email' name='h-email' class='ss-input' required/>
+	            <!-- <span id='email-taken-error' class="error-msg" style="position: relative; bottom: 5px;" hidden>That email is already taken!<br/></span>  -->
+	            <label>Confirm Email *</label>
+	            <input type='email' id='confirm-email' class='ss-input' required/>
+	            <span id='email-error' class="error-msg" style="position: relative" hidden>Emails don't match</span>
+	            <label>Home Phone</label>
+	            <input type='text' name='h-homephone' class='ss-input'/>
+	            <label>Cell Phone</label>
+	            <input type='text' name='h-cellphone' class='ss-input'/>
+	            <label>Gender</label>
+	            <select name='h-gender' class='ss-input'>
+	               <option value='true'>Male</option>
+	               <option value='false'>Female</option>
+	            </select>
+	            <br><br>
+	            
+	            <h3><b>Guest Login Info</b></h3>
+	            <label>Username *</label>
+	            <input type='text' name='h-username' class='ss-input' required/>
+	            <p id='username-error' class="error-msg" hidden>That username is already taken!</p>
+	            <label>Password *</label>
+	            <input type='password' name='h-password' class='ss-input' required/>
+	            <p id='password-error' class="error-msg" hidden>Password must be at least 8 characters</p>
+	            <label>Confirm Password *</label>
+	            <input type='password' id='confirm-password' class='ss-input' required/>
+	            <p id='confirm-password-error' class="error-msg" hidden>Passwords do not match</p>
+	            
+	            <br><br>
+	            <p>* denotes a required field</p>
+	            
+	            <div class="checkbox">
+	                <label><input type="checkbox" id='paymentCheckbox' value="">Guest Payment is Needed</label>
+				</div>
+	            
+	            <div id='paymentAndBillingInfo' hidden>
+		            <h3><b>Guest Payment Info</b></h3>
+		            <label>Card Number *</label>
+		            <input type='text' name='h-creditcard-number' class='ss-input'/>
+		            <p id='username-error' class="error-msg" hidden>That card seems to be invalid!</p>
+		            <div class='w3-row'>
+			            <div class='w3-col m2'>
+			                <label>Expiration *</label>
+			                <input type='number' name='h-exp-month' placeholder='Month' class='ss-input'/>
+			            </div>
+			            <div class='w3-col m2'>
+			                <label>&nbsp;</label>
+			                <input type='number' name='h-exp-year' placeholder='Year' class='ss-input'/>
+			            </div>
+			            <div class='w3-col m1'>&nbsp;</div>
+			            <div class='w3-col m2'>
+		                    <label>Security Code</label>
+		                    <input type='number' name='h-sec-code' class='ss-input'/>
+		                </div>
+			        </div>
+			        <br><br>
+			        
+			        <h3><b>Guest Billing Info</b></h3>
+		            <label>Address Line 1 *</label>
+		            <input type='text' name='billing-addr1' class='ss-input'/>
+		            <label>Address Line 2 *</label>
+		            <input type='text' name='billing-addr2' class='ss-input'/>
+		            <div class='w3-row'>
+		                <div class='w3-col m4'>
+				            <label>City *</label>
+				            <input type='text' name='billing-city' class='ss-input'/>
+				        </div>
+				        <div class='w3-col m4'>
+				            <label>State *</label>
+				            <input type='text' name='billing-state' class='ss-input'/>
+				        </div>
+				        <div class='w3-col m4'>
+				            <label>Zip *</label>
+				            <input type='text' name='billing-zip' class='ss-input'/>
+				        </div>
+			        </div>
+		            <br/>
+		        </div>
+	        </div>
+	        <div class='ss-button-group'>
+	            <button type='submit' name='h-act' value='Edit' class='ss-btn-single w3-green'>Create Account</button>
+	        </div>
+	    </div>
+	</form>
+	<!--WSS 
+	END. /* WHEN "NEW" */
+	OTHERWISE DO:
+	-->
+	<script>
+	    $(document).ready(function() {
+	        $("#guest-picker").select2();
+	    });
+	</script>
+	
+	<form method="post">
+	    <div class='ss-card'>
+	        <div class='ss-card-title'>
+	            <h1>Guest Maintenance</h1>
+	            <p>Do you need to edit an existing guest record, or create a new one?</p>
+	        </div>
+	        <div class='card-content'>
+	            <label>Existing Guest</label>
+	            <select id='guest-picker' name='h-guest' class='ss-select'>
+	               <option></option>
+	               <option value="Andrew Diniro">Andrew Diniro</option>
+	               <option value="Ben Solo">Ben Solo</option>
+	               <option value="Calvin Kleine">Calvin Kleine</option>
+	               <option value="Trudy Smith">Trudy Smith</option>
+	               <option value="Zach Boris">Zach Boris</option>
+	            </select>
+	        </div>
+	        <div class='ss-button-group'>
+	            <div class='w3-row'>
+		            <div class='w3-col m6'>
+		                <button type='submit' name='h-act' value='Edit' class='ss-btn w3-theme'>Edit Guest</button>
+		            </div>
+		            <div class='w3-col m6'>
+		                <button type='submit' name='h-act' value='New' class='ss-btn w3-green'>Create New Guest</button>
+		            </div>
+		        </div>
+	        </div>
+	    </div>
+	</form>
+<!--WSS
+    END. /* OTHERWISE DO */
+END.
+-->
+</BODY>
+</HTML>

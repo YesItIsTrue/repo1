@@ -1,0 +1,1253 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+
+<TITLE>TestKit Search Results</TITLE>
+
+    <META NAME="AUTHOR" CONTENT="Mark Jacobs">
+    <META NAME="VERSION" CONTENT="2.3">
+    <META NAME="COPYRIGHT" CONTENT="Solsource">
+    <META NAME="CREATE_DATE" CONTENT="08/May/14">
+    <META NAME="LAST_UPDATED" CONTENT="10/Oct/17">
+    <LINK rel='stylesheet' type='text/css' href='/depot/src/HTMLContent/stylesheets/core.css' />
+
+ 
+<SCRIPT LANGUAGE="SpeedScript">  
+  /*------------------------------------------------------------------
+ * File:TK_TKKit_search.html (called from TK_TKitinquI.html")
+ * Description:  This procedure Processes and shows the results of the TK inquiry procedure (1.2 in HHI "The System") 
+ * Created:
+ *-------------------------------------------------------------------
+ * Revision History:    
+ * ---------------------
+ * 1.1 - Displaying creation date in search results instead of last modified.
+ *      - Added void to status field in drop-down.
+ *      - Hyperlink Testkit ID in results to TRH-history-R.html.
+ *      - Added an Include file to display user feedback table ( tk-serchR.i ). With 2 separate calls to it.
+ *      - Added the ability to search by Patient or Customer names.
+ *      - 3/06/15 Added Trim function to; From and To first name and last name, From and To test kit ID
+ * 1.2  - 9/30/15 Added TK_mstr.TK_deleted = ? To exclude deleted test kits. Marked by 1dot2, Mark Jacobs.
+ *          Added lab Sample ID to srarch criteria. 
+ * 2.0  - 05/Oct/15 - Trae Luttrell -
+ *          Trying to get the report to be sorted.
+ * 2.1  - 08/Oct/15 - Doug Luttrell - removed excess HTML stuff from table.  Also changed the include file this uses.
+ * 2.2  - Written by Mark Jacobs on 21/Oct/15. Added in the code snippets for grid_* div, code snippets for Buttons,TFOOT 
+ *          and  META tags updated.Date input fields converted from character-based to HTML 5 date field using external 
+ *          procedure for importing into progress database. Marked by 2dot2.
+ *          Removed old styling HTML code from the From and To display so that it will display black instead of blue, not marked.
+ * 2.3 - written by Jacob Luttrell on 12/Feb/16. Adjusted testtype to test_type to match database also fixed Lab Sequence display
+ *          marked by /* 2dot3 */
+ *
+ * 3.0 - 10/10/2017 - Harold Luttrell, Sr.
+ *       Changed six (6) :  IF(LOGICAL (get-value ("is-paid"))) = YES THEN 
+ *               statements to 
+ *                          IF  get-value ("is-paid") = "YES" THEN  
+ *               I don't think that the way this code was origin written is working correctly
+ *                  and I don't think that is going to work correctly now !!!!!!!!!!!!!!!!!!!!!!
+ *       Identified by /* 3dot0 */
+ *
+ *  3.1 - written by DOUG LUTTRELL on 20/Oct/17.  Something is awry and causing problems in the server Agent logs.
+ *          Not sure if that is coming from this code or the more parent type code.  Also something is wonky with
+ *          the hyperlinks in the new structure.  Not marked.
+ *
+ *-------------------------------------------------------------------- */
+
+ 
+CREATE WIDGET-POOL.
+
+    {../depot/src/WebSpeed/menuname.i}. 
+    
+    DEFINE VARIABLE f-lab-id LIKE TK_mstr.TK_lab_sample_ID NO-UNDO.     /* 1dot2 */
+    DEFINE VARIABLE t-lab-id LIKE TK_mstr.TK_lab_sample_ID NO-UNDO.     /* 1dot2 */  
+
+    DEFINE VARIABLE f-typ LIKE TK_mstr.Tk_test_type LABEL "From Type"  NO-UNDO.  /* 2dot3 */
+    DEFINE VARIABLE t-typ LIKE TK_mstr.Tk_test_type LABEL "To" NO-UNDO.          /* 2dot3 */
+/*    DEFINE VARIABLE fdate LIKE TK_mstr.Tk_create_date LABEL "Created Date"  NO-UNDO.*/   /* 2dot2 */
+/*    DEFINE VARIABLE tdate LIKE TK_mstr.Tk_create_date LABEL "To" NO-UNDO.           */
+        
+    DEFINE VARIABLE creatby LIKE TK_mstr.Tk_created_by NO-UNDO.
+    DEFINE VARIABLE f-kitid LIKE TK_mstr.Tk_ID LABEL "From Test Kit ID" NO-UNDO.
+    DEFINE VARIABLE t-kitid LIKE TK_mstr.Tk_ID LABEL "To " NO-UNDO.
+    DEFINE VARIABLE fsdate AS DATE NO-UNDO.                       
+    DEFINE VARIABLE tsdate AS DATE NO-UNDO.                       
+    DEFINE VARIABLE f-fname LIKE people_mstr.people_firstname LABEL "Patient First Name" NO-UNDO.
+    DEFINE VARIABLE t-fname LIKE people_mstr.people_firstname LABEL "To" NO-UNDO.
+    DEFINE VARIABLE f-lname LIKE people_mstr.people_lastname LABEL "Patient Last Name" NO-UNDO.
+    DEFINE VARIABLE t-lname LIKE people_mstr.people_lastname LABEL "To" NO-UNDO.
+    DEFINE VARIABLE tk LIKE TK_mstr.tk_id LABEL "Test Kit ID" NO-UNDO.
+  
+    /*------------------------------------------------------
+    DEFINE VARIABLE sold     LIKE TK_mstr.TK_status NO-UNDO.
+    DEFINE VARIABLE notsold  LIKE TK_mstr.TK_status NO-UNDO. 
+    ------------------------------------------------------------ */
+    DEFINE VARIABLE fdate AS CHARACTER NO-UNDO.                                   /* 2dot2 */
+    DEFINE VARIABLE tdate AS CHARACTER NO-UNDO. 
+    DEFINE VARIABLE prog-fdate LIKE TK_mstr.TK_create_date NO-UNDO. 
+    DEFINE VARIABLE prog-tdate LIKE TK_mstr.TK_create_date NO-UNDO.
+    
+    DEFINE VARIABLE f-mod AS CHARACTER NO-UNDO.                                   /* 2dot2 */
+    DEFINE VARIABLE t-mod AS CHARACTER NO-UNDO. 
+    DEFINE VARIABLE prog-f-mod LIKE TK_mstr.TK_create_date NO-UNDO. 
+    DEFINE VARIABLE prog-t-mod LIKE TK_mstr.TK_create_date NO-UNDO. 
+    
+    
+    DEFINE VARIABLE paid   LIKE TK_mstr.TK_cust_paid NO-UNDO.      
+    DEFINE VARIABLE notpaid LIKE TK_mstr.TK_cust_paid NO-UNDO.    
+    DEFINE VARIABLE paid-ck AS CHARACTER NO-UNDO. /* sold-ck */
+    DEFINE VARIABLE notpaid-ck AS CHARACTER NO-UNDO. /* notsold-ck */
+    
+    
+    DEFINE VARIABLE inter    AS LOG NO-UNDO.
+    DEFINE VARIABLE dom      AS LOG NO-UNDO.
+    DEFINE VARIABLE prof     AS LOG NO-UNDO.
+    DEFINE VARIABLE non-prof AS LOG NO-UNDO.
+    
+    DEFINE VARIABLE dash AS INTEGER NO-UNDO.
+    
+    DEFINE VARIABLE both-dom  AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE both-prof AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE both-custpaid AS CHARACTER NO-UNDO.
+    
+    DEFINE VARIABLE alltk        AS INTEGER NO-UNDO. 
+    DEFINE VARIABLE from-results AS INTEGER NO-UNDO.
+    
+    DEFINE VARIABLE tow-ck AS CHARACTER NO-UNDO.
+    
+    DEFINE VARIABLE TK-status  LIKE TK_mstr.TK_status NO-UNDO.
+    DEFINE VARIABLE status-all   AS CHARACTER NO-UNDO.
+    
+    DEFINE VARIABLE search-crit AS LOGICAL INITIAL NO   NO-UNDO.
+    
+    
+    DEFINE VARIABLE f-test-seq LIKE TK_mstr.TK_test_seq NO-UNDO.  /* added 1/8/15 */
+    DEFINE VARIABLE t-test-seq LIKE TK_mstr.TK_test_seq NO-UNDO.
+    
+    DEFINE VARIABLE cust-fname LIKE people_mstr.people_firstname NO-UNDO. /* added 1/15/15 */
+    DEFINE VARIABLE cust-lname LIKE people_mstr.people_lastname NO-UNDO.
+    
+ /*---------------------------------------------------------------------*/   
+    DEFINE VARIABLE ITfeedback AS LOGICAL INITIAL NO NO-UNDO.           /*---< ITfeedback (YES or NO)  */ 
+ /*---------------------------------------------------------------------*/ 
+    
+    
+ /* -------------- counting component below ----------------------------- */  
+    DEFINE VARIABLE cout       AS INTEGER NO-UNDO.     
+    DEFINE VARIABLE soldkit    AS INTEGER FORMAT ">>9" NO-UNDO. 
+    DEFINE VARIABLE total-kits AS INTEGER NO-UNDO.
+ /* --------------------------------------------------------------------- */  
+    DEFINE VARIABLE whattorun AS CHARACTER NO-UNDO.
+/*-----------------------------------------------------------------------*/ 
+
+   
+    DEFINE BUFFER peop-cust-buf FOR people_mstr.
+    DEFINE BUFFER peop-pat-buf  FOR people_mstr.
+    
+/*    find peop-cust-buf where peop-cust-buf.people_id = cust_mstr.cust_id no-lock no-error.*/
+    
+/*-----------------------------------------------------------------------*/    
+   ASSIGN
+        
+       f-lab-id    =   get-value ("h-f-lab-id")   /* 1dot2 */
+       t-lab-id    =   get-value ("h-t-lab-id")   /* 1dot2 */
+   
+       whattorun    =   get-value ("whattorun") 
+       
+       dash         =   INTEGER (get-value("bord"))
+       f-typ        =   get-value("from-typ")
+       t-typ        =   get-value ("to-typ")
+       tk           =   get-value ("testkit")
+       f-kitid      =   TRIM(get-value("from-id"))
+       t-kitid      =   TRIM(get-value("to-id"))
+       creatby      =   TRIM(get-value("by"))
+       from-results =   INTEGER (get-value("sent"))  
+       
+       f-fname      =   TRIM(get-value("h-fname"))              /* Names */
+       t-fname      =   TRIM(get-value("h-to-fname"))       
+       f-lname      =   TRIM(get-value("h-lname"))
+       t-lname      =   TRIM(get-value("h-to-lname"))  
+       
+     /* ---------------------------------------------------------------------- DATES -*/         
+       fsdate       =   DATE (get-value ("from-sold"))   /* sold Date */
+       tsdate       =   DATE (get-value ("to-sold"))
+     
+       fdate        =   get-value ("from-date")   /* Created Date */      /* 2dot2 */
+       tdate        =   get-value ("to-date")
+   
+       f-mod        =   get-value ("h-f-mod")     /* Mod date */   /* 2dot2 */
+       t-mod        =   get-value ("h-t-mod")
+    /* ------------------------------------------------------------------------------ */
+    
+    
+           tk-status    =   get-value ("h-tk-status") 
+           
+           
+           
+       
+       f-test-seq   =   INTEGER (get-value("h-f-test-seq"))  /* added 1/8/15 */
+       t-test-seq   =   INTEGER (get-value("h-t-test-seq"))
+ 
+       /* ------------------------------------------------------------------------- */ 
+/*       paid         =   IF(LOGICAL (get-value ("is-paid"))) = YES THEN*/                  /* 3dot0 */
+       paid         =   IF  get-value ("is-paid") = "YES" THEN                              /* 3dot0 */
+                                       yes
+                                       else
+                                       NO     
+                                                                        
+/*       notpaid      =   IF (LOGICAL (get-value ("not-paid"))) = YES THEN*/                /* 3dot0 */
+       notpaid      =   IF  get-value ("not-paid") = "YES" THEN                             /* 3dot0 */
+                                        no
+                                        else
+                                        YES 
+     /* -------------------------------------------------------------------------*/    
+   
+/*       dom           =   IF(LOGICAL (get-value ("domestic"))) = YES THEN*/                /* 3dot0 */
+       dom           =   IF  get-value ("domestic") = "YES" THEN                            /* 3dot0 */
+                                        yes
+                                        ELSE
+                                        NO  
+                                             
+/*       inter         =   IF(LOGICAL (get-value("inter-al"))) = yes THEN*/                 /* 3dot0 */
+       inter         =   IF  get-value("inter-al") = "YES" THEN                             /* 3dot0 */
+                                        no
+                                      ELSE
+                                        YES 
+                                         
+                                              
+/*       prof          =   if(LOGICAL (get-value ("profal"))) = yes THEN*/                  /* 3dot0 */
+       prof          =   IF  get-value ("profal") = "YES" THEN                              /* 3dot0 */
+                                        yes
+                                        ELSE
+                                        ?  
+/*       non-prof      =   if(LOGICAL (get-value ("not-profal"))) = yes THEN*/              /* 3dot0 */
+       non-prof      =   IF  get-value ("not-profal") = "YES" THEN                          /* 3dot0 */
+                                        no
+                                        ELSE
+                                        YES .
+                                     
+       IF paid = YES AND notpaid = NO THEN
+           ASSIGN
+           paid          = ?
+           notpaid       = ?
+           both-custpaid = "bothck".                                
+       
+      /*------------------------------------------*/                            
+       IF dom = YES AND inter = NO THEN
+            ASSIGN
+            dom      = ?
+            inter    = ?
+            both-dom = "bothck".
+       IF prof = YES AND non-prof = NO THEN
+            ASSIGN
+            prof      = ?
+            non-prof  = ?
+            both-prof = "bothck". 
+   
+    IF  fdate <> "" THEN                                                    /* 2dot2 */                                              
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                     
+    (fdate, OUTPUT prog-fdate).
+     
+    IF  tdate <> "" THEN                                                    /* 2dot2 */                                                  
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                      
+    (tdate, OUTPUT prog-tdate).   
+    
+    IF  f-mod <> "" THEN                                                    /* 2dot2 */                                              
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                     
+    (f-mod, OUTPUT prog-f-mod).
+     
+    IF  t-mod <> "" THEN                                                    /* 2dot2 */                                                  
+    RUN VALUE(SEARCH("subr_CCYY_to_YY.r"))                      
+    (t-mod, OUTPUT prog-t-mod).   
+             
+</SCRIPT>
+
+</HEAD>
+
+<BODY class='inside'>
+<SCRIPT LANGUAGE="SpeedScript"> 
+                                                                             IF ITfeedback = YES THEN  
+                                                                               {&OUT}  "<p>paid --" paid SKIP
+                                                                                       "<br>notpaid --" notpaid SKIP
+                                                                                       "<br>both-custpaid -- " both-custpaid SKIP
+                                                                                       "<br>f-fname -- " f-fname SKIP
+                                                                                       "<br>t-fname -- " t-fname SKIP
+                                                                                       "<br>f-lname -- " f-lname SKIP
+                                                                                       "<br>t-lname -- " t-lname skip
+                                                                                       "<br>f-kitid -- " f-kitid skip
+                                                                                       "<br>t-kitid -- " t-kitid skip
+                                                                                       "<br>f-lab-id -- " f-lab-id skip
+                                                                                       "<br>t-lab-id -- " t-lab-id skip                                                                                      
+                                                                                       "</p>".
+                                                                                       
+/*------------------------------------------ Start of people search ---------------------------*/
+
+
+        IF f-fname <> "" OR                 /** 2.0 ">" to "<>" **/
+           t-fname <> "" OR           
+           f-lname <> "" OR
+           t-lname <> "" THEN DO:
+               
+      
+/*------------------------------------------------------------------------------------------ Start of people search table ------------------------------@@@*/
+</SCRIPT>
+   <div class = 'table_report_FromTo'> 
+    <center>
+        <TABLE>
+          <thead>
+     
+            <tr><th colspan="12"> Criteria Selected for Searching Using customer or patient names</th></tr>
+             
+            <tr><th>From</th>
+             
+<SCRIPT LANGUAGE="SpeedScript"> 
+     /* ------------------------------------------------------------------------- start of  f-kitid from */
+        IF f-kitid > ""  THEN  /* Test Kit */
+           {&OUT}
+            "<th>" f-kitid "</th>".
+        ELSE
+           {&OUT}
+            "<th>&nbsp</th>".             
+     /* ----------------------------------------------------------------------------------- end of kit id from */   
+        IF f-typ > "" THEN  /* Test Kit Type */
+           {&OUT}
+            "<th>" f-typ "</th>". 
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".     
+      /* ------------------------------------------------------------------------------------ end of typ from  */    
+    /* ------------  ** added Lab Sample ID on 9/30/15 ** -------------------------- */                              /* 1dot2 */
+        IF f-lab-id <> "" THEN  
+           {&OUT}
+            "<th>" f-lab-id "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".
+  
+  /* ----------------------------------------------------------------------- start of created date from --*/
+         IF fdate<> ? THEN 
+           {&OUT}
+            "<th>" prog-fdate "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".        
+  /*--------------------------------------------------------------------------- end of created date from */
+  
+ /* ---------------------------------------------------------------------*/
+                       
+        IF f-mod <> ? THEN /* Mod Date */
+           {&OUT}
+            "<th>" prog-f-mod "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".        
+    /*--------------------------------------------------------------------------- end of mod date from */             
+   /* 
+        IF fsdate <> ? THEN  /* Sold Date */
+           {&OUT}
+            "<th>" fsdate "</th>".
+        ELSE
+           {&OUT}
+                "<th>" "&nbsp" "</th>".
+              
+           {&out}           
+            "<th>"&nbsp"</th>". /************ Placeholders  ***********/
+     */  
+     /*--------------------------------------------------------------------------------- start of Dom from  */            
+        IF both-dom = "bothck" THEN
+           {&OUT}
+            "<th>" "Domestic" "</th>".
+        ELSE                           
+           {&OUT}
+            "<th> &nbsp </th>". 
+     /* --------------------------------------------------------------------------------- start of prof from   */       
+        IF both-prof = "bothck" THEN
+           {&OUT}
+            "<th>" "Professional" "</th>".
+        ELSE
+           {&OUT}                             
+                "<th>&nbsp</th>".
+                
+        /*----------------------------------------------------------------------------------- start of  Cust Paid  from */           
+        IF both-custpaid = "bothck" THEN
+           {&OUT}
+          "<th>" "Cust Paid" "</th><th></th>".
+        ELSE
+           {&OUT}                             
+                "<th></th>            
+                 <th></th>". /************ Placeholders  ***********/  
+                 
+        IF f-fname <> "" THEN                                                           /* From First Name */
+            {&OUT}
+                "<th>" f-fname "</th>".
+        ELSE
+            {&OUT}
+            "<th> &nbsp </th>". 
+            
+        IF t-fname <> "" THEN                                                          /* To First Name */
+            {&OUT}                   
+                "<th>" t-fname "</th></tr>".
+        ELSE
+            {&OUT}
+            "<th> &nbsp </th></tr>".        
+     /*----------------------------------------------------------------------------------- start of  Cust Paid  from            
+        IF both-custpaid = "bothck" THEN
+           {&OUT}
+          "<th align= 'center'><span style='color: #0000FF;'>" "Cust Paid" "</th><th colspan='3'</th>".
+        ELSE
+           {&OUT}                             
+                "<th colspan='3'></th></tr>".
+      */         
+      
+  /*------------------------------------------------------------------------------------------- End of FROM ROW --------*/
+</SCRIPT>
+      </tr>
+       <tr>
+       <th> To</th>  
+       
+  <SCRIPT LANGUAGE="SpeedScript">
+  
+         /* ------------------------------------------------------------------------- start of  f-kitid To */
+        IF t-kitid > ""  THEN  /* Test Kit */
+           {&OUT}
+            "<th>" t-kitid "</th>".
+        ELSE
+           {&OUT}
+              "<th>&nbsp</th>".         
+           /* -------------------------------------------- End of  f-kitid to -------------*/
+          /* --------------------------------------------  start of  typ to ---------------*/
+        IF t-typ > "" THEN   /* Test Kit Type */
+           {&OUT}
+            "<th>" t-typ  "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".
+            /* ------------------------------------------------------------------------- end of typ to */      
+  
+        /* -------------------------------  **added lab Sample ID on 9/30/15**   ----------- */               /* 1dot2 */
+        IF t-lab-id <> "" THEN  
+           {&OUT}
+            "<th>" t-lab-id "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".
+  
+     /* ------------------------------------------------------------------------- start of  created date to*/
+         IF tdate<> ? THEN /* Mod Date */
+           {&OUT}
+            "<th>" prog-tdate "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".  
+     
+      /* ------------------------------------------------------------------------- endof  created date to*/
+     
+      /* ------------------------------------------------------------------------- start of  mod date to */      
+        IF t-mod <> ? THEN /* Mod Date */
+           {&OUT}
+            "<th>" prog-t-mod "</th>".
+        ELSE
+           {&OUT}
+            "<th>&nbsp</th>".  
+      /* ------------------------------------------------------------------------- end of  mod date to*/            
+   /*             
+        IF tsdate <> ? THEN  /* Sold Date */
+           {&OUT}
+            "<th align='center'><SPAN style='COLOR: #0000FF;'>" tsdate "</th>".
+        ELSE
+           {&OUT}
+            "<th>&nbsp</th>".
+              
+        IF creatby > "" THEN
+           {&OUT}
+            "<th align='center'><SPAN style='COLOR: #0000FF;'>" creatby "</th>".
+        ELSE
+           {&OUT}
+            "<th>&nbsp</th>". 
+    */           
+        IF both-dom = "bothck" THEN  /********************************************************/
+           {&OUT}
+            "<th>" "International" "</th>".
+        ELSE           
+        IF dom = YES THEN
+           {&OUT}
+            "<th>" "Domestic" "</th>".
+        ELSE
+        IF inter = NO THEN 
+           {&OUT}  
+            "<th>" "International" "</th>".
+        ELSE   
+           {&OUT}
+            "<th>&nbsp</th>". /********************************************************/
+            
+            
+                
+        IF both-prof = "bothck" THEN     /********************************************************/
+           {&OUT}
+            "<th>" "Non-Professional" " </th>".
+        ELSE                                         
+        IF prof = YES THEN
+           {&OUT}
+            "<th>" "Professional" "</th>".
+        ELSE
+        IF non-prof = NO THEN
+           {&OUT}
+            "<th>" "Non-Professional" "</th>". 
+        ELSE      
+           {&OUT}
+            "<th>&nbsp</th>".  /********************************************************/  
+            
+            
+    /* --------------------------------------------------------------------- 
+      IF tsdate <> ? THEN  /* Sold Date */
+           {&OUT}
+            "<th align='center'><SPAN style='COLOR: #0000FF;'>" tsdate "</th>".
+        ELSE
+           {&OUT}
+            "<th>&nbsp</th>".
+            
+      */      
+     /* ------------------------------------------------------------------------------- start of Cust paid  */     
+        IF both-custpaid = "bothck" THEN
+           {&OUT}
+            "<th>" "Cust Not Paid" "</th>".
+        ELSE
+        IF paid = YES THEN 
+           {&OUT}
+            "<th>" "Cust Paid" "</th>". 
+        ELSE
+        IF notpaid = NO THEN    
+           {&OUT}
+            "<th>" "Cust Not Paid" "</th>".
+        ELSE      
+           {&OUT}
+            "<th>&nbsp</th>".     
+    /*---------------------------------------------------------------------------------        
+        IF tk-status > "" THEN
+           {&OUT}
+            "<th align='center'><SPAN style='COLOR: #0000FF;'>" tk-status "</th>". 
+        ELSE     
+           {&OUT}
+            "<th>&nbsp</th>".
+    ---------------------------------------------------------------------------------*/  
+    
+        IF tk-status > "" THEN
+           {&OUT}
+            "<th>" tk-status "</th>". 
+        ELSE     
+           {&OUT}
+            "<th>All</th>".
+    
+    
+    
+    
+    /*--------------------------------------------------------------------------------*/      
+        IF f-lname <> "" THEN                                         /* From Last Name */
+           {&OUT}
+             "<th>" f-lname  "</th>".
+        ELSE
+            {&OUT}
+            "<th> &nbsp </th>". 
+            
+         IF t-lname <> "" THEN                                         /*To Last Name */
+           {&OUT}
+             "<th>" t-lname  "</th></tr>".
+        ELSE
+            {&OUT}
+            "<th> &nbsp </th></tr>".               
+            
+         
+</SCRIPT>  
+
+            </tr> 
+      <!-- ---------------- END OF the TO Row ------------------------------------------ -->   
+            <tr>
+            <th></th>
+            <th>Test Kit ID / Seq</th>            
+            <th>Type</th>   
+            
+            <th>Lab Sample ID / Seq</th>   <!--  2dot3 -->
+                     
+            <th>Date Created</th> <!-- **Commented out on 1/6/15** Added back 2/17/15 -->
+     <!--   <th>Last Modified</th>
+            <th>Test Sequence </th>  -->
+      
+            <th>Last Modified</th>               
+      <!--  <th>Created By</th>  **Commented out on 1/6/15**    -->
+            <th>Dest</th>            
+            <th>Prof</th>
+            <th>Cust Paid</th>             
+            <th>Status</th>
+            <th>Patient</th>
+            <th>Customer</th>  
+            </tr>
+              
+          </thead>
+
+
+     
+ <SCRIPT LANGUAGE="SpeedScript">
+                        
+                        
+       IF tk-status = "all" THEN  /* This removes All from TK-status variable and assigns status-all to yes for reassigns All after the FOR EACH */                               
+            ASSIGN
+            tk-status = ""
+            status-all = "yes".
+    
+    /*** this entire 4ea is getting compressed and little typos are being removed  2.0 ***/
+       FOR EACH people_mstr WHERE              
+           ((people_mstr.people_firstname >= f-fname OR f-fname = "") AND (people_mstr.people_firstname <= t-fname  OR t-fname = "")) AND
+           ((people_mstr.people_lastname >= f-lname OR f-lname = "")  AND (people_mstr.people_lastname <= t-lname OR t-lname = ""))  
+                NO-LOCK,
+            EACH TK_mstr WHERE (TK_mstr.TK_patient_ID = people_mstr.people_id  OR           /** do we need both? 2.0 **/                                             
+                    TK_mstr.TK_cust_ID = people_mstr.people_id) AND                         
+                    ((TK_mstr.Tk_test_type >= f-typ OR f-typ = "") AND (TK_mstr.Tk_test_type <= t-typ OR t-typ = "")) AND                       /* 2dot3 */
+                    (TK_mstr.TK_ID = tk OR tk = "" ) AND 			                                
+                    ((TK_mstr.TK_ID >= f-kitid OR f-kitid = "") AND (TK_mstr.TK_ID  <= t-kitid OR t-kitid = "")) AND
+                    ((TK_mstr.TK_lab_sample_ID >= f-lab-id OR f-lab-id = "") AND (TK_mstr.TK_lab_sample_ID <= t-lab-id OR t-lab-id = "")) AND    /* 1dot2 */
+                    TK_mstr.TK_deleted = ?  AND                                                                                                  /* 1dot2  */
+                    ((TK_mstr.Tk_test_seq >= f-test-seq OR f-test-seq = 0) AND (TK_mstr.Tk_test_seq <= t-test-seq OR t-test-seq = 0))AND    
+                                    
+/*-------- DATES */ ((TK_mstr.TK_modified_date >= prog-f-mod OR prog-f-mod = ?) AND (TK_mstr.TK_modified_date <= prog-t-mod OR prog-t-mod = ? ))  AND       /* 2dot2 */
+  
+                    ((TK_mstr.TK_create_date >= prog-fdate OR prog-fdate = ?) AND (TK_mstr.TK_create_date <= prog-tdate OR prog-tdate = ?)) AND    /* 2ddot2 */ 
+                         
+                    (Tk_domestic = dom OR dom = ?) AND
+                    (TK_domestic = inter OR inter = ?) AND
+                    (Tk_prof = prof OR prof = ?) AND 
+                    (Tk_prof = non-prof OR non-prof = ?) AND                             
+                    (TK_cust_paid = paid OR paid = ? ) AND
+                    (((TK_mstr.TK_cust_paid = NO OR TK_mstr.TK_cust_paid = ?) AND  notpaid = NO) OR notpaid = ?) AND     /*** this seems crazy  2.0 ***/                  			                              
+                	(Tk_status = tk-status OR tk-status = "")                         
+                        NO-LOCK BREAK 
+                            BY people_mstr.people_lastname 
+                            BY people_mstr.people_firstname
+                            BY people_mstr.people_dob 	
+                            BY TK_mstr.TK_ID:
+                          
+                           
+                          IF status-all = "yes" THEN  /* reassigns All for sending back */
+                          ASSIGN
+                          tk-status = "All".
+                         
+                   /* -----------------  counting component below  ----------------------------- */   
+                        cout = cout + 1.        
+                   /* -------------------------------------------------------------------------- */      
+			                                 
+			                    	 
+			                    	 	                     
+					                       FIND peop-cust-buf WHERE peop-cust-buf.people_id = TK_mstr.TK_cust_ID AND 
+					                                           peop-cust-buf.people_deleted = ? NO-LOCK NO-ERROR.
+					                                                     
+					                       FIND peop-pat-buf WHERE peop-pat-buf.people_id = TK_mstr.TK_patient_ID AND
+					                                          peop-pat-buf.people_deleted = ? NO-LOCK NO-ERROR.   /* **Added peop-pat-buf on 2/25/15** */ 
+   			                                        
+					                      
+			        {tk-searchR.i}.   
+			         
+			        
+			                                                                                                                                                                                                                             
+			                END. /* FOR EACH TK_mstr */ 
+	
+</SCRIPT>    
+            <tr>
+                <td colspan='12'>This Search Criteria retrieved `cout` Records.  </td>
+            </tr> 
+            <TFOOT>
+                <tr>
+                    <td colspan="12">End of Report</td>
+                </tr>
+            </TFOOT>
+ 
+        </TABLE>
+    </center>     
+   </div> 
+   </div> <!--  close of grid_12?   -->
+   </div> <!--  close of row?  -->
+   
+   <!-- ---------------------------------------------------  down ------------------------------------------------------------------------ -->
+      
+   <!-- --------------------------------------------------------------------------------------------------------------------------- -->
+
+
+    <br>
+     <div class='row'>
+                <div class='grid_3'></DIV>       <!--  2dot2 -->
+                <div class='grid_2'>                                                                                            
+     <form  ACTION="TK_TKKitinquI.r" method="post">   
+                  <td><input type="hidden" name="whattorun" value="`whattorun`"></td>                   
+                  <button type='submit' name='justRETURN' value='New Search' class='btn'>New Search</button>     
+     </form></div>     
+               <div class='grid_2'> </DIV>
+              <div class='grid_2'> 
+     <form  ACTION="TK_TKKitinquI.r" method="post">
+                    <td><input type="hidden" name="from-typ" value="`f-typ`"></td>
+                    <td><input type="hidden" name="to-typ" value="`t-typ`"></td>
+                    
+                    <td><input type="hidden" name="from-id" value="`f-kitid`"></td>
+                    <td><input type="hidden" name="to-id" value="`t-kitid`"></td>
+                    
+                    <td><input type="hidden" name="h-f-test-seq" value="`f-test-seq`"></td>
+                    <td><input type="hidden" name="h-t-test-seq" value="`t-test-seq`"></td>
+                    
+                    <td><input type="hidden" name="from-date" value="`fdate`"></td>
+                    <td><input type="hidden" name="to-date" value="`tdate`"></td>
+                    
+                    <td><input type="hidden" name="from-sold" value="`fsdate`"></td>
+                    <td><input type="hidden" name="to-sold" value="`tsdate`"></td>
+                    
+                    <td><input type="hidden" name="by" value="`creatby`"></td>
+                    
+<SCRIPT LANGUAGE="SpeedScript">  
+                            IF both-dom = "bothck" THEN DO:
+                                ASSIGN
+                                dom   = YES
+                                inter = NO.
+                            
+                             END.   /* IF both-custpaid = "bothck" THEN DO: */      
+</SCRIPT>                   
+                    <td><input type="hidden" name="domestic" value="`dom`"></td>
+                    <td><input type="hidden" name="inter-al" value="`inter`"></td>                  
+                    
+<SCRIPT LANGUAGE="SpeedScript">  
+                            IF both-prof = "bothck" THEN DO:
+                                ASSIGN
+                                prof     = YES
+                                non-prof = NO.
+                            
+                             END.   /* IF both-custpaid = "bothck" THEN DO: */   
+</SCRIPT>   
+                    <td><input type="hidden" name="profal" value="`prof`"></td>
+                    <td><input type="hidden" name="non-profal" value="`non-prof`"></td>                                     
+                    <td><input type="hidden" name="h-f-mod" value="`f-mod`"></td>
+                    <td><input type="hidden" name="h-t-mod" value="`t-mod`"></td>                   
+                    <td><input type="hidden" name="h-tk-status" value="`tk-status`"></td>                   
+                    <td><input type="hidden" name="h-search-crit" value="yes"></td>                 
+                    <td><input type="hidden" name="whattorun" value="`whattorun`"></td>                 
+                                  
+<SCRIPT LANGUAGE="SpeedScript">  
+                            IF both-custpaid = "bothck" THEN DO:
+                                ASSIGN
+                                paid    = YES
+                                notpaid = NO.
+                            
+                             END.   /* IF both-custpaid = "bothck" THEN DO: */   
+</SCRIPT>                             
+                      <td><input type="hidden" name="is-paid" value="`paid`"></td>
+                      <td><input type="hidden" name="not-paid" value="`notpaid`"></td>
+                      <td><input type="hidden" name="h-fname" value="`f-fname`"></td>
+                      <td><input type="hidden" name="h-to-fname" value="`t-fname`"></td>
+                      <td><input type="hidden" name="h-lname" value="`f-lname`"></td>
+                      <td><input type="hidden" name="h-to-lname" value="`t-lname`"></td>  
+                      
+                    <button type='submit' name='return' value='Search with Saved Search Criteria' class='btn'>Search with Saved Search Criteria</BUTTON>       
+                    
+            </form>
+           
+  </CENTER>
+             </form>
+              </div>
+          <div class='grid_3'> </DIV>
+      </div>                                                                
+<SCRIPT LANGUAGE="SpeedScript">  
+                                                                            IF ITfeedback = YES THEN  
+                                                                                     {&OUT} 
+                                                                                      "<p>After test kit 4 each in name user feedback "  SKIP
+                                                                                       "<br>f-fname -- " f-fname SKIP 
+                                                                                       "<br>t-fname -- " t-fname SKIP
+                                                                                       "<br>f-lname -- " f-lname SKIP
+                                                                                       "<br>t-lname -- " t-lname    .
+
+		END. /* IF f-fname > "" AND f-lname > "" THEN DO:*/
+		
+/*------------------------------------------------------------------------------- END of people search --------------------------------------------------------@@@ */  
+   
+     ELSE DO:  
+{&OUT}                        /* 2dot2 */
+"<DIV class='row'>" SKIP
+"<DIV class='grid_12'>" SKIP.
+
+</SCRIPT>
+   <div class = 'table_report_FromTo'> 
+    <center>
+        <TABLE>
+          <thead>
+     
+            <tr><td colspan="12"> Criteria Selected for Search</td></tr>
+             
+            <tr><th>From</th>
+             
+<SCRIPT LANGUAGE="SpeedScript"> 
+     /* ------------------------------------------------------------------------- start of  f-kitid from */
+        IF f-kitid > ""  THEN  /* Test Kit */
+           {&OUT}
+            "<th>" f-kitid "</th>".
+        ELSE
+           {&OUT}
+            "<th>&nbsp</th>".             
+     /* ----------------------------------------------------------------------------------- end of kit id from */   
+        IF f-typ > "" THEN  /* Test Kit Type */
+           {&OUT}
+            "<th>" f-typ "</th>". 
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".     
+      /* ------------------------------------------------------------------------------------ end of typ from  */    
+    /* ------------  ** added Lab Sample ID on 9/30/15 ** -------------------------- */                              /* 1dot2 */
+        IF f-lab-id <> "" THEN  
+           {&OUT}
+            "<th>" f-lab-id "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".
+ 
+  /* ----------------------------------------------------------------------- start of created date from --*/
+         IF fdate<> ? THEN 
+           {&OUT}
+            "<th>" prog-fdate "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".        
+  /*--------------------------------------------------------------------------- end of created date from */
+  
+ /* ---------------------------------------------------------------------*/
+                       
+        IF f-mod <> ? THEN /* Mod Date */
+           {&OUT}
+            "<th>" prog-f-mod "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".        
+    /*--------------------------------------------------------------------------- end of mod date from */             
+   /* 
+        IF fsdate <> ? THEN  /* Sold Date */
+           {&OUT}
+            "<th>" fsdate "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".
+              
+           {&out}           
+            "<th>&nbsp</th>". /************ Placeholders  ***********/
+     */  
+     /*--------------------------------------------------------------------------------- start of Dom from  */            
+        IF both-dom = "bothck" THEN
+           {&OUT}
+            "<th>" "Domestic" "</th>".
+        ELSE                           
+           {&OUT}
+            "<th>&nbsp</th>". 
+     /* --------------------------------------------------------------------------------- start of prof from   */       
+        IF both-prof = "bothck" THEN
+           {&OUT}
+            "<th align= 'center'><span style='color: #0000FF;'>" "Professional" "</th>".
+        ELSE
+           {&OUT}                             
+                "<th>&nbsp</th>".
+              
+     /*----------------------------------------------------------------------------------- start of  Cust Paid  from */           
+        IF both-custpaid = "bothck" THEN
+           {&OUT}
+          "<th align= 'center'><span style='color: #0000FF;'>" "Cust Paid" "</th><th colspan='3'</th>".
+        ELSE
+           {&OUT}                             
+                "<th colspan='4'></th></tr>".
+               
+      
+  /*------------------------------------ End of From Row ---------------------------------------------*/
+</SCRIPT>
+      </tr>
+       <tr>
+       <th> To</th>  
+       
+  <SCRIPT LANGUAGE="SpeedScript">
+  
+         /* ------------------------------------------------------------------------- start of  f-kitid To */
+        IF t-kitid > ""  THEN  /* Test Kit */
+           {&OUT}
+            "<th>" t-kitid "</th>".
+        ELSE
+           {&OUT}
+              "<th>&nbsp</th>".         
+           /* ------------------------------------------------------------------------- end of  f-kitid to*/
+          /* ------------------------------------------------------------------------- start of  typ to*/
+        IF t-typ > "" THEN   /* Test Kit Type */
+           {&OUT}
+            "<th>" t-typ  "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".
+            /* ------------------------------------------------------------------------- end of typ to */      
+  /* -------------------------------  **added lab Sample ID on 9/30/15**   ----------- */               /* 1dot2 */
+        IF t-lab-id <> "" THEN  
+           {&OUT}
+            "<th>" t-lab-id "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".
+ 
+     /* ------------------------------------------------------------------------- start of  created date to*/
+         IF tdate<> ? THEN /* Mod Date */
+           {&OUT}
+            "<th>" prog-tdate "</th>".
+        ELSE
+           {&OUT}
+                "<th>&nbsp</th>".  
+     
+      /* ------------------------------------------------------------------------- endof  created date to*/
+     
+      /* ------------------------------------------------------------------------- start of  mod date to */      
+        IF t-mod <> ? THEN /* Mod Date */
+           {&OUT}
+            "<th>" prog-t-mod "</th>".
+        ELSE
+           {&OUT}
+            "<th>&nbsp</th>".  
+      /* ------------------------------------------------------------------------- end of  mod date to*/            
+   /*             
+        IF tsdate <> ? THEN  /* Sold Date */
+           {&OUT}
+            "<th>" tsdate "</th>".
+        ELSE
+           {&OUT}
+            "<th>&nbsp</th>".
+              
+        IF creatby > "" THEN
+           {&OUT}
+            "<th>" creatby "</th>".
+        ELSE
+           {&OUT}
+            "<th>&nbsp</th>". 
+    */           
+        IF both-dom = "bothck" THEN  /********************************************************/
+           {&OUT}
+            "<th>" "International" "</th>".
+        ELSE           
+        IF dom = YES THEN
+           {&OUT}
+            "<th>" "Domestic" "</th>".
+        ELSE
+        IF inter = NO THEN 
+           {&OUT}  
+            "<th>" "International" "</th>".
+        ELSE   
+           {&OUT}
+            "<th>&nbsp</th>". /********************************************************/
+            
+            
+                
+        IF both-prof = "bothck" THEN     /********************************************************/
+           {&OUT}
+            "<th>" "Non-Professional" " </th>".
+        ELSE                                         
+        IF prof = YES THEN
+           {&OUT}
+            "<th>" "Professional" "</th>".
+        ELSE
+        IF non-prof = NO THEN
+           {&OUT}
+            "<th>" "Non-Professional" "</th>". 
+        ELSE      
+           {&OUT}
+            "<th>&nbsp</th>".  /********************************************************/  
+            
+            
+    /* --------------------------------------------------------------------- 
+      IF tsdate <> ? THEN  /* Sold Date */
+           {&OUT}
+            "<th>" tsdate "</th>".
+        ELSE
+           {&OUT}
+            "<th>&nbsp</th>".
+            
+      */      
+     /* ------------------------------------------------------------------------------- start of Cust paid  */     
+        IF both-custpaid = "bothck" THEN
+           {&OUT}
+            "<th>" "Cust Not Paid" "</th>".
+        ELSE
+        IF paid = YES THEN 
+           {&OUT}
+            "<th>" "Cust Paid" "</th>". 
+        ELSE
+        IF notpaid = NO THEN    
+           {&OUT}
+            "<th>" "Cust Not Paid" "</th>".
+        ELSE      
+           {&OUT}
+            "<th>&nbsp</th>".     
+            
+        IF tk-status > "" THEN
+           {&OUT}
+            "<th>" tk-status "</th>". 
+        ELSE     
+           {&OUT}
+            "<th>&nbsp</th>".
+           {&OUT}
+            "<th>&nbsp</th><th>&nbsp</th></tr>". 
+
+</SCRIPT>  
+
+            </tr> 
+      <!-- ---------------- END OF the TO Row ------------------------------------------ -->   
+            <tr>
+            <th></th>
+            <th>Test Kit ID / Seq</th>            
+            <th>Type</th> 
+                        
+            <th>Lab Sample ID / Seq</th>   <!--  2dot3 -->
+                       
+            <th>Date Created</th> <!-- **Commented out on 1/6/15** Added back 2/17/15 -->
+     <!--   <th>Last Modified</th>
+            <th>Test Sequence </th>  -->
+      
+            <th>Last Modified</th>               
+      <!--  <th>Created By</th>  **Commented out on 1/6/15**    -->
+            <th>Dest</th>            
+            <th>Prof</th>
+            <th>Cust Paid</th>             
+            <th>Status</th>
+            <th>Patient</th>
+            <th>Customer</th>  
+            </tr>
+              
+          </thead>
+
+
+     
+ <SCRIPT LANGUAGE="SpeedScript">
+ 
+						 IF tk-status = "all" THEN  /* This removes All from TK-status variable and assigns status-all to yes for reassigns All after the FOR EACH */                               
+						        ASSIGN
+						        tk-status = ""
+						        status-all = "yes".
+					
+					     FOR EACH Tk_mstr WHERE 
+					     
+					       ((TK_mstr.TK_ID >= f-kitid OR                 
+                             f-kitid = "") AND             
+                            (TK_mstr.TK_ID <= t-kitid OR
+                             t-kitid = ""))  AND 
+                              
+					        ((TK_mstr.Tk_test_type >= f-typ OR             /* 2dot3 */
+					          f-typ = "") AND
+					         (TK_mstr.Tk_test_type <= t-typ OR             /* 2dot3 */
+					          t-typ = "")) AND 
+					          
+					        ((TK_mstr.TK_lab_sample_ID >= f-lab-id OR    /* 1dot2 */   
+					           f-lab-id = "") AND 
+					           (TK_mstr.TK_lab_sample_ID <= t-lab-id OR 
+					           t-lab-id = "")) AND   
+					          
+					          TK_mstr.TK_deleted = ?  AND 		/* 1dot2 */			      					
+					/* -------------------------------------------- **added on 1/8/15* 
+					        ((Tk_test_seq >= f-test-seq OR
+					          f-test-seq = 0) AND
+					         (Tk_test_seq <= t-test-seq OR
+					          t-test-seq = 0))AND
+					  ----------------------------------------------  */     
+					 /*--------------------------------------------- DATES */    
+					        ((TK_modified_date >= prog-f-mod OR    /* 2dot2 */
+					         prog-f-mod = ?) AND
+					         (TK_modified_date <= prog-t-mod OR
+					         prog-t-mod = ? ))  AND
+					
+					         ((TK_create_date >= prog-fdate OR     /* 2d0t2 */
+					         prog-fdate = ?) AND
+					         (TK_create_date <= prog-tdate OR
+					         prog-tdate = ?)) AND
+                        /*
+					        (Tk_created_by = creatby OR  **Commented out on 1/6/15**
+					          creatby = "")  AND
+					      */
+					 /* -------------------------------------- chekboxs  */    
+					          (Tk_domestic = dom OR
+					          dom = ?) AND
+					
+					          (TK_domestic = inter OR
+					          inter = ?)  AND
+					
+					          (Tk_prof =  prof OR
+					          prof = ?) AND
+					
+					          (Tk_prof =  non-prof OR
+					          non-prof = ?)   AND 					
+					
+					          (TK_cust_paid = paid OR
+					          paid = ? ) AND
+					
+					           (((TK_mstr.TK_cust_paid = NO OR
+                                  TK_mstr.TK_cust_paid = ?) AND
+                                  notpaid = NO) OR
+                                  notpaid = ?) AND
+					  
+    				          (Tk_status = tk-status OR
+					          tk-status = "") NO-LOCK
+                                  BREAK BY TK_mstr.TK_ID /** 2.0 **/
+                                      BY TK_mstr.tk_test_seq
+                                      BY TK_mstr.tk_test_type:   /*---------------- End of comparisons -----------------*/
+					
+					          IF status-all = "yes" THEN  /* reassigns All for sending back */
+					          ASSIGN
+					          tk-status = "All".
+					          
+					   /* -----------------  counting component below  ----------------------------- */     
+					        cout = cout + 1.        
+					   /* -------------------------------------------------------------------------- */      
+					
+					                  
+					/*    FIND patient_mstr WHERE patient_id = Tk_patient_id AND 
+					         patient_mstr.patient_deleted  = ?  NO-LOCK NO-ERROR.
+					                      
+					    FIND cust_mstr WHERE TK_mstr.Tk_cust_id = cust_id AND 
+					                    cust_mstr.cust_deleted  = ? NO-LOCK NO-ERROR.   
+					 */  
+					
+					    FIND peop-cust-buf WHERE peop-cust-buf.people_id = TK_mstr.TK_cust_ID AND  
+					                        peop-cust-buf.people_deleted = ? NO-LOCK NO-ERROR.
+					                                  
+					    FIND peop-pat-buf WHERE peop-pat-buf.people_id = TK_mstr.TK_patient_ID AND
+					                       peop-pat-buf.people_deleted = ? NO-LOCK NO-ERROR.   /* **Added peop-pat-buf on 2/25/15** */
+					                     
+					                     
+					                     
+        {tk-searchR.i}.    
+                              
+   END. /* of FOR EACH Tk_mstr */   
+</SCRIPT>    
+            <tr>
+                <td colspan='12'>This Search Criteria retrieved `cout` Records.  </td>
+            </tr> 
+            <TFOOT>
+                <tr>
+                    <td colspan="12">End of Report</td>
+                </tr>
+            </TFOOT>
+ 
+        </TABLE>
+    </center>     
+   </div> 
+   </div> <!--  close of grid_12?   -->
+   </div> <!--  close of row?  -->
+   
+   <BR></BR>
+
+             <div class='row'>
+                <div class='grid_3'> </DIV>
+                <div class='grid_2'>   
+                    <form  ACTION="TK_TKKitinquI.r" method="post">   
+                        <input type="hidden" name="whattorun" value="`whattorun`">
+                        <button type='submit' name='justRETURN' value='New Search' class='btn'>New Search</button>  
+                    </form>
+                </div>
+                <div class='grid_2'> </DIV>
+                <div class='grid_2'>
+		          <form  ACTION="TK_TKKitinquI.r" method="post">
+		            <td><input type="hidden" name="from-typ" value="`f-typ`"></td>
+		            <td><input type="hidden" name="to-typ" value="`t-typ`"></td>
+		            
+		            <td><input type="hidden" name="from-id" value="`f-kitid`"></td>
+		            <td><input type="hidden" name="to-id" value="`t-kitid`"></td>
+		            
+		            <td><input type="hidden" name="h-f-test-seq" value="`f-test-seq`"></td>
+                    <td><input type="hidden" name="h-t-test-seq" value="`t-test-seq`"></td>
+		         
+		            <td><input type="hidden" name="from-date" value="`fdate`"></td>
+		            <td><input type="hidden" name="to-date" value="`tdate`"></td>
+		            <td><input type="hidden" name="h-f-mod" value="`f-mod`"></td>
+                    <td><input type="hidden" name="h-t-mod" value="`t-mod`"></td>             
+		            
+		            <td><input type="hidden" name="from-sold" value="`fsdate`"></td>
+		            <td><input type="hidden" name="to-sold" value="`tsdate`"></td>
+		            
+		            <td><input type="hidden" name="h-f-lab-id" value="`f-lab-id`"></td>
+                    <td><input type="hidden" name="h-t-lab-id" value="`t-lab-id`"></td>
+		            
+		            <td><input type="hidden" name="by" value="`creatby`"></td>
+		            
+<SCRIPT LANGUAGE="SpeedScript">  
+                            IF both-dom = "bothck" THEN DO:
+                                ASSIGN
+                                dom   = YES
+                                inter = NO.
+                            
+                             END.   /* IF both-custpaid = "bothck" THEN DO: */      
+</SCRIPT>		            
+		            <td><input type="hidden" name="domestic" value="`dom`"></td>
+		            <td><input type="hidden" name="inter-al" value="`inter`"></td>		            
+		             
+<SCRIPT LANGUAGE="SpeedScript">  
+                            IF both-prof = "bothck" THEN DO:
+                                ASSIGN
+                                prof     = YES
+                                non-prof = NO.
+                            
+                             END.   /* IF both-custpaid = "bothck" THEN DO: */   
+</SCRIPT>	
+  	                <td><input type="hidden" name="profal" value="`prof`"></td>
+		            <td><input type="hidden" name="non-profal" value="`non-prof`"></td>			           
+		            <td><input type="hidden" name="h-tk-status" value="`tk-status`"></td>		            
+		            <td><input type="hidden" name="h-search-crit" value="yes"></td>		            
+		            <td><input type="hidden" name="whattorun" value=1.3></td>	<!-- `whattorun` -->	            
+		           		          
+<SCRIPT LANGUAGE="SpeedScript">  
+                            IF both-custpaid = "bothck" THEN DO:
+                                ASSIGN
+                                paid    = YES
+                                notpaid = NO.
+                            
+                             END.   /* IF both-custpaid = "bothck" THEN DO: */   
+</SCRIPT>		                      
+		              <td><input type="hidden" name="is-paid" value="`paid`"></td>
+                      <td><input type="hidden" name="not-paid" value="`notpaid`"></td>
+		                       
+		            <button type='submit' name='return' value='Search with Saved Search Criteria' class='btn'>Search with Saved Search Criteria</BUTTON>
+		    </form>
+		      </div>
+          <div class='grid_3'> </DIV>
+      </div>
+  </CENTER>
+  
+ <SCRIPT LANGUAGE="SpeedScript">
+                                                                                        IF ITfeedback = YES THEN  
+				                                                                                     {&OUT} 
+				                                                                                      "<p>After test kit 4 each in NO name user feedback "  SKIP
+				                                                                                       "<br>f-kitid -- " f-kitid SKIP 
+				                                                                                       "<br>t-kitid -- " t-kitid SKIP
+				                                                                                       "<br>f-typ -- " f-typ SKIP
+				                                                                                       "<br>t-typ -- " t-typ .
+
+                                                                                        IF ITfeedback = YES THEN  
+				                                                                               {&OUT}  "<p>paid --" paid SKIP
+				                                                                                       "<br>notpaid --" notpaid SKIP
+				                                                                                       "<br>both-custpaid --" both-custpaid SKIP                                                                                        
+				                                                                                       "</p>".
+ /* END. /* ELSE DO -- just added on 2/19/15 */	2/25/25	*/		                                                                                       
+				                                                                                       
+ 
+            IF from-results = 1 THEN DO:
+                FIND FIRST TK_mstr WHERE TK_id = TK NO-LOCK NO-ERROR.
+              
+</SCRIPT>
+<center>  
+        <div> 
+        
+        <h3>You got here from a link in Test Kit Delete and Editing Program click <a href=TK_TKKitdeleteEdit.r?testkit=`Tk`&whattorun=`whattorun`> here  </a> to return with this Record. </h3>
+        
+       </div>  
+<SCRIPT LANGUAGE="SpeedScript">
+            END. /* IF from-results = 1 THEN DO: */  
+            
+            IF dash = 1 THEN DO:
+</SCRIPT>  
+        <div id="User-feedback"> 
+        
+        <h3>You got here from the Test Kit Dashboard,to return to the Dashboard  click <a href=TK_dashboard.r? > Here  </a>  </h3>
+        
+        </div>       
+ </center>       
+<SCRIPT LANGUAGE="SpeedScript"> 
+
+   END.  
+   END.
+</script>               
+</BODY>
+</HTML>

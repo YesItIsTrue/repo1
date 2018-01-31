@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+<head>
+    <title>TS Entry</title>
+    <meta NAME="AUTHOR" CONTENT="Andrew Garver">
+    <meta NAME="VERSION" CONTENT="1.0">
+    <meta NAME="COPYRIGHT" CONTENT="Solsource">
+    <meta NAME="CREATE_DATE" CONTENT="15/Nov/17">
+    <meta NAME="LAST_UPDATED" CONTENT="15/Nov/17">    
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="/depot/src/HTMLContent/stylesheets/timesheet.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.maskedinput/1.4.1/jquery.maskedinput.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <style>
+    .page-content {
+        position:relative;
+        top: 5%;
+    }
+    .form-content {
+        margin-top: 5%;
+        padding-top: 32px;
+        padding-bottom: 32px;
+    }
+    label {
+        margin-top: 5px;
+    }
+    </style>
+    <script>
+        $(document).ready(function() {
+        
+            Date.prototype.toDateInputValue = (function() {
+			    var local = new Date(this);
+			    local.setMinutes(this.getMinutes() - this.getTimezoneOffset());
+			    return local.toJSON().slice(0,10);
+			});
+        
+            fetchProjects();
+            $("#client-select").focus();
+            $("[name='h-date']").val(new Date().toDateInputValue());
+            $("[type='date']").mask("9999-99-99",{placeholder:"yyyy-mm-dd"});
+        
+            function fetchProjects() {
+                $.post("AJAX-get-projects-by-client.r",
+                {
+                   clientID: $("#client-select").val() 
+                },
+                function(data, success) {
+                    $("#project-select").find('option').remove().end();
+                    $.each(data, function(key, value) {
+					     $("#project-select").append('<option value=' + key + '>' + value + '</option>');
+                    });
+                });
+            };
+            
+            $("#client-select").change(function() {
+	            fetchProjects();
+	        });
+	        
+	        // Handle form submission
+            $("form").submit(function(e) {
+                e.preventDefault();
+                
+                $.post("AJAX-submit-TSentryU.r",
+                $("form").serialize(),
+                function(data, success) {
+                    if (data.success) {
+                        swal("Success!", $("[name='h-hours']").val() + " hour(s) has been logged for " + $("[name='h-client'] option:selected").text(), "success");
+                        document.getElementById("logForm").reset();
+                        fetchProjects();
+                        $("#client-select").focus();
+                        $("[name='h-date']").val(new Date().toDateInputValue());
+                    }
+                    else {
+                        swal("Whoops!", "Something went wrong while logging your work. Please try again later.", "error");
+                    }
+                });
+            });
+        });
+    </script>
+    <!--WSS
+    PROCEDURE Output-Header:
+        {cookie-check-permissions.i "TSlogin.r"}.
+    END PROCEDURE.
+    -->
+</head>
+
+<body class='w3-theme-light'>
+    <!--WSS 
+    {TSvert-menu.i}.
+    
+    DEFINE VARIABLE empid AS INTEGER NO-UNDO.
+    DEFINE VARIABLE v-emp-name AS CHARACTER NO-UNDO.
+    
+    RUN VALUE(SEARCH("session-get-user-id.r")) (
+        get-cookie("c-session-token"),
+        OUTPUT empid
+    ).
+    
+    FIND people_mstr WHERE people_mstr.people_id = empid NO-ERROR.
+    IF AVAILABLE (people_mstr) THEN 
+        v-emp-name = people_mstr.people_firstname.
+    -->
+    <div class="w3-content page-content">
+        <div class="row">
+            <h1 class="page-title">Keep up the good work, `v-emp-name`!</h1>
+        </div>
+        <form id="logForm">
+            <div class="form-content w3-card-4 w3-white" style="padding-right:16px; padding-left:16px;">
+			    <h2>Log your work below</h2>
+			    <br/>
+			    <div class="row">
+			        <div class="col-md-6">
+		                <label>Client</label>
+			            <select id="client-select" name="h-client" class="form-control" required>
+	            <!--WSS FOR EACH Client_Mstr WHERE Client_Mstr.Client_deleted = ? NO-LOCK: -->
+	                        <option value="`Client_Mstr.Client_people_ID`">`Client_Mstr.Client_abbv`</option>
+	            <!--WSS END.  -->
+			            </select>
+			            <label>Project</label>
+			            <select id="project-select" name="h-project" class="form-control" required></select>
+			            <label>Date</label>
+			            <input name="h-date" type="date" class="form-control" required/>
+			            <label>Hours Worked</label>
+			            <input name="h-hours" type="number" step="0.5" min="0" class="form-control" required/>
+			        </div>
+			        <div class="col-md-6">
+			            <label>Comments</label>
+			            <textarea name="h-comments" rows="9" class="form-control" required></textarea>
+			            <button type="submit" class="btn w3-theme w3-right" style="margin-top: 8px">Submit</button>
+			        </div>
+			    </div>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

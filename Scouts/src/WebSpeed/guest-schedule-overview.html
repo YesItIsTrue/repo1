@@ -1,0 +1,256 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+    <head>
+        <meta NAME="AUTHOR" CONTENT="Andrew Garver"/>
+        <title>Schedule Viewer</title>
+        <meta NAME='VERSION' CONTENT='1.0'/>
+        <meta NAME='COPYRIGHT' CONTENT='Solsource'/>
+        <meta NAME='CREATE_DATE' CONTENT="31/Aug/2017"/>
+        <meta NAME='LAST_UPDATED' CONTENT="31/Aug/2017"/>   
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <!--WSS 
+        {global-includes.i}.
+        {external-dependencies.i}.
+        {registration.i}.
+        {organization-includes.i}. 
+        -->
+        <script>        
+            $(document).ready(function() {
+                function populateStudentDropDown() {
+                    $.post("AJAX-populate-student-dropdown.r",
+                    {
+                        eventID: $("[name='h-event-id']").val() 
+                    },
+                    function(response, status){
+                        $("[name='h-student-id']").children().remove();
+                        $.each(response, function (key, value) {
+                            $("[name='h-student-id']").append("<option value='" + key + "'>" + value + "</option>");
+                        });
+                    });
+                }
+                
+                populateStudentDropDown();
+                
+                $("[name='h-event-id']").change(function() {
+                   populateStudentDropDown();
+                });
+            });
+        </script> 
+    </head>
+    <body class='ss-background'>
+        <!--WSS
+        DEFINE VARIABLE v-act AS CHARACTER NO-UNDO.
+        
+        ASSIGN 
+            v-act = html-encode(get-value("h-act")).
+            
+        IF v-act = "VIEW" THEN DO:
+        -->
+        
+        <div class='ss-card'>
+	        <div class='ss-card-title'>
+	            <h2>Camp Rugahorsi</h2>
+                <p>Mr. Bean's Assigned Guests' Schedules</p>
+                <p> 07/04/18 </p> 
+	        </div>
+	        <div class='ss-card-content'>
+	            <div class='w3-row'>
+		            <div class='w3-col s4 m2'><b>Period</b>&nbsp;A1</div>
+		            <div class='w3-col s8 m4'>9:30 am - 10:30 am </div>
+		        </div>
+		        <hr style='margin: 0px'>
+		        <div class='w3-row'> 
+		           <div class='w3-col s4'>Johny Beaulieu</div>
+		           <div class='w3-col s4'>Archery</div>
+		           <div class='w3-col s4'>Aux Field 1</div>
+		        </div>
+		        <div class='w3-row'> 
+                   <div class='w3-col s4'>Ben Solo</div>
+                   <div class='w3-col s4'>Archery</div>
+                   <div class='w3-col s4'>Aux Field 1</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Albert Smith</div>
+                   <div class='w3-col s4'>Swimming</div>
+                   <div class='w3-col s4'>East Shore Lake</div>
+                </div>
+                
+                <br>
+                
+                <div class='w3-row'>
+                    <div class='w3-col s4 m2'><b>Period</b>&nbsp;A2</div>
+                    <div class='w3-col s8 m4'>11:00 am - 12:00 am </div>
+                </div>
+                <hr style='margin: 0px'>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Johny Beaulieu</div>
+                   <div class='w3-col s4'>Swimming</div>
+                   <div class='w3-col s4'>East Shore Lake</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Ben Solo</div>
+                   <div class='w3-col s4'>Basket Weaving</div>
+                   <div class='w3-col s4'>Nipa Hut 3</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Albert Smith</div>
+                   <div class='w3-col s4'>Whittling</div>
+                   <div class='w3-col s4'>Yurt 2</div>
+                </div>
+                
+                <br>
+                
+                <div class='w3-row'>
+                    <div class='w3-col s4 m2'><b>Period</b>&nbsp;A3</div>
+                    <div class='w3-col s8 m4'>12:30 pm - 1:30 pm </div>
+                </div>
+                <hr style='margin: 0px'>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Johny Beaulieu</div>
+                   <div class='w3-col s4'>Lunch</div>
+                   <div class='w3-col s4'>Mess Hall</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Ben Solo</div>
+                   <div class='w3-col s4'>Lunch</div>
+                   <div class='w3-col s4'>Mess Hall</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Albert Smith</div>
+                   <div class='w3-col s4'>Lunch</div>
+                   <div class='w3-col s4'>Mess Hall</div>
+                </div>
+                
+                <br>
+                
+                <div class='w3-row'>
+                    <div class='w3-col s4 m2'><b>Period</b>&nbsp;A4</div>
+                    <div class='w3-col s8 m4'>2:00 pm - 3:30 pm </div>
+                </div>
+                <hr style='margin: 0px'>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Johny Beaulieu</div>
+                   <div class='w3-col s4'>Guest Speaker Williams</div>
+                   <div class='w3-col s4'>Yurt 1</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Ben Solo</div>
+                   <div class='w3-col s4'>Guest Speaker Williams</div>
+                   <div class='w3-col s4'>Yurt 1</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Albert Smith</div>
+                   <div class='w3-col s4'>Guest Speaker Williams</div>
+                   <div class='w3-col s4'>Yurt 1</div>
+                </div>
+                <br>
+                
+                <div class='w3-row'>
+                    <div class='w3-col s4 m2'><b>Period</b>&nbsp;A5</div>
+                    <div class='w3-col s8 m4'>4:00 pm - 6:00 pm </div>
+                </div>
+                <hr style='margin: 0px'>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Johny Beaulieu</div>
+                   <div class='w3-col s4'>Orienteering</div>
+                   <div class='w3-col s4'>South Woods</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Ben Solo</div>
+                   <div class='w3-col s4'>Orienteering</div>
+                   <div class='w3-col s4'>South Woods</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Albert Smith</div>
+                   <div class='w3-col s4'>Orienteering</div>
+                   <div class='w3-col s4'>South Woods</div>
+                </div>
+                <br>
+                
+                <div class='w3-row'>
+                    <div class='w3-col s4 m2'><b>Period</b>&nbsp;A6</div>
+                    <div class='w3-col s8 m4'>6:30 pm - 7:30 pm </div>
+                </div>
+                <hr style='margin: 0px'>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Johny Beaulieu</div>
+                   <div class='w3-col s4'>Dinner</div>
+                   <div class='w3-col s4'>Mess Hall</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Ben Solo</div>
+                   <div class='w3-col s4'>Dinner</div>
+                   <div class='w3-col s4'>Mess Hall</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Albert Smith</div>
+                   <div class='w3-col s4'>Dinner</div>
+                   <div class='w3-col s4'>Mess Hall</div>
+                </div>
+                <br>
+                
+                <div class='w3-row'>
+                    <div class='w3-col s4 m2'><b>Period</b>&nbsp;A7</div>
+                    <div class='w3-col s8 m4'>8:00 pm - 8:30 pm </div>
+                </div>
+                <hr style='margin: 0px'>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Johny Beaulieu</div>
+                   <div class='w3-col s4'>Closing Ceremony</div>
+                   <div class='w3-col s4'>Amphitheatre</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Ben Solo</div>
+                   <div class='w3-col s4'>Closing Ceremony</div>
+                   <div class='w3-col s4'>Amphitheatre</div>
+                </div>
+                <div class='w3-row'> 
+                   <div class='w3-col s4'>Albert Smith</div>
+                   <div class='w3-col s4'>Closing Ceremony</div>
+                   <div class='w3-col s4'>Amphitheatre</div>
+                </div>
+	        </div>
+	        <div class='ss-button-group'>
+	            <div class='w3-row'>
+		            <div class='w3-col m6'>
+		               <form>
+    	                   <button type='submit' class='ss-btn w3-grey'>Back</button>
+		               </form>
+		            </div>
+		            <div class='w3-col m6'>
+	                   <button type='button' class='ss-btn w3-theme'>Print</button>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+            
+        <!--WSS
+        END.
+        ELSE DO:
+        -->
+        <form>
+            <div class='ss-card'>
+                <div class='ss-card-title'>
+	                <h2>Schedule Selection</h2>
+	                <p>Select an event and date for which to view your guests' schedules.</p>
+	            </div>
+                <div class='ss-card-content'>
+                    <label>Event Name</label>
+                    <select name='h-event-id' class='ss-select' required>
+                        <!--WSS FOR EACH event_mstr WHERE event_mstr.event_start_date >= TODAY AND event_mstr.event_deleted = ? NO-LOCK BY event_mstr.event_start_date: -->
+                        <option value=" `event_mstr.event_id` "> `event_mstr.event_name` </option>
+                        <!--WSS END. -->
+                    </select>
+                    <label>Date</label>
+                    <input type='date' name='h-date' class='ss-input' required/>
+                </div>
+                <div class='ss-button-group'>
+                    <button type='submit' name='h-act' value='VIEW' class='ss-btn-single w3-theme'>View Schedules</button>
+                </div>
+            </div>
+        </form>
+        <!--WSS
+        END.
+        -->
+    </body>
+</html>
